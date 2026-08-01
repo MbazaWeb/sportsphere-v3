@@ -1,0 +1,9 @@
+﻿node_modules/
+.next/
+.env
+.env.local
+package-lock.json
+bun.lock
+next-env.d.ts
+android/
+ios/

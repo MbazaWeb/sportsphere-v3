@@ -1,0 +1,126 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sport-green: var(--sport-green);
+  --color-sport-green-foreground: var(--sport-green-foreground);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-border: var(--surface-border);
+}
+
+:root {
+  --radius: 0.75rem;
+  /* SportSphere OLED Dark Theme - Always Dark */
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #111113;
+  --card-foreground: #ffffff;
+  --popover: #1c1c1e;
+  --popover-foreground: #ffffff;
+  --primary: #00c853;
+  --primary-foreground: #000000;
+  --secondary: #1c1c1e;
+  --secondary-foreground: #ffffff;
+  --muted: #1c1c1e;
+  --muted-foreground: #8e8e93;
+  --accent: #1c1c1e;
+  --accent-foreground: #ffffff;
+  --destructive: #ff453a;
+  --border: #2c2c2e;
+  --input: #2c2c2e;
+  --ring: #00c853;
+  --chart-1: #00c853;
+  --chart-2: #0a84ff;
+  --chart-3: #ff9f0a;
+  --chart-4: #ff375f;
+  --chart-5: #bf5af2;
+  --sidebar: #111113;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #00c853;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #1c1c1e;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #2c2c2e;
+  --sidebar-ring: #00c853;
+  /* SportSphere Custom Colors */
+  --sport-green: #00c853;
+  --sport-green-foreground: #000000;
+  --surface: #111113;
+  --surface-elevated: #1c1c1e;
+  --surface-border: #2c2c2e;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #2c2c2e;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #48484a;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
