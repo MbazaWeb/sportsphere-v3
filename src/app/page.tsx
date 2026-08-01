@@ -76,9 +76,23 @@ function ProfileTypeOverlay() {
   const config = PROFILE_TYPES[viewingProfile as ProfileTypeId];
   if (!config) return null;
   return (
-    <div className="fixed inset-0 z-40 bg-background overflow-y-auto">
+    <motion.div
+      initial={{ x: '100%' }}
+      animate={{ x: 0 }}
+      exit={{ x: '100%' }}
+      transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+      drag="x"
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={{ left: 0, right: 0.3 }}
+      onDragEnd={(_, info) => {
+        if (info.offset.x > 80 || info.velocity.x > 500) {
+          setViewingProfile(null);
+        }
+      }}
+      className="fixed inset-0 z-40 bg-background overflow-y-auto touch-pan-y"
+    >
       <ProfilePage config={config} onBack={() => setViewingProfile(null)} />
-    </div>
+    </motion.div>
   );
 }
 

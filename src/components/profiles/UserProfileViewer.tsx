@@ -28,7 +28,15 @@ export default function UserProfileViewer() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: '100%' }}
           transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-          className="fixed inset-0 z-40 bg-background overflow-y-auto scrollbar-hide"
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={{ left: 0, right: 0.3 }}
+          onDragEnd={(_, info) => {
+            if (info.offset.x > 80 || info.velocity.x > 500) {
+              setViewingUser(null);
+            }
+          }}
+          className="fixed inset-0 z-40 bg-background overflow-y-auto touch-pan-y"
         >
           <div className="mx-auto max-w-lg min-h-screen">
             {/* Cover */}
