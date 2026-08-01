@@ -367,16 +367,13 @@ function FeedCard({ item }: { item: typeof forYouFeed[number] }) {
         </div>
       )}
 
-      {/* Image placeholder */}
+      {/* Photo post — stadium gradient */}
       {item.type === 'photo' && (
-        <div className="mb-3 flex h-48 items-center justify-center rounded-xl bg-surface">
-          <div className="text-center">
-            <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-surface-elevated">
-              <svg className="h-8 w-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+        <div className="mb-3 overflow-hidden rounded-xl">
+          <div className="h-48 bg-gradient-to-br from-red-800 via-red-600 to-orange-700 flex items-end p-3">
+            <div className="rounded-lg bg-black/40 px-2.5 py-1 backdrop-blur-sm">
+              <p className="text-xs font-semibold text-white">Match Day · Emirates Stadium</p>
             </div>
-            <p className="text-xs text-muted-foreground">Match day photo</p>
           </div>
         </div>
       )}

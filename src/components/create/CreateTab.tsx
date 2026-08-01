@@ -66,10 +66,8 @@ export default function CreateTab() {
           animate={{ opacity: 1, scale: 1 }}
           className="w-full max-w-sm rounded-3xl bg-surface-elevated border border-surface-border p-8 text-center"
         >
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-sport-green/10">
-            <svg className="h-8 w-8 text-sport-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-sport-green">
+            <span className="text-2xl font-black text-black">+</span>
           </div>
           <h2 className="mb-2 text-xl font-bold text-white">Join SportSphere</h2>
           <p className="mb-8 text-sm text-muted-foreground">
