@@ -1,6 +1,7 @@
 'use client';
 
-import { useAppStore, type ActivitySubTab, getMockUser } from '@/store/useAppStore';
+import { useAppStore, type ActivitySubTab } from '@/store/useAppStore';
+import { getFeedUser } from '@/data/feedData';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { Heart, UserPlus, MessageCircle, Star, Circle, Clock, Bell, Users, Trophy, ChevronRight, X, Square } from 'lucide-react';
@@ -240,7 +241,7 @@ function MessagesList() {
             key={chat.id}
             onClick={() => {
               const handle = `@${chat.avatar.toLowerCase()}`;
-              const userData = getMockUser(handle);
+              const userData = getFeedUser(handle);
               if (userData) setViewingUser(userData);
             }}
             className="flex items-center gap-3 rounded-xl bg-surface-elevated border border-surface-border p-3 text-left transition-colors hover:bg-surface active:opacity-70"
