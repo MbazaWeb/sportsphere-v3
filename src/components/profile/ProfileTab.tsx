@@ -6,10 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Settings, LogOut, ChevronRight, Heart, UserPlus, MessageCircle,
   Bookmark, Trophy, Users, BarChart3, X, Shield, Bell,
-  Palette, Globe, HelpCircle, Info, Edit, Camera, Lock,
-  Smartphone, History, Trash2, Eye, EyeOff,
-  ShieldCheck, Clock, CheckCircle2, AlertCircle, Sparkles,
-  UserCog, BadgeCheck, FileText, Upload, ChevronDown
+  Palette, Globe, HelpCircle, Info, Edit, Camera,
+  Eye, ShieldCheck, Clock, CheckCircle2, AlertCircle, Sparkles,
+  BadgeCheck, Upload, ChevronDown
 } from 'lucide-react';
 import { useState } from 'react';
 import RegistrationModal from '@/components/registration/RegistrationModal';
@@ -104,52 +103,23 @@ function GuestProfile() {
           </button>
         </div>
 
-        {/* Why Join */}
-        <div className="rounded-2xl bg-surface-elevated border border-surface-border p-6">
-          <h3 className="mb-4 text-sm font-bold text-white uppercase tracking-wider">Why Join?</h3>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-            {[
-              'Create Posts',
-              'Follow Teams',
-              'Follow Players',
-              'Join Communities',
-              'Predict Scores',
-              'Spotlight Videos',
-              'Live Match Chat',
-              'Verification Badges',
-              'Advanced Profiles',
-            ].map((item) => (
-              <div key={item} className="flex items-center gap-2">
-                <span className="text-sport-green text-xs">&#10003;</span>
-                <span className="text-xs text-foreground/80">{item}</span>
+        {/* Feature highlights — icon grid, no text placeholders */}
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { Icon: Users,       label: 'Communities',  color: 'text-purple-400',  bg: 'bg-purple-500/10' },
+            { Icon: Trophy,      label: 'Predictions',  color: 'text-yellow-400',  bg: 'bg-yellow-500/10' },
+            { Icon: BarChart3,   label: 'Live Scores',  color: 'text-blue-400',    bg: 'bg-blue-500/10'   },
+            { Icon: Heart,       label: 'Follow Teams', color: 'text-pink-400',    bg: 'bg-pink-500/10'   },
+            { Icon: BadgeCheck,  label: 'Verified',     color: 'text-sport-green', bg: 'bg-sport-green/10'},
+            { Icon: MessageCircle, label: 'Live Chat',  color: 'text-cyan-400',    bg: 'bg-cyan-500/10'   },
+          ].map(({ Icon, label, color, bg }) => (
+            <div key={label} className="flex flex-col items-center gap-2 rounded-2xl bg-surface-elevated border border-surface-border p-4">
+              <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', bg)}>
+                <Icon className={cn('h-5 w-5', color)} />
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Registration types info */}
-        <div className="mt-4 rounded-2xl bg-surface-elevated border border-surface-border p-4">
-          <h3 className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Registration Types</h3>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sport-green">
-                <Users className="h-3.5 w-3.5 text-black" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-white">Fan (Quick)</p>
-                <p className="text-[10px] text-muted-foreground">Sign up fast, pick sports, start following</p>
-              </div>
+              <span className="text-[10px] font-semibold text-muted-foreground text-center leading-tight">{label}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface border border-surface-border">
-                <ShieldCheck className="h-3.5 w-3.5 text-sport-green" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-white">Advanced (Team, Player, Coach...)</p>
-                <p className="text-[10px] text-muted-foreground">Dedicated forms, admin verified, badge</p>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
 
         <div className="mt-6 text-center">
