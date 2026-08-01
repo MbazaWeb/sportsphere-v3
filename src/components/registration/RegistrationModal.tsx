@@ -13,14 +13,14 @@ function ChooseStep({ onFan, onAdvanced, onClose }: { onFan: () => void; onAdvan
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">Join SportSphere</h2>
+        <h2 className="text-xl font-black text-gold-gradient">Join SportSphere</h2>
         <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
           <X className="h-4 w-4 text-muted-foreground" />
         </button>
       </div>
       <p className="mb-6 text-sm text-muted-foreground">Choose how you want to join the world's biggest sports network.</p>
       <div className="flex flex-col gap-3">
-        <button onClick={onFan} className="flex items-center gap-4 rounded-2xl bg-sport-green p-4 text-left transition-all hover:bg-sport-green/90 active:scale-[0.98]">
+        <button onClick={onFan} className="flex items-center gap-4 rounded-2xl bg-gold p-4 text-left transition-all hover:bg-gold/90 active:scale-[0.98] shadow-[0_4px_20px_rgba(245,197,24,0.2)]">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-black/20">
             <Users className="h-6 w-6 text-white" />
           </div>
@@ -30,9 +30,9 @@ function ChooseStep({ onFan, onAdvanced, onClose }: { onFan: () => void; onAdvan
           </div>
           <ChevronRight className="h-5 w-5 text-black/60" />
         </button>
-        <button onClick={onAdvanced} className="flex items-center gap-4 rounded-2xl bg-surface-elevated border border-surface-border p-4 text-left transition-all hover:border-sport-green/30 active:scale-[0.98]">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-sport-green/10">
-            <ShieldCheck className="h-6 w-6 text-sport-green" />
+        <button onClick={onAdvanced} className="flex items-center gap-4 rounded-2xl glass-card p-4 text-left transition-all hover:border-gold/30 active:scale-[0.98] glass-card-hover">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gold/10">
+            <ShieldCheck className="h-6 w-6 text-gold" />
           </div>
           <div className="flex-1">
             <p className="text-base font-bold text-white">Team / Player / Coach...</p>
@@ -61,7 +61,7 @@ function FanStep({ onBack, onComplete }: { onBack: () => void; onComplete: (data
         <button onClick={onBack} className="flex h-8 w-8 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <h2 className="text-lg font-bold text-white">Create Fan Account</h2>
+        <h2 className="text-lg font-black text-white">Create Fan Account</h2>
       </div>
       <div className="flex flex-col gap-3 mb-4">
         {[
@@ -76,17 +76,18 @@ function FanStep({ onBack, onComplete }: { onBack: () => void; onComplete: (data
               value={value}
               onChange={e => onChange(e.target.value)}
               placeholder={placeholder}
-              className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-sport-green"
+              className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold transition-colors"
             />
           </div>
         ))}
       </div>
       <div className="mb-6">
-        <label className="mb-2 block text-xs font-medium text-muted-foreground">Sports you follow <span className="text-sport-green">*</span></label>
+        <label className="mb-2 block text-xs font-medium text-muted-foreground">Sports you follow <span className="text-gold">*</span></label>
         <div className="flex flex-wrap gap-2">
           {SPORTS_LIST.slice(0, 10).map(sport => (
             <button key={sport} onClick={() => toggleSport(sport)}
-              className={cn('rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors', sports.includes(sport) ? 'bg-sport-green text-black' : 'bg-surface border border-surface-border text-muted-foreground hover:text-white')}>
+              className={cn('rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors', 
+                sports.includes(sport) ? 'bg-gold text-black' : 'bg-surface border border-surface-border text-muted-foreground hover:text-white')}>
               {sport}
             </button>
           ))}
@@ -94,7 +95,8 @@ function FanStep({ onBack, onComplete }: { onBack: () => void; onComplete: (data
       </div>
       <button onClick={() => valid && onComplete({ name, email, handle, sports })}
         disabled={!valid}
-        className={cn('w-full rounded-xl py-3 text-sm font-bold transition-colors', valid ? 'bg-sport-green text-black hover:bg-sport-green/90' : 'bg-surface border border-surface-border text-muted-foreground cursor-not-allowed')}>
+        className={cn('w-full rounded-xl py-3 text-sm font-bold transition-colors', 
+          valid ? 'bg-gold text-black hover:bg-gold/90 shadow-[0_4px_20px_rgba(245,197,24,0.2)]' : 'bg-surface border border-surface-border text-muted-foreground cursor-not-allowed')}>
         <Sparkles className="mr-2 inline h-4 w-4" />
         Create Account
       </button>
@@ -111,16 +113,16 @@ function AdvancedRoleStep({ onBack, onSelect }: { onBack: () => void; onSelect: 
           <ChevronLeft className="h-4 w-4" />
         </button>
         <div>
-          <h2 className="text-lg font-bold text-white">Choose Profile Type</h2>
+          <h2 className="text-lg font-black text-white">Choose Profile Type</h2>
           <p className="text-xs text-muted-foreground">Select the type that best describes you</p>
         </div>
       </div>
       <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto scrollbar-hide">
         {ADVANCED_ROLES.map(role => (
           <button key={role.id} onClick={() => onSelect(role.id as ProfileTypeId)}
-            className="flex items-center justify-between rounded-xl bg-surface-elevated border border-surface-border px-4 py-3 text-left transition-colors hover:border-sport-green/30 hover:bg-surface active:scale-[0.98]">
+            className="flex items-center justify-between glass-card rounded-xl px-4 py-3 text-left transition-colors hover:border-gold/30 glass-card-hover">
             <div>
-              <p className="text-sm font-semibold text-white">{role.label}</p>
+              <p className="text-sm font-bold text-white">{role.label}</p>
               <p className="text-xs text-muted-foreground">{role.description}</p>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground/40 flex-shrink-0" />
@@ -150,12 +152,12 @@ function AdvancedFormStep({ role, onBack, onComplete }: {
           <ChevronLeft className="h-4 w-4" />
         </button>
         <div>
-          <h2 className="text-lg font-bold text-white capitalize">{role} Registration</h2>
+          <h2 className="text-lg font-black text-white capitalize">{role} Registration</h2>
           <p className="text-xs text-muted-foreground">Admin verified · Gets a badge</p>
         </div>
       </div>
-      <div className="mb-4 rounded-xl bg-sport-green/10 border border-sport-green/20 p-3">
-        <p className="text-xs text-sport-green">Your profile will be reviewed by our admin team within 1-3 business days.</p>
+      <div className="mb-4 rounded-xl bg-gold/10 border border-gold/20 p-3">
+        <p className="text-xs text-gold font-medium">Your profile will be reviewed by our admin team within 1-3 business days.</p>
       </div>
       <div className="flex flex-col gap-3 mb-6">
         {[
@@ -167,13 +169,14 @@ function AdvancedFormStep({ role, onBack, onComplete }: {
           <div key={label}>
             <label className="mb-1.5 block text-xs font-medium text-muted-foreground">{label}</label>
             <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-              className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-sport-green" />
+              className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold transition-colors" />
           </div>
         ))}
       </div>
       <button onClick={() => valid && onComplete({ name, email, handle, role, roleData: { organisation: org } })}
         disabled={!valid}
-        className={cn('w-full rounded-xl py-3 text-sm font-bold transition-colors', valid ? 'bg-sport-green text-black hover:bg-sport-green/90' : 'bg-surface border border-surface-border text-muted-foreground cursor-not-allowed')}>
+        className={cn('w-full rounded-xl py-3 text-sm font-bold transition-colors', 
+          valid ? 'bg-gold text-black hover:bg-gold/90 shadow-[0_4px_20px_rgba(245,197,24,0.2)]' : 'bg-surface border border-surface-border text-muted-foreground cursor-not-allowed')}>
         <ShieldCheck className="mr-2 inline h-4 w-4" />
         Submit for Verification
       </button>
@@ -185,10 +188,10 @@ function AdvancedFormStep({ role, onBack, onComplete }: {
 function CompleteStep({ name, isAdvanced, onClose }: { name: string; isAdvanced: boolean; onClose: () => void }) {
   return (
     <div className="flex flex-col items-center py-4 text-center">
-      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-sport-green">
+      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gold shadow-[0_4px_30px_rgba(245,197,24,0.3)]">
         <Check className="h-10 w-10 text-black" strokeWidth={3} />
       </div>
-      <h2 className="mb-2 text-2xl font-bold text-white">Welcome{name ? `, ${name.split(' ')[0]}` : ''}!</h2>
+      <h2 className="mb-2 text-2xl font-black text-gold-gradient">Welcome{name ? `, ${name.split(' ')[0]}` : ''}!</h2>
       {isAdvanced ? (
         <>
           <p className="mb-4 text-sm text-muted-foreground max-w-xs">
@@ -211,7 +214,7 @@ function CompleteStep({ name, isAdvanced, onClose }: { name: string; isAdvanced:
           Your account is ready. Start following teams, players, and communities.
         </p>
       )}
-      <button onClick={onClose} className="w-full rounded-xl bg-sport-green py-3 text-sm font-bold text-black hover:bg-sport-green/90 transition-colors">
+      <button onClick={onClose} className="w-full rounded-xl bg-gold py-3 text-sm font-bold text-black hover:bg-gold/90 transition-colors shadow-[0_4px_20px_rgba(245,197,24,0.2)]">
         Explore SportSphere
       </button>
     </div>
@@ -244,7 +247,7 @@ export default function RegistrationModal() {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 60 }}
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-        className="w-full max-w-lg rounded-t-3xl sm:rounded-3xl bg-surface-elevated border border-surface-border p-6 max-h-[90vh] overflow-y-auto scrollbar-hide"
+        className="w-full max-w-lg rounded-t-3xl sm:rounded-3xl glass-card p-6 max-h-[90vh] overflow-y-auto scrollbar-hide"
       >
         <AnimatePresence mode="wait">
           <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.15 }}>

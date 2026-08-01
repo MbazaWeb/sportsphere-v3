@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import {
   Heart, UserPlus, MessageCircle, Circle, Trophy,
-  Users, Bell, ChevronRight, X,
+  Users, Bell, ChevronRight, X, Flame, Crown,
 } from 'lucide-react';
 
 const activitySubTabs: { id: ActivitySubTab; label: string; badge?: string }[] = [
@@ -46,7 +46,7 @@ function getActivityIcon(type: string) {
   const map: Record<string, React.ReactNode> = {
     like:        <Heart className="h-4 w-4 text-pink-400" />,
     follow:      <UserPlus className="h-4 w-4 text-blue-400" />,
-    goal:        <Circle className="h-4 w-4 text-sport-green" />,
+    goal:        <Circle className="h-4 w-4 text-gold" />,
     prediction:  <Trophy className="h-4 w-4 text-yellow-400" />,
     community:   <Users className="h-4 w-4 text-purple-400" />,
     result:      <Bell className="h-4 w-4 text-muted-foreground" />,
@@ -67,14 +67,14 @@ export default function ActivityTab() {
     return (
       <div className="mx-auto flex max-w-lg flex-col items-center justify-center px-6 pt-20">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-sm rounded-3xl bg-surface-elevated border border-surface-border p-8 text-center">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-sport-green/10">
-            <Bell className="h-8 w-8 text-sport-green" />
+          className="w-full max-w-sm glass-card rounded-3xl p-8 text-center glass-card-hover">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gold/10">
+            <Bell className="h-8 w-8 text-gold" />
           </div>
-          <h2 className="mb-2 text-xl font-bold text-white">Activity Feed</h2>
+          <h2 className="mb-2 text-xl font-black text-white">Activity Feed</h2>
           <p className="mb-8 text-sm text-muted-foreground">Sign in to see likes, follows, match alerts and messages.</p>
           <button onClick={() => setLoginModalOpen(true)}
-            className="w-full rounded-xl bg-sport-green py-3 text-sm font-bold text-black hover:bg-sport-green/90 transition-colors">
+            className="w-full rounded-xl bg-gold py-3 text-sm font-bold text-black hover:bg-gold/90 transition-colors shadow-[0_4px_20px_rgba(245,197,24,0.2)]">
             Sign In
           </button>
         </motion.div>
@@ -87,7 +87,7 @@ export default function ActivityTab() {
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-surface-border bg-background/90 backdrop-blur-xl">
         <div className="flex h-14 items-center justify-between px-4">
-          <h1 className="text-xl font-bold text-white">Activity</h1>
+          <h1 className="text-xl font-black text-gold-gradient">Activity</h1>
           <button className="flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
             <X className="h-4 w-4 text-muted-foreground" />
           </button>
@@ -96,10 +96,10 @@ export default function ActivityTab() {
           {activitySubTabs.map((tab) => (
             <button key={tab.id} onClick={() => setActivitySubTab(tab.id)}
               className={cn('relative flex-shrink-0 rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-colors',
-                activitySubTab === tab.id ? 'bg-sport-green text-black' : 'bg-surface text-muted-foreground hover:text-foreground')}>
+                activitySubTab === tab.id ? 'bg-gold text-black' : 'bg-surface text-muted-foreground hover:text-foreground')}>
               {tab.label}
               {tab.badge && (
-                <span className="ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white">
+                <span className="ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">
                   {tab.badge}
                 </span>
               )}
@@ -128,26 +128,28 @@ function ActivityList({ items }: { items: typeof allActivity }) {
         const isClickable = !!user;
 
         const content = (
-          <div className={cn('flex items-start gap-3 rounded-2xl border p-4 transition-colors',
-            !item.read ? 'bg-surface-elevated border-surface-border' : 'bg-surface border-surface-border/50',
-            isClickable && 'hover:border-sport-green/20 active:opacity-70')}>
-            <div className={cn('flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full',
-              !item.read ? 'bg-surface' : 'bg-surface/50')}>
-              {user ? (
-                <span className={cn('text-sm font-bold', user.verified ? 'text-sport-green' : 'text-white')}>
-                  {user.avatar}
-                </span>
-              ) : (
-                getActivityIcon(item.type)
-              )}
+          <div className={cn('glass-card rounded-2xl p-4 transition-colors',
+            !item.read ? 'border-gold/20' : '',
+            isClickable && 'glass-card-hover cursor-pointer')}>
+            <div className="flex items-start gap-3">
+              <div className={cn('flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full',
+                !item.read ? 'bg-gold/10' : 'bg-surface/50')}>
+                {user ? (
+                  <span className={cn('text-sm font-bold', user.verified ? 'text-gold' : 'text-white')}>
+                    {user.avatar}
+                  </span>
+                ) : (
+                  getActivityIcon(item.type)
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={cn('text-sm leading-relaxed', !item.read ? 'text-white font-medium' : 'text-foreground/70')}>
+                  {item.text}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">{item.time}</p>
+              </div>
+              {!item.read && <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-gold animate-pulse" />}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className={cn('text-sm leading-relaxed', !item.read ? 'text-white' : 'text-foreground/70')}>
-                {item.text}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">{item.time}</p>
-            </div>
-            {!item.read && <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-sport-green" />}
           </div>
         );
 
@@ -168,31 +170,35 @@ function MessagesList() {
 
   return (
     <div className="p-4 flex flex-col gap-2">
+      <div className="mb-2 flex items-center gap-2">
+        <MessageCircle className="h-4 w-4 text-gold" />
+        <span className="text-xs font-bold text-gold uppercase tracking-wider">Conversations</span>
+      </div>
       {messageChats.map((chat) => {
         const user = getFeedUser(chat.handle);
         return (
           <button key={chat.id} onClick={() => { if (user) setViewingUser(user); }}
-            className="flex items-center gap-3 rounded-2xl bg-surface-elevated border border-surface-border p-3 text-left transition-colors hover:border-sport-green/20 active:opacity-70 w-full">
-            <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-surface font-bold text-sm text-sport-green">
-              {chat.avatar}
-              {chat.isGroup && (
-                <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-surface-elevated border border-surface-border">
-                  <Users className="h-2.5 w-2.5 text-muted-foreground" />
-                </span>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-0.5">
-                <p className="text-sm font-semibold text-white truncate">{chat.name}</p>
-                <span className="text-[10px] text-muted-foreground flex-shrink-0">{chat.time}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground truncate">{chat.lastMessage}</p>
+            className="glass-card rounded-2xl p-3 text-left glass-card-hover w-full">
+            <div className="flex items-center gap-3">
+              <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gold/10 font-bold text-sm text-gold">
+                {chat.avatar}
+                {chat.isGroup && (
+                  <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-surface-elevated border border-surface-border">
+                    <Users className="h-2.5 w-2.5 text-muted-foreground" />
+                  </span>
+                )}
                 {chat.unread > 0 && (
-                  <span className="ml-2 flex h-4 min-w-[16px] flex-shrink-0 items-center justify-center rounded-full bg-sport-green px-1 text-[10px] font-bold text-black">
+                  <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">
                     {chat.unread}
                   </span>
                 )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-0.5">
+                  <p className="text-sm font-bold text-white truncate">{chat.name}</p>
+                  <span className="text-[10px] text-muted-foreground flex-shrink-0">{chat.time}</span>
+                </div>
+                <p className="text-xs text-muted-foreground truncate">{chat.lastMessage}</p>
               </div>
             </div>
           </button>

@@ -2,7 +2,7 @@
 
 import { type ProfileTypeConfig } from './profileConfig';
 import { cn } from '@/lib/utils';
-import { MapPin, Calendar, ShieldCheck, ArrowLeft, MoreHorizontal } from 'lucide-react';
+import { MapPin, Calendar, ShieldCheck, ArrowLeft, MoreHorizontal, Trophy, Star } from 'lucide-react';
 
 interface ProfileHeaderProps {
   config: ProfileTypeConfig;
@@ -28,27 +28,29 @@ export default function ProfileHeader({ config, onBack, onAction, isFollowing }:
         </div>
       )}
 
-      <div className={cn('relative h-40 w-full bg-gradient-to-b', mockData.coverGradient)}>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
+      <div className={cn('relative h-48 w-full bg-gradient-to-b', mockData.coverGradient)}>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
+        {/* Pattern overlay */}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-30" />
       </div>
 
       <div className="relative -mt-12 px-4">
         <div className="flex items-end gap-4">
           <div className={cn(
             'relative flex h-24 w-24 flex-shrink-0 items-center justify-center rounded-full border-4 border-background text-2xl font-bold',
-            mockData.verified ? 'bg-sport-green text-black' : 'bg-surface-elevated text-white'
+            mockData.verified ? 'bg-gold text-black' : 'bg-surface-elevated text-white'
           )}>
             {mockData.avatar}
             {mockData.verified && (
               <span className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-background">
-                <ShieldCheck className="h-5 w-5 text-sport-green" />
+                <ShieldCheck className="h-5 w-5 text-gold" />
               </span>
             )}
           </div>
           <div className="mb-1 flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="truncate text-lg font-bold text-white">{mockData.name}</h1>
-              <span className="flex-shrink-0 rounded-md bg-surface-elevated border border-surface-border px-2 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase">
+              <h1 className="truncate text-xl font-black text-white">{mockData.name}</h1>
+              <span className="flex-shrink-0 rounded-md bg-gold/10 border border-gold/20 px-2 py-0.5 text-[10px] font-bold text-gold uppercase">
                 {label}
               </span>
             </div>
@@ -62,20 +64,20 @@ export default function ProfileHeader({ config, onBack, onAction, isFollowing }:
           {mockData.handle && <span className="text-sm text-muted-foreground">{mockData.handle}</span>}
           {mockData.location && (
             <span className="flex items-center gap-1 text-sm text-muted-foreground">
-              <MapPin className="h-3 w-3" />{mockData.location}
+              <MapPin className="h-3 w-3 text-gold" />{mockData.location}
             </span>
           )}
           {mockData.joined && (
             <span className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Calendar className="h-3 w-3" />Joined {mockData.joined}
+              <Calendar className="h-3 w-3 text-gold" />Joined {mockData.joined}
             </span>
           )}
         </div>
 
         <div className="mt-4 grid grid-cols-4 gap-2">
           {mockData.stats.map((stat, i) => (
-            <div key={i} className="rounded-xl bg-surface-elevated border border-surface-border p-3 text-center">
-              <p className="text-sm font-bold text-white">{stat.value}</p>
+            <div key={i} className="glass-card rounded-xl p-3 text-center glass-card-hover">
+              <p className="text-sm font-black text-gold">{stat.value}</p>
               <p className="text-[10px] font-medium text-muted-foreground uppercase leading-tight">{stat.label}</p>
             </div>
           ))}
@@ -85,19 +87,36 @@ export default function ProfileHeader({ config, onBack, onAction, isFollowing }:
           {primaryActions.map((action) => (
             <button key={action.id} onClick={() => onAction?.(action.id)}
               className={cn(
-                'flex-1 rounded-xl py-2.5 text-sm font-semibold transition-colors',
+                'flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all',
                 action.id === 'follow' || action.id === 'join'
                   ? isFollowing
-                    ? 'bg-surface border border-surface-border text-muted-foreground hover:text-white'
-                    : 'bg-sport-green text-black hover:bg-sport-green/90'
+                    ? 'glass-card text-muted-foreground hover:text-white'
+                    : 'bg-gold text-black hover:bg-gold/90 shadow-[0_4px_20px_rgba(245,197,24,0.2)] hover:shadow-[0_6px_30px_rgba(245,197,24,0.3)]'
                   : action.primary
-                    ? 'bg-surface border border-surface-border text-white hover:bg-surface-elevated'
-                    : 'bg-surface border border-surface-border text-muted-foreground hover:text-white',
+                    ? 'glass-card text-white hover:bg-surface-elevated'
+                    : 'glass-card text-muted-foreground hover:text-white',
               )}>
               {action.id === 'follow' && isFollowing ? 'Following' : action.label}
             </button>
           ))}
         </div>
+
+        {/* 🏆 Trophies Collection */}
+        {mockData.name === 'Kylian Mbappé' || mockData.name === 'Marcus Rashford' && (
+          <div className="mt-4 glass-card rounded-xl p-4 glass-card-hover">
+            <div className="flex items-center gap-2 mb-2">
+              <Trophy className="h-4 w-4 text-gold" />
+              <h4 className="text-xs font-bold text-gold uppercase tracking-wider">Trophies Collection</h4>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {['3x Ligue 1', '2x UEFA Euro', '1x World Cup'].map((trophy) => (
+                <span key={trophy} className="rounded-lg bg-gold/10 border border-gold/20 px-3 py-1 text-xs font-semibold text-gold">
+                  {trophy}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

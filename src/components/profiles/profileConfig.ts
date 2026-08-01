@@ -142,7 +142,7 @@ export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
       role: 'Premier League Club',
       bio: 'One of the most successful football clubs in history. 20x League Champions, 3x Champions League winners. Based in Manchester, England.',
       avatar: 'MU',
-      coverGradient: 'from-red-700 via-red-600 to-red-900',
+      coverGradient: 'from-gold via-orange-500 to-red-800',
       verified: true,
       stats: [
         { label: 'Trophies', value: '66' },
@@ -174,7 +174,7 @@ export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
       role: 'Top Division of English Football',
       bio: 'The most-watched football league in the world. 20 teams compete from August to May for the championship title.',
       avatar: 'PL',
-      coverGradient: 'from-purple-700 via-indigo-600 to-purple-900',
+      coverGradient: 'from-gold via-yellow-500 to-orange-600',
       verified: true,
       stats: [
         { label: 'Season', value: '24/25' },
@@ -204,7 +204,7 @@ export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
       role: 'Premier League - Matchday 15',
       bio: 'Old Trafford, Manchester. Kick-off 17:30 BST.',
       avatar: 'VS',
-      coverGradient: 'from-green-700 via-emerald-600 to-green-900',
+      coverGradient: 'from-gold via-yellow-500 to-emerald-700',
       verified: false,
       stats: [
         { label: 'Score', value: '2 - 1' },
@@ -234,7 +234,7 @@ export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
       role: 'Forward - Manchester United',
       bio: 'Academy graduate. England international. Known for pace, dribbling and philanthropy.',
       avatar: 'MR',
-      coverGradient: 'from-red-600 via-orange-500 to-red-800',
+      coverGradient: 'from-gold via-orange-500 to-red-800',
       verified: true,
       stats: [
         { label: 'Goals', value: '132' },
@@ -264,7 +264,7 @@ export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
       role: 'Manager - Manchester City',
       bio: 'One of the greatest managers of all time. Pioneer of tactical innovation.',
       avatar: 'PG',
-      coverGradient: 'from-sky-600 via-cyan-500 to-blue-900',
+      coverGradient: 'from-gold via-cyan-400 to-blue-800',
       verified: true,
       stats: [
         { label: 'Trophies', value: '37' },
@@ -293,7 +293,7 @@ export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
       role: 'Home of Manchester United',
       bio: 'The Theatre of Dreams. Capacity 74,310. One of the most iconic stadiums in world football.',
       avatar: 'OT',
-      coverGradient: 'from-amber-600 via-orange-500 to-red-800',
+      coverGradient: 'from-gold via-orange-500 to-red-800',
       verified: true,
       stats: [
         { label: 'Capacity', value: '74K' },
@@ -323,7 +323,7 @@ export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
       role: 'Multi-Purpose Venue',
       bio: 'The home of English football. Hosts FA Cup finals, England internationals, and major concerts.',
       avatar: 'WS',
-      coverGradient: 'from-stone-500 via-stone-600 to-stone-800',
+      coverGradient: 'from-gold via-stone-500 to-stone-800',
       verified: true,
       stats: [
         { label: 'Capacity', value: '90K' },
@@ -354,7 +354,7 @@ export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
       role: 'FC Barcelona Academy',
       bio: 'The legendary Barcelona youth academy that produced Messi, Xavi, Iniesta and many more.',
       avatar: 'LM',
-      coverGradient: 'from-blue-600 via-red-500 to-blue-900',
+      coverGradient: 'from-gold via-red-500 to-blue-800',
       verified: true,
       stats: [
         { label: 'Players', value: '240' },
@@ -384,7 +384,7 @@ export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
       role: 'Arsenal Supporters Community',
       bio: 'The largest Arsenal fan community on SportSphere. Match discussions, news, and banter.',
       avatar: 'GO',
-      coverGradient: 'from-red-600 via-red-500 to-rose-800',
+      coverGradient: 'from-gold via-red-500 to-rose-800',
       verified: false,
       stats: [
         { label: 'Members', value: '125K' },
@@ -413,7 +413,7 @@ export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
       role: 'International Football Federation',
       bio: 'The governing body of world football. Organizing the FIFA World Cup and governing the laws of the game.',
       avatar: 'FI',
-      coverGradient: 'from-blue-700 via-indigo-500 to-blue-900',
+      coverGradient: 'from-gold via-indigo-500 to-blue-800',
       verified: true,
       stats: [
         { label: 'Members', value: '211' },
@@ -443,7 +443,7 @@ export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
       role: 'Sportswear & Equipment',
       bio: 'Official partner of top football clubs and national teams worldwide.',
       avatar: 'NK',
-      coverGradient: 'from-gray-700 via-gray-600 to-black',
+      coverGradient: 'from-gold via-gray-600 to-black',
       verified: true,
       stats: [
         { label: 'Products', value: '450+' },
@@ -472,7 +472,7 @@ export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
       role: 'Transfer Journalist',
       bio: 'The most trusted football transfer journalist. "Here we go!"',
       avatar: 'FR',
-      coverGradient: 'from-teal-600 via-cyan-500 to-teal-900',
+      coverGradient: 'from-gold via-cyan-400 to-teal-800',
       verified: true,
       stats: [
         { label: 'Articles', value: '2.4K' },
@@ -501,7 +501,7 @@ export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
       role: 'Data & Analytics Provider',
       bio: 'Industry-leading sports data, AI-powered analytics and performance insights.',
       avatar: 'SP',
-      coverGradient: 'from-emerald-600 via-green-500 to-emerald-900',
+      coverGradient: 'from-gold via-emerald-500 to-emerald-800',
       verified: true,
       stats: [
         { label: 'Reports', value: '1.2K' },
@@ -530,7 +530,7 @@ export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
       role: 'Content Creator',
       bio: 'Every goal, every game, every highlight. Bringing you the best football content in 4K.',
       avatar: 'GH',
-      coverGradient: 'from-pink-600 via-violet-500 to-purple-900',
+      coverGradient: 'from-gold via-violet-400 to-purple-800',
       verified: true,
       stats: [
         { label: 'Videos', value: '3.8K' },
@@ -559,7 +559,7 @@ export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
       role: 'Football Scout',
       bio: 'Identifying the next generation of football talent across Africa and Europe.',
       avatar: 'DT',
-      coverGradient: 'from-yellow-600 via-amber-500 to-orange-800',
+      coverGradient: 'from-gold via-amber-400 to-orange-800',
       verified: false,
       stats: [
         { label: 'Reports', value: '340' },
@@ -587,7 +587,7 @@ export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
       role: 'FIFA Referee',
       bio: 'One of the most respected referees in world football. Premier League and FIFA listed.',
       avatar: 'MO',
-      coverGradient: 'from-lime-600 via-green-500 to-emerald-800',
+      coverGradient: 'from-gold via-lime-400 to-emerald-800',
       verified: true,
       stats: [
         { label: 'Matches', value: '520' },
@@ -616,7 +616,7 @@ export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
       role: 'Sports Fan',
       bio: 'Football is life. Man Utd till I die. Predictions guru.',
       avatar: 'DM',
-      coverGradient: 'from-red-600 via-red-500 to-red-800',
+      coverGradient: 'from-gold via-red-500 to-red-800',
       verified: false,
       stats: [
         { label: 'Posts', value: '52' },

@@ -5,10 +5,10 @@ import { useUIStore } from '@/store/uiStore';
 import { getFeedUser } from '@/data/feedData';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Clock, Trophy, ChevronDown, Globe, Flag, X } from 'lucide-react';
+import { Search, Clock, Trophy, ChevronDown, Globe, Flag, X, Shield, Zap, Flame, Crown } from 'lucide-react';
 import { useState, useMemo } from 'react';
 
-// ─── Filter definitions ────────────────────────────────────────
+// --- Filter definitions ----------------------------------------
 const FILTERS = {
   continent: ['All', 'Europe', 'Africa', 'South America', 'Asia', 'North America'],
   country:   ['All', 'England', 'Spain', 'Germany', 'France', 'Italy', 'Portugal', 'Netherlands', 'Africa'],
@@ -23,7 +23,7 @@ const SUBTABS: { id: ScoresSubTab; label: string }[] = [
   { id: 'standings', label: 'Standings' },
 ];
 
-// ─── Match data ────────────────────────────────────────────────
+// --- Match data ------------------------------------------------
 const ALL_MATCHES = {
   live: [
     { id: 1, league: 'Premier League', continent: 'Europe', country: 'England', homeTeam: 'Manchester United', awayTeam: 'Arsenal', homeHandle: '@manchesterunited', homeScore: 2, awayScore: 1, minute: 78, status: 'live' as const, events: ["Rashford 23'", "Rashford 56'", "Saka 34'"] },
@@ -54,31 +54,31 @@ const ALL_MATCHES = {
   ],
   standings: {
     'Premier League': [
-      { pos: 1, team: 'Manchester City',   played: 15, won: 12, drawn: 2, lost: 1, pts: 38 },
-      { pos: 2, team: 'Arsenal',           played: 15, won: 11, drawn: 3, lost: 1, pts: 36 },
-      { pos: 3, team: 'Liverpool',         played: 15, won: 11, drawn: 2, lost: 2, pts: 35 },
-      { pos: 4, team: 'Aston Villa',       played: 15, won: 9,  drawn: 4, lost: 2, pts: 31 },
-      { pos: 5, team: 'Tottenham',         played: 15, won: 9,  drawn: 2, lost: 4, pts: 29 },
-      { pos: 6, team: 'Manchester United', played: 15, won: 8,  drawn: 3, lost: 4, pts: 27, handle: '@manchesterunited' },
-      { pos: 7, team: 'Newcastle',         played: 15, won: 7,  drawn: 4, lost: 4, pts: 25 },
-      { pos: 8, team: 'Chelsea',           played: 15, won: 7,  drawn: 3, lost: 5, pts: 24 },
+      { pos: 1, team: 'Manchester City',   played: 15, won: 12, drawn: 2, lost: 1, pts: 38, gd: '+24' },
+      { pos: 2, team: 'Arsenal',           played: 15, won: 11, drawn: 3, lost: 1, pts: 36, gd: '+21' },
+      { pos: 3, team: 'Liverpool',         played: 15, won: 11, drawn: 2, lost: 2, pts: 35, gd: '+18' },
+      { pos: 4, team: 'Aston Villa',       played: 15, won: 9,  drawn: 4, lost: 2, pts: 31, gd: '+12' },
+      { pos: 5, team: 'Tottenham',         played: 15, won: 9,  drawn: 2, lost: 4, pts: 29, gd: '+8' },
+      { pos: 6, team: 'Manchester United', played: 15, won: 8,  drawn: 3, lost: 4, pts: 27, gd: '+5', handle: '@manchesterunited' },
+      { pos: 7, team: 'Newcastle',         played: 15, won: 7,  drawn: 4, lost: 4, pts: 25, gd: '+3' },
+      { pos: 8, team: 'Chelsea',           played: 15, won: 7,  drawn: 3, lost: 5, pts: 24, gd: '+1' },
     ],
     'La Liga': [
-      { pos: 1, team: 'Real Madrid',       played: 15, won: 12, drawn: 1, lost: 2, pts: 37 },
-      { pos: 2, team: 'Barcelona',         played: 15, won: 10, drawn: 3, lost: 2, pts: 33 },
-      { pos: 3, team: 'Atletico Madrid',   played: 15, won: 9,  drawn: 4, lost: 2, pts: 31 },
-      { pos: 4, team: 'Athletic Bilbao',   played: 15, won: 8,  drawn: 3, lost: 4, pts: 27 },
+      { pos: 1, team: 'Real Madrid',       played: 15, won: 12, drawn: 1, lost: 2, pts: 37, gd: '+22' },
+      { pos: 2, team: 'Barcelona',         played: 15, won: 10, drawn: 3, lost: 2, pts: 33, gd: '+18' },
+      { pos: 3, team: 'Atletico Madrid',   played: 15, won: 9,  drawn: 4, lost: 2, pts: 31, gd: '+12' },
+      { pos: 4, team: 'Athletic Bilbao',   played: 15, won: 8,  drawn: 3, lost: 4, pts: 27, gd: '+7' },
     ],
     'AFCON': [
-      { pos: 1, team: 'Morocco',  played: 3, won: 3, drawn: 0, lost: 0, pts: 9 },
-      { pos: 2, team: 'Nigeria',  played: 3, won: 2, drawn: 0, lost: 1, pts: 6 },
-      { pos: 3, team: 'Senegal',  played: 3, won: 1, drawn: 1, lost: 1, pts: 4 },
-      { pos: 4, team: 'Egypt',    played: 3, won: 0, drawn: 1, lost: 2, pts: 1 },
+      { pos: 1, team: 'Morocco',  played: 3, won: 3, drawn: 0, lost: 0, pts: 9, gd: '+6' },
+      { pos: 2, team: 'Nigeria',  played: 3, won: 2, drawn: 0, lost: 1, pts: 6, gd: '+3' },
+      { pos: 3, team: 'Senegal',  played: 3, won: 1, drawn: 1, lost: 1, pts: 4, gd: '+1' },
+      { pos: 4, team: 'Egypt',    played: 3, won: 0, drawn: 1, lost: 2, pts: 1, gd: '-3' },
     ],
-  } as Record<string, { pos: number; team: string; played: number; won: number; drawn: number; lost: number; pts: number; handle?: string }[]>,
+  } as Record<string, { pos: number; team: string; played: number; won: number; drawn: number; lost: number; pts: number; gd: string; handle?: string }[]>,
 };
 
-// ─── Filter dropdown ───────────────────────────────────────────
+// --- Filter dropdown -------------------------------------------
 function FilterDropdown({ label, options, value, onChange, icon: Icon }: {
   label: string; options: string[]; value: string; onChange: (v: string) => void; icon: React.ElementType;
 }) {
@@ -87,7 +87,7 @@ function FilterDropdown({ label, options, value, onChange, icon: Icon }: {
     <div className="relative">
       <button onClick={() => setOpen(!open)}
         className={cn('flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors border',
-          value !== 'All' ? 'bg-sport-green/10 border-sport-green/30 text-sport-green' : 'bg-surface border-surface-border text-muted-foreground hover:text-foreground')}>
+          value !== 'All' ? 'bg-gold/10 border-gold/30 text-gold' : 'bg-surface border-surface-border text-muted-foreground hover:text-foreground')}>
         <Icon className="h-3 w-3" />
         {value === 'All' ? label : value}
         <ChevronDown className={cn('h-3 w-3 transition-transform', open && 'rotate-180')} />
@@ -99,8 +99,8 @@ function FilterDropdown({ label, options, value, onChange, icon: Icon }: {
             {options.map((opt) => (
               <button key={opt} onClick={() => { onChange(opt); setOpen(false); }}
                 className={cn('flex w-full items-center px-4 py-2.5 text-xs font-medium transition-colors hover:bg-surface',
-                  opt === value ? 'text-sport-green' : 'text-foreground')}>
-                {opt === value && <span className="mr-2 h-1.5 w-1.5 rounded-full bg-sport-green flex-shrink-0" />}
+                  opt === value ? 'text-gold' : 'text-foreground')}>
+                {opt === value && <span className="mr-2 h-1.5 w-1.5 rounded-full bg-gold flex-shrink-0" />}
                 {opt}
               </button>
             ))}
@@ -112,7 +112,7 @@ function FilterDropdown({ label, options, value, onChange, icon: Icon }: {
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────
+// --- Main Component --------------------------------------------
 export default function ScoresTab() {
   const scoresSubTab    = useAppStore((s) => s.scoresSubTab);
   const setScoresSubTab = useAppStore((s) => s.setScoresSubTab);
@@ -136,7 +136,7 @@ export default function ScoresTab() {
     <div className="mx-auto max-w-lg">
       <header className="sticky top-0 z-40 border-b border-surface-border bg-background/90 backdrop-blur-xl">
         <div className="flex h-14 items-center justify-between px-4">
-          <h1 className="text-xl font-bold text-white">Scores</h1>
+          <h1 className="text-xl font-black text-gold-gradient">Scores</h1>
           <button className="flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
             <Search className="h-4 w-4 text-muted-foreground" />
           </button>
@@ -147,9 +147,9 @@ export default function ScoresTab() {
           {SUBTABS.map((tab) => (
             <button key={tab.id} onClick={() => setScoresSubTab(tab.id)}
               className={cn('flex-shrink-0 rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-colors',
-                scoresSubTab === tab.id ? 'bg-sport-green text-black' : 'bg-surface text-muted-foreground hover:text-foreground')}>
+                scoresSubTab === tab.id ? 'bg-gold text-black' : 'bg-surface text-muted-foreground hover:text-foreground')}>
               {tab.label}
-              {tab.id === 'live' && <span className="ml-1.5 inline-flex h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />}
+              {tab.id === 'live' && <span className="ml-1.5 inline-flex h-1.5 w-1.5 rounded-full bg-gold animate-pulse" />}
             </button>
           ))}
         </div>
@@ -179,7 +179,7 @@ export default function ScoresTab() {
   );
 }
 
-// ─── Empty state ───────────────────────────────────────────────
+// --- Empty state -----------------------------------------------
 function EmptyState({ label }: { label: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4">
@@ -189,31 +189,31 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
-// ─── TeamName clickable ────────────────────────────────────────
+// --- TeamName clickable ----------------------------------------
 function TeamName({ name, handle, align = 'left' }: { name: string; handle?: string | null; align?: 'left' | 'right' }) {
   const setViewingUser = useUIStore((s) => s.setViewingUser);
   const user = handle ? getFeedUser(handle) : null;
-  const cls = cn('text-sm font-semibold transition-colors', align === 'right' ? 'text-right' : 'text-left', user ? 'text-white hover:text-sport-green cursor-pointer' : 'text-white');
+  const cls = cn('text-sm font-semibold transition-colors', align === 'right' ? 'text-right' : 'text-left', user ? 'text-white hover:text-gold cursor-pointer' : 'text-white');
   if (user) return <button onClick={() => setViewingUser(user)} className={cls}>{name}</button>;
   return <p className={cls}>{name}</p>;
 }
 
-// ─── Live ─────────────────────────────────────────────────────
+// --- Live -----------------------------------------------------
 function LiveContent({ matches }: { matches: typeof ALL_MATCHES.live }) {
   if (!matches.length) return <EmptyState label="live matches" />;
   return (
     <div className="p-4">
       <div className="mb-4 flex items-center gap-2">
-        <span className="flex h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-        <span className="text-sm font-semibold text-red-400">{matches.length} live</span>
+        <span className="flex h-2 w-2 rounded-full bg-gold animate-pulse" />
+        <span className="text-sm font-bold text-gold">{matches.length} live</span>
       </div>
       <div className="flex flex-col gap-3">
         {matches.map((m) => (
-          <div key={m.id} className="rounded-2xl bg-surface-elevated border border-surface-border overflow-hidden">
+          <div key={m.id} className="glass-card rounded-2xl overflow-hidden glass-card-hover">
             <div className="flex items-center justify-between border-b border-surface-border px-4 py-2">
               <span className="text-xs font-medium text-muted-foreground">{m.league}</span>
               <div className="flex items-center gap-1.5">
-                {m.status === 'live' && <><span className="flex h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" /><span className="text-[10px] font-bold text-red-400">{m.minute}&apos;</span></>}
+                {m.status === 'live' && <><span className="flex h-1.5 w-1.5 rounded-full bg-gold animate-pulse" /><span className="text-[10px] font-bold text-gold">{m.minute}&apos;</span></>}
                 {m.status === 'ht'   && <span className="text-[10px] font-bold text-yellow-400">HT</span>}
               </div>
             </div>
@@ -222,15 +222,15 @@ function LiveContent({ matches }: { matches: typeof ALL_MATCHES.live }) {
                 <TeamName name={m.homeTeam} handle={'homeHandle' in m ? m.homeHandle : null} align="right" />
               </div>
               <div className="mx-4 flex items-center gap-3">
-                <span className="text-2xl font-bold text-white tabular-nums">{m.homeScore}</span>
-                <span className="text-muted-foreground">–</span>
-                <span className="text-2xl font-bold text-white tabular-nums">{m.awayScore}</span>
+                <span className="text-2xl font-black text-gold tabular-nums">{m.homeScore}</span>
+                <span className="text-muted-foreground">�</span>
+                <span className="text-2xl font-black text-white tabular-nums">{m.awayScore}</span>
               </div>
               <div className="flex-1"><TeamName name={m.awayTeam} /></div>
             </div>
             {m.events.length > 0 && (
               <div className="border-t border-surface-border px-4 py-2 flex flex-col gap-0.5">
-                {m.events.map((e, i) => <p key={i} className="text-xs text-sport-green">{e}</p>)}
+                {m.events.map((e, i) => <p key={i} className="text-xs text-gold font-medium">{e}</p>)}
               </div>
             )}
           </div>
@@ -240,23 +240,26 @@ function LiveContent({ matches }: { matches: typeof ALL_MATCHES.live }) {
   );
 }
 
-// ─── Today ────────────────────────────────────────────────────
+// --- Today ----------------------------------------------------
 function TodayContent({ fixtures }: { fixtures: typeof ALL_MATCHES.today }) {
   if (!fixtures.length) return <EmptyState label="today's fixtures match" />;
   return (
     <div className="p-4">
-      <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Today&apos;s Fixtures</h2>
+      <h2 className="mb-4 text-xs font-bold text-gold uppercase tracking-wider">Today&apos;s Fixtures</h2>
       <div className="flex flex-col gap-3">
         {fixtures.map((f) => (
-          <div key={f.id} className="rounded-2xl bg-surface-elevated border border-surface-border overflow-hidden">
+          <div key={f.id} className="glass-card rounded-2xl overflow-hidden glass-card-hover">
             <div className="flex items-center justify-between border-b border-surface-border px-4 py-2">
               <span className="text-xs text-muted-foreground">{f.league}</span>
-              <div className="flex items-center gap-1"><Clock className="h-3 w-3 text-muted-foreground" /><span className="text-[10px] font-bold text-muted-foreground">{f.time}</span></div>
+              <div className="flex items-center gap-1"><Clock className="h-3 w-3 text-gold" /><span className="text-[10px] font-bold text-gold">{f.time}</span></div>
             </div>
             <div className="flex items-center justify-between p-4">
               <p className="flex-1 text-right text-sm font-semibold text-white">{f.homeTeam}</p>
-              <span className="mx-4 rounded-lg bg-surface px-3 py-1 text-sm font-bold text-muted-foreground">VS</span>
+              <span className="mx-4 rounded-lg bg-gold/10 border border-gold/20 px-3 py-1 text-sm font-bold text-gold">VS</span>
               <p className="flex-1 text-sm font-semibold text-white">{f.awayTeam}</p>
+            </div>
+            <div className="border-t border-surface-border px-4 py-1.5">
+              <p className="text-[10px] text-muted-foreground">?? {f.venue}</p>
             </div>
           </div>
         ))}
@@ -265,22 +268,22 @@ function TodayContent({ fixtures }: { fixtures: typeof ALL_MATCHES.today }) {
   );
 }
 
-// ─── Upcoming ─────────────────────────────────────────────────
+// --- Upcoming -------------------------------------------------
 function UpcomingContent({ fixtures }: { fixtures: typeof ALL_MATCHES.upcoming }) {
   if (!fixtures.length) return <EmptyState label="upcoming fixtures match" />;
   return (
     <div className="p-4">
-      <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Upcoming</h2>
+      <h2 className="mb-4 text-xs font-bold text-gold uppercase tracking-wider">Upcoming</h2>
       <div className="flex flex-col gap-3">
         {fixtures.map((f) => (
-          <div key={f.id} className="rounded-2xl bg-surface-elevated border border-surface-border overflow-hidden">
+          <div key={f.id} className="glass-card rounded-2xl overflow-hidden glass-card-hover">
             <div className="flex items-center justify-between border-b border-surface-border px-4 py-2">
               <span className="text-xs text-muted-foreground">{f.league}</span>
-              <span className="text-[10px] font-bold text-sport-green">{f.date}</span>
+              <span className="text-[10px] font-bold text-gold">{f.date}</span>
             </div>
             <div className="flex items-center justify-between p-4">
               <p className="flex-1 text-right text-sm font-semibold text-white">{f.homeTeam}</p>
-              <span className="mx-4 rounded-lg bg-surface px-3 py-1 text-sm font-bold text-muted-foreground">{f.time}</span>
+              <span className="mx-4 rounded-lg bg-gold/10 border border-gold/20 px-3 py-1 text-sm font-bold text-gold">{f.time}</span>
               <p className="flex-1 text-sm font-semibold text-white">{f.awayTeam}</p>
             </div>
           </div>
@@ -290,15 +293,15 @@ function UpcomingContent({ fixtures }: { fixtures: typeof ALL_MATCHES.upcoming }
   );
 }
 
-// ─── Results ──────────────────────────────────────────────────
+// --- Results --------------------------------------------------
 function ResultsContent({ matches }: { matches: typeof ALL_MATCHES.results }) {
   if (!matches.length) return <EmptyState label="results match" />;
   return (
     <div className="p-4">
-      <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Finished</h2>
+      <h2 className="mb-4 text-xs font-bold text-gold uppercase tracking-wider">Finished</h2>
       <div className="flex flex-col gap-3">
         {matches.map((m) => (
-          <div key={m.id} className="rounded-2xl bg-surface-elevated border border-surface-border overflow-hidden">
+          <div key={m.id} className="glass-card rounded-2xl overflow-hidden glass-card-hover">
             <div className="flex items-center justify-between border-b border-surface-border px-4 py-2">
               <span className="text-xs text-muted-foreground">{m.league}</span>
               <span className="text-[10px] font-bold text-muted-foreground">FT</span>
@@ -306,9 +309,9 @@ function ResultsContent({ matches }: { matches: typeof ALL_MATCHES.results }) {
             <div className="flex items-center justify-between p-4">
               <p className="flex-1 text-right text-sm font-semibold text-white">{m.homeTeam}</p>
               <div className="mx-4 flex items-center gap-3">
-                <span className={cn('text-2xl font-bold tabular-nums', m.homeScore > m.awayScore ? 'text-sport-green' : 'text-white')}>{m.homeScore}</span>
-                <span className="text-muted-foreground">–</span>
-                <span className={cn('text-2xl font-bold tabular-nums', m.awayScore > m.homeScore ? 'text-sport-green' : 'text-white')}>{m.awayScore}</span>
+                <span className={cn('text-2xl font-black tabular-nums', m.homeScore > m.awayScore ? 'text-gold' : 'text-white')}>{m.homeScore}</span>
+                <span className="text-muted-foreground">�</span>
+                <span className={cn('text-2xl font-black tabular-nums', m.awayScore > m.homeScore ? 'text-gold' : 'text-white')}>{m.awayScore}</span>
               </div>
               <p className="flex-1 text-sm font-semibold text-white">{m.awayTeam}</p>
             </div>
@@ -319,7 +322,7 @@ function ResultsContent({ matches }: { matches: typeof ALL_MATCHES.results }) {
   );
 }
 
-// ─── Standings ────────────────────────────────────────────────
+// --- Standings ------------------------------------------------
 function StandingsContent({ tournament }: { tournament: string }) {
   const setViewingUser = useUIStore((s) => s.setViewingUser);
   const [activeTournament, setActiveTournament] = useState('Premier League');
@@ -338,30 +341,65 @@ function StandingsContent({ tournament }: { tournament: string }) {
         {availableTournaments.map((t) => (
           <button key={t} onClick={() => setActiveTournament(t)}
             className={cn('flex-shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
-              display === t ? 'bg-sport-green text-black' : 'bg-surface text-muted-foreground hover:text-foreground')}>
+              display === t ? 'bg-gold text-black' : 'bg-surface text-muted-foreground hover:text-foreground')}>
             {t}
           </button>
         ))}
       </div>
-      <div className="mb-2 grid grid-cols-[2rem_1fr_2rem_2rem_2rem_3rem] items-center px-2 text-[10px] font-semibold uppercase text-muted-foreground">
+
+      {/* Standings Header */}
+      <div className="mb-3 flex items-center gap-2">
+        <Crown className="h-4 w-4 text-gold" />
+        <span className="text-xs font-bold text-gold uppercase tracking-wider">{display} Standings</span>
+      </div>
+
+      <div className="mb-2 grid grid-cols-[2rem_1fr_2.5rem_2.5rem_2.5rem_3rem] items-center px-2 text-[10px] font-bold uppercase text-muted-foreground">
         <span>#</span><span>Team</span><span className="text-center">P</span><span className="text-center">W</span><span className="text-center">L</span><span className="text-right">Pts</span>
       </div>
       <div className="flex flex-col gap-1">
-        {rows.map((row) => (
-          <div key={row.pos} className="grid grid-cols-[2rem_1fr_2rem_2rem_2rem_3rem] items-center rounded-xl bg-surface-elevated border border-surface-border px-2 py-3">
-            <span className={cn('text-sm font-bold', row.pos <= 4 ? 'text-sport-green' : 'text-muted-foreground')}>{row.pos}</span>
-            {row.handle ? (
-              <button onClick={() => { const u = getFeedUser(row.handle!); if (u) setViewingUser(u); }}
-                className="truncate text-left text-sm font-semibold text-white hover:text-sport-green transition-colors">
-                {row.team}
-              </button>
-            ) : <span className="truncate text-sm font-semibold text-white">{row.team}</span>}
-            <span className="text-center text-xs text-muted-foreground">{row.played}</span>
-            <span className="text-center text-xs text-muted-foreground">{row.won}</span>
-            <span className="text-center text-xs text-muted-foreground">{row.lost}</span>
-            <span className="text-right text-sm font-bold text-white">{row.pts}</span>
-          </div>
-        ))}
+        {rows.map((row) => {
+          const isChampion = row.pos === 1;
+          const isTop4 = row.pos <= 4;
+          return (
+            <div key={row.pos} className={cn(
+              'grid grid-cols-[2rem_1fr_2.5rem_2.5rem_2.5rem_3rem] items-center rounded-xl px-2 py-3 border transition-colors',
+              isChampion ? 'bg-gold/10 border-gold/30' : 'glass-card border-surface-border'
+            )}>
+              <span className={cn('text-sm font-black', isChampion ? 'text-gold' : isTop4 ? 'text-gold/70' : 'text-muted-foreground')}>
+                {row.pos}
+              </span>
+              {row.handle ? (
+                <button onClick={() => { const u = getFeedUser(row.handle!); if (u) setViewingUser(u); }}
+                  className="truncate text-left text-sm font-semibold text-white hover:text-gold transition-colors">
+                  {row.team}
+                  {isChampion && <Crown className="ml-1 inline h-3 w-3 text-gold" />}
+                </button>
+              ) : (
+                <span className="truncate text-sm font-semibold text-white">
+                  {row.team}
+                  {isChampion && <Crown className="ml-1 inline h-3 w-3 text-gold" />}
+                </span>
+              )}
+              <span className="text-center text-xs text-muted-foreground">{row.played}</span>
+              <span className="text-center text-xs text-muted-foreground">{row.won}</span>
+              <span className="text-center text-xs text-muted-foreground">{row.lost}</span>
+              <span className={cn('text-right text-sm font-black', isChampion ? 'text-gold' : 'text-white')}>{row.pts}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="mt-4 flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <span className="h-2 w-2 rounded-full bg-gold" /> Champion
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-2 w-2 rounded-full bg-gold/40" /> Top 4
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-2 w-2 rounded-full bg-surface-border" /> Others
+        </span>
       </div>
     </div>
   );

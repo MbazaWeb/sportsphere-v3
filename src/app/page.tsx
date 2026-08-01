@@ -34,14 +34,14 @@ function LoginModal() {
         </div>
         <div className="mb-4">
           <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Email</label>
-          <input type="email" placeholder="your@email.com" className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-sport-green" />
+          <input type="email" placeholder="your@email.com" className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold" />
         </div>
         <div className="mb-6">
           <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Password</label>
-          <input type="password" placeholder="••••••••" className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-sport-green" />
+          <input type="password" placeholder="••••••••" className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold" />
         </div>
         <button onClick={() => { setIsAuthenticated(true); setLoginModalOpen(false); }}
-          className="w-full rounded-xl bg-sport-green py-3 text-sm font-bold text-black hover:bg-sport-green/90 transition-colors">
+          className="w-full rounded-xl bg-gold py-3 text-sm font-bold text-black hover:bg-gold/90 transition-colors">
           Sign In
         </button>
         <div className="mt-4 flex gap-3">

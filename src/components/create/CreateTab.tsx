@@ -2,7 +2,7 @@
 
 import { useAppStore } from '@/store/useAppStore';
 import { motion } from 'framer-motion';
-import { FileText, ImageIcon, Video, Play, BarChart3, Target, X } from 'lucide-react';
+import { FileText, ImageIcon, Video, Play, BarChart3, Target, X, Sparkles } from 'lucide-react';
 
 const createOptions = [
   {
@@ -10,7 +10,8 @@ const createOptions = [
     label: 'Post',
     description: 'Text, media, hashtags, mentions',
     icon: FileText,
-    color: 'text-sport-green',
+    color: 'text-gold',
+    bg: 'bg-gold/10',
   },
   {
     id: 'photo',
@@ -18,6 +19,7 @@ const createOptions = [
     description: 'Single or carousel images',
     icon: ImageIcon,
     color: 'text-blue-400',
+    bg: 'bg-blue-500/10',
   },
   {
     id: 'video',
@@ -25,6 +27,7 @@ const createOptions = [
     description: 'Upload and share videos',
     icon: Video,
     color: 'text-purple-400',
+    bg: 'bg-purple-500/10',
   },
   {
     id: 'spotlight',
@@ -32,6 +35,7 @@ const createOptions = [
     description: 'Short-form vertical video',
     icon: Play,
     color: 'text-pink-400',
+    bg: 'bg-pink-500/10',
   },
   {
     id: 'poll',
@@ -39,6 +43,7 @@ const createOptions = [
     description: 'Ask questions, get votes',
     icon: BarChart3,
     color: 'text-yellow-400',
+    bg: 'bg-yellow-500/10',
   },
   {
     id: 'prediction',
@@ -46,6 +51,7 @@ const createOptions = [
     description: 'Predict match outcomes',
     icon: Target,
     color: 'text-orange-400',
+    bg: 'bg-orange-500/10',
   },
 ];
 
@@ -64,18 +70,18 @@ export default function CreateTab() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-sm rounded-3xl bg-surface-elevated border border-surface-border p-8 text-center"
+          className="w-full max-w-sm glass-card rounded-3xl p-8 text-center glass-card-hover"
         >
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-sport-green">
-            <span className="text-2xl font-black text-black">+</span>
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gold">
+            <Sparkles className="h-8 w-8 text-black" />
           </div>
-          <h2 className="mb-2 text-xl font-bold text-white">Join SportSphere</h2>
+          <h2 className="mb-2 text-xl font-black text-white">Join SportSphere</h2>
           <p className="mb-8 text-sm text-muted-foreground">
             Create posts, videos, polls and predictions. Connect with millions of sports fans worldwide.
           </p>
 
           <div className="flex flex-col gap-3">
-            <button className="flex h-12 items-center justify-center gap-3 rounded-xl bg-surface border border-surface-border text-sm font-semibold text-white transition-colors hover:bg-surface-elevated">
+            <button className="flex h-12 items-center justify-center gap-3 glass-card rounded-xl text-sm font-semibold text-white transition-colors hover:bg-surface-elevated">
               <svg className="h-5 w-5" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -84,13 +90,13 @@ export default function CreateTab() {
               </svg>
               Continue with Google
             </button>
-            <button className="flex h-12 items-center justify-center gap-3 rounded-xl bg-surface border border-surface-border text-sm font-semibold text-white transition-colors hover:bg-surface-elevated">
+            <button className="flex h-12 items-center justify-center gap-3 glass-card rounded-xl text-sm font-semibold text-white transition-colors hover:bg-surface-elevated">
               <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 21.99 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 21.99C7.79 22.03 6.8 20.68 5.96 19.47C4.25 16.97 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/>
               </svg>
               Continue with Apple
             </button>
-            <button className="flex h-12 items-center justify-center gap-3 rounded-xl bg-surface border border-surface-border text-sm font-semibold text-white transition-colors hover:bg-surface-elevated">
+            <button className="flex h-12 items-center justify-center gap-3 glass-card rounded-xl text-sm font-semibold text-white transition-colors hover:bg-surface-elevated">
               <svg className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
@@ -106,7 +112,7 @@ export default function CreateTab() {
                   setLoginTrigger('create');
                   setLoginModalOpen(true);
                 }}
-                className="text-sport-green font-semibold hover:underline"
+                className="text-gold font-bold hover:underline"
               >
                 Sign In
               </button>
@@ -130,7 +136,7 @@ export default function CreateTab() {
             className="w-full max-w-lg rounded-t-3xl bg-surface-elevated border-t border-surface-border p-6"
           >
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white capitalize">{activeCreateType}</h2>
+              <h2 className="text-lg font-bold text-gold capitalize">{activeCreateType}</h2>
               <button
                 onClick={() => {
                   setCreateModalOpen(false);
@@ -143,10 +149,10 @@ export default function CreateTab() {
             </div>
 
             <textarea
-              className="w-full min-h-[120px] resize-none rounded-xl bg-surface border border-surface-border p-4 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-sport-green"
+              className="w-full min-h-[120px] resize-none rounded-xl bg-surface border border-surface-border p-4 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold"
               placeholder={
                 activeCreateType === 'post'
-                  ? 'What\'s on your mind?'
+                  ? "What's on your mind?"
                   : activeCreateType === 'prediction'
                   ? 'Make your prediction...'
                   : activeCreateType === 'poll'
@@ -185,7 +191,7 @@ export default function CreateTab() {
                   setCreateModalOpen(false);
                   setActiveCreateType(null);
                 }}
-                className="flex-1 rounded-xl bg-sport-green py-3 text-sm font-bold text-black hover:bg-sport-green/90 transition-colors"
+                className="flex-1 rounded-xl bg-gold py-3 text-sm font-bold text-black hover:bg-gold/90 transition-colors shadow-[0_4px_20px_rgba(245,197,24,0.2)]"
               >
                 Post
               </button>
@@ -196,7 +202,7 @@ export default function CreateTab() {
 
       {/* Create options grid */}
       <div className="p-4">
-        <h2 className="mb-1 text-xl font-bold text-white">Create</h2>
+        <h2 className="mb-1 text-xl font-black text-gold-gradient">Create</h2>
         <p className="mb-6 text-sm text-muted-foreground">Share your sports content with the world</p>
 
         <div className="grid grid-cols-2 gap-3">
@@ -207,15 +213,13 @@ export default function CreateTab() {
                 setActiveCreateType(option.id);
                 setCreateModalOpen(true);
               }}
-              className="flex flex-col items-center gap-3 rounded-2xl bg-surface-elevated border border-surface-border p-6 text-left transition-all hover:border-surface-border/80 hover:bg-surface"
+              className="glass-card rounded-2xl p-5 text-left glass-card-hover"
             >
-              <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-surface ${option.color}`}>
+              <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${option.bg} ${option.color} mb-3`}>
                 <option.icon className="h-6 w-6" />
               </div>
-              <div className="w-full">
-                <p className="text-sm font-semibold text-white">{option.label}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{option.description}</p>
-              </div>
+              <p className="text-sm font-bold text-white">{option.label}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{option.description}</p>
             </button>
           ))}
         </div>

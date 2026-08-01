@@ -18,7 +18,7 @@ function VerificationBadge({ status }: { status: VerificationStatus }) {
   switch (status) {
     case 'verified':
       return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-sport-green/10 px-2.5 py-1 text-[10px] font-semibold text-sport-green border border-sport-green/20">
+        <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2.5 py-1 text-[10px] font-semibold text-gold border border-gold/20">
           <ShieldCheck className="h-3 w-3" />
           Verified
         </span>
@@ -56,7 +56,7 @@ function GuestProfile() {
       >
         {/* Logo */}
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-sport-green">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gold">
             <span className="text-3xl font-black text-black">SS</span>
           </div>
           <h1 className="text-2xl font-bold text-white">Welcome to SportSphere</h1>
@@ -70,7 +70,7 @@ function GuestProfile() {
           {/* Main Register Button */}
           <button
             onClick={() => setRegistrationOpen(true)}
-            className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-sport-green text-sm font-bold text-black transition-all hover:bg-sport-green/90 active:scale-[0.98]"
+            className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-gold text-sm font-bold text-black transition-all hover:bg-gold/90 active:scale-[0.98]"
           >
             <Sparkles className="h-5 w-5" />
             Create Account
@@ -110,7 +110,7 @@ function GuestProfile() {
             { Icon: Trophy,      label: 'Predictions',  color: 'text-yellow-400',  bg: 'bg-yellow-500/10' },
             { Icon: BarChart3,   label: 'Live Scores',  color: 'text-blue-400',    bg: 'bg-blue-500/10'   },
             { Icon: Heart,       label: 'Follow Teams', color: 'text-pink-400',    bg: 'bg-pink-500/10'   },
-            { Icon: BadgeCheck,  label: 'Verified',     color: 'text-sport-green', bg: 'bg-sport-green/10'},
+            { Icon: BadgeCheck,  label: 'Verified',     color: 'text-gold', bg: 'bg-gold/10'},
             { Icon: MessageCircle, label: 'Live Chat',  color: 'text-cyan-400',    bg: 'bg-cyan-500/10'   },
           ].map(({ Icon, label, color, bg }) => (
             <div key={label} className="flex flex-col items-center gap-2 rounded-2xl bg-surface-elevated border border-surface-border p-4">
@@ -224,26 +224,26 @@ function LoggedInProfile({
             <div className={cn(
               'flex h-20 w-20 items-center justify-center rounded-full border-2 text-2xl font-bold',
               isVerified
-                ? 'border-sport-green bg-sport-green text-black'
+                ? 'border-gold bg-gold text-black'
                 : isPending
                   ? 'border-yellow-400 bg-yellow-500/10 text-yellow-400'
-                  : 'border-sport-green bg-surface-elevated text-sport-green'
+                  : 'border-gold bg-surface-elevated text-gold'
             )}>
               {userProfile?.avatar || 'DM'}
             </div>
-            <button className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-sport-green">
+            <button className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-gold">
               <Camera className="h-3.5 w-3.5 text-black" />
             </button>
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl font-bold text-white">{userProfile?.name || 'David Mbaza'}</h2>
-              {isVerified && <ShieldCheck className="h-5 w-5 text-sport-green" />}
+              {isVerified && <ShieldCheck className="h-5 w-5 text-gold" />}
             </div>
             <p className="text-sm text-muted-foreground">{userProfile?.handle || '@davidmbaza'}</p>
             <div className="mt-2 flex items-center gap-2 flex-wrap">
               {isAdvanced && (
-                <span className="rounded-lg bg-surface border border-surface-border px-2.5 py-1 text-[10px] font-semibold text-sport-green uppercase">
+                <span className="rounded-lg bg-surface border border-surface-border px-2.5 py-1 text-[10px] font-semibold text-gold uppercase">
                   {userProfile?.role}
                 </span>
               )}
@@ -281,7 +281,7 @@ function LoggedInProfile({
             <h3 className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sports Following</h3>
             <div className="flex flex-wrap gap-2">
               {userProfile.sportsFollowing.map((sport) => (
-                <span key={sport} className="rounded-xl bg-sport-green/10 px-3 py-1.5 text-xs font-medium text-sport-green border border-sport-green/20">
+                <span key={sport} className="rounded-xl bg-gold/10 px-3 py-1.5 text-xs font-medium text-gold border border-gold/20">
                   {sport}
                 </span>
               ))}
@@ -298,7 +298,7 @@ function LoggedInProfile({
               className={cn(
                 'flex-1 rounded-lg py-2 text-sm font-semibold transition-colors',
                 activeTab === tab.id
-                  ? 'bg-sport-green text-black'
+                  ? 'bg-gold text-black'
                   : 'bg-surface text-muted-foreground hover:text-foreground'
               )}
             >
@@ -406,7 +406,7 @@ function AdminVerificationPanel() {
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-elevated">
-            <ShieldCheck className="h-4.5 w-4.5 text-sport-green" />
+            <ShieldCheck className="h-4.5 w-4.5 text-gold" />
           </div>
           <div>
             <h3 className="text-sm font-semibold text-white">Verification Status</h3>
@@ -421,7 +421,7 @@ function AdminVerificationPanel() {
         <div className="mb-4 rounded-xl bg-surface-elevated p-3">
           <div className="flex items-center gap-2 mb-2">
             {isPending && <Clock className="h-4 w-4 text-yellow-400" />}
-            {isVerified && <CheckCircle2 className="h-4 w-4 text-sport-green" />}
+            {isVerified && <CheckCircle2 className="h-4 w-4 text-gold" />}
             {isRejected && <AlertCircle className="h-4 w-4 text-red-400" />}
             <span className="text-xs font-semibold text-white">
               {isPending ? 'Awaiting Review' : isVerified ? 'Verified Profile' : 'Verification Failed'}
@@ -478,7 +478,7 @@ function AdminVerificationPanel() {
               <div className="flex gap-2">
                 <button
                   onClick={simulateAdminApprove}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-sport-green py-2.5 text-xs font-bold text-black hover:bg-sport-green/90 transition-colors"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gold py-2.5 text-xs font-bold text-black hover:bg-gold/90 transition-colors"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   Approve (Demo)
@@ -496,16 +496,16 @@ function AdminVerificationPanel() {
           {isRejected && (
             <button
               onClick={simulateResubmit}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-sport-green py-2.5 text-xs font-bold text-black hover:bg-sport-green/90 transition-colors"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gold py-2.5 text-xs font-bold text-black hover:bg-gold/90 transition-colors"
             >
               <Upload className="h-3.5 w-3.5" />
               Resubmit for Verification
             </button>
           )}
           {isVerified && (
-            <div className="flex items-center justify-center gap-2 rounded-xl bg-sport-green/10 border border-sport-green/20 p-3">
-              <ShieldCheck className="h-4 w-4 text-sport-green" />
-              <span className="text-xs font-semibold text-sport-green">Verified Badge Active</span>
+            <div className="flex items-center justify-center gap-2 rounded-xl bg-gold/10 border border-gold/20 p-3">
+              <ShieldCheck className="h-4 w-4 text-gold" />
+              <span className="text-xs font-semibold text-gold">Verified Badge Active</span>
             </div>
           )}
         </div>
@@ -636,7 +636,7 @@ function PeopleList({ title, onBack }: { title: string; onBack: () => void }) {
         <div className="flex flex-col gap-2">
           {people.map((person) => (
             <div key={person.handle} className="flex items-center gap-3 rounded-xl bg-surface-elevated border border-surface-border p-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface font-bold text-sm text-sport-green">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface font-bold text-sm text-gold">
                 {person.avatar}
               </div>
               <div className="flex-1">

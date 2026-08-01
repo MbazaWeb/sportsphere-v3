@@ -26,7 +26,7 @@ function FormField({ label, placeholder, value, onChange, type = 'text', optiona
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-sport-green transition-colors"
+        className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-gold transition-colors"
       />
     </div>
   );
@@ -45,7 +45,7 @@ function SelectField({ label, placeholder, value, onChange, options }: {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-sport-green transition-colors appearance-none"
+        className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold transition-colors appearance-none"
       >
         <option value="" className="bg-surface text-muted-foreground">{placeholder}</option>
         {options.map((opt) => (

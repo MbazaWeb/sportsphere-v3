@@ -5,29 +5,54 @@
 
 :root {
   --radius: 0.75rem;
-  --background: #000000;
+  
+  /* 🏆 Premium Sports Palette */
+  --background: #0A1628;
+  --background-secondary: #0F1D3A;
   --foreground: #ffffff;
-  --card: #111113;
+  
+  /* Gold Primary */
+  --primary: #F5C518;
+  --primary-foreground: #0A1628;
+  --primary-dark: #D4A800;
+  --primary-light: #FFD700;
+  
+  /* Glass Cards */
+  --card: rgba(255, 255, 255, 0.05);
   --card-foreground: #ffffff;
-  --popover: #1c1c1e;
-  --popover-foreground: #ffffff;
-  --primary: #00c853;
-  --primary-foreground: #000000;
-  --secondary: #1c1c1e;
-  --secondary-foreground: #ffffff;
-  --muted: #1c1c1e;
-  --muted-foreground: #8e8e93;
-  --accent: #1c1c1e;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --card-hover: rgba(255, 255, 255, 0.08);
+  
+  /* Accent - Vibrant Orange */
+  --accent: #FF6B35;
   --accent-foreground: #ffffff;
-  --destructive: #ff453a;
+  --accent-glow: rgba(255, 107, 53, 0.2);
+  
+  /* Gradients */
+  --gradient-gold: linear-gradient(135deg, #F5C518 0%, #FF6B35 100%);
+  --gradient-gold-subtle: linear-gradient(135deg, rgba(245, 197, 24, 0.08), rgba(255, 107, 53, 0.03));
+  --gradient-hero: linear-gradient(135deg, #1A2A4A 0%, #0A1628 100%);
+  
+  /* Muted */
+  --muted: rgba(255, 255, 255, 0.05);
+  --muted-foreground: rgba(255, 255, 255, 0.5);
+  
+  /* Destructive */
+  --destructive: #FF453A;
   --destructive-foreground: #ffffff;
-  --border: #2c2c2e;
-  --input: #2c2c2e;
-  --ring: #00c853;
-  --sport-green: #00c853;
-  --surface: #111113;
-  --surface-elevated: #1c1c1e;
-  --surface-border: #2c2c2e;
+  
+  /* Borders */
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.08);
+  
+  /* Ring */
+  --ring: #F5C518;
+  
+  /* Legacy */
+  --gold: #F5C518;
+  --surface: rgba(255, 255, 255, 0.05);
+  --surface-elevated: rgba(255, 255, 255, 0.07);
+  --surface-border: rgba(255, 255, 255, 0.08);
 }
 
 @theme inline {
@@ -35,22 +60,18 @@
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-light: var(--primary-light);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-sport-green: var(--sport-green);
+  --color-gold: var(--gold);
   --color-surface: var(--surface);
   --color-surface-elevated: var(--surface-elevated);
   --color-surface-border: var(--surface-border);
@@ -58,6 +79,8 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 @layer base {
@@ -65,16 +88,173 @@
     border-color: var(--border);
   }
   body {
-    background-color: var(--background);
+    background: radial-gradient(ellipse at top, #0F1D3A, #0A1628);
+    background-attachment: fixed;
     color: var(--foreground);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+  
+  /* 🏆 Typography */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', 'Inter', sans-serif;
+    font-weight: 700;
+  }
+  
+  .text-gold {
+    color: #F5C518;
+  }
+  
+  .text-gold-gradient {
+    background: linear-gradient(135deg, #F5C518, #FFD700);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .text-gradient-sport {
+    background: linear-gradient(135deg, #F5C518, #FF6B35);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 }
 
+/* 🏆 Glassmorphism */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.glass-card-hover {
+  transition: all 0.3s ease;
+}
+.glass-card-hover:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(245, 197, 24, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* 🏆 Gold Glow */
+.glow-gold {
+  box-shadow: 0 0 30px rgba(245, 197, 24, 0.15);
+}
+.glow-gold:hover {
+  box-shadow: 0 0 50px rgba(245, 197, 24, 0.25);
+}
+
+/* 🏆 Scrollbar Hide */
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
-
-/* ─── Hide all scrollbars globally ─────────────────────────── */
 * { -ms-overflow-style: none; scrollbar-width: none; }
 *::-webkit-scrollbar { display: none; }
+
+/* Gold Shimmer Animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(245,197,24,0.10) 50%, rgba(255,255,255,0.03) 75%);
+  background-size: 200% 100%;
+}
+
+/* Gold Pulse Animation */
+@keyframes gold-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+.animate-gold-pulse {
+  animation: gold-pulse 1.5s ease-in-out infinite;
+}
+
+/* Gold Glow Animation */
+@keyframes gold-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(245,197,24,0.2);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(245,197,24,0.4);
+  }
+}
+
+.animate-gold-glow {
+  animation: gold-glow 2s ease-in-out infinite;
+}
+
+/* Slide Up Animation */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out forwards;
+}
+
+/* Scale In Animation */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out forwards;
+}
+/* Add to globals.css - Fix text visibility */
+.text-foreground {
+  color: #ffffff !important;
+}
+
+.text-muted-foreground {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Fix dark text on dark backgrounds */
+.bg-gold .text-black {
+  color: #000000 !important;
+}
+
+/* Ensure all body text is white */
+body, p, span, div, h1, h2, h3, h4, h5, h6 {
+  color: #ffffff;
+}
+
+/* Fix input text */
+input, textarea, select {
+  color: #ffffff !important;
+}
+
+/* Fix placeholder text */
+::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}

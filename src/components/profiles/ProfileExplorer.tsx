@@ -32,7 +32,7 @@ const accentMap: Partial<Record<ProfileTypeId, string>> = {
   team: 'bg-blue-500/10 text-blue-400',
   competition: 'bg-yellow-500/10 text-yellow-400',
   match: 'bg-red-500/10 text-red-400',
-  player: 'bg-sport-green/10 text-sport-green',
+  player: 'bg-gold/10 text-gold',
   coach: 'bg-purple-500/10 text-purple-400',
   stadium: 'bg-cyan-500/10 text-cyan-400',
   journalist: 'bg-orange-500/10 text-orange-400',
@@ -56,14 +56,14 @@ export default function ProfileExplorer({ onSelectProfile }: ProfileExplorerProp
 
       <div className="px-4 pt-4 pb-2">
         <div className="rounded-2xl bg-surface-elevated border border-surface-border p-4">
-          <h2 className="mb-2 text-sm font-bold text-sport-green">Unified Profile Architecture</h2>
+          <h2 className="mb-2 text-sm font-bold text-gold">Unified Profile Architecture</h2>
           <p className="text-xs text-muted-foreground leading-relaxed">
             Every profile follows the same pattern. Only relevant tabs appear per role.
           </p>
           <div className="mt-3 flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
             {['Overview', 'Content', 'Sports', 'Community', 'Commerce', 'About'].map((step, i) => (
               <span key={step} className="flex flex-shrink-0 items-center gap-1.5 text-[10px] font-semibold">
-                <span className="rounded-md bg-sport-green/10 px-2 py-0.5 text-sport-green">{step}</span>
+                <span className="rounded-md bg-gold/10 px-2 py-0.5 text-gold">{step}</span>
                 {i < 5 && <ChevronRight className="h-3 w-3 text-muted-foreground/40" />}
               </span>
             ))}
@@ -85,7 +85,7 @@ export default function ProfileExplorer({ onSelectProfile }: ProfileExplorerProp
                     key={id}
                     onClick={() => onSelectProfile(id)}
                     whileTap={{ scale: 0.98 }}
-                    className="flex items-center gap-3 rounded-2xl bg-surface-elevated border border-surface-border p-3 text-left transition-all hover:border-sport-green/20 active:opacity-80"
+                    className="flex items-center gap-3 rounded-2xl bg-surface-elevated border border-surface-border p-3 text-left transition-all hover:border-gold/20 active:opacity-80"
                   >
                     <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl flex-shrink-0', accent)}>
                       <IconComp className="h-5 w-5" />
@@ -94,7 +94,7 @@ export default function ProfileExplorer({ onSelectProfile }: ProfileExplorerProp
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold text-white">{config.label}</span>
                         {config.mockData.verified && (
-                          <ShieldCheck className="h-3.5 w-3.5 text-sport-green flex-shrink-0" />
+                          <ShieldCheck className="h-3.5 w-3.5 text-gold flex-shrink-0" />
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground truncate">{config.mockData.name}</p>

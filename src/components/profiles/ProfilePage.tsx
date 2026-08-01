@@ -23,6 +23,15 @@ export default function ProfilePage({ config, onBack, initialTab }: ProfilePageP
     }
   };
 
+  // Hero stats for player profiles
+  const heroStats = config.id === 'player' ? [
+    { label: 'Goals', value: '4' },
+    { label: 'Assists', value: '3' },
+    { label: 'Age', value: '23' },
+    { label: 'Height', value: '1.8m' },
+    { label: 'Value', value: '€108M' },
+  ] : null;
+
   return (
     <div className="mx-auto max-w-lg">
       <motion.div
@@ -42,7 +51,23 @@ export default function ProfilePage({ config, onBack, initialTab }: ProfilePageP
           />
         </div>
 
-        {/* Tabs - scrollable, profile-type-specific */}
+        {/* 🏆 Hero Stats (Player-specific) */}
+        {heroStats && (
+          <div className="px-4 -mt-2 mb-2">
+            <div className="glass-card rounded-xl p-4 glass-card-hover">
+              <div className="grid grid-cols-5 gap-2">
+                {heroStats.map((stat) => (
+                  <div key={stat.label} className="text-center">
+                    <p className="text-sm font-black text-gold">{stat.value}</p>
+                    <p className="text-[10px] text-muted-foreground">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tabs */}
         <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-xl">
           <ProfileTabs
             tabs={config.tabs}
@@ -51,7 +76,7 @@ export default function ProfilePage({ config, onBack, initialTab }: ProfilePageP
           />
         </div>
 
-        {/* Tab Content - data-driven rendering */}
+        {/* Tab Content */}
         <TabContent
           config={config}
           tabId={activeTab}
