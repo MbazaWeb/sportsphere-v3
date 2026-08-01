@@ -3,6 +3,8 @@
 import { type ProfileTypeConfig } from './profileConfig';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { useUIStore } from '@/store/uiStore';
+import { getFeedUser } from '@/data/feedData';
 import {
   Heart, MessageCircle, Share2, Bookmark, Star, TrendingUp,
   MapPin, Clock, Trophy, Users, ChevronRight, Zap, Play,
@@ -586,15 +588,31 @@ function VideosContent() {
 }
 
 function FansContent() {
+  const setViewingUser = useUIStore((s) => s.setViewingUser);
+  const fans = [
+    { name: 'David Mbaza',    handle: '@davidmbaza',    avatar: 'DM' },
+    { name: 'Sarah Chen',     handle: '@sarahchen',     avatar: 'SC' },
+    { name: 'Marcus Johnson', handle: '@marcusj',       avatar: 'MJ' },
+    { name: 'Goal Highlights',handle: '@goalsdaily',    avatar: 'GH' },
+  ];
   return (
     <div className="flex flex-col gap-2">
-      {['David Mbaza', 'Sarah Chen', 'Marcus Johnson', 'Jane Williams'].map((name, i) => (
-        <div key={i} className="flex items-center gap-3 rounded-xl bg-surface-elevated border border-surface-border p-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface text-xs font-bold text-sport-green">{name.split(' ').map(n => n[0]).join('')}</div>
-          <p className="flex-1 text-sm font-semibold text-white">{name}</p>
-          <button className="rounded-lg bg-surface border border-surface-border px-3 py-1 text-xs text-muted-foreground hover:text-white transition-colors">Follow</button>
-        </div>
-      ))}
+      {fans.map((fan) => {
+        const user = getFeedUser(fan.handle);
+        return (
+          <button key={fan.handle} onClick={() => user && setViewingUser(user)}
+            className="flex items-center gap-3 rounded-xl bg-surface-elevated border border-surface-border p-3 text-left hover:border-sport-green/20 transition-colors w-full">
+            <div className={cn('flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold', user?.verified ? 'bg-sport-green text-black' : 'bg-surface text-white')}>
+              {fan.avatar}
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-white">{fan.name}</p>
+              <p className="text-xs text-muted-foreground">{fan.handle}</p>
+            </div>
+            <span className="rounded-lg bg-surface border border-surface-border px-3 py-1 text-xs text-muted-foreground">View</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -851,7 +869,31 @@ function PlaceholderContent({ tabId, subtitle }: { tabId: string; subtitle?: str
 }
 
 function PlayersContent() { return <SimpleList items={['Player A · Forward', 'Player B · Midfielder', 'Player C · Defender', 'Player D · Goalkeeper']} title="Players" />; }
-function TeamsContent()   { return <SimpleList items={['Manchester United', 'Arsenal', 'Liverpool', 'Chelsea', 'Man City']} title="Teams" />; }
+function TeamsContent() {
+  const setViewingUser = useUIStore((s) => s.setViewingUser);
+  const teams = [
+    { name: 'Manchester United', handle: '@manchesterunited' },
+    { name: 'Arsenal',           handle: null },
+    { name: 'Liverpool',         handle: null },
+    { name: 'Chelsea',           handle: null },
+    { name: 'Man City',          handle: null },
+  ];
+  return (
+    <div className="flex flex-col gap-2">
+      {teams.map((team, i) => {
+        const user = team.handle ? getFeedUser(team.handle) : null;
+        return (
+          <div key={i} onClick={() => user && setViewingUser(user)}
+            className={cn('flex items-center gap-3 rounded-xl bg-surface-elevated border border-surface-border p-3', user && 'cursor-pointer hover:border-sport-green/20 transition-colors')}>
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface text-xs font-bold text-white">{i + 1}</div>
+            <p className="flex-1 text-sm font-semibold text-white">{team.name}</p>
+            <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 function CoachesContent() { return <SimpleList items={['Head Coach', 'Assistant Coach', 'Goalkeeping Coach', 'Fitness Coach']} title="Coaches" />; }
 function CompetitionsContent() { return <SimpleList items={['Premier League', 'Champions League', 'FA Cup', 'Carabao Cup']} title="Competitions" />; }
 function OfficialsContent()    { return <SimpleList items={['Referee A', 'Referee B', 'VAR Official C']} title="Officials" />; }
