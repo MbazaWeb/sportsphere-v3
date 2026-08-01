@@ -10,7 +10,7 @@ import {
   Eye, ShieldCheck, Clock, CheckCircle2, AlertCircle, Sparkles,
   BadgeCheck, Upload, ChevronDown
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import RegistrationModal from '@/components/registration/RegistrationModal';
 
 // ====== VERIFICATION BADGE COMPONENT ======
@@ -67,7 +67,6 @@ function GuestProfile() {
 
         {/* Join Options */}
         <div className="mb-6 flex flex-col gap-3">
-          {/* Main Register Button */}
           <button
             onClick={() => setRegistrationOpen(true)}
             className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-gold text-sm font-bold text-black transition-all hover:bg-gold/90 active:scale-[0.98]"
@@ -76,7 +75,6 @@ function GuestProfile() {
             Create Account
           </button>
 
-          {/* Social options */}
           <div className="flex gap-2">
             <button className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-surface border border-surface-border text-sm font-semibold text-white transition-colors hover:bg-surface-elevated">
               <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -419,7 +417,6 @@ function AdminVerificationPanel() {
       </div>
 
       <div className="border-t border-surface-border p-4">
-        {/* Status Details */}
         <div className="mb-4 rounded-xl bg-surface-elevated p-3">
           <div className="flex items-center gap-2 mb-2">
             {isPending && <Clock className="h-4 w-4 text-yellow-400" />}
@@ -436,7 +433,6 @@ function AdminVerificationPanel() {
           </p>
         </div>
 
-        {/* Role Details */}
         {userProfile?.roleData && Object.keys(userProfile.roleData).length > 0 && (
           <div className="mb-4">
             <button
@@ -468,7 +464,6 @@ function AdminVerificationPanel() {
           </div>
         )}
 
-        {/* Action Buttons */}
         <div className="flex flex-col gap-2">
           {isPending && (
             <>
@@ -616,13 +611,19 @@ function GenericSection({ title, onBack }: { title: string; onBack: () => void }
 
 // ====== PEOPLE LIST ======
 function PeopleList({ title, onBack }: { title: string; onBack: () => void }) {
-  const people = [
-    { name: 'Sarah Chen', handle: '@sarahchen', avatar: 'SC' },
-    { name: 'Marcus Johnson', handle: '@marcusj', avatar: 'MJ' },
-    { name: 'Football Daily', handle: '@footballdaily', avatar: 'FD' },
-    { name: 'Jane Williams', handle: '@janew', avatar: 'JW' },
-    { name: 'SportSphere Official', handle: '@sportsphere', avatar: 'SS' },
-  ];
+  const [people, setPeople] = useState<Array<{ name: string; handle: string; avatarInitials: string }>>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const res = await fetch('/api/users');
+        if (res.ok) setPeople(await res.json());
+      } catch (e) { /* empty */ }
+      setLoading(false);
+    }
+    loadData();
+  }, []);
 
   return (
     <div>
@@ -635,22 +636,36 @@ function PeopleList({ title, onBack }: { title: string; onBack: () => void }) {
         </div>
       </header>
       <div className="p-4">
-        <div className="flex flex-col gap-2">
-          {people.map((person) => (
-            <div key={person.handle} className="flex items-center gap-3 rounded-xl bg-surface-elevated border border-surface-border p-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface font-bold text-sm text-gold">
-                {person.avatar}
+        {loading ? (
+          <div className="flex flex-col gap-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-center gap-3 rounded-xl bg-surface-elevated border border-surface-border p-3">
+                <div className="h-10 w-10 rounded-full bg-surface animate-pulse" />
+                <div className="flex-1">
+                  <div className="h-3 w-24 rounded bg-surface animate-pulse mb-1" />
+                  <div className="h-2 w-16 rounded bg-surface animate-pulse" />
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-white">{person.name}</p>
-                <p className="text-xs text-muted-foreground">{person.handle}</p>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {people.map((person) => (
+              <div key={person.handle} className="flex items-center gap-3 rounded-xl bg-surface-elevated border border-surface-border p-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface font-bold text-sm text-gold">
+                  {person.avatarInitials}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-white">{person.name}</p>
+                  <p className="text-xs text-muted-foreground">{person.handle}</p>
+                </div>
+                <button className="rounded-lg bg-surface border border-surface-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-white transition-colors">
+                  {title === 'Following' ? 'Following' : 'Follow'}
+                </button>
               </div>
-              <button className="rounded-lg bg-surface border border-surface-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-white transition-colors">
-                {title === 'Following' ? 'Following' : 'Follow'}
-              </button>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

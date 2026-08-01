@@ -1,95 +1,38 @@
 // SportSphere — Prisma Schema
-// Database: PostgreSQL (VPS: 104.152.50.173)
+// Database: SQLite (local development)
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-}
-
-// ─── Enums ────────────────────────────────────────────────────
-enum UserRole {
-  fan
-  team
-  player
-  coach
-  referee
-  journalist
-  analyst
-  creator
-  scout
-  stadium
-  venue
-  academy
-  community
-  organization
-  business
-}
-
-enum VerificationStatus {
-  none
-  pending
-  verified
-  rejected
-}
-
-enum PostType {
-  post
-  photo
-  video
-  spotlight
-  poll
-  prediction
-  highlight
-}
-
-enum MatchStatus {
-  upcoming
-  live
-  ht
-  ft
-  postponed
-  cancelled
-}
-
-enum NotificationType {
-  like
-  comment
-  follow
-  mention
-  match_start
-  match_goal
-  match_end
-  verification
-  system
 }
 
 // ─── Users ─────────────────────────────────────────────────────
 model User {
-  id                  String             @id @default(uuid())
+  id                  String   @id @default(uuid())
   name                String
-  email               String             @unique
-  handle              String             @unique
+  email               String   @unique
+  handle              String   @unique
   passwordHash        String?
   avatarUrl           String?
   avatarInitials      String?
-  role                UserRole           @default(fan)
-  verificationStatus  VerificationStatus @default(none)
-  isVerified          Boolean            @default(false)
+  role                String   @default("fan")
+  verificationStatus  String   @default("none")
+  isVerified          Boolean  @default(false)
   bio                 String?
   location            String?
-  coverGradient       String             @default("from-emerald-600 to-emerald-900")
-  followerCount       Int                @default(0)
-  followingCount      Int                @default(0)
-  postCount           Int                @default(0)
-  roleData            Json               @default("{}")
-  sportsFollowing     String[]           @default([])
-  registeredAt        DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-  lastSeenAt          DateTime           @default(now())
+  coverGradient       String   @default("from-emerald-600 to-emerald-900")
+  followerCount       Int      @default(0)
+  followingCount      Int      @default(0)
+  postCount           Int      @default(0)
+  roleData            String   @default("{}")
+  sportsFollowing     String   @default("[]")
+  registeredAt        DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  lastSeenAt          DateTime @default(now())
 
   // Relations
   posts               Post[]
@@ -127,20 +70,20 @@ model Follow {
 
 // ─── Posts ─────────────────────────────────────────────────────
 model Post {
-  id           String    @id @default(uuid())
+  id           String   @id @default(uuid())
   userId       String
   content      String
-  postType     PostType  @default(post)
-  mediaUrls    String[]  @default([])
+  postType     String   @default("post")
+  mediaUrls    String   @default("[]")
   teamTag      String?
   playerTag    String?
-  isBreaking   Boolean   @default(false)
-  likeCount    Int       @default(0)
-  commentCount Int       @default(0)
-  shareCount   Int       @default(0)
-  viewCount    Int       @default(0)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  isBreaking   Boolean  @default(false)
+  likeCount    Int      @default(0)
+  commentCount Int      @default(0)
+  shareCount   Int      @default(0)
+  viewCount    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   comments     Comment[]
@@ -184,7 +127,7 @@ model Poll {
   id         String   @id @default(uuid())
   postId     String   @unique
   question   String
-  options    Json     // [{label: string, votes: number}]
+  options    String   @default("[]")
   totalVotes Int      @default(0)
   endsAt     DateTime?
   createdAt  DateTime @default(now())
@@ -194,19 +137,21 @@ model Poll {
 
 // ─── Matches ───────────────────────────────────────────────────
 model Match {
-  id         String      @id @default(uuid())
+  id         String   @id @default(uuid())
   league     String
   homeTeam   String
   awayTeam   String
   homeScore  Int?
   awayScore  Int?
-  status     MatchStatus @default(upcoming)
+  status     String   @default("upcoming")
   minute     Int?
   venue      String?
   kickoffAt  DateTime
-  events     Json        @default("[]") // [{minute, type, player, team}]
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  events     String   @default("[]")
+  continent  String   @default("Europe")
+  country    String   @default("England")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   predictions Prediction[]
 
@@ -224,7 +169,7 @@ model Prediction {
   awayTeam       String
   predictedHome  Int?
   predictedAway  Int?
-  result         String?  // home | away | draw
+  result         String?
   isCorrect      Boolean?
   pointsEarned   Int      @default(0)
   createdAt      DateTime @default(now())
@@ -252,7 +197,7 @@ model Community {
 model CommunityMember {
   communityId String
   userId      String
-  role        String   @default("member") // admin | moderator | member
+  role        String   @default("member")
   joinedAt    DateTime @default(now())
 
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
@@ -263,15 +208,15 @@ model CommunityMember {
 
 // ─── Notifications ─────────────────────────────────────────────
 model Notification {
-  id          String           @id @default(uuid())
+  id          String   @id @default(uuid())
   userId      String
-  type        NotificationType
+  type        String
   title       String
   body        String?
-  isRead      Boolean          @default(false)
+  isRead      Boolean  @default(false)
   actorId     String?
   referenceId String?
-  createdAt   DateTime         @default(now())
+  createdAt   DateTime @default(now())
 
   user        User             @relation("NotificationUser",  fields: [userId],  references: [id], onDelete: Cascade)
   actor       User?            @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
@@ -300,8 +245,8 @@ model VerificationRequest {
   id          String   @id @default(uuid())
   userId      String
   role        String
-  roleData    Json     @default("{}")
-  status      String   @default("pending") // pending | approved | rejected
+  roleData    String   @default("{}")
+  status      String   @default("pending")
   adminNotes  String?
   reviewedBy  String?
   submittedAt DateTime @default(now())

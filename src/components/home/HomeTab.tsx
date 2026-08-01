@@ -4,18 +4,68 @@ import { useNavigationStore } from '@/store/navigationStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { formatCount } from '@/store/useAppStore';
-import { getFeedUser, HOME_FEED, SPOTLIGHT_FEED } from '@/data/feedData';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Bell, Heart, MessageCircle, Share2, Bookmark, TrendingUp, Zap, Shield, X, Send, ChevronDown, Trophy, Sparkles, Flame, Crown } from 'lucide-react';
 import type { HomeSubTab } from '@/store/navigationStore';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 const SUBTABS: { id: HomeSubTab; label: string }[] = [
   { id: 'for-you',   label: 'For You'   },
   { id: 'trending',  label: 'Trending'  },
   { id: 'spotlight', label: 'Spotlight' },
 ];
+
+// --- Shared time formatter (outside components to avoid purity issues) ---
+function formatTime(dateStr: string): string {
+  const d = new Date(dateStr);
+  const diff = Date.now() - d.getTime();
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return `${Math.floor(diff / 86400000)}d ago`;
+}
+
+function formatTimeShort(dateStr: string): string {
+  const d = new Date(dateStr);
+  const diff = Date.now() - d.getTime();
+  if (diff < 60000) return 'now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
+  return `${Math.floor(diff / 86400000)}d`;
+}
+
+// --- Types from API ---
+interface ApiUser {
+  id: string; name: string; handle: string; avatarInitials: string;
+  isVerified: boolean; coverGradient: string; bio: string; role: string;
+  location: string; followerCount: number; followingCount: number;
+  postCount: number; registeredAt: string;
+}
+
+interface ApiPost {
+  id: string; userId: string; content: string; postType: string;
+  mediaUrls: string[]; teamTag: string | null; playerTag: string | null;
+  isBreaking: boolean; likeCount: number; commentCount: number;
+  shareCount: number; viewCount: number; createdAt: string;
+  poll?: { id: string; question: string; options: { label: string; pct: number }[]; totalVotes: number } | null;
+  user: ApiUser;
+}
+
+interface ApiMatch {
+  id: string; league: string; homeTeam: string; awayTeam: string;
+  homeScore: number | null; awayScore: number | null;
+  status: string; minute: number | null; venue: string | null;
+  kickoffAt: string; events: { minute: number; type: string; player: string; team: string }[];
+  continent: string; country: string;
+}
+
+interface ApiSpotlightItem {
+  id: string; userId: string; content: string; postType: string;
+  mediaUrls: string[]; likeCount: number; commentCount: number;
+  viewCount: number; createdAt: string;
+  user: ApiUser;
+}
 
 // --- Share Sheet -----------------------------------------------
 function ShareSheet({ onClose }: { onClose: () => void }) {
@@ -47,26 +97,39 @@ function ShareSheet({ onClose }: { onClose: () => void }) {
 }
 
 // --- Comment Sheet ---------------------------------------------
-function CommentSheet({ itemId, onClose }: { itemId: number; onClose: () => void }) {
+function CommentSheet({ itemId, onClose }: { itemId: string; onClose: () => void }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const setLoginModalOpen = useUIStore((s) => s.setLoginModalOpen);
   const [text, setText] = useState('');
-  const [comments, setComments] = useState([
-    { id: 1, user: 'Sarah Chen', avatar: 'SC', text: 'Absolutely class! ??', time: '2m', likes: 45 },
-    { id: 2, user: 'Marcus J',   avatar: 'MJ', text: 'Rashford is back to his best this season', time: '5m', likes: 23 },
-    { id: 3, user: 'GK Union',   avatar: 'GU', text: 'What a performance ??', time: '12m', likes: 12 },
-  ]);
-  const [replies, setReplies] = useState<Record<number, string>>({});
-  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [comments, setComments] = useState<Array<{ id: string; user: { name: string; avatarInitials: string; isVerified: boolean }; content: string; likeCount: number; createdAt: string }>>([]);
+  const [replies, setReplies] = useState<Record<string, string>>({});
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadComments() {
+      try {
+        const res = await fetch(`/api/comments?postId=${itemId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setComments(data);
+        }
+      } catch (e) {
+        // empty state on error
+      }
+      setLoading(false);
+    }
+    loadComments();
+  }, [itemId]);
 
   const handleSubmit = () => {
     if (!isAuthenticated) { onClose(); setLoginModalOpen(true); return; }
     if (!text.trim()) return;
-    setComments(prev => [{ id: Date.now(), user: 'You', avatar: 'ME', text, time: 'now', likes: 0 }, ...prev]);
+    setComments(prev => [{ id: `new-${Date.now()}`, user: { name: 'You', avatarInitials: 'ME', isVerified: false }, content: text, likeCount: 0, createdAt: new Date().toISOString() }, ...prev]);
     setText('');
   };
 
-  const handleReply = (commentId: number) => {
+  const handleReply = (commentId: string) => {
     if (!isAuthenticated) { onClose(); setLoginModalOpen(true); return; }
     const r = replies[commentId];
     if (!r?.trim()) return;
@@ -91,20 +154,29 @@ function CommentSheet({ itemId, onClose }: { itemId: number; onClose: () => void
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-          {comments.map((c) => (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="h-6 w-6 border-2 border-gold border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : comments.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <MessageCircle className="h-8 w-8 text-muted-foreground/30 mb-2" />
+              <p className="text-sm text-muted-foreground">No comments yet</p>
+            </div>
+          ) : comments.map((c) => (
             <div key={c.id} className="flex gap-3">
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-surface text-xs font-bold text-gold">
-                {c.avatar}
+                {c.user.avatarInitials}
               </div>
               <div className="flex-1">
                 <div className="rounded-2xl bg-surface px-3 py-2">
-                  <p className="text-xs font-semibold text-white mb-0.5">{c.user}</p>
-                  <p className="text-sm text-foreground/90">{c.text}</p>
+                  <p className="text-xs font-semibold text-white mb-0.5">{c.user.name}</p>
+                  <p className="text-sm text-foreground/90">{c.content}</p>
                 </div>
                 <div className="mt-1 flex items-center gap-4 px-1">
-                  <span className="text-[10px] text-muted-foreground">{c.time}</span>
+                  <span className="text-[10px] text-muted-foreground">{formatTime(c.createdAt)}</span>
                   <button className="text-[10px] font-semibold text-muted-foreground hover:text-white transition-colors">
-                    {c.likes} likes
+                    {c.likeCount} likes
                   </button>
                   <button onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)}
                     className="text-[10px] font-semibold text-muted-foreground hover:text-white transition-colors">
@@ -114,7 +186,7 @@ function CommentSheet({ itemId, onClose }: { itemId: number; onClose: () => void
                 {replyingTo === c.id && (
                   <div className="mt-2 flex items-center gap-2">
                     <input value={replies[c.id] ?? ''} onChange={(e) => setReplies(prev => ({ ...prev, [c.id]: e.target.value }))}
-                      placeholder={`Reply to ${c.user}...`} autoFocus
+                      placeholder={`Reply to ${c.user.name}...`} autoFocus
                       className="flex-1 rounded-xl bg-surface border border-surface-border px-3 py-1.5 text-xs text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold" />
                     <button onClick={() => handleReply(c.id)}
                       className="flex h-7 w-7 items-center justify-center rounded-full bg-gold">
@@ -150,8 +222,8 @@ export default function HomeTab() {
   const setHomeSubTab = useNavigationStore((s) => s.setHomeSubTab);
   const isAuthenticated   = useAuthStore((s) => s.isAuthenticated);
   const setLoginModalOpen = useUIStore((s) => s.setLoginModalOpen);
-  const [shareId, setShareId] = useState<number | null>(null);
-  const [commentId, setCommentId] = useState<number | null>(null);
+  const [shareId, setShareId] = useState<string | null>(null);
+  const [commentId, setCommentId] = useState<string | null>(null);
 
   return (
     <div className="mx-auto max-w-lg">
@@ -194,8 +266,57 @@ export default function HomeTab() {
   );
 }
 
+// --- Skeleton loader ---
+function CardSkeleton() {
+  return (
+    <div className="glass-card rounded-2xl overflow-hidden">
+      <div className="p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="h-10 w-10 rounded-full bg-surface animate-pulse" />
+          <div className="flex-1">
+            <div className="h-3 w-24 rounded bg-surface animate-pulse mb-1" />
+            <div className="h-2 w-16 rounded bg-surface animate-pulse" />
+          </div>
+        </div>
+        <div className="h-3 w-full rounded bg-surface animate-pulse mb-2" />
+        <div className="h-3 w-3/4 rounded bg-surface animate-pulse" />
+        <div className="flex items-center justify-between border-t border-surface-border pt-3 mt-3">
+          <div className="flex gap-4">
+            <div className="h-3 w-8 rounded bg-surface animate-pulse" />
+            <div className="h-3 w-8 rounded bg-surface animate-pulse" />
+            <div className="h-3 w-8 rounded bg-surface animate-pulse" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // --- For You --------------------------------------------------
-function ForYouContent({ onShare, onComment }: { onShare: (id: number) => void; onComment: (id: number) => void }) {
+function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; onComment: (id: string) => void }) {
+  const [liveMatches, setLiveMatches] = useState<ApiMatch[]>([]);
+  const [posts, setPosts] = useState<ApiPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [matchesRes, feedRes] = await Promise.all([
+          fetch('/api/matches?status=live'),
+          fetch('/api/feed?type=for-you'),
+        ]);
+        if (matchesRes.ok) setLiveMatches(await matchesRes.json());
+        if (feedRes.ok) setPosts(await feedRes.json());
+      } catch (e) {
+        // empty state on error
+      }
+      setLoading(false);
+    }
+    loadData();
+  }, []);
+
+  const featuredMatch = liveMatches[0];
+
   return (
     <div className="flex flex-col gap-4 p-4">
       {/* Hero Banner */}
@@ -206,7 +327,7 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: number) => void; 
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-black/20">
               <Sparkles className="h-3 w-3 text-white" />
             </span>
-            <span className="text-[10px] font-bold uppercase text-white/80 tracking-wider">Today's Match Intelligence</span>
+            <span className="text-[10px] font-bold uppercase text-white/80 tracking-wider">Today&apos;s Match Intelligence</span>
           </div>
           <h2 className="text-2xl font-black text-white leading-tight">
             Come hang out with <br />
@@ -214,7 +335,7 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: number) => void; 
           </h2>
           <div className="mt-4 flex items-center gap-2">
             <div className="flex -space-x-1">
-              {['??', '??', '??', '??'].map((emoji, i) => (
+              {['âš½', 'ðŸ†', 'âš½', 'ðŸ†'].map((emoji, i) => (
                 <div key={i} className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white/20 bg-black/20 text-[8px]">
                   {emoji}
                 </div>
@@ -226,39 +347,51 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: number) => void; 
       </div>
 
       {/* Match Intelligence Card */}
-      <div className="glass-card rounded-2xl p-4 glass-card-hover">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-gold" />
-            <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Today's Match Intelligence</h3>
+      {featuredMatch && (
+        <div className="glass-card rounded-2xl p-4 glass-card-hover">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-gold" />
+              <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Today&apos;s Match Intelligence</h3>
+            </div>
+            <span className="flex h-2 w-2 rounded-full bg-gold animate-pulse" />
           </div>
-          <span className="flex h-2 w-2 rounded-full bg-gold animate-pulse" />
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="text-center">
-            <div className="mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20 text-xs font-bold text-red-400 border border-red-500/20">MU</div>
-            <p className="text-xs font-semibold text-white">Man Utd</p>
+          <div className="flex items-center justify-between">
+            <div className="text-center">
+              <div className="mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20 text-xs font-bold text-red-400 border border-red-500/20">
+                {featuredMatch.homeTeam.slice(0, 2).toUpperCase()}
+              </div>
+              <p className="text-xs font-semibold text-white">{featuredMatch.homeTeam.split(' ').pop()}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-black text-gold">{featuredMatch.homeScore}</span>
+              <span className="text-xs text-muted-foreground">â€“</span>
+              <span className="text-2xl font-black text-white">{featuredMatch.awayScore}</span>
+            </div>
+            <div className="text-center">
+              <div className="mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20 text-xs font-bold text-red-400 border border-red-500/20">
+                {featuredMatch.awayTeam.slice(0, 2).toUpperCase()}
+              </div>
+              <p className="text-xs font-semibold text-white">{featuredMatch.awayTeam.split(' ').pop()}</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-black text-gold">2</span>
-            <span className="text-xs text-muted-foreground">—</span>
-            <span className="text-2xl font-black text-white">1</span>
+          {featuredMatch.events.length > 0 && (
+            <div className="mt-2 flex justify-center gap-3 text-[10px] text-muted-foreground">
+              {featuredMatch.events.map((e, i) => (
+                <span key={i} className="flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-gold" /> {e.player} {e.minute}&apos;
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="mt-3 flex items-center justify-between border-t border-surface-border pt-2">
+            <span className="text-[10px] text-muted-foreground">{featuredMatch.minute}&apos; Â· {featuredMatch.league}</span>
+            <span className="flex h-5 items-center rounded-full bg-gold/10 px-2 text-[10px] font-bold text-gold">
+              {featuredMatch.status === 'ht' ? 'HT' : 'LIVE'}
+            </span>
           </div>
-          <div className="text-center">
-            <div className="mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20 text-xs font-bold text-red-400 border border-red-500/20">AR</div>
-            <p className="text-xs font-semibold text-white">Arsenal</p>
-          </div>
         </div>
-        <div className="mt-2 flex justify-center gap-3 text-[10px] text-muted-foreground">
-          <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-gold" /> Rashford 23'</span>
-          <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-gold" /> Saka 34'</span>
-          <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-gold" /> Rashford 56'</span>
-        </div>
-        <div className="mt-3 flex items-center justify-between border-t border-surface-border pt-2">
-          <span className="text-[10px] text-muted-foreground">78' · Premier League</span>
-          <span className="flex h-5 items-center rounded-full bg-gold/10 px-2 text-[10px] font-bold text-gold">LIVE</span>
-        </div>
-      </div>
+      )}
 
       {/* Leaderboard */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
@@ -301,24 +434,55 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: number) => void; 
       </div>
 
       {/* Feed Posts */}
-      {HOME_FEED.map((item) => <FeedCard key={item.id} item={item} onShare={onShare} onComment={onComment} />)}
+      {loading ? (
+        <div className="flex flex-col gap-3">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      ) : posts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <Sparkles className="h-8 w-8 text-muted-foreground/30 mb-2" />
+          <p className="text-sm text-muted-foreground">No posts yet</p>
+        </div>
+      ) : (
+        posts.map((item) => <FeedCard key={item.id} item={item} onShare={onShare} onComment={onComment} formatTime={formatTime} />)
+      )}
     </div>
   );
 }
 
 // --- Feed Card ------------------------------------------------
-function FeedCard({ item, onShare, onComment }: {
-  item: typeof HOME_FEED[number];
-  onShare: (id: number) => void;
-  onComment: (id: number) => void;
+function FeedCard({ item, onShare, onComment, formatTime }: {
+  item: ApiPost;
+  onShare: (id: string) => void;
+  onComment: (id: string) => void;
+  formatTime: (s: string) => string;
 }) {
   const setViewingUser = useUIStore((s) => s.setViewingUser);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const setLoginModalOpen = useUIStore((s) => s.setLoginModalOpen);
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
-  const user = getFeedUser(item.handle);
-  if (!user) return null;
+  const user = item.user;
+
+  const handleViewUser = useCallback(() => {
+    setViewingUser({
+      name: user.name,
+      handle: user.handle,
+      avatar: user.avatarInitials,
+      verified: user.isVerified,
+      coverGradient: user.coverGradient,
+      bio: user.bio,
+      role: user.role,
+      location: user.location || '',
+      joined: new Date(user.registeredAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      followers: user.followerCount,
+      following: user.followingCount,
+      posts: user.postCount,
+      isFollowing: false,
+    });
+  }, [user, setViewingUser]);
 
   const handleSave = () => {
     if (!isAuthenticated) { setLoginModalOpen(true); return; }
@@ -327,7 +491,7 @@ function FeedCard({ item, onShare, onComment }: {
 
   return (
     <article className="glass-card rounded-2xl overflow-hidden glass-card-hover">
-      {item.breaking && (
+      {item.isBreaking && (
         <div className="flex items-center gap-2 border-b border-gold/20 bg-gold/5 px-4 py-2">
           <span className="flex h-1.5 w-1.5 rounded-full bg-gold animate-pulse" />
           <span className="text-[10px] font-bold uppercase text-gold">Breaking</span>
@@ -335,39 +499,39 @@ function FeedCard({ item, onShare, onComment }: {
       )}
       <div className="p-4">
         {/* User header */}
-        <button onClick={() => setViewingUser(user)} className="mb-3 flex items-center gap-3 text-left w-full">
+        <button onClick={handleViewUser} className="mb-3 flex items-center gap-3 text-left w-full">
           <div className={cn('flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold',
-            user.verified ? 'bg-gold text-black' : 'bg-surface text-white')}>
-            {user.avatar}
+            user.isVerified ? 'bg-gold text-black' : 'bg-surface text-white')}>
+            {user.avatarInitials}
           </div>
           <div>
             <div className="flex items-center gap-1.5">
               <span className="text-sm font-semibold text-white">{user.name}</span>
-              {user.verified && <Shield className="h-3.5 w-3.5 text-gold" />}
+              {user.isVerified && <Shield className="h-3.5 w-3.5 text-gold" />}
             </div>
-            <span className="text-xs text-muted-foreground">{user.handle} · {item.time}</span>
+            <span className="text-xs text-muted-foreground">{user.handle} Â· {formatTime(item.createdAt)}</span>
           </div>
         </button>
 
         <p className="mb-3 text-sm leading-relaxed text-foreground/90">{item.content}</p>
 
-        {'tag' in item && item.tag && (
-          <button onClick={() => { const h = (item.tag as any).handle; if (h) { const u = getFeedUser(h); if (u) setViewingUser(u); } }}
-            className={cn('mb-3 inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-medium border transition-all active:scale-95',
-              (item.tag as any).type === 'team' ? 'bg-gold/10 text-gold border-gold/20 hover:bg-gold/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20')}>
-            {(item.tag as any).label}
-          </button>
+        {item.teamTag && (
+          <span className="mb-3 inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-medium border bg-gold/10 text-gold border-gold/20">
+            {item.teamTag}
+          </span>
         )}
 
         {/* Photo */}
-        {item.type === 'photo' && (
+        {item.postType === 'photo' && (
           <div className="mb-3 h-52 overflow-hidden rounded-xl bg-gradient-to-br from-gold via-orange-600 to-red-800 flex items-end p-3">
-            <span className="rounded-lg bg-black/50 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">Emirates Stadium · Match Day</span>
+            <span className="rounded-lg bg-black/50 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
+              {item.teamTag || 'Match Day'}
+            </span>
           </div>
         )}
 
         {/* Video */}
-        {item.type === 'video' && (
+        {item.postType === 'video' && (
           <div className="mb-3 relative h-52 overflow-hidden rounded-xl bg-gradient-to-br from-gold to-red-800 flex items-center justify-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
               <div className="ml-1 h-0 w-0 border-y-8 border-y-transparent border-l-[14px] border-l-white" />
@@ -377,9 +541,9 @@ function FeedCard({ item, onShare, onComment }: {
         )}
 
         {/* Poll */}
-        {'poll' in item && item.poll && (
+        {item.poll && item.poll.options && item.poll.options.length > 0 && (
           <div className="mb-3 flex flex-col gap-2">
-            {(item.poll as {label:string;pct:number}[]).map((opt, i) => (
+            {item.poll.options.map((opt, i) => (
               <button key={i} className="relative overflow-hidden rounded-lg bg-surface p-3 text-left">
                 <div className="absolute inset-y-0 left-0 bg-gold/20 rounded-lg" style={{ width: `${opt.pct}%` }} />
                 <div className="relative flex items-center justify-between">
@@ -388,7 +552,7 @@ function FeedCard({ item, onShare, onComment }: {
                 </div>
               </button>
             ))}
-            <p className="text-xs text-muted-foreground">{'pollTotal' in item ? (item.pollTotal as number).toLocaleString() : ''} votes</p>
+            <p className="text-xs text-muted-foreground">{item.poll.totalVotes.toLocaleString()} votes</p>
           </div>
         )}
 
@@ -397,17 +561,17 @@ function FeedCard({ item, onShare, onComment }: {
           <button onClick={() => setLiked(!liked)}
             className={cn('flex items-center gap-1.5 transition-colors', liked ? 'text-pink-400' : 'text-muted-foreground hover:text-pink-400')}>
             <Heart className={cn('h-4 w-4', liked && 'fill-current')} />
-            <span className="text-xs">{formatCount(item.likes + (liked ? 1 : 0))}</span>
+            <span className="text-xs">{formatCount(item.likeCount + (liked ? 1 : 0))}</span>
           </button>
           <button onClick={() => onComment(item.id)}
             className="flex items-center gap-1.5 text-muted-foreground hover:text-gold transition-colors">
             <MessageCircle className="h-4 w-4" />
-            <span className="text-xs">{formatCount(item.comments)}</span>
+            <span className="text-xs">{formatCount(item.commentCount)}</span>
           </button>
           <button onClick={() => onShare(item.id)}
             className="flex items-center gap-1.5 text-muted-foreground hover:text-gold transition-colors">
             <Share2 className="h-4 w-4" />
-            <span className="text-xs">{formatCount(item.shares)}</span>
+            <span className="text-xs">{formatCount(item.shareCount)}</span>
           </button>
           <button onClick={handleSave}
             className={cn('transition-colors', saved ? 'text-gold' : 'text-muted-foreground hover:text-gold')}>
@@ -423,10 +587,51 @@ function FeedCard({ item, onShare, onComment }: {
 function TrendingContent() {
   const isAuthenticated   = useAuthStore((s) => s.isAuthenticated);
   const setLoginModalOpen = useUIStore((s) => s.setLoginModalOpen);
+  const setViewingUser = useUIStore((s) => s.setViewingUser);
+
+  const [liveMatches, setLiveMatches] = useState<ApiMatch[]>([]);
+  const [trendingPosts, setTrendingPosts] = useState<ApiPost[]>([]);
+  const [communities, setCommunities] = useState<Array<{ id: string; name: string; memberCount: number }>>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [matchesRes, feedRes, commRes] = await Promise.all([
+          fetch('/api/matches?status=live'),
+          fetch('/api/feed?type=trending'),
+          fetch('/api/communities'),
+        ]);
+        if (matchesRes.ok) setLiveMatches(await matchesRes.json());
+        if (feedRes.ok) setTrendingPosts(await feedRes.json());
+        if (commRes.ok) setCommunities(await commRes.json());
+      } catch (e) {
+        // empty state on error
+      }
+      setLoading(false);
+    }
+    loadData();
+  }, []);
 
   const handleJoin = () => {
     if (!isAuthenticated) { setLoginModalOpen(true); return; }
   };
+
+  const toFeedUser = useCallback((user: ApiUser) => ({
+    name: user.name,
+    handle: user.handle,
+    avatar: user.avatarInitials,
+    verified: user.isVerified,
+    coverGradient: user.coverGradient,
+    bio: user.bio,
+    role: user.role,
+    location: user.location || '',
+    joined: new Date(user.registeredAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+    followers: user.followerCount,
+    following: user.followingCount,
+    posts: user.postCount,
+    isFollowing: false,
+  }), []);
 
   const topics = [
     { t: '#PremierLeague', posts: '24.5K', hot: true },
@@ -437,33 +642,34 @@ function TrendingContent() {
     { t: '#UCL',           posts: '8.1K',  hot: false },
   ];
 
-  const communities = [
-    { name: 'Gooners',    members: '125K' },
-    { name: 'Red Devils', members: '98K'  },
-    { name: 'GK Union',   members: '67.8K'},
-  ];
-
   return (
     <div className="p-4 flex flex-col gap-6">
       <section>
         <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           <span className="flex h-2 w-2 rounded-full bg-gold animate-pulse" /> Live Now
         </h2>
-        <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
-          {[
-            { match: 'Man Utd 2–1 Arsenal', league: 'PL', min: "78'" },
-            { match: 'Real Madrid 1–1 Barca', league: 'La Liga', min: 'HT' },
-            { match: 'Inter 0–0 AC Milan', league: 'Serie A', min: "34'" },
-          ].map((m, i) => (
-            <div key={i} className="flex-shrink-0 glass-card rounded-xl p-3 min-w-[175px] glass-card-hover">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="flex h-2 w-2 rounded-full bg-gold animate-pulse" />
-                <span className="text-[10px] font-bold uppercase text-gold">{m.league} · {m.min}</span>
+        {loading ? (
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex-shrink-0 glass-card rounded-xl p-3 min-w-[175px]">
+                <div className="h-3 w-16 rounded bg-surface animate-pulse mb-2" />
+                <div className="h-4 w-full rounded bg-surface animate-pulse" />
               </div>
-              <p className="text-sm font-semibold text-white">{m.match}</p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
+            {liveMatches.map((m) => (
+              <div key={m.id} className="flex-shrink-0 glass-card rounded-xl p-3 min-w-[175px] glass-card-hover">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="flex h-2 w-2 rounded-full bg-gold animate-pulse" />
+                  <span className="text-[10px] font-bold uppercase text-gold">{m.league} Â· {m.status === 'ht' ? 'HT' : `${m.minute}'`}</span>
+                </div>
+                <p className="text-sm font-semibold text-white">{m.homeTeam.split(' ').pop()} {m.homeScore}â€“{m.awayScore} {m.awayTeam.split(' ').pop()}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section>
@@ -485,22 +691,60 @@ function TrendingContent() {
         </div>
       </section>
 
+      {/* Trending Posts */}
+      {!loading && trendingPosts.slice(0, 3).map((post) => {
+        const fu = toFeedUser(post.user);
+        return (
+          <article key={post.id} className="glass-card rounded-2xl p-4 glass-card-hover">
+            <button onClick={() => setViewingUser(fu)} className="mb-2 flex items-center gap-3 text-left w-full">
+              <div className={cn('flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold',
+                fu.verified ? 'bg-gold text-black' : 'bg-surface text-white')}>
+                {fu.avatar}
+              </div>
+              <div>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-semibold text-white">{fu.name}</span>
+                  {fu.verified && <Shield className="h-3 w-3 text-gold" />}
+                </div>
+                <span className="text-xs text-muted-foreground">{fu.handle}</span>
+              </div>
+            </button>
+            <p className="text-sm text-foreground/90 line-clamp-2">{post.content}</p>
+            <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1"><Heart className="h-3 w-3" />{formatCount(post.likeCount)}</span>
+              <span className="flex items-center gap-1"><MessageCircle className="h-3 w-3" />{formatCount(post.commentCount)}</span>
+            </div>
+          </article>
+        );
+      })}
+
       <section>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Communities</h2>
-        <div className="flex flex-col gap-2">
-          {communities.map((c, i) => (
-            <div key={i} className="flex items-center justify-between glass-card rounded-xl p-4 glass-card-hover">
-              <div>
-                <p className="text-sm font-semibold text-white">{c.name}</p>
-                <p className="text-xs text-muted-foreground">{c.members} members</p>
+        {loading ? (
+          <div className="flex flex-col gap-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between glass-card rounded-xl p-4">
+                <div className="h-3 w-24 rounded bg-surface animate-pulse" />
+                <div className="h-6 w-12 rounded bg-surface animate-pulse" />
               </div>
-              <button onClick={handleJoin}
-                className="rounded-lg bg-gold px-3 py-1.5 text-xs font-bold text-black hover:bg-gold/90 transition-colors">
-                Join
-              </button>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {communities.slice(0, 4).map((c) => (
+              <div key={c.id} className="flex items-center justify-between glass-card rounded-xl p-4 glass-card-hover">
+                <div>
+                  <p className="text-sm font-semibold text-white">{c.name}</p>
+                  <p className="text-xs text-muted-foreground">{formatCount(c.memberCount)} members</p>
+                </div>
+                <button onClick={handleJoin}
+                  className="rounded-lg bg-gold px-3 py-1.5 text-xs font-bold text-black hover:bg-gold/90 transition-colors">
+                  Join
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         {!isAuthenticated && (
           <p className="mt-3 text-center text-xs text-muted-foreground">
             <button onClick={() => setLoginModalOpen(true)} className="text-gold hover:underline">Sign in</button> to join communities
@@ -514,22 +758,82 @@ function TrendingContent() {
 // --- Spotlight -------------------------------------------------
 function SpotlightContent() {
   const setViewingUser = useUIStore((s) => s.setViewingUser);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [likedItems, setLikedItems] = useState<Set<number>>(new Set());
+  const [spotlightItems, setSpotlightItems] = useState<ApiSpotlightItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [likedItems, setLikedItems] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const toggleLike = (id: number) => {
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const res = await fetch('/api/spotlight');
+        if (res.ok) setSpotlightItems(await res.json());
+      } catch (e) {
+        // empty state on error
+      }
+      setLoading(false);
+    }
+    loadData();
+  }, []);
+
+  const toggleLike = (id: string) => {
     setLikedItems(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
 
+  const toFeedUser = useCallback((user: ApiUser) => ({
+    name: user.name,
+    handle: user.handle,
+    avatar: user.avatarInitials,
+    verified: user.isVerified,
+    coverGradient: user.coverGradient,
+    bio: user.bio,
+    role: user.role,
+    location: user.location || '',
+    joined: new Date(user.registeredAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+    followers: user.followerCount,
+    following: user.followingCount,
+    posts: user.postCount,
+    isFollowing: false,
+  }), []);
+
+  // Fallback gradients for spotlight cards
+  const gradients = [
+    'from-green-700 to-emerald-900',
+    'from-blue-700 to-indigo-900',
+    'from-red-700 to-rose-900',
+    'from-yellow-600 to-amber-900',
+    'from-purple-700 to-violet-900',
+    'from-orange-600 to-red-900',
+    'from-teal-600 to-cyan-900',
+    'from-pink-600 to-fuchsia-900',
+  ];
+
+  if (loading) {
+    return (
+      <div className="h-[calc(100vh-8rem)] flex items-center justify-center">
+        <div className="h-8 w-8 border-2 border-gold border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (spotlightItems.length === 0) {
+    return (
+      <div className="h-[calc(100vh-8rem)] flex flex-col items-center justify-center">
+        <Crown className="h-8 w-8 text-muted-foreground/30 mb-2" />
+        <p className="text-sm text-muted-foreground">No spotlight content yet</p>
+      </div>
+    );
+  }
+
   return (
     <div ref={containerRef} className="h-[calc(100vh-8rem)] overflow-y-auto snap-y snap-mandatory scrollbar-hide">
-      {SPOTLIGHT_FEED.map((item, index) => {
-        const user = getFeedUser(item.handle);
+      {spotlightItems.map((item, index) => {
+        const user = toFeedUser(item.user);
         const liked = likedItems.has(item.id);
+        const gradient = gradients[index % gradients.length];
         return (
           <div key={item.id} className="relative h-[calc(100vh-8rem)] w-full snap-start snap-always flex-shrink-0 overflow-hidden">
-            <div className={`absolute inset-0 bg-gradient-to-b ${item.gradient}`} />
+            <div className={`absolute inset-0 bg-gradient-to-b ${gradient}`} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/10" />
 
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
@@ -539,30 +843,28 @@ function SpotlightContent() {
             </div>
 
             <div className="absolute right-4 bottom-32 flex flex-col items-center gap-6">
-              {user && (
-                <button onClick={() => setViewingUser(user)} className="flex flex-col items-center gap-1">
-                  <div className={cn('flex h-12 w-12 items-center justify-center rounded-full border-2 border-gold text-sm font-bold',
-                    user.verified ? 'bg-gold text-black' : 'bg-surface text-white')}>
-                    {user.avatar}
-                  </div>
-                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gold -mt-3">
-                    <span className="text-[10px] font-bold text-black">+</span>
-                  </div>
-                </button>
-              )}
+              <button onClick={() => setViewingUser(user)} className="flex flex-col items-center gap-1">
+                <div className={cn('flex h-12 w-12 items-center justify-center rounded-full border-2 border-gold text-sm font-bold',
+                  user.verified ? 'bg-gold text-black' : 'bg-surface text-white')}>
+                  {user.avatar}
+                </div>
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gold -mt-3">
+                  <span className="text-[10px] font-bold text-black">+</span>
+                </div>
+              </button>
 
               <button onClick={() => toggleLike(item.id)} className="flex flex-col items-center gap-1">
                 <div className={cn('flex h-12 w-12 items-center justify-center rounded-full', liked ? 'bg-pink-500/30' : 'bg-black/30 backdrop-blur-sm')}>
                   <Heart className={cn('h-6 w-6', liked ? 'text-pink-400 fill-current' : 'text-white')} />
                 </div>
-                <span className="text-xs font-semibold text-white">{liked ? '1.3M' : item.views}</span>
+                <span className="text-xs font-semibold text-white">{formatCount(item.likeCount + (liked ? 1 : 0))}</span>
               </button>
 
               <button className="flex flex-col items-center gap-1">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black/30 backdrop-blur-sm">
                   <MessageCircle className="h-6 w-6 text-white" />
                 </div>
-                <span className="text-xs font-semibold text-white">4.2K</span>
+                <span className="text-xs font-semibold text-white">{formatCount(item.commentCount)}</span>
               </button>
 
               <button className="flex flex-col items-center gap-1">
@@ -578,16 +880,13 @@ function SpotlightContent() {
             </div>
 
             <div className="absolute bottom-6 left-4 right-20">
-              {user && (
-                <button onClick={() => setViewingUser(user)} className="mb-3 flex items-center gap-2">
-                  <span className="text-sm font-bold text-white">{user.handle}</span>
-                  {user.verified && <Shield className="h-3.5 w-3.5 text-gold" />}
-                </button>
-              )}
-              <h3 className="text-base font-bold text-white leading-tight mb-1">{item.title}</h3>
+              <button onClick={() => setViewingUser(user)} className="mb-3 flex items-center gap-2">
+                <span className="text-sm font-bold text-white">{user.handle}</span>
+                {user.verified && <Shield className="h-3.5 w-3.5 text-gold" />}
+              </button>
+              <h3 className="text-base font-bold text-white leading-tight mb-1">{item.content}</h3>
               <div className="flex items-center gap-2">
-                <span className="rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">{item.duration}</span>
-                <span className="text-xs text-white/70">{item.views} views</span>
+                <span className="text-xs text-white/70">{formatCount(item.viewCount)} views</span>
               </div>
             </div>
 

@@ -23,14 +23,10 @@ export default function ProfilePage({ config, onBack, initialTab }: ProfilePageP
     }
   };
 
-  // Hero stats for player profiles
-  const heroStats = config.id === 'player' ? [
-    { label: 'Goals', value: '4' },
-    { label: 'Assists', value: '3' },
-    { label: 'Age', value: '23' },
-    { label: 'Height', value: '1.8m' },
-    { label: 'Value', value: '€108M' },
-  ] : null;
+  // Hero stats from profile config data (seed-driven)
+  const heroStats = config.id === 'player'
+    ? config.mockData.stats
+    : null;
 
   return (
     <div className="mx-auto max-w-lg">

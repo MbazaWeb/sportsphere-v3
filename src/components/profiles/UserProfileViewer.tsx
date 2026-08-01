@@ -5,24 +5,87 @@ import { formatCount } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, MapPin, Calendar, Shield, Heart, MessageCircle, Share2, Bookmark, UserPlus, UserMinus, Crown } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+
+// --- API types ---
+interface ApiUser {
+  id: string; name: string; handle: string; avatarInitials: string;
+  isVerified: boolean; coverGradient: string; bio: string; role: string;
+  location: string | null; followerCount: number; followingCount: number;
+  postCount: number; registeredAt: string;
+}
+
+interface ApiPost {
+  id: string; userId: string; content: string; postType: string;
+  mediaUrls: string[]; likeCount: number; commentCount: number;
+  shareCount: number; createdAt: string;
+}
 
 export default function UserProfileViewer() {
-  const viewingUser    = useUIStore((s) => s.viewingUser);
+  const viewingHandle = useUIStore((s) => s.viewingUser?.handle);
+  const viewingUser = useUIStore((s) => s.viewingUser);
   const setViewingUser = useUIStore((s) => s.setViewingUser);
   const [following, setFollowing] = useState(false);
-  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'posts' | 'media' | 'spotlight'>('posts');
+  const [userPosts, setUserPosts] = useState<ApiPost[]>([]);
+  const [apiUser, setApiUser] = useState<ApiUser | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const mockPosts = [
-    { id: 1, content: 'What an incredible match day! The atmosphere was unreal.', time: '2h ago', likes: 234, comments: 45 },
-    { id: 2, content: 'My prediction for tonight: 3-1. Who agrees?', time: '1d ago', likes: 89, comments: 123 },
-    { id: 3, content: 'Just arrived at the stadium. Buzzing for this one!', time: '3d ago', likes: 567, comments: 78 },
-  ];
+  // If we have a handle, fetch user data from API
+  useEffect(() => {
+    if (!viewingHandle) return;
+    async function loadUser() {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/users?handle=${encodeURIComponent(viewingHandle)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setApiUser(data);
+          // Update viewing user with fresh API data
+          setViewingUser({
+            name: data.name,
+            handle: data.handle,
+            avatar: data.avatarInitials,
+            verified: data.isVerified,
+            coverGradient: data.coverGradient,
+            bio: data.bio || '',
+            role: data.role,
+            location: data.location || '',
+            joined: new Date(data.registeredAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+            followers: data.followerCount,
+            following: data.followingCount,
+            posts: data.postCount,
+            isFollowing: false,
+          });
+
+          // Fetch user posts
+          const postsRes = await fetch(`/api/feed?userId=${data.id}`);
+          if (postsRes.ok) setUserPosts(await postsRes.json());
+        }
+      } catch (e) {
+        // Use the mock data from viewingUser if API fails
+      }
+      setLoading(false);
+    }
+    loadUser();
+  }, [viewingHandle, setViewingUser]);
+
+  // Use viewingUser as fallback
+  const user = viewingUser;
+
+  const formatTime = useCallback((dateStr: string) => {
+    const d = new Date(dateStr);
+    const diff = Date.now() - d.getTime();
+    if (diff < 60000) return 'just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return `${Math.floor(diff / 86400000)}d ago`;
+  }, []);
 
   return (
     <AnimatePresence>
-      {viewingUser && (
+      {user && (
         <motion.div
           initial={{ opacity: 0, x: '100%' }}
           animate={{ opacity: 1, x: 0 }}
@@ -40,7 +103,7 @@ export default function UserProfileViewer() {
         >
           <div className="mx-auto max-w-lg min-h-screen">
             {/* Cover */}
-            <div className={cn('relative h-44 w-full bg-gradient-to-br', viewingUser.coverGradient)}>
+            <div className={cn('relative h-44 w-full bg-gradient-to-br', user.coverGradient)}>
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
               <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-20" />
               <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4">
@@ -55,9 +118,9 @@ export default function UserProfileViewer() {
             <div className="relative -mt-14 px-4">
               <div className="flex items-end gap-4">
                 <div className={cn('flex h-24 w-24 flex-shrink-0 items-center justify-center rounded-full border-4 border-background text-2xl font-bold',
-                  viewingUser.verified ? 'bg-gold text-black' : 'bg-surface-elevated text-white')}>
-                  {viewingUser.avatar}
-                  {viewingUser.verified && (
+                  user.verified ? 'bg-gold text-black' : 'bg-surface-elevated text-white')}>
+                  {user.avatar}
+                  {user.verified && (
                     <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-background">
                       <Shield className="h-5 w-5 text-gold" />
                     </span>
@@ -65,33 +128,33 @@ export default function UserProfileViewer() {
                 </div>
                 <div className="mb-1 flex-1 min-w-0 pb-2">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-lg font-black text-white truncate">{viewingUser.name}</h1>
-                    {viewingUser.verified && <Shield className="h-4 w-4 text-gold flex-shrink-0" />}
+                    <h1 className="text-lg font-black text-white truncate">{user.name}</h1>
+                    {user.verified && <Shield className="h-4 w-4 text-gold flex-shrink-0" />}
                   </div>
-                  <p className="text-sm text-muted-foreground">{viewingUser.role}</p>
+                  <p className="text-sm text-muted-foreground">{user.role}</p>
                 </div>
               </div>
 
-              {viewingUser.bio && <p className="mt-3 text-sm leading-relaxed text-foreground/80">{viewingUser.bio}</p>}
+              {user.bio && <p className="mt-3 text-sm leading-relaxed text-foreground/80">{user.bio}</p>}
 
               <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
-                <span className="text-sm text-muted-foreground">{viewingUser.handle}</span>
-                {viewingUser.location && (
+                <span className="text-sm text-muted-foreground">{user.handle}</span>
+                {user.location && (
                   <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <MapPin className="h-3 w-3 text-gold" />{viewingUser.location}
+                    <MapPin className="h-3 w-3 text-gold" />{user.location}
                   </span>
                 )}
                 <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                  <Calendar className="h-3 w-3 text-gold" />Joined {viewingUser.joined}
+                  <Calendar className="h-3 w-3 text-gold" />Joined {user.joined}
                 </span>
               </div>
 
               {/* Stats */}
               <div className="mt-4 grid grid-cols-3 gap-3">
                 {[
-                  { label: 'Followers', value: formatCount(viewingUser.followers) },
-                  { label: 'Following', value: formatCount(viewingUser.following) },
-                  { label: 'Posts',     value: formatCount(viewingUser.posts) },
+                  { label: 'Followers', value: formatCount(user.followers) },
+                  { label: 'Following', value: formatCount(user.following) },
+                  { label: 'Posts',     value: formatCount(user.posts) },
                 ].map((s) => (
                   <div key={s.label} className="glass-card rounded-xl p-3 text-center glass-card-hover">
                     <p className="text-sm font-black text-gold">{s.value}</p>
@@ -128,28 +191,44 @@ export default function UserProfileViewer() {
 
             {/* Content */}
             <div className="p-4 flex flex-col gap-3 pb-20">
-              {activeTab === 'posts' && mockPosts.map((post) => (
-                <article key={post.id} className="glass-card rounded-xl p-4 glass-card-hover">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={cn('flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold',
-                      viewingUser.verified ? 'bg-gold text-black' : 'bg-surface text-white')}>
-                      {viewingUser.avatar}
+              {activeTab === 'posts' && (loading ? (
+                <div className="flex flex-col gap-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="glass-card rounded-xl p-4">
+                      <div className="h-3 w-full rounded bg-surface animate-pulse mb-2" />
+                      <div className="h-3 w-3/4 rounded bg-surface animate-pulse" />
                     </div>
-                    <span className="text-sm font-bold text-white">{viewingUser.name}</span>
-                    <span className="text-xs text-muted-foreground">· {post.time}</span>
-                  </div>
-                  <p className="mb-3 text-sm text-foreground/90">{post.content}</p>
-                  <div className="flex items-center gap-4 border-t border-surface-border pt-2 text-xs text-muted-foreground">
-                    <button onClick={() => setLikedPosts(prev => { const n = new Set(prev); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
-                      className={cn('flex items-center gap-1 transition-colors', likedPosts.has(post.id) ? 'text-pink-400' : 'hover:text-pink-400')}>
-                      <Heart className={cn('h-3.5 w-3.5', likedPosts.has(post.id) && 'fill-current')} />
-                      {post.likes + (likedPosts.has(post.id) ? 1 : 0)}
-                    </button>
-                    <span className="flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" />{post.comments}</span>
-                    <button className="ml-auto hover:text-gold transition-colors"><Share2 className="h-3.5 w-3.5" /></button>
-                    <button className="hover:text-gold transition-colors"><Bookmark className="h-3.5 w-3.5" /></button>
-                  </div>
-                </article>
+                  ))}
+                </div>
+              ) : userPosts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Crown className="h-7 w-7 text-muted-foreground/40 mb-2" />
+                  <p className="text-sm text-muted-foreground">No posts yet</p>
+                </div>
+              ) : (
+                userPosts.map((post) => (
+                  <article key={post.id} className="glass-card rounded-xl p-4 glass-card-hover">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className={cn('flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold',
+                        user.verified ? 'bg-gold text-black' : 'bg-surface text-white')}>
+                        {user.avatar}
+                      </div>
+                      <span className="text-sm font-bold text-white">{user.name}</span>
+                      <span className="text-xs text-muted-foreground">· {formatTime(post.createdAt)}</span>
+                    </div>
+                    <p className="mb-3 text-sm text-foreground/90">{post.content}</p>
+                    <div className="flex items-center gap-4 border-t border-surface-border pt-2 text-xs text-muted-foreground">
+                      <button onClick={() => setLikedPosts(prev => { const n = new Set(prev); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
+                        className={cn('flex items-center gap-1 transition-colors', likedPosts.has(post.id) ? 'text-pink-400' : 'hover:text-pink-400')}>
+                        <Heart className={cn('h-3.5 w-3.5', likedPosts.has(post.id) && 'fill-current')} />
+                        {post.likeCount + (likedPosts.has(post.id) ? 1 : 0)}
+                      </button>
+                      <span className="flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" />{post.commentCount}</span>
+                      <button className="ml-auto hover:text-gold transition-colors"><Share2 className="h-3.5 w-3.5" /></button>
+                      <button className="hover:text-gold transition-colors"><Bookmark className="h-3.5 w-3.5" /></button>
+                    </div>
+                  </article>
+                ))
               ))}
 
               {activeTab === 'media' && (

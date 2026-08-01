@@ -101,17 +101,17 @@ export default function ProfileHeader({ config, onBack, onAction, isFollowing }:
           ))}
         </div>
 
-        {/* 🏆 Trophies Collection */}
-        {mockData.name === 'Kylian Mbappé' || mockData.name === 'Marcus Rashford' && (
+        {/* Trophy display for profiles with achievements in their data */}
+        {config.id === 'player' && (
           <div className="mt-4 glass-card rounded-xl p-4 glass-card-hover">
             <div className="flex items-center gap-2 mb-2">
               <Trophy className="h-4 w-4 text-gold" />
-              <h4 className="text-xs font-bold text-gold uppercase tracking-wider">Trophies Collection</h4>
+              <h4 className="text-xs font-bold text-gold uppercase tracking-wider">Career Highlights</h4>
             </div>
             <div className="flex gap-2 flex-wrap">
-              {['3x Ligue 1', '2x UEFA Euro', '1x World Cup'].map((trophy) => (
-                <span key={trophy} className="rounded-lg bg-gold/10 border border-gold/20 px-3 py-1 text-xs font-semibold text-gold">
-                  {trophy}
+              {mockData.stats.slice(0, 3).map((stat) => (
+                <span key={stat.label} className="rounded-lg bg-gold/10 border border-gold/20 px-3 py-1 text-xs font-semibold text-gold">
+                  {stat.value} {stat.label}
                 </span>
               ))}
             </div>

@@ -1,0 +1,78 @@
+{
+  "Premier League": [
+    { "pos": 1, "team": "Manchester City",   "played": 15, "won": 12, "drawn": 2, "lost": 1, "gd": "+24", "pts": 38 },
+    { "pos": 2, "team": "Arsenal",           "played": 15, "won": 11, "drawn": 3, "lost": 1, "gd": "+21", "pts": 36 },
+    { "pos": 3, "team": "Liverpool",         "played": 15, "won": 11, "drawn": 2, "lost": 2, "gd": "+18", "pts": 35 },
+    { "pos": 4, "team": "Aston Villa",       "played": 15, "won": 9,  "drawn": 4, "lost": 2, "gd": "+12", "pts": 31 },
+    { "pos": 5, "team": "Tottenham",         "played": 15, "won": 9,  "drawn": 2, "lost": 4, "gd": "+8",  "pts": 29 },
+    { "pos": 6, "team": "Manchester United", "played": 15, "won": 8,  "drawn": 3, "lost": 4, "gd": "+6",  "pts": 27, "handle": "@manchesterunited" },
+    { "pos": 7, "team": "Newcastle",         "played": 15, "won": 7,  "drawn": 4, "lost": 4, "gd": "+4",  "pts": 25 },
+    { "pos": 8, "team": "Chelsea",           "played": 15, "won": 7,  "drawn": 3, "lost": 5, "gd": "+2",  "pts": 24 },
+    { "pos": 9, "team": "Brighton",         "played": 15, "won": 6,  "drawn": 4, "lost": 5, "gd": "-1",  "pts": 22 },
+    { "pos": 10, "team": "West Ham",        "played": 15, "won": 5,  "drawn": 5, "lost": 5, "gd": "-2",  "pts": 20 },
+    { "pos": 11, "team": "Wolves",           "played": 15, "won": 5,  "drawn": 4, "lost": 6, "gd": "-4",  "pts": 19 },
+    { "pos": 12, "team": "Bournemouth",      "played": 15, "won": 5,  "drawn": 3, "lost": 7, "gd": "-6",  "pts": 18 },
+    { "pos": 13, "team": "Fulham",           "played": 15, "won": 4,  "drawn": 5, "lost": 6, "gd": "-7",  "pts": 17 },
+    { "pos": 14, "team": "Crystal Palace",   "played": 15, "won": 4,  "drawn": 4, "lost": 7, "gd": "-9",  "pts": 16 },
+    { "pos": 15, "team": "Everton",           "played": 15, "won": 3,  "drawn": 5, "lost": 7, "gd": "-11", "pts": 14 },
+    { "pos": 16, "team": "Brentford",        "played": 15, "won": 3,  "drawn": 4, "lost": 8, "gd": "-13", "pts": 13 },
+    { "pos": 17, "team": "Nottingham Forest", "played": 15, "won": 3, "drawn": 3, "lost": 9, "gd": "-15", "pts": 12 },
+    { "pos": 18, "team": "Luton Town",        "played": 15, "won": 2,  "drawn": 4, "lost": 9, "gd": "-18", "pts": 10 },
+    { "pos": 19, "team": "Burnley",           "played": 15, "won": 1,  "drawn": 4, "lost": 10, "gd": "-22", "pts": 7 },
+    { "pos": 20, "team": "Sheffield United",   "played": 15, "won": 1,  "drawn": 2, "lost": 12, "gd": "-28", "pts": 5 }
+  ],
+  "La Liga": [
+    { "pos": 1, "team": "Real Madrid",       "played": 15, "won": 12, "drawn": 1, "lost": 2, "gd": "+22", "pts": 37 },
+    { "pos": 2, "team": "Barcelona",         "played": 15, "won": 10, "drawn": 3, "lost": 2, "gd": "+18", "pts": 33 },
+    { "pos": 3, "team": "Atletico Madrid",   "played": 15, "won": 9,  "drawn": 4, "lost": 2, "gd": "+12", "pts": 31 },
+    { "pos": 4, "team": "Athletic Bilbao",   "played": 15, "won": 8,  "drawn": 3, "lost": 4, "gd": "+7",  "pts": 27 },
+    { "pos": 5, "team": "Real Sociedad",     "played": 15, "won": 7,  "drawn": 4, "lost": 4, "gd": "+5",  "pts": 25 },
+    { "pos": 6, "team": "Real Betis",        "played": 15, "won": 6,  "drawn": 5, "lost": 4, "gd": "+3",  "pts": 23 },
+    { "pos": 7, "team": "Villarreal",        "played": 15, "won": 6,  "drawn": 3, "lost": 6, "gd": "+1",  "pts": 21 },
+    { "pos": 8, "team": "Girona",            "played": 15, "won": 6,  "drawn": 2, "lost": 7, "gd": "-2",  "pts": 20 }
+  ],
+  "Bundesliga": [
+    { "pos": 1, "team": "Bayer Leverkusen",  "played": 15, "won": 12, "drawn": 2, "lost": 1, "gd": "+20", "pts": 38 },
+    { "pos": 2, "team": "Bayern Munich",     "played": 15, "won": 11, "drawn": 2, "lost": 2, "gd": "+18", "pts": 35 },
+    { "pos": 3, "team": "Borussia Dortmund", "played": 15, "won": 8,  "drawn": 4, "lost": 3, "gd": "+10", "pts": 28 },
+    { "pos": 4, "team": "RB Leipzig",        "played": 15, "won": 7,  "drawn": 5, "lost": 3, "gd": "+8",  "pts": 26 },
+    { "pos": 5, "team": "Stuttgart",         "played": 15, "won": 7,  "drawn": 3, "lost": 5, "gd": "+4",  "pts": 24 },
+    { "pos": 6, "team": "Eintracht Frankfurt", "played": 15, "won": 6, "drawn": 4, "lost": 5, "gd": "+2", "pts": 22 }
+  ],
+  "Serie A": [
+    { "pos": 1, "team": "Inter Milan",       "played": 15, "won": 11, "drawn": 3, "lost": 1, "gd": "+18", "pts": 36 },
+    { "pos": 2, "team": "Juventus",          "played": 15, "won": 9,  "drawn": 5, "lost": 1, "gd": "+12", "pts": 32 },
+    { "pos": 3, "team": "AC Milan",          "played": 15, "won": 8,  "drawn": 4, "lost": 3, "gd": "+8",  "pts": 28 },
+    { "pos": 4, "team": "Napoli",            "played": 15, "won": 8,  "drawn": 3, "lost": 4, "gd": "+5",  "pts": 27 },
+    { "pos": 5, "team": "Atalanta",          "played": 15, "won": 7,  "drawn": 4, "lost": 4, "gd": "+6",  "pts": 25 },
+    { "pos": 6, "team": "Roma",              "played": 15, "won": 6,  "drawn": 4, "lost": 5, "gd": "+2",  "pts": 22 }
+  ],
+  "Ligue 1": [
+    { "pos": 1, "team": "PSG",              "played": 15, "won": 13, "drawn": 1, "lost": 1, "gd": "+28", "pts": 40 },
+    { "pos": 2, "team": "Monaco",           "played": 15, "won": 9,  "drawn": 3, "lost": 3, "gd": "+10", "pts": 30 },
+    { "pos": 3, "team": "Marseille",        "played": 15, "won": 8,  "drawn": 3, "lost": 4, "gd": "+7",  "pts": 27 },
+    { "pos": 4, "team": "Lyon",             "played": 15, "won": 7,  "drawn": 3, "lost": 5, "gd": "+4",  "pts": 24 },
+    { "pos": 5, "team": "Lille",            "played": 15, "won": 6,  "drawn": 5, "lost": 4, "gd": "+3",  "pts": 23 },
+    { "pos": 6, "team": "Nice",             "played": 15, "won": 5,  "drawn": 5, "lost": 5, "gd": "+1",  "pts": 20 }
+  ],
+  "AFCON": [
+    { "pos": 1, "team": "Morocco",   "played": 3, "won": 3, "drawn": 0, "lost": 0, "gd": "+6",  "pts": 9 },
+    { "pos": 2, "team": "Nigeria",   "played": 3, "won": 2, "drawn": 0, "lost": 1, "gd": "+3",  "pts": 6 },
+    { "pos": 3, "team": "Senegal",   "played": 3, "won": 1, "drawn": 1, "lost": 1, "gd": "+1",  "pts": 4 },
+    { "pos": 4, "team": "Egypt",     "played": 3, "won": 0, "drawn": 1, "lost": 2, "gd": "-3",  "pts": 1 }
+  ],
+  "Champions League": [
+    { "pos": 1, "team": "Real Madrid",    "played": 6, "won": 5, "drawn": 0, "lost": 1, "gd": "+8",  "pts": 15 },
+    { "pos": 2, "team": "Manchester City", "played": 6, "won": 4, "drawn": 1, "lost": 1, "gd": "+7",  "pts": 13 },
+    { "pos": 3, "team": "Inter Milan",     "played": 6, "won": 4, "drawn": 1, "lost": 1, "gd": "+5",  "pts": 13 },
+    { "pos": 4, "team": "Bayern Munich",   "played": 6, "won": 3, "drawn": 2, "lost": 1, "gd": "+6",  "pts": 11 },
+    { "pos": 5, "team": "PSG",             "played": 6, "won": 3, "drawn": 1, "lost": 2, "gd": "+4",  "pts": 10 },
+    { "pos": 6, "team": "Arsenal",         "played": 6, "won": 3, "drawn": 1, "lost": 2, "gd": "+3",  "pts": 10 }
+  ],
+  "Europa League": [
+    { "pos": 1, "team": "Liverpool",       "played": 6, "won": 5, "drawn": 0, "lost": 1, "gd": "+10", "pts": 15 },
+    { "pos": 2, "team": "Atalanta",        "played": 6, "won": 4, "drawn": 1, "lost": 1, "gd": "+6",  "pts": 13 },
+    { "pos": 3, "team": "Bayer Leverkusen", "played": 6, "won": 4, "drawn": 0, "lost": 2, "gd": "+5",  "pts": 12 },
+    { "pos": 4, "team": "Roma",            "played": 6, "won": 3, "drawn": 2, "lost": 1, "gd": "+3",  "pts": 11 }
+  ]
+}

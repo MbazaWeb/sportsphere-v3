@@ -2,11 +2,10 @@
 
 import { useAppStore, type ScoresSubTab } from '@/store/useAppStore';
 import { useUIStore } from '@/store/uiStore';
-import { getFeedUser } from '@/data/feedData';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Clock, Trophy, ChevronDown, Globe, Flag, X, Shield, Zap, Flame, Crown } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { Search, Clock, Trophy, ChevronDown, Globe, Flag, X, Crown } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 // --- Filter definitions ----------------------------------------
 const FILTERS = {
@@ -23,60 +22,20 @@ const SUBTABS: { id: ScoresSubTab; label: string }[] = [
   { id: 'standings', label: 'Standings' },
 ];
 
-// --- Match data ------------------------------------------------
-const ALL_MATCHES = {
-  live: [
-    { id: 1, league: 'Premier League', continent: 'Europe', country: 'England', homeTeam: 'Manchester United', awayTeam: 'Arsenal', homeHandle: '@manchesterunited', homeScore: 2, awayScore: 1, minute: 78, status: 'live' as const, events: ["Rashford 23'", "Rashford 56'", "Saka 34'"] },
-    { id: 2, league: 'La Liga',        continent: 'Europe', country: 'Spain',   homeTeam: 'Real Madrid', awayTeam: 'Barcelona', homeScore: 1, awayScore: 1, minute: 45, status: 'ht' as const, events: ["Vinicius 18'", "Lewandowski 38'"] },
-    { id: 3, league: 'Serie A',        continent: 'Europe', country: 'Italy',   homeTeam: 'Inter Milan', awayTeam: 'AC Milan',  homeScore: 0, awayScore: 0, minute: 34, status: 'live' as const, events: [] },
-    { id: 4, league: 'AFCON',          continent: 'Africa', country: 'Africa',  homeTeam: 'Nigeria',     awayTeam: 'Cameroon', homeScore: 1, awayScore: 0, minute: 62, status: 'live' as const, events: ["Osimhen 45'"] },
-  ],
-  today: [
-    { id: 5,  league: 'Premier League',   continent: 'Europe', country: 'England',  homeTeam: 'Liverpool',   awayTeam: 'Chelsea',   time: '17:30', venue: 'Anfield' },
-    { id: 6,  league: 'Premier League',   continent: 'Europe', country: 'England',  homeTeam: 'Tottenham',   awayTeam: 'Newcastle', time: '20:00', venue: 'Tottenham Stadium' },
-    { id: 7,  league: 'Bundesliga',       continent: 'Europe', country: 'Germany',  homeTeam: 'Bayern',      awayTeam: 'Dortmund',  time: '18:30', venue: 'Allianz Arena' },
-    { id: 8,  league: 'Ligue 1',          continent: 'Europe', country: 'France',   homeTeam: 'PSG',         awayTeam: 'Lyon',      time: '21:00', venue: 'Parc des Princes' },
-    { id: 9,  league: 'AFCON',            continent: 'Africa', country: 'Africa',   homeTeam: 'Senegal',     awayTeam: 'Ghana',     time: '17:00', venue: 'Cairo Stadium' },
-  ],
-  upcoming: [
-    { id: 10, league: 'Champions League', continent: 'Europe', country: 'England',  homeTeam: 'Man City',    awayTeam: 'Napoli',    date: 'Tomorrow', time: '21:00' },
-    { id: 11, league: 'Champions League', continent: 'Europe', country: 'Spain',    homeTeam: 'Real Madrid', awayTeam: 'Inter',     date: 'Wed',      time: '21:00' },
-    { id: 12, league: 'Europa League',    continent: 'Europe', country: 'England',  homeTeam: 'Arsenal',     awayTeam: 'PSV',       date: 'Thu',      time: '20:00' },
-    { id: 13, league: 'AFCON',            continent: 'Africa', country: 'Africa',   homeTeam: 'Egypt',       awayTeam: 'Morocco',   date: 'Sat',      time: '17:00' },
-    { id: 14, league: 'Bundesliga',       continent: 'Europe', country: 'Germany',  homeTeam: 'Leipzig',     awayTeam: 'Frankfurt', date: 'Sun',      time: '15:30' },
-  ],
-  results: [
-    { id: 15, league: 'Premier League',   continent: 'Europe', country: 'England',  homeTeam: 'Aston Villa', awayTeam: 'Brighton',  homeScore: 3, awayScore: 1 },
-    { id: 16, league: 'Premier League',   continent: 'Europe', country: 'England',  homeTeam: 'West Ham',    awayTeam: 'Wolves',    homeScore: 2, awayScore: 0 },
-    { id: 17, league: 'La Liga',          continent: 'Europe', country: 'Spain',    homeTeam: 'Atletico',    awayTeam: 'Sevilla',   homeScore: 1, awayScore: 0 },
-    { id: 18, league: 'AFCON',            continent: 'Africa', country: 'Africa',   homeTeam: 'Ivory Coast', awayTeam: 'Mali',      homeScore: 2, awayScore: 2 },
-    { id: 19, league: 'Bundesliga',       continent: 'Europe', country: 'Germany',  homeTeam: 'Dortmund',    awayTeam: 'Leverkusen',homeScore: 1, awayScore: 3 },
-  ],
-  standings: {
-    'Premier League': [
-      { pos: 1, team: 'Manchester City',   played: 15, won: 12, drawn: 2, lost: 1, pts: 38, gd: '+24' },
-      { pos: 2, team: 'Arsenal',           played: 15, won: 11, drawn: 3, lost: 1, pts: 36, gd: '+21' },
-      { pos: 3, team: 'Liverpool',         played: 15, won: 11, drawn: 2, lost: 2, pts: 35, gd: '+18' },
-      { pos: 4, team: 'Aston Villa',       played: 15, won: 9,  drawn: 4, lost: 2, pts: 31, gd: '+12' },
-      { pos: 5, team: 'Tottenham',         played: 15, won: 9,  drawn: 2, lost: 4, pts: 29, gd: '+8' },
-      { pos: 6, team: 'Manchester United', played: 15, won: 8,  drawn: 3, lost: 4, pts: 27, gd: '+5', handle: '@manchesterunited' },
-      { pos: 7, team: 'Newcastle',         played: 15, won: 7,  drawn: 4, lost: 4, pts: 25, gd: '+3' },
-      { pos: 8, team: 'Chelsea',           played: 15, won: 7,  drawn: 3, lost: 5, pts: 24, gd: '+1' },
-    ],
-    'La Liga': [
-      { pos: 1, team: 'Real Madrid',       played: 15, won: 12, drawn: 1, lost: 2, pts: 37, gd: '+22' },
-      { pos: 2, team: 'Barcelona',         played: 15, won: 10, drawn: 3, lost: 2, pts: 33, gd: '+18' },
-      { pos: 3, team: 'Atletico Madrid',   played: 15, won: 9,  drawn: 4, lost: 2, pts: 31, gd: '+12' },
-      { pos: 4, team: 'Athletic Bilbao',   played: 15, won: 8,  drawn: 3, lost: 4, pts: 27, gd: '+7' },
-    ],
-    'AFCON': [
-      { pos: 1, team: 'Morocco',  played: 3, won: 3, drawn: 0, lost: 0, pts: 9, gd: '+6' },
-      { pos: 2, team: 'Nigeria',  played: 3, won: 2, drawn: 0, lost: 1, pts: 6, gd: '+3' },
-      { pos: 3, team: 'Senegal',  played: 3, won: 1, drawn: 1, lost: 1, pts: 4, gd: '+1' },
-      { pos: 4, team: 'Egypt',    played: 3, won: 0, drawn: 1, lost: 2, pts: 1, gd: '-3' },
-    ],
-  } as Record<string, { pos: number; team: string; played: number; won: number; drawn: number; lost: number; pts: number; gd: string; handle?: string }[]>,
-};
+// --- API Match type ---
+interface ApiMatch {
+  id: string; league: string; homeTeam: string; awayTeam: string;
+  homeScore: number | null; awayScore: number | null;
+  status: string; minute: number | null; venue: string | null;
+  kickoffAt: string; events: { minute: number; type: string; player: string; team: string }[];
+  continent: string; country: string;
+}
+
+// --- Standing row type ---
+interface StandingRow {
+  pos: number; team: string; played: number; won: number; drawn: number;
+  lost: number; gd: string; pts: number; handle?: string;
+}
 
 // --- Filter dropdown -------------------------------------------
 function FilterDropdown({ label, options, value, onChange, icon: Icon }: {
@@ -125,12 +84,13 @@ export default function ScoresTab() {
 
   const clearFilters = () => { setContinent('All'); setCountry('All'); setTournament('All'); };
 
-  const filterMatches = <T extends { continent: string; country: string; league: string }>(arr: T[]) =>
-    arr.filter(m =>
-      (continent  === 'All' || m.continent === continent) &&
-      (country    === 'All' || m.country   === country)   &&
-      (tournament === 'All' || m.league    === tournament)
-    );
+  const buildParams = () => {
+    const params = new URLSearchParams();
+    if (continent !== 'All') params.set('continent', continent);
+    if (country !== 'All') params.set('country', country);
+    if (tournament !== 'All') params.set('league', tournament);
+    return params.toString();
+  };
 
   return (
     <div className="mx-auto max-w-lg">
@@ -169,10 +129,10 @@ export default function ScoresTab() {
 
       <motion.div key={scoresSubTab + continent + country + tournament}
         initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
-        {scoresSubTab === 'live'      && <LiveContent    matches={filterMatches(ALL_MATCHES.live)} />}
-        {scoresSubTab === 'today'     && <TodayContent   fixtures={filterMatches(ALL_MATCHES.today)} />}
-        {scoresSubTab === 'upcoming'  && <UpcomingContent fixtures={filterMatches(ALL_MATCHES.upcoming)} />}
-        {scoresSubTab === 'results'   && <ResultsContent  matches={filterMatches(ALL_MATCHES.results)} />}
+        {scoresSubTab === 'live'      && <LiveContent queryParams={buildParams()} />}
+        {scoresSubTab === 'today'     && <TodayContent queryParams={buildParams()} />}
+        {scoresSubTab === 'upcoming'  && <UpcomingContent queryParams={buildParams()} />}
+        {scoresSubTab === 'results'   && <ResultsContent queryParams={buildParams()} />}
         {scoresSubTab === 'standings' && <StandingsContent tournament={tournament} />}
       </motion.div>
     </div>
@@ -189,18 +149,79 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
-// --- TeamName clickable ----------------------------------------
+// --- Loading skeleton -------------------------------------------
+function MatchSkeleton() {
+  return (
+    <div className="glass-card rounded-2xl overflow-hidden">
+      <div className="flex items-center justify-between border-b border-surface-border px-4 py-2">
+        <div className="h-2 w-20 rounded bg-surface animate-pulse" />
+        <div className="h-2 w-8 rounded bg-surface animate-pulse" />
+      </div>
+      <div className="flex items-center justify-between p-4">
+        <div className="flex-1 text-right">
+          <div className="h-3 w-16 rounded bg-surface animate-pulse ml-auto" />
+        </div>
+        <div className="mx-4 flex items-center gap-3">
+          <div className="h-6 w-6 rounded bg-surface animate-pulse" />
+          <div className="h-6 w-6 rounded bg-surface animate-pulse" />
+        </div>
+        <div className="flex-1">
+          <div className="h-3 w-16 rounded bg-surface animate-pulse" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- TeamName (no longer needs getFeedUser) ----------------------
 function TeamName({ name, handle, align = 'left' }: { name: string; handle?: string | null; align?: 'left' | 'right' }) {
   const setViewingUser = useUIStore((s) => s.setViewingUser);
-  const user = handle ? getFeedUser(handle) : null;
-  const cls = cn('text-sm font-semibold transition-colors', align === 'right' ? 'text-right' : 'text-left', user ? 'text-white hover:text-gold cursor-pointer' : 'text-white');
-  if (user) return <button onClick={() => setViewingUser(user)} className={cls}>{name}</button>;
+
+  const handleClick = () => {
+    if (handle) {
+      setViewingUser({
+        name,
+        handle,
+        avatar: name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),
+        verified: false,
+        coverGradient: 'from-red-800 to-red-900',
+        bio: '',
+        role: 'Team',
+        location: '',
+        joined: '',
+        followers: 0,
+        following: 0,
+        posts: 0,
+        isFollowing: false,
+      });
+    }
+  };
+
+  const cls = cn('text-sm font-semibold transition-colors', align === 'right' ? 'text-right' : 'text-left', handle ? 'text-white hover:text-gold cursor-pointer' : 'text-white');
+  if (handle) return <button onClick={handleClick} className={cls}>{name}</button>;
   return <p className={cls}>{name}</p>;
 }
 
 // --- Live -----------------------------------------------------
-function LiveContent({ matches }: { matches: typeof ALL_MATCHES.live }) {
+function LiveContent({ queryParams }: { queryParams: string }) {
+  const [matches, setMatches] = useState<ApiMatch[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const sep = queryParams ? '&' : '?';
+        const res = await fetch(`/api/matches?status=live${queryParams ? '&' + queryParams : ''}`);
+        if (res.ok) setMatches(await res.json());
+      } catch (e) { /* empty */ }
+      setLoading(false);
+    }
+    loadData();
+  }, [queryParams]);
+
+  if (loading) return <div className="p-4 flex flex-col gap-3"><MatchSkeleton /><MatchSkeleton /></div>;
   if (!matches.length) return <EmptyState label="live matches" />;
+
   return (
     <div className="p-4">
       <div className="mb-4 flex items-center gap-2">
@@ -219,18 +240,18 @@ function LiveContent({ matches }: { matches: typeof ALL_MATCHES.live }) {
             </div>
             <div className="flex items-center justify-between p-4">
               <div className="flex-1 text-right">
-                <TeamName name={m.homeTeam} handle={'homeHandle' in m ? m.homeHandle : null} align="right" />
+                <TeamName name={m.homeTeam} align="right" />
               </div>
               <div className="mx-4 flex items-center gap-3">
                 <span className="text-2xl font-black text-gold tabular-nums">{m.homeScore}</span>
-                <span className="text-muted-foreground">ñ</span>
+                <span className="text-muted-foreground">‚Äì</span>
                 <span className="text-2xl font-black text-white tabular-nums">{m.awayScore}</span>
               </div>
               <div className="flex-1"><TeamName name={m.awayTeam} /></div>
             </div>
             {m.events.length > 0 && (
               <div className="border-t border-surface-border px-4 py-2 flex flex-col gap-0.5">
-                {m.events.map((e, i) => <p key={i} className="text-xs text-gold font-medium">{e}</p>)}
+                {m.events.map((e, i) => <p key={i} className="text-xs text-gold font-medium">{e.player} {e.minute}&apos;</p>)}
               </div>
             )}
           </div>
@@ -241,17 +262,35 @@ function LiveContent({ matches }: { matches: typeof ALL_MATCHES.live }) {
 }
 
 // --- Today ----------------------------------------------------
-function TodayContent({ fixtures }: { fixtures: typeof ALL_MATCHES.today }) {
-  if (!fixtures.length) return <EmptyState label="today's fixtures match" />;
+function TodayContent({ queryParams }: { queryParams: string }) {
+  const [matches, setMatches] = useState<ApiMatch[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const res = await fetch(`/api/matches?group=today${queryParams ? '&' + queryParams : ''}`);
+        if (res.ok) setMatches(await res.json());
+      } catch (e) { /* empty */ }
+      setLoading(false);
+    }
+    loadData();
+  }, [queryParams]);
+
+  const formatTime = (dateStr: string) => new Date(dateStr).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+  if (loading) return <div className="p-4 flex flex-col gap-3"><MatchSkeleton /><MatchSkeleton /></div>;
+  if (!matches.length) return <EmptyState label="today's fixtures match" />;
+
   return (
     <div className="p-4">
       <h2 className="mb-4 text-xs font-bold text-gold uppercase tracking-wider">Today&apos;s Fixtures</h2>
       <div className="flex flex-col gap-3">
-        {fixtures.map((f) => (
+        {matches.map((f) => (
           <div key={f.id} className="glass-card rounded-2xl overflow-hidden glass-card-hover">
             <div className="flex items-center justify-between border-b border-surface-border px-4 py-2">
               <span className="text-xs text-muted-foreground">{f.league}</span>
-              <div className="flex items-center gap-1"><Clock className="h-3 w-3 text-gold" /><span className="text-[10px] font-bold text-gold">{f.time}</span></div>
+              <div className="flex items-center gap-1"><Clock className="h-3 w-3 text-gold" /><span className="text-[10px] font-bold text-gold">{formatTime(f.kickoffAt)}</span></div>
             </div>
             <div className="flex items-center justify-between p-4">
               <p className="flex-1 text-right text-sm font-semibold text-white">{f.homeTeam}</p>
@@ -259,7 +298,7 @@ function TodayContent({ fixtures }: { fixtures: typeof ALL_MATCHES.today }) {
               <p className="flex-1 text-sm font-semibold text-white">{f.awayTeam}</p>
             </div>
             <div className="border-t border-surface-border px-4 py-1.5">
-              <p className="text-[10px] text-muted-foreground">?? {f.venue}</p>
+              <p className="text-[10px] text-muted-foreground">üìç {f.venue}</p>
             </div>
           </div>
         ))}
@@ -269,21 +308,50 @@ function TodayContent({ fixtures }: { fixtures: typeof ALL_MATCHES.today }) {
 }
 
 // --- Upcoming -------------------------------------------------
-function UpcomingContent({ fixtures }: { fixtures: typeof ALL_MATCHES.upcoming }) {
-  if (!fixtures.length) return <EmptyState label="upcoming fixtures match" />;
+function UpcomingContent({ queryParams }: { queryParams: string }) {
+  const [matches, setMatches] = useState<ApiMatch[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const res = await fetch(`/api/matches?group=upcoming${queryParams ? '&' + queryParams : ''}`);
+        if (res.ok) setMatches(await res.json());
+      } catch (e) { /* empty */ }
+      setLoading(false);
+    }
+    loadData();
+  }, [queryParams]);
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfter = new Date();
+    dayAfter.setDate(dayAfter.getDate() + 2);
+    if (d.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+    if (d.toDateString() === dayAfter.toDateString()) return 'Wed';
+    return d.toLocaleDateString('en-US', { weekday: 'short' });
+  };
+
+  const formatTime = (dateStr: string) => new Date(dateStr).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+  if (loading) return <div className="p-4 flex flex-col gap-3"><MatchSkeleton /><MatchSkeleton /></div>;
+  if (!matches.length) return <EmptyState label="upcoming fixtures match" />;
+
   return (
     <div className="p-4">
       <h2 className="mb-4 text-xs font-bold text-gold uppercase tracking-wider">Upcoming</h2>
       <div className="flex flex-col gap-3">
-        {fixtures.map((f) => (
+        {matches.map((f) => (
           <div key={f.id} className="glass-card rounded-2xl overflow-hidden glass-card-hover">
             <div className="flex items-center justify-between border-b border-surface-border px-4 py-2">
               <span className="text-xs text-muted-foreground">{f.league}</span>
-              <span className="text-[10px] font-bold text-gold">{f.date}</span>
+              <span className="text-[10px] font-bold text-gold">{formatDate(f.kickoffAt)}</span>
             </div>
             <div className="flex items-center justify-between p-4">
               <p className="flex-1 text-right text-sm font-semibold text-white">{f.homeTeam}</p>
-              <span className="mx-4 rounded-lg bg-gold/10 border border-gold/20 px-3 py-1 text-sm font-bold text-gold">{f.time}</span>
+              <span className="mx-4 rounded-lg bg-gold/10 border border-gold/20 px-3 py-1 text-sm font-bold text-gold">{formatTime(f.kickoffAt)}</span>
               <p className="flex-1 text-sm font-semibold text-white">{f.awayTeam}</p>
             </div>
           </div>
@@ -294,8 +362,24 @@ function UpcomingContent({ fixtures }: { fixtures: typeof ALL_MATCHES.upcoming }
 }
 
 // --- Results --------------------------------------------------
-function ResultsContent({ matches }: { matches: typeof ALL_MATCHES.results }) {
+function ResultsContent({ queryParams }: { queryParams: string }) {
+  const [matches, setMatches] = useState<ApiMatch[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const res = await fetch(`/api/matches?group=results${queryParams ? '&' + queryParams : ''}`);
+        if (res.ok) setMatches(await res.json());
+      } catch (e) { /* empty */ }
+      setLoading(false);
+    }
+    loadData();
+  }, [queryParams]);
+
+  if (loading) return <div className="p-4 flex flex-col gap-3"><MatchSkeleton /><MatchSkeleton /></div>;
   if (!matches.length) return <EmptyState label="results match" />;
+
   return (
     <div className="p-4">
       <h2 className="mb-4 text-xs font-bold text-gold uppercase tracking-wider">Finished</h2>
@@ -309,9 +393,9 @@ function ResultsContent({ matches }: { matches: typeof ALL_MATCHES.results }) {
             <div className="flex items-center justify-between p-4">
               <p className="flex-1 text-right text-sm font-semibold text-white">{m.homeTeam}</p>
               <div className="mx-4 flex items-center gap-3">
-                <span className={cn('text-2xl font-black tabular-nums', m.homeScore > m.awayScore ? 'text-gold' : 'text-white')}>{m.homeScore}</span>
-                <span className="text-muted-foreground">ñ</span>
-                <span className={cn('text-2xl font-black tabular-nums', m.awayScore > m.homeScore ? 'text-gold' : 'text-white')}>{m.awayScore}</span>
+                <span className={cn('text-2xl font-black tabular-nums', (m.homeScore ?? 0) > (m.awayScore ?? 0) ? 'text-gold' : 'text-white')}>{m.homeScore}</span>
+                <span className="text-muted-foreground">‚Äì</span>
+                <span className={cn('text-2xl font-black tabular-nums', (m.awayScore ?? 0) > (m.homeScore ?? 0) ? 'text-gold' : 'text-white')}>{m.awayScore}</span>
               </div>
               <p className="flex-1 text-sm font-semibold text-white">{m.awayTeam}</p>
             </div>
@@ -326,13 +410,67 @@ function ResultsContent({ matches }: { matches: typeof ALL_MATCHES.results }) {
 function StandingsContent({ tournament }: { tournament: string }) {
   const setViewingUser = useUIStore((s) => s.setViewingUser);
   const [activeTournament, setActiveTournament] = useState('Premier League');
+  const [allStandings, setAllStandings] = useState<Record<string, StandingRow[]>>({});
+  const [availableTournaments, setAvailableTournaments] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const display = tournament !== 'All' && ALL_MATCHES.standings[tournament]
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const res = await fetch(`/api/standings`);
+        if (res.ok) {
+          const data = await res.json();
+          setAllStandings(data.standings);
+          setAvailableTournaments(data.available);
+        }
+      } catch (e) { /* empty */ }
+      setLoading(false);
+    }
+    loadData();
+  }, []);
+
+  const display = tournament !== 'All' && allStandings[tournament]
     ? tournament
     : activeTournament;
 
-  const rows = ALL_MATCHES.standings[display] ?? ALL_MATCHES.standings['Premier League'];
-  const availableTournaments = Object.keys(ALL_MATCHES.standings);
+  const rows = allStandings[display] ?? allStandings['Premier League'] ?? [];
+
+  const handleTeamClick = (row: StandingRow) => {
+    if (row.handle) {
+      setViewingUser({
+        name: row.team,
+        handle: row.handle,
+        avatar: row.team.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),
+        verified: true,
+        coverGradient: 'from-red-800 to-red-900',
+        bio: '',
+        role: 'Team',
+        location: '',
+        joined: '',
+        followers: 0,
+        following: 0,
+        posts: 0,
+        isFollowing: false,
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-4 flex flex-col gap-2">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="grid grid-cols-[2rem_1fr_2.5rem_2.5rem_2.5rem_3rem] items-center rounded-xl px-2 py-3 glass-card">
+            <div className="h-3 w-3 rounded bg-surface animate-pulse" />
+            <div className="h-3 w-24 rounded bg-surface animate-pulse" />
+            <div className="h-3 w-3 rounded bg-surface animate-pulse" />
+            <div className="h-3 w-3 rounded bg-surface animate-pulse" />
+            <div className="h-3 w-3 rounded bg-surface animate-pulse" />
+            <div className="h-3 w-4 rounded bg-surface animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="p-4">
@@ -369,7 +507,7 @@ function StandingsContent({ tournament }: { tournament: string }) {
                 {row.pos}
               </span>
               {row.handle ? (
-                <button onClick={() => { const u = getFeedUser(row.handle!); if (u) setViewingUser(u); }}
+                <button onClick={() => handleTeamClick(row)}
                   className="truncate text-left text-sm font-semibold text-white hover:text-gold transition-colors">
                   {row.team}
                   {isChampion && <Crown className="ml-1 inline h-3 w-3 text-gold" />}

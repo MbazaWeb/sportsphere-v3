@@ -1,13 +1,12 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { type ProfileTypeConfig } from './profileConfig';
 import { useAuthStore } from '@/store/authStore';
-import { PLAYER_DATA, TEAM_DATA, COMPETITION_DATA } from '@/data/playerData';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { useUIStore } from '@/store/uiStore';
-import { getFeedUser } from '@/data/feedData';
+import type { FeedUser } from '@/data/feedData';
 import {
   Heart, MessageCircle, Share2, Bookmark, Star, TrendingUp, Lock, Shield, Activity, DollarSign, Shirt,
   MapPin, Clock, Trophy, Users, ChevronRight, Zap, Play,
@@ -16,8 +15,27 @@ import {
   Award, Medal, Gift, Diamond, Gem, Music, Mic, Podcast,
   Video, Image, Camera, Tv, Radio, Newspaper, BookOpen,
   GraduationCap, Briefcase, Building, Home, Wifi, Coffee,
-  Utensils, Car, Bus, Train, Plane, Globe, Compass,
+  Utensils, Car, Bus, Train, Plane, Globe, Compass, Info,
 } from 'lucide-react';
+
+// ─── Fetch hook for profile data (replaces static imports) ──
+function useProfileData<T>(type: string, key: string): { data: T | null; loading: boolean } {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch(`/api/profile-data?type=${type}&key=${key}`);
+        if (res.ok && !cancelled) setData(await res.json());
+      } catch { /* empty */ }
+      if (!cancelled) setLoading(false);
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [type, key]);
+  return { data, loading };
+}
 
 interface TabContentProps { config: ProfileTypeConfig; tabId: string; }
 
@@ -27,6 +45,28 @@ export default function TabContent({ config, tabId }: TabContentProps) {
       transition={{ duration: 0.15 }} className="p-4">
       <TabContentInner config={config} tabId={tabId} />
     </motion.div>
+  );
+}
+
+function ProfileDataSkeleton() {
+  return (
+    <div className="flex flex-col gap-3">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="glass-card rounded-2xl p-4">
+          <div className="h-3 w-full rounded bg-surface animate-pulse mb-2" />
+          <div className="h-3 w-3/4 rounded bg-surface animate-pulse" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EmptyCard({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12">
+      <Info className="h-7 w-7 text-muted-foreground/40 mb-2" />
+      <p className="text-sm text-muted-foreground">{message}</p>
+    </div>
   );
 }
 
@@ -154,8 +194,10 @@ function OverviewContent({ config }: { config: ProfileTypeConfig }) {
 
 // ─── Team Overview ────────────────────────────────────────────
 function TeamOverview() {
-  const team = TEAM_DATA.manchesterunited;
+  const { data: team, loading } = useProfileData<ReturnType<typeof Object>>("team", "manchesterunited");
   const setViewingUser = useUIStore((s) => s.setViewingUser);
+  if (loading) return <ProfileDataSkeleton />;
+  if (!team) return <EmptyCard message="Team data unavailable" />;
   return (
     <>
       {/* Season + Form */}
@@ -256,8 +298,10 @@ function TeamOverview() {
 
 // ─── Competition Overview ─────────────────────────────────────
 function CompetitionOverview() {
-  const comp = COMPETITION_DATA.premierLeague;
+  const { data: comp, loading } = useProfileData<ReturnType<typeof Object>>("competition", "premierLeague");
   const [activeTab, setActiveTab] = useState<'table'|'scorers'|'assists'|'cs'>('table');
+  if (loading) return <ProfileDataSkeleton />;
+  if (!comp) return <EmptyCard message="Competition data unavailable" />;
   return (
     <>
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
@@ -413,8 +457,10 @@ function MatchOverview() {
 
 // ─── Player Overview Enhanced ────────────────────────────────
 function PlayerOverviewEnhanced() {
-  const p = PLAYER_DATA.rashford;
+  const { data: p, loading } = useProfileData<Record<string, unknown>>("player", "rashford");
   const setViewingUser = useUIStore((s) => s.setViewingUser);
+  if (loading) return <ProfileDataSkeleton />;
+  if (!p) return <EmptyCard message="Player data unavailable" />;
 
   return (
     <>
@@ -463,7 +509,7 @@ function PlayerOverviewEnhanced() {
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider">Current Team</h3>
         <button
-          onClick={() => { const u = getFeedUser('@manchesterunited'); if (u) setViewingUser(u); }}
+          onClick={() => { setViewingUser({ name: 'Manchester United', handle: '@manchesterunited', avatar: 'MU', verified: true, coverGradient: 'from-red-800 to-red-900', bio: 'Official Manchester United FC. 20x Premier League champions.', role: 'Team', location: 'Manchester, UK', joined: 'Jan 2024', followers: 8900000, following: 12, posts: 1240, isFollowing: false }); }}
           className="flex w-full items-center gap-3 rounded-xl bg-surface p-3 hover:bg-surface-elevated transition-colors">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-red-700 text-sm font-black text-white">MU</div>
           <div className="flex-1 text-left">
@@ -939,7 +985,7 @@ function GenericOverview({ config }: { config: ProfileTypeConfig }) {
   return (
     <>
       <InfoCard title="About" subtitle={config.mockData.role || config.label}
-        detail={config.mockData.bio || `${config.mockData.name} profile`} accent="text-gold" icon={InfoIcon} />
+        detail={config.mockData.bio || `${config.mockData.name} profile`} accent="text-gold" icon={Info} />
       {config.mockData.location && (
         <InfoCard title="Location" subtitle="Based in" detail={config.mockData.location} accent="text-blue-400" icon={MapPin} />
       )}
@@ -1306,7 +1352,7 @@ function FansContent() {
   return (
     <div className="flex flex-col gap-2">
       {fans.map((fan) => {
-        const user = getFeedUser(fan.handle);
+        const user: FeedUser | null = { name: fan.name, handle: fan.handle, avatar: fan.avatar, verified: false, coverGradient: 'from-surface to-surface', bio: '', role: 'Fan', location: '', joined: '', followers: 0, following: 0, posts: 0, isFollowing: false };
         return (
           <button key={fan.handle} onClick={() => user && setViewingUser(user)}
             className="glass-card rounded-xl p-3 text-left glass-card-hover w-full">
@@ -1329,7 +1375,9 @@ function FansContent() {
 
 // ─── Career Content ───────────────────────────────────────────
 function CareerContent() {
-  const p = PLAYER_DATA.rashford;
+  const { data: p, loading } = useProfileData<{ careerTimeline: { season: string; team: string; apps: number; goals: number; assists: number; honours: string[] }[] }>("player", "rashford");
+  if (loading) return <ProfileDataSkeleton />;
+  if (!p) return <EmptyCard message="Career data unavailable" />;
   const timeline = [...p.careerTimeline].reverse();
   return (
     <div className="flex flex-col gap-0">
@@ -1636,7 +1684,7 @@ function TeamsContent() {
   return (
     <div className="flex flex-col gap-2">
       {teams.map((team, i) => {
-        const user = team.handle ? getFeedUser(team.handle) : null;
+        const user: FeedUser | null = team.handle ? { name: team.name, handle: team.handle, avatar: team.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2), verified: false, coverGradient: 'from-surface to-surface', bio: '', role: 'Team', location: '', joined: '', followers: 0, following: 0, posts: 0, isFollowing: false } : null;
         return (
           <div key={i} onClick={() => user && setViewingUser(user)}
             className={cn('glass-card rounded-xl p-3 glass-card-hover', user && 'cursor-pointer')}>

@@ -2,13 +2,13 @@
 
 import { useAppStore, type ActivitySubTab } from '@/store/useAppStore';
 import { useUIStore } from '@/store/uiStore';
-import { getFeedUser } from '@/data/feedData';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import {
   Heart, UserPlus, MessageCircle, Circle, Trophy,
   Users, Bell, ChevronRight, X, Flame, Crown,
 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
 
 const activitySubTabs: { id: ActivitySubTab; label: string; badge?: string }[] = [
   { id: 'all',      label: 'All' },
@@ -17,42 +17,57 @@ const activitySubTabs: { id: ActivitySubTab; label: string; badge?: string }[] =
   { id: 'messages', label: 'Messages', badge: '3' },
 ];
 
-// Each activity item now carries a `handle` for clickable user
-const allActivity = [
-  { id: 1,  type: 'like',        handle: '@davidmbaza',    avatar: 'DM', text: 'David liked your post about Manchester United',    time: '2m ago',  read: false },
-  { id: 2,  type: 'goal',        handle: '@manchesterunited', avatar: 'MU', text: 'GOAL! Rashford makes it 2-1 — Man Utd vs Arsenal', time: '5m ago',  read: false },
-  { id: 3,  type: 'follow',      handle: '@sarahchen',     avatar: 'SC', text: 'Sarah Chen started following you',                 time: '15m ago', read: false },
-  { id: 4,  type: 'prediction',  handle: null,             avatar: '🎯', text: 'Your prediction was correct! Arsenal won 2-1',     time: '30m ago', read: false },
-  { id: 5,  type: 'community',   handle: null,             avatar: 'GN', text: 'You were invited to join "Gooners" community',     time: '1h ago',  read: true  },
-  { id: 6,  type: 'result',      handle: null,             avatar: '⚽', text: 'Chelsea vs Liverpool ended 1-3',                   time: '2h ago',  read: true  },
-  { id: 7,  type: 'comment',     handle: '@marcusj',       avatar: 'MJ', text: 'Marcus commented: "Great analysis!"',             time: '3h ago',  read: true  },
-  { id: 8,  type: 'transfer',    handle: '@footballdaily', avatar: 'FD', text: 'Transfer news: Arsenal signs new midfielder',       time: '5h ago',  read: true  },
-  { id: 9,  type: 'poll_result', handle: null,             avatar: '📊', text: 'Poll results: 42% voted Manchester City to win',   time: '6h ago',  read: true  },
-  { id: 10, type: 'follow',      handle: '@goalsdaily',    avatar: 'GH', text: 'Goal Highlights HD started following you',         time: '8h ago',  read: true  },
-];
+// --- Shared time formatters (outside components to avoid React purity issues) ---
+function formatTime(dateStr: string): string {
+  const d = new Date(dateStr);
+  const diff = Date.now() - d.getTime();
+  if (diff < 60000) return 'now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return `${Math.floor(diff / 86400000)}d ago`;
+}
 
-const socialActivity = allActivity.filter(a => ['like','follow','comment'].includes(a.type));
-const sportsActivity  = allActivity.filter(a => ['goal','prediction','result','transfer','poll_result'].includes(a.type));
+function formatTimeShort(dateStr: string): string {
+  const d = new Date(dateStr);
+  const diff = Date.now() - d.getTime();
+  if (diff < 60000) return 'now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
+  return `${Math.floor(diff / 86400000)}d`;
+}
 
-const messageChats = [
-  { id: 1, handle: '@davidmbaza',    name: 'David Mbaza',          avatar: 'DM', lastMessage: 'Did you see that game?',          time: '2m',  unread: 2 },
-  { id: 2, handle: '@sarahchen',     name: 'Sarah Chen',           avatar: 'SC', lastMessage: "Let's go to the match together!", time: '15m', unread: 1 },
-  { id: 3, handle: '@goonercam',     name: 'Gooners Community',    avatar: 'GC', lastMessage: 'Admin: Match day thread is up',   time: '1h',  unread: 0, isGroup: true },
-  { id: 4, handle: '@marcusj',       name: 'Marcus Johnson',       avatar: 'MJ', lastMessage: 'Great prediction!',               time: '3h',  unread: 0 },
-  { id: 5, handle: '@manchesterunited', name: 'Man Utd vs Arsenal', avatar: 'MU', lastMessage: 'John: What a comeback!',         time: '5h',  unread: 0, isMatch: true },
-];
+// --- Types from API ---
+interface ApiNotification {
+  id: string; type: string; title: string; body: string | null;
+  isRead: boolean; actorId: string | null; referenceId: string | null;
+  createdAt: string;
+  actor?: { id: string; name: string; handle: string; avatarInitials: string; isVerified: boolean } | null;
+}
+
+interface ApiMessageConversation {
+  partnerId: string; partnerName: string; partnerHandle: string;
+  partnerAvatar: string; lastMessage: string; lastTime: string;
+  unread: number; isVerified: boolean;
+}
+
+interface ActivityItem {
+  id: string; type: string; handle: string | null; avatar: string;
+  text: string; time: string; read: boolean;
+}
 
 function getActivityIcon(type: string) {
   const map: Record<string, React.ReactNode> = {
     like:        <Heart className="h-4 w-4 text-pink-400" />,
     follow:      <UserPlus className="h-4 w-4 text-blue-400" />,
     goal:        <Circle className="h-4 w-4 text-gold" />,
+    match_goal:  <Circle className="h-4 w-4 text-gold" />,
     prediction:  <Trophy className="h-4 w-4 text-yellow-400" />,
     community:   <Users className="h-4 w-4 text-purple-400" />,
     result:      <Bell className="h-4 w-4 text-muted-foreground" />,
     comment:     <MessageCircle className="h-4 w-4 text-cyan-400" />,
     transfer:    <ChevronRight className="h-4 w-4 text-orange-400" />,
     poll_result: <Bell className="h-4 w-4 text-muted-foreground" />,
+    system:      <Bell className="h-4 w-4 text-muted-foreground" />,
   };
   return map[type] ?? <Bell className="h-4 w-4 text-muted-foreground" />;
 }
@@ -109,23 +124,97 @@ export default function ActivityTab() {
       </header>
 
       <motion.div key={activitySubTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
-        {activitySubTab === 'all'      && <ActivityList items={allActivity} />}
-        {activitySubTab === 'social'   && <ActivityList items={socialActivity} />}
-        {activitySubTab === 'sports'   && <ActivityList items={sportsActivity} />}
+        {activitySubTab === 'all'      && <ActivityList filter="all" />}
+        {activitySubTab === 'social'   && <ActivityList filter="social" />}
+        {activitySubTab === 'sports'   && <ActivityList filter="sports" />}
         {activitySubTab === 'messages' && <MessagesList />}
       </motion.div>
     </div>
   );
 }
 
-function ActivityList({ items }: { items: typeof allActivity }) {
+// --- ActivityList with API fetch ---
+function ActivityList({ filter }: { filter: 'all' | 'social' | 'sports' }) {
   const setViewingUser = useUIStore((s) => s.setViewingUser);
+  const [items, setItems] = useState<ActivityItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const res = await fetch('/api/activity');
+        if (res.ok) {
+          const data = await res.json();
+          const notifs: ActivityItem[] = (data.notifications || []).map((n: ApiNotification) => ({
+            id: n.id,
+            type: n.type,
+            handle: n.actor?.handle || null,
+            avatar: n.actor?.avatarInitials || '🎯',
+            text: n.title,
+            time: formatTime(n.createdAt),
+            read: n.isRead,
+          }));
+
+          const filtered = filter === 'all'
+            ? notifs
+            : filter === 'social'
+            ? notifs.filter((a: ActivityItem) => ['like', 'follow', 'comment'].includes(a.type))
+            : notifs.filter((a: ActivityItem) => ['goal', 'match_goal', 'prediction', 'result', 'transfer', 'poll_result'].includes(a.type));
+
+          setItems(filtered);
+        }
+      } catch (e) { /* empty */ }
+      setLoading(false);
+    }
+    loadData();
+  }, [filter]);
+
+  const handleUserClick = useCallback((item: ActivityItem) => {
+    if (!item.handle) return;
+    setViewingUser({
+      name: item.text.split(' ').slice(0, 2).join(' '),
+      handle: item.handle,
+      avatar: item.avatar,
+      verified: false,
+      coverGradient: 'from-surface to-surface',
+      bio: '',
+      role: 'User',
+      location: '',
+      joined: '',
+      followers: 0,
+      following: 0,
+      posts: 0,
+      isFollowing: false,
+    });
+  }, [setViewingUser]);
+
+  if (loading) {
+    return (
+      <div className="p-4 flex flex-col gap-2">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="glass-card rounded-2xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-surface animate-pulse" />
+              <div className="flex-1">
+                <div className="h-3 w-full rounded bg-surface animate-pulse mb-1" />
+                <div className="h-2 w-16 rounded bg-surface animate-pulse" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 flex flex-col gap-2">
-      {items.map((item) => {
-        const user = item.handle ? getFeedUser(item.handle) : null;
-        const isClickable = !!user;
+      {items.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <Bell className="h-8 w-8 text-muted-foreground/30 mb-2" />
+          <p className="text-sm text-muted-foreground">No activity yet</p>
+        </div>
+      ) : items.map((item) => {
+        const isClickable = !!item.handle;
 
         const content = (
           <div className={cn('glass-card rounded-2xl p-4 transition-colors',
@@ -134,9 +223,9 @@ function ActivityList({ items }: { items: typeof allActivity }) {
             <div className="flex items-start gap-3">
               <div className={cn('flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full',
                 !item.read ? 'bg-gold/10' : 'bg-surface/50')}>
-                {user ? (
-                  <span className={cn('text-sm font-bold', user.verified ? 'text-gold' : 'text-white')}>
-                    {user.avatar}
+                {isClickable ? (
+                  <span className="text-sm font-bold text-gold">
+                    {item.avatar}
                   </span>
                 ) : (
                   getActivityIcon(item.type)
@@ -154,7 +243,7 @@ function ActivityList({ items }: { items: typeof allActivity }) {
         );
 
         return isClickable ? (
-          <button key={item.id} onClick={() => setViewingUser(user!)} className="w-full text-left">
+          <button key={item.id} onClick={() => handleUserClick(item)} className="w-full text-left">
             {content}
           </button>
         ) : (
@@ -165,8 +254,61 @@ function ActivityList({ items }: { items: typeof allActivity }) {
   );
 }
 
+// --- MessagesList with API fetch ---
 function MessagesList() {
   const setViewingUser = useUIStore((s) => s.setViewingUser);
+  const [conversations, setConversations] = useState<ApiMessageConversation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const res = await fetch('/api/messages');
+        if (res.ok) {
+          const data = await res.json();
+          setConversations(data);
+        }
+      } catch (e) { /* empty */ }
+      setLoading(false);
+    }
+    loadData();
+  }, []);
+
+  const handleChatClick = (chat: ApiMessageConversation) => {
+    setViewingUser({
+      name: chat.partnerName,
+      handle: chat.partnerHandle,
+      avatar: chat.partnerAvatar,
+      verified: chat.isVerified,
+      coverGradient: 'from-surface to-surface',
+      bio: '',
+      role: 'User',
+      location: '',
+      joined: '',
+      followers: 0,
+      following: 0,
+      posts: 0,
+      isFollowing: false,
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="p-4 flex flex-col gap-2">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="glass-card rounded-2xl p-3">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-full bg-surface animate-pulse" />
+              <div className="flex-1">
+                <div className="h-3 w-24 rounded bg-surface animate-pulse mb-1" />
+                <div className="h-2 w-32 rounded bg-surface animate-pulse" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 flex flex-col gap-2">
@@ -174,36 +316,33 @@ function MessagesList() {
         <MessageCircle className="h-4 w-4 text-gold" />
         <span className="text-xs font-bold text-gold uppercase tracking-wider">Conversations</span>
       </div>
-      {messageChats.map((chat) => {
-        const user = getFeedUser(chat.handle);
-        return (
-          <button key={chat.id} onClick={() => { if (user) setViewingUser(user); }}
-            className="glass-card rounded-2xl p-3 text-left glass-card-hover w-full">
-            <div className="flex items-center gap-3">
-              <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gold/10 font-bold text-sm text-gold">
-                {chat.avatar}
-                {chat.isGroup && (
-                  <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-surface-elevated border border-surface-border">
-                    <Users className="h-2.5 w-2.5 text-muted-foreground" />
-                  </span>
-                )}
-                {chat.unread > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">
-                    {chat.unread}
-                  </span>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-0.5">
-                  <p className="text-sm font-bold text-white truncate">{chat.name}</p>
-                  <span className="text-[10px] text-muted-foreground flex-shrink-0">{chat.time}</span>
-                </div>
-                <p className="text-xs text-muted-foreground truncate">{chat.lastMessage}</p>
-              </div>
+      {conversations.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <MessageCircle className="h-8 w-8 text-muted-foreground/30 mb-2" />
+          <p className="text-sm text-muted-foreground">No conversations yet</p>
+        </div>
+      ) : conversations.map((chat) => (
+        <button key={chat.partnerId} onClick={() => handleChatClick(chat)}
+          className="glass-card rounded-2xl p-3 text-left glass-card-hover w-full">
+          <div className="flex items-center gap-3">
+            <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gold/10 font-bold text-sm text-gold">
+              {chat.partnerAvatar}
+              {chat.unread > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">
+                  {chat.unread}
+                </span>
+              )}
             </div>
-          </button>
-        );
-      })}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-0.5">
+                <p className="text-sm font-bold text-white truncate">{chat.partnerName}</p>
+                <span className="text-[10px] text-muted-foreground flex-shrink-0">{formatTimeShort(chat.lastTime)}</span>
+              </div>
+              <p className="text-xs text-muted-foreground truncate">{chat.lastMessage}</p>
+            </div>
+          </div>
+        </button>
+      ))}
     </div>
   );
 }
