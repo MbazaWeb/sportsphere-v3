@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.sportsphere.app',
   appName: 'SportSphere',
-  webDir: 'dist',
+  webDir: 'out',  // Changed to match static export output
   server: {
     androidScheme: 'https',
     allowNavigation: ['*'],
