@@ -1,0 +1,313 @@
+// SportSphere — Prisma Schema
+// Database: PostgreSQL (VPS: 104.152.50.173)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────
+enum UserRole {
+  fan
+  team
+  player
+  coach
+  referee
+  journalist
+  analyst
+  creator
+  scout
+  stadium
+  venue
+  academy
+  community
+  organization
+  business
+}
+
+enum VerificationStatus {
+  none
+  pending
+  verified
+  rejected
+}
+
+enum PostType {
+  post
+  photo
+  video
+  spotlight
+  poll
+  prediction
+  highlight
+}
+
+enum MatchStatus {
+  upcoming
+  live
+  ht
+  ft
+  postponed
+  cancelled
+}
+
+enum NotificationType {
+  like
+  comment
+  follow
+  mention
+  match_start
+  match_goal
+  match_end
+  verification
+  system
+}
+
+// ─── Users ─────────────────────────────────────────────────────
+model User {
+  id                  String             @id @default(uuid())
+  name                String
+  email               String             @unique
+  handle              String             @unique
+  passwordHash        String?
+  avatarUrl           String?
+  avatarInitials      String?
+  role                UserRole           @default(fan)
+  verificationStatus  VerificationStatus @default(none)
+  isVerified          Boolean            @default(false)
+  bio                 String?
+  location            String?
+  coverGradient       String             @default("from-emerald-600 to-emerald-900")
+  followerCount       Int                @default(0)
+  followingCount      Int                @default(0)
+  postCount           Int                @default(0)
+  roleData            Json               @default("{}")
+  sportsFollowing     String[]           @default([])
+  registeredAt        DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  lastSeenAt          DateTime           @default(now())
+
+  // Relations
+  posts               Post[]
+  comments            Comment[]
+  likes               PostLike[]
+  sentFollows         Follow[]           @relation("Follower")
+  receivedFollows     Follow[]           @relation("Following")
+  notifications       Notification[]     @relation("NotificationUser")
+  actorNotifications  Notification[]     @relation("NotificationActor")
+  sentMessages        Message[]          @relation("MessageSender")
+  receivedMessages    Message[]          @relation("MessageReceiver")
+  predictions         Prediction[]
+  verificationReqs    VerificationRequest[]
+  communityMemberships CommunityMember[]
+  createdCommunities  Community[]
+
+  @@index([handle])
+  @@index([email])
+  @@index([role])
+}
+
+// ─── Follows ───────────────────────────────────────────────────
+model Follow {
+  followerId   String
+  followingId  String
+  createdAt    DateTime @default(now())
+
+  follower     User     @relation("Follower",  fields: [followerId],  references: [id], onDelete: Cascade)
+  following    User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+// ─── Posts ─────────────────────────────────────────────────────
+model Post {
+  id           String    @id @default(uuid())
+  userId       String
+  content      String
+  postType     PostType  @default(post)
+  mediaUrls    String[]  @default([])
+  teamTag      String?
+  playerTag    String?
+  isBreaking   Boolean   @default(false)
+  likeCount    Int       @default(0)
+  commentCount Int       @default(0)
+  shareCount   Int       @default(0)
+  viewCount    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments     Comment[]
+  likes        PostLike[]
+  poll         Poll?
+
+  @@index([userId])
+  @@index([createdAt(sort: Desc)])
+  @@index([postType])
+}
+
+// ─── Post Likes ────────────────────────────────────────────────
+model PostLike {
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([postId, userId])
+}
+
+// ─── Comments ──────────────────────────────────────────────────
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  content   String
+  likeCount Int      @default(0)
+  createdAt DateTime @default(now())
+
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+}
+
+// ─── Polls ─────────────────────────────────────────────────────
+model Poll {
+  id         String   @id @default(uuid())
+  postId     String   @unique
+  question   String
+  options    Json     // [{label: string, votes: number}]
+  totalVotes Int      @default(0)
+  endsAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+// ─── Matches ───────────────────────────────────────────────────
+model Match {
+  id         String      @id @default(uuid())
+  league     String
+  homeTeam   String
+  awayTeam   String
+  homeScore  Int?
+  awayScore  Int?
+  status     MatchStatus @default(upcoming)
+  minute     Int?
+  venue      String?
+  kickoffAt  DateTime
+  events     Json        @default("[]") // [{minute, type, player, team}]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  predictions Prediction[]
+
+  @@index([status])
+  @@index([kickoffAt])
+  @@index([league])
+}
+
+// ─── Predictions ───────────────────────────────────────────────
+model Prediction {
+  id             String   @id @default(uuid())
+  userId         String
+  matchId        String?
+  homeTeam       String
+  awayTeam       String
+  predictedHome  Int?
+  predictedAway  Int?
+  result         String?  // home | away | draw
+  isCorrect      Boolean?
+  pointsEarned   Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  user           User     @relation(fields: [userId],  references: [id], onDelete: Cascade)
+  match          Match?   @relation(fields: [matchId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+}
+
+// ─── Communities ───────────────────────────────────────────────
+model Community {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  topic       String?
+  memberCount Int      @default(0)
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  members     CommunityMember[]
+}
+
+model CommunityMember {
+  communityId String
+  userId      String
+  role        String   @default("member") // admin | moderator | member
+  joinedAt    DateTime @default(now())
+
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId],      references: [id], onDelete: Cascade)
+
+  @@id([communityId, userId])
+}
+
+// ─── Notifications ─────────────────────────────────────────────
+model Notification {
+  id          String           @id @default(uuid())
+  userId      String
+  type        NotificationType
+  title       String
+  body        String?
+  isRead      Boolean          @default(false)
+  actorId     String?
+  referenceId String?
+  createdAt   DateTime         @default(now())
+
+  user        User             @relation("NotificationUser",  fields: [userId],  references: [id], onDelete: Cascade)
+  actor       User?            @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead, createdAt(sort: Desc)])
+}
+
+// ─── Messages ──────────────────────────────────────────────────
+model Message {
+  id         String   @id @default(uuid())
+  senderId   String
+  receiverId String
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  sender     User     @relation("MessageSender",   fields: [senderId],   references: [id], onDelete: Cascade)
+  receiver   User     @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+}
+
+// ─── Verification Requests ─────────────────────────────────────
+model VerificationRequest {
+  id          String   @id @default(uuid())
+  userId      String
+  role        String
+  roleData    Json     @default("{}")
+  status      String   @default("pending") // pending | approved | rejected
+  adminNotes  String?
+  reviewedBy  String?
+  submittedAt DateTime @default(now())
+  reviewedAt  DateTime?
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
