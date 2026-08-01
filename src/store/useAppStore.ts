@@ -17,3 +17,9 @@ export function useAppStore<T>(selector: (state: S) => T): T {
   const ui = useUIStore();
   return selector({ ...auth, ...nav, ...ui } as S);
 }
+
+export const getMockUser = (h: string) => null;
+export const formatCount = (n: number) => n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? (n/1e3).toFixed(1)+'K' : String(n);
+export const MOCK_USERS: Record<string,any> = {};
+export const ADVANCED_ROLES: any[] = [];
+export const SPORTS_LIST: string[] = [];
