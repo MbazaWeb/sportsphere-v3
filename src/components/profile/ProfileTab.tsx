@@ -103,21 +103,23 @@ function GuestProfile() {
           </button>
         </div>
 
-        {/* Feature highlights — icon grid, no text placeholders */}
-        <div className="grid grid-cols-3 gap-2">
+        {/* Features — icon grid */}
+        <div className="grid grid-cols-2 gap-2">
           {[
-            { Icon: Users,       label: 'Communities',  color: 'text-purple-400',  bg: 'bg-purple-500/10' },
-            { Icon: Trophy,      label: 'Predictions',  color: 'text-yellow-400',  bg: 'bg-yellow-500/10' },
-            { Icon: BarChart3,   label: 'Live Scores',  color: 'text-blue-400',    bg: 'bg-blue-500/10'   },
-            { Icon: Heart,       label: 'Follow Teams', color: 'text-pink-400',    bg: 'bg-pink-500/10'   },
-            { Icon: BadgeCheck,  label: 'Verified',     color: 'text-gold', bg: 'bg-gold/10'},
-            { Icon: MessageCircle, label: 'Live Chat',  color: 'text-cyan-400',    bg: 'bg-cyan-500/10'   },
+            { Icon: Users,        label: 'Join Communities',    color: 'text-purple-400', bg: 'bg-purple-500/10' },
+            { Icon: Trophy,       label: 'Make Predictions',    color: 'text-gold',        bg: 'bg-gold/10'       },
+            { Icon: BarChart3,    label: 'Live Scores',         color: 'text-blue-400',    bg: 'bg-blue-500/10'   },
+            { Icon: Heart,        label: 'Follow Teams & Players', color: 'text-pink-400', bg: 'bg-pink-500/10'   },
+            { Icon: BadgeCheck,   label: 'Verified Profiles',   color: 'text-gold',        bg: 'bg-gold/10'       },
+            { Icon: MessageCircle, label: 'Live Match Chat',    color: 'text-cyan-400',    bg: 'bg-cyan-500/10'   },
+            { Icon: Bookmark,     label: 'Save & Bookmark',     color: 'text-yellow-400',  bg: 'bg-yellow-500/10' },
+            { Icon: Sparkles,     label: 'Create Posts',        color: 'text-sport-green', bg: 'bg-green-500/10'  },
           ].map(({ Icon, label, color, bg }) => (
-            <div key={label} className="flex flex-col items-center gap-2 rounded-2xl bg-surface-elevated border border-surface-border p-4">
-              <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', bg)}>
-                <Icon className={cn('h-5 w-5', color)} />
+            <div key={label} className="flex items-center gap-3 rounded-xl bg-surface-elevated border border-surface-border p-3">
+              <div className={cn('flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg', bg)}>
+                <Icon className={cn('h-4 w-4', color)} />
               </div>
-              <span className="text-[10px] font-semibold text-muted-foreground text-center leading-tight">{label}</span>
+              <span className="text-xs font-semibold text-foreground/80 leading-tight">{label}</span>
             </div>
           ))}
         </div>

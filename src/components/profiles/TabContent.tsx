@@ -1,12 +1,15 @@
 'use client';
+import React, { useState } from 'react';
 
 import { type ProfileTypeConfig } from './profileConfig';
+import { useAuthStore } from '@/store/authStore';
+import { PLAYER_DATA, TEAM_DATA, COMPETITION_DATA } from '@/data/playerData';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { useUIStore } from '@/store/uiStore';
 import { getFeedUser } from '@/data/feedData';
 import {
-  Heart, MessageCircle, Share2, Bookmark, Star, TrendingUp,
+  Heart, MessageCircle, Share2, Bookmark, Star, TrendingUp, Lock, Shield, Activity, DollarSign, Shirt,
   MapPin, Clock, Trophy, Users, ChevronRight, Zap, Play,
   BarChart3, Target, Flag, Calendar, ArrowUpRight, FileText,
   CheckCircle, AlertCircle, Pen, Crown, Sparkles, Flame,
@@ -151,57 +154,98 @@ function OverviewContent({ config }: { config: ProfileTypeConfig }) {
 
 // ─── Team Overview ────────────────────────────────────────────
 function TeamOverview() {
+  const team = TEAM_DATA.manchesterunited;
+  const setViewingUser = useUIStore((s) => s.setViewingUser);
   return (
     <>
-      <InfoCard title="Next Match" subtitle="Premier League — Matchday 16" detail="Arsenal (A) · Dec 14, 17:30" accent="text-gold" icon={Calendar} />
-      <InfoCard title="Current Form" subtitle="Last 5 matches" detail="W W D W L" accent="text-yellow-400" icon={TrendingUp} />
-      
+      {/* Season + Form */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
-        <div className="flex items-center gap-2 mb-3">
-          <Crown className="h-4 w-4 text-gold" />
-          <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Trophies Collection</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-xs font-bold text-gold uppercase tracking-wider">2024/25 Season</h3>
+          <span className="text-xs text-muted-foreground">#{team.currentSeason.position} in PL</span>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          {['20x League Champions', '3x Champions League', '12x FA Cup', '5x League Cup'].map((trophy) => (
-            <span key={trophy} className="rounded-lg bg-gold/10 border border-gold/20 px-3 py-1 text-xs font-semibold text-gold">
-              {trophy}
-            </span>
+        <div className="grid grid-cols-5 gap-2 mb-4">
+          {[{l:'P',v:team.currentSeason.played},{l:'W',v:team.currentSeason.won},{l:'D',v:team.currentSeason.drawn},{l:'L',v:team.currentSeason.lost},{l:'Pts',v:team.currentSeason.pts}].map(({l,v})=>(
+            <div key={l} className="rounded-xl bg-surface p-2 text-center">
+              <p className="text-lg font-black text-gold">{v}</p>
+              <p className="text-[10px] text-muted-foreground">{l}</p>
+            </div>
           ))}
+        </div>
+        <div>
+          <p className="mb-2 text-xs text-muted-foreground">Recent Form</p>
+          <div className="flex gap-2">
+            {team.currentSeason.form.map((r,i)=>(
+              <div key={i} className={cn('flex h-8 w-8 items-center justify-center rounded-full text-xs font-black',
+                r==='W'?'bg-green-500 text-black':r==='D'?'bg-yellow-500 text-black':'bg-red-500 text-white')}>{r}</div>
+            ))}
+          </div>
         </div>
       </div>
 
+      {/* Trophies */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
-        <h3 className="mb-3 text-sm font-bold text-white">Top Performers</h3>
-        <div className="flex flex-col gap-3">
-          {[
-            { name: 'Rashford', stat: '8 Goals', initials: 'MR', rank: 1 },
-            { name: 'Bruno Fernandes', stat: '7 Assists', initials: 'BF', rank: 2 },
-            { name: 'Onana', stat: '4 Clean Sheets', initials: 'AO', rank: 3 },
-          ].map((p, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <span className={cn('w-4 text-center text-xs font-bold', i === 0 ? 'text-gold' : 'text-muted-foreground')}>{p.rank}</span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/10 text-xs font-bold text-gold">{p.initials}</div>
-              <p className="flex-1 text-sm font-semibold text-white">{p.name}</p>
-              <span className="text-xs text-gold font-bold">{p.stat}</span>
+        <div className="flex items-center gap-2 mb-3"><Crown className="h-4 w-4 text-gold"/><h3 className="text-xs font-bold text-gold uppercase tracking-wider">Trophy Cabinet</h3></div>
+        <div className="grid grid-cols-3 gap-2">
+          {[{l:'League',v:team.trophies.leagueTitles},{l:'UCL',v:team.trophies.championsLeague},{l:'FA Cup',v:team.trophies.faCups}].map(({l,v})=>(
+            <div key={l} className="rounded-xl bg-gold/5 border border-gold/10 p-3 text-center">
+              <Trophy className="mx-auto mb-1 h-4 w-4 text-gold"/>
+              <p className="text-xl font-black text-gold">{v}</p>
+              <p className="text-[10px] text-muted-foreground">{l}</p>
             </div>
           ))}
         </div>
       </div>
 
+      {/* Top Scorers */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
-        <h3 className="mb-3 text-sm font-bold text-white">Last Week Form</h3>
-        <div className="flex items-center justify-around">
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
-            <div key={day} className="text-center">
-              <div className={cn(
-                'flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold',
-                [200, 180, 220, 190, 210, 230, 200][i] > 200 
-                  ? 'bg-gold/20 text-gold' 
-                  : 'bg-surface text-muted-foreground'
-              )}>
-                {[200, 180, 220, 190, 210, 230, 200][i]}
+        <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-2"><Target className="h-4 w-4"/>Top Scorers</h3>
+        <div className="flex flex-col gap-2">
+          {team.topScorers.map((s,i)=>(
+            <div key={s.name} className="flex items-center gap-3 rounded-xl bg-surface p-3">
+              <span className={cn('w-5 text-center text-sm font-black',i===0?'text-gold':i===1?'text-gray-300':'text-amber-600')}>{i+1}</span>
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-elevated text-xs font-bold text-white">{s.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
+              <div className="flex-1"><p className="text-sm font-semibold text-white">{s.name}</p><p className="text-xs text-muted-foreground">{s.pos}</p></div>
+              <span className="text-xl font-black text-gold">{s.goals}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Sponsors */}
+      <div className="glass-card rounded-2xl p-4 glass-card-hover">
+        <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider">Sponsors & Partners</h3>
+        <div className="flex flex-col gap-2">
+          {team.sponsors.map((s)=>(
+            <div key={s.name} className="flex items-center justify-between rounded-xl bg-surface p-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10"><Shirt className="h-4 w-4 text-gold"/></div>
+                <p className="text-sm font-semibold text-white">{s.name}</p>
               </div>
-              <p className="mt-1 text-[8px] text-muted-foreground">{day}</p>
+              <span className="text-xs text-muted-foreground">{s.role}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Stadium */}
+      <div className="glass-card rounded-2xl p-4 glass-card-hover">
+        <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider">Stadium</h3>
+        <div className="flex items-center gap-3 rounded-xl bg-surface p-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10"><MapPin className="h-5 w-5 text-amber-400"/></div>
+          <div><p className="text-sm font-bold text-white">{team.stadium}</p><p className="text-xs text-muted-foreground">Capacity: {team.stadiumCapacity}</p></div>
+          <ChevronRight className="ml-auto h-4 w-4 text-gold"/>
+        </div>
+      </div>
+
+      {/* Coaches */}
+      <div className="glass-card rounded-2xl p-4 glass-card-hover">
+        <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider">Coaching Staff</h3>
+        <div className="flex flex-col gap-2">
+          {team.coaches.map((c)=>(
+            <div key={c.name} className="flex items-center gap-3 rounded-xl bg-surface p-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-elevated text-xs font-bold text-white">{c.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
+              <div><p className="text-sm font-semibold text-white">{c.name}</p><p className="text-xs text-muted-foreground">{c.role} · {c.nat}</p></div>
             </div>
           ))}
         </div>
@@ -212,30 +256,86 @@ function TeamOverview() {
 
 // ─── Competition Overview ─────────────────────────────────────
 function CompetitionOverview() {
+  const comp = COMPETITION_DATA.premierLeague;
+  const [activeTab, setActiveTab] = useState<'table'|'scorers'|'assists'|'cs'>('table');
   return (
     <>
-      <InfoCard title="Current Leader" subtitle="After Matchday 15" detail="Manchester City · 38 pts" accent="text-gold" icon={Crown} />
-      <InfoCard title="Top Scorer" subtitle="Golden Boot Race" detail="Haaland · 15 goals" accent="text-yellow-400" icon={Trophy} />
-      <InfoCard title="Next Fixtures" subtitle="Matchday 16" detail="8 matches this weekend" accent="text-blue-400" icon={Calendar} />
-      
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
-        <h3 className="mb-3 text-sm font-bold text-white">Top 4 Standings</h3>
-        {[
-          { pos: 1, team: 'Manchester City', pts: 38, gd: '+24' },
-          { pos: 2, team: 'Arsenal', pts: 36, gd: '+21' },
-          { pos: 3, team: 'Liverpool', pts: 35, gd: '+18' },
-          { pos: 4, team: 'Aston Villa', pts: 31, gd: '+12' },
-        ].map((row) => (
-          <div key={row.pos} className="flex items-center gap-3 py-1.5 border-b border-surface-border last:border-0">
-            <span className={cn('w-4 text-center text-sm font-bold', row.pos === 1 ? 'text-gold' : 'text-muted-foreground')}>
-              {row.pos}
-            </span>
-            <span className="flex-1 text-sm font-semibold text-white">{row.team}</span>
-            <span className="text-xs text-muted-foreground">{row.gd}</span>
-            <span className="text-sm font-bold text-gold">{row.pts}</span>
-          </div>
+        <div className="grid grid-cols-3 gap-2">
+          {[{l:'Teams',v:String(comp.teams)},{l:'Matchday',v:String(comp.currentMatchday)},{l:'Season',v:comp.season}].map(({l,v})=>(
+            <div key={l} className="rounded-xl bg-surface p-2.5 text-center">
+              <p className="text-lg font-black text-gold">{v}</p>
+              <p className="text-[10px] text-muted-foreground">{l}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex gap-1 overflow-x-auto">
+        {([['table','Table'],['scorers','Top Scorers'],['assists','Assists'],['cs','Clean Sheets']] as const).map(([id,label])=>(
+          <button key={id} onClick={()=>setActiveTab(id)}
+            className={cn('flex-shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
+              activeTab===id?'bg-gold text-black':'bg-surface text-muted-foreground hover:text-white')}>
+            {label}
+          </button>
         ))}
       </div>
+
+      {activeTab==='table' && (
+        <div className="glass-card rounded-2xl overflow-hidden">
+          <div className="grid grid-cols-[2rem_1fr_2rem_2rem_2rem_3rem] px-3 py-2 text-[10px] font-semibold uppercase text-muted-foreground border-b border-surface-border">
+            <span>#</span><span>Team</span><span className="text-center">P</span><span className="text-center">W</span><span className="text-center">L</span><span className="text-right">Pts</span>
+          </div>
+          {comp.standings.map((row)=>(
+            <div key={row.pos} className="grid grid-cols-[2rem_1fr_2rem_2rem_2rem_3rem] items-center px-3 py-3 border-b border-surface-border/40 last:border-0">
+              <span className={cn('text-sm font-black',row.pos<=4?'text-gold':'text-muted-foreground')}>{row.pos}</span>
+              <span className="truncate text-sm font-semibold text-white">{row.team}</span>
+              <span className="text-center text-xs text-muted-foreground">{row.p}</span>
+              <span className="text-center text-xs text-muted-foreground">{row.w}</span>
+              <span className="text-center text-xs text-muted-foreground">{row.l}</span>
+              <span className="text-right text-sm font-black text-white">{row.pts}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab==='scorers' && (
+        <div className="flex flex-col gap-2">
+          {comp.topScorers.map((s,i)=>(
+            <div key={s.name} className="glass-card flex items-center gap-3 rounded-xl p-3">
+              <span className={cn('w-5 text-center text-sm font-black',i===0?'text-gold':i===1?'text-gray-300':i===2?'text-amber-600':'text-muted-foreground')}>{i+1}</span>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-xs font-bold text-white">{s.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
+              <div className="flex-1"><p className="text-sm font-semibold text-white">{s.name}</p><p className="text-xs text-muted-foreground">{s.team} · {s.apps} apps</p></div>
+              <div className="text-right"><p className="text-xl font-black text-gold">{s.goals}</p><p className="text-[10px] text-muted-foreground">goals</p></div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab==='assists' && (
+        <div className="flex flex-col gap-2">
+          {comp.topAssists.map((s,i)=>(
+            <div key={s.name} className="glass-card flex items-center gap-3 rounded-xl p-3">
+              <span className={cn('w-5 text-center text-sm font-black',i===0?'text-gold':'text-muted-foreground')}>{i+1}</span>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-xs font-bold text-white">{s.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
+              <div className="flex-1"><p className="text-sm font-semibold text-white">{s.name}</p><p className="text-xs text-muted-foreground">{s.team}</p></div>
+              <div className="text-right"><p className="text-xl font-black text-blue-400">{s.assists}</p><p className="text-[10px] text-muted-foreground">assists</p></div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab==='cs' && (
+        <div className="flex flex-col gap-2">
+          {comp.cleanSheets.map((s,i)=>(
+            <div key={s.team} className="glass-card flex items-center gap-3 rounded-xl p-3">
+              <span className={cn('w-5 text-center text-sm font-black',i===0?'text-gold':'text-muted-foreground')}>{i+1}</span>
+              <p className="flex-1 text-sm font-semibold text-white">{s.team}</p>
+              <div className="text-right"><p className="text-xl font-black text-cyan-400">{s.cs}</p><p className="text-[10px] text-muted-foreground">clean sheets</p></div>
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }
@@ -313,96 +413,174 @@ function MatchOverview() {
 
 // ─── Player Overview Enhanced ────────────────────────────────
 function PlayerOverviewEnhanced() {
+  const p = PLAYER_DATA.rashford;
+  const setViewingUser = useUIStore((s) => s.setViewingUser);
+
   return (
     <>
+      {/* Ranks + Market Value */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-xl bg-gold/10 border border-gold/20 p-3 text-center">
+            <Globe className="mx-auto mb-1 h-4 w-4 text-gold" />
+            <p className="text-lg font-black text-gold">#{p.worldRank}</p>
+            <p className="text-[10px] text-muted-foreground">World Rank</p>
+          </div>
+          <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-3 text-center">
+            <Flag className="mx-auto mb-1 h-4 w-4 text-blue-400" />
+            <p className="text-lg font-black text-blue-400">#{p.nationalRank}</p>
+            <p className="text-[10px] text-muted-foreground">National Rank</p>
+          </div>
+          <div className="rounded-xl bg-green-500/10 border border-green-500/20 p-3 text-center">
+            <DollarSign className="mx-auto mb-1 h-4 w-4 text-green-400" />
+            <p className="text-lg font-black text-green-400">{p.marketValue}</p>
+            <p className="text-[10px] text-muted-foreground">Market Value</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Identity */}
+      <div className="glass-card rounded-2xl p-4 glass-card-hover">
+        <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider">Player Info</h3>
+        <div className="grid grid-cols-2 gap-2">
           {[
-            { label: 'Goals', value: '4' },
-            { label: 'Assists', value: '3' },
-            { label: 'Age', value: '23yo' },
-            { label: 'Height', value: '1.8m' },
-            { label: 'Value', value: '€108M' },
-          ].map((stat) => (
-            <div key={stat.label} className="text-center">
-              <p className="text-lg font-black text-gold">{stat.value}</p>
-              <p className="text-[10px] text-muted-foreground">{stat.label}</p>
+            { label: 'Position',   value: p.position },
+            { label: 'Nationality',value: p.nationality },
+            { label: 'Age',        value: String(p.age) },
+            { label: 'Height',     value: p.height },
+            { label: 'Foot',       value: p.foot },
+            { label: 'Contract',   value: `Until ${p.contractUntil}` },
+          ].map(({ label, value }) => (
+            <div key={label} className="rounded-lg bg-surface p-2.5">
+              <p className="text-[10px] text-muted-foreground">{label}</p>
+              <p className="text-sm font-semibold text-white">{value}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <InfoCard title="Season Stats" subtitle="2024/25 Premier League" detail="12 Goals, 5 Assists in 18 apps" accent="text-gold" icon={Trophy} />
-
+      {/* Current Team — clickable */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
-        <h3 className="mb-3 text-sm font-bold text-gold flex items-center gap-2">
-          <BarChart3 className="h-4 w-4" />
-          Performance Index
+        <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider">Current Team</h3>
+        <button
+          onClick={() => { const u = getFeedUser('@manchesterunited'); if (u) setViewingUser(u); }}
+          className="flex w-full items-center gap-3 rounded-xl bg-surface p-3 hover:bg-surface-elevated transition-colors">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-red-700 text-sm font-black text-white">MU</div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-bold text-white">{p.currentTeam}</p>
+            <p className="text-xs text-muted-foreground">Premier League · England</p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-gold" />
+        </button>
+      </div>
+
+      {/* Injury status */}
+      <div className={cn('glass-card rounded-2xl border p-3 flex items-center gap-3',
+        p.injuryStatus === 'Fit' ? 'border-green-500/30 bg-green-500/5' : 'border-red-500/30 bg-red-500/5')}>
+        <Activity className={cn('h-5 w-5', p.injuryStatus === 'Fit' ? 'text-green-400' : 'text-red-400')} />
+        <div>
+          <p className={cn('text-sm font-semibold', p.injuryStatus === 'Fit' ? 'text-green-400' : 'text-red-400')}>{p.injuryStatus}</p>
+          <p className="text-xs text-muted-foreground">Fitness status · Updated today</p>
+        </div>
+      </div>
+
+      {/* Season stats */}
+      <div className="glass-card rounded-2xl p-4 glass-card-hover">
+        <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-2">
+          <Trophy className="h-4 w-4" /> Season {p.seasonStats.season}
         </h3>
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          {[
+            { label: 'Goals',   value: p.seasonStats.goals },
+            { label: 'Assists', value: p.seasonStats.assists },
+            { label: 'Apps',    value: p.seasonStats.appearances },
+            { label: 'Rating',  value: p.seasonStats.rating },
+          ].map(({ label, value }) => (
+            <div key={label} className="rounded-xl bg-surface p-2.5 text-center">
+              <p className="text-xl font-black text-gold">{value}</p>
+              <p className="text-[10px] text-muted-foreground">{label}</p>
+            </div>
+          ))}
+        </div>
         {[
-          { label: 'Goals per 90', value: 0.67, max: 1.0 },
-          { label: 'Dribbles Success', value: 72, max: 100 },
-          { label: 'Pass Accuracy', value: 84, max: 100 },
-          { label: 'Defensive Actions', value: 3.2, max: 5 },
-          { label: 'Key Passes', value: 2.1, max: 4 },
-        ].map((stat) => (
-          <div key={stat.label} className="mb-3 last:mb-0">
-            <div className="mb-1.5 flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">{stat.label}</span>
-              <span className="text-xs font-bold text-white">{stat.value}</span>
+          { label: 'xG',             value: p.seasonStats.xG,             max: 20  },
+          { label: 'xA',             value: p.seasonStats.xA,             max: 10  },
+          { label: 'Shot Accuracy',  value: p.seasonStats.shotAccuracy,   max: 100 },
+          { label: 'Pass Accuracy',  value: p.seasonStats.passAccuracy,   max: 100 },
+          { label: 'Dribble Success',value: p.seasonStats.dribbleSuccess, max: 100 },
+        ].map((s) => (
+          <div key={s.label} className="mb-2.5 last:mb-0">
+            <div className="mb-1 flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">{s.label}</span>
+              <span className="text-xs font-bold text-white">{s.value}{s.max === 100 ? '%' : ''}</span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-surface">
-              <div className="h-full rounded-full bg-gold" style={{ width: `${(stat.value / stat.max) * 100}%` }} />
+              <div className="h-full rounded-full bg-gold" style={{ width: `${(Number(s.value) / s.max) * 100}%` }} />
             </div>
           </div>
         ))}
       </div>
 
+      {/* International */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
-        <div className="flex items-center gap-2 mb-3">
-          <Crown className="h-4 w-4 text-gold" />
-          <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Trophies Collection</h3>
+        <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-2">
+          <Flag className="h-4 w-4" /> International · {p.international.team}
+        </h3>
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          {[
+            { label: 'Caps',    value: p.international.caps },
+            { label: 'Goals',   value: p.international.goals },
+            { label: 'Assists', value: p.international.assists },
+          ].map(({ label, value }) => (
+            <div key={label} className="rounded-xl bg-surface p-2.5 text-center">
+              <p className="text-xl font-black text-white">{value}</p>
+              <p className="text-[10px] text-muted-foreground">{label}</p>
+            </div>
+          ))}
         </div>
-        <div className="flex gap-2 flex-wrap">
-          {['3x Ligue 1', '2x UEFA Euro', '1x World Cup', '4x Super Cup'].map((trophy) => (
-            <span key={trophy} className="rounded-lg bg-gold/10 border border-gold/20 px-3 py-1 text-xs font-semibold text-gold">
-              {trophy}
-            </span>
+        <div className="flex flex-col gap-1">
+          {p.international.tournaments.map((t) => (
+            <div key={t} className="flex items-center gap-2 rounded-lg bg-surface px-3 py-2">
+              <Star className="h-3.5 w-3.5 text-gold flex-shrink-0" />
+              <span className="text-xs font-medium text-white">{t}</span>
+            </div>
           ))}
         </div>
       </div>
 
+      {/* Sponsors */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
-        <div className="flex items-center gap-2 mb-3">
-          <Flame className="h-4 w-4 text-gold" />
-          <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Last Week Form</h3>
-        </div>
-        <div className="flex items-center justify-around">
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => {
-            const values = [200, 180, 220, 190, 210, 230, 200];
-            const isHigh = values[i] > 200;
-            return (
-              <div key={day} className="text-center">
-                <div className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold',
-                  isHigh ? 'bg-gold/20 text-gold' : 'bg-surface text-muted-foreground'
-                )}>
-                  {values[i]}
+        <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider">Sponsors</h3>
+        <div className="flex flex-col gap-2">
+          {p.sponsors.map((s) => (
+            <div key={s.name} className="flex items-center justify-between rounded-xl bg-surface p-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10">
+                  <Shirt className="h-4 w-4 text-gold" />
                 </div>
-                <p className="mt-1 text-[8px] text-muted-foreground">{day}</p>
+                <p className="text-sm font-semibold text-white">{s.name}</p>
               </div>
-            );
-          })}
+              <span className="text-xs text-muted-foreground">{s.role}</span>
+            </div>
+          ))}
         </div>
       </div>
 
+      {/* Trophies */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
-        <h3 className="mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Positions</h3>
-        <div className="flex gap-2 flex-wrap">
-          {['Attacking Mid (Left)', 'Attacking Mid (Right)', 'Striker (Center)'].map((pos) => (
-            <span key={pos} className="rounded-lg bg-gold/10 border border-gold/20 px-3 py-1 text-xs font-semibold text-gold">
-              {pos}
-            </span>
+        <div className="flex items-center gap-2 mb-3">
+          <Crown className="h-4 w-4 text-gold" />
+          <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Honours</h3>
+        </div>
+        <div className="flex flex-col gap-2">
+          {p.honours.map((h) => (
+            <div key={h.title} className="flex items-center gap-3 rounded-xl bg-gold/5 border border-gold/10 p-3">
+              <Trophy className="h-5 w-5 text-gold flex-shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-white">{h.title}</p>
+                <p className="text-xs text-muted-foreground">{h.team} · {h.year}</p>
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -1151,24 +1329,35 @@ function FansContent() {
 
 // ─── Career Content ───────────────────────────────────────────
 function CareerContent() {
+  const p = PLAYER_DATA.rashford;
+  const timeline = [...p.careerTimeline].reverse();
   return (
     <div className="flex flex-col gap-0">
-      {[
-        { year: '2024–Now', team: 'Manchester United', role: 'Forward' },
-        { year: '2022–2024', team: 'Man Utd (Loan · Sunderland)', role: 'Forward' },
-        { year: '2020–2022', team: 'Man Utd U23', role: 'Forward' },
-        { year: '2017–2020', team: 'Man Utd Academy', role: 'Youth' },
-      ].map((item, i) => (
-        <div key={i} className="flex gap-3">
+      {timeline.map((item, i) => (
+        <div key={item.season} className="flex gap-3">
           <div className="flex flex-col items-center">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-gold bg-gold/20">
-              <span className="text-[9px] font-bold text-gold">{item.year.slice(0, 4)}</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-gold bg-gold/10 flex-shrink-0">
+              <span className="text-[9px] font-bold text-gold">{item.season.slice(0,4)}</span>
             </div>
-            {i < 3 && <div className="w-px flex-1 bg-surface-border my-1" />}
+            {i < timeline.length - 1 && <div className="w-px flex-1 bg-surface-border my-1" />}
           </div>
-          <div className="flex-1 glass-card rounded-xl p-3 mb-2 glass-card-hover">
-            <p className="text-sm font-bold text-white">{item.team}</p>
-            <p className="text-xs text-muted-foreground">{item.role} · {item.year}</p>
+          <div className="flex-1 glass-card rounded-xl p-3 mb-2">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-sm font-semibold text-white">{item.team}</p>
+              <span className="text-xs text-muted-foreground">{item.season}</span>
+            </div>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span>{item.apps} apps</span>
+              <span className="text-gold font-semibold">{item.goals} goals</span>
+              <span>{item.assists} assists</span>
+            </div>
+            {item.honours.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {item.honours.map((h) => (
+                  <span key={h} className="rounded-md bg-gold/10 border border-gold/20 px-2 py-0.5 text-[10px] font-medium text-gold">🏆 {h}</span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       ))}
