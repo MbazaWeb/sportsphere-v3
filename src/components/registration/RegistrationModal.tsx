@@ -190,9 +190,22 @@ function CompleteStep({ name, isAdvanced, onClose }: { name: string; isAdvanced:
       </div>
       <h2 className="mb-2 text-2xl font-bold text-white">Welcome{name ? `, ${name.split(' ')[0]}` : ''}!</h2>
       {isAdvanced ? (
-        <p className="mb-8 text-sm text-muted-foreground max-w-xs">
-          Your profile has been submitted for verification. We&apos;ll review it within 1-3 business days and award your badge.
-        </p>
+        <>
+          <p className="mb-4 text-sm text-muted-foreground max-w-xs">
+            You&apos;re registered and can use SportSphere right away.
+          </p>
+          <div className="mb-6 w-full rounded-2xl bg-yellow-500/10 border border-yellow-500/20 p-4 text-left">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-500/20">
+                <ShieldCheck className="h-4 w-4 text-yellow-400" />
+              </div>
+              <p className="text-sm font-semibold text-yellow-400">Verification Badge Pending</p>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Your profile is under admin review. Once approved (1–3 business days), you&apos;ll receive a verified badge visible to all users.
+            </p>
+          </div>
+        </>
       ) : (
         <p className="mb-8 text-sm text-muted-foreground max-w-xs">
           Your account is ready. Start following teams, players, and communities.
