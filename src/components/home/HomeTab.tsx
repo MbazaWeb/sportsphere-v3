@@ -103,12 +103,19 @@ function FeedCard({ item }: { item: typeof HOME_FEED[number] }) {
         {/* Content */}
         <p className="mb-3 text-sm leading-relaxed text-foreground/90">{item.content}</p>
 
-        {/* Tag */}
+        {/* Tag — clickable, opens profile */}
         {'tag' in item && item.tag && (
-          <span className={cn('mb-3 inline-block rounded-lg px-2.5 py-1 text-xs font-medium border',
-            item.tag.type === 'team' ? 'bg-sport-green/10 text-sport-green border-sport-green/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20')}>
+          <button
+            onClick={() => {
+              if (item.tag && 'handle' in item.tag && item.tag.handle) {
+                const u = getFeedUser(item.tag.handle as string);
+                if (u) setViewingUser(u);
+              }
+            }}
+            className={cn('mb-3 inline-block rounded-lg px-2.5 py-1 text-xs font-medium border transition-opacity active:opacity-70',
+              item.tag.type === 'team' ? 'bg-sport-green/10 text-sport-green border-sport-green/20 hover:bg-sport-green/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20')}>
             {item.tag.label}
-          </span>
+          </button>
         )}
 
         {/* Photo */}

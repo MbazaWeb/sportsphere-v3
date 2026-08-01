@@ -38,12 +38,12 @@ export function getFeedUser(handle: string): FeedUser | null {
 }
 
 export const HOME_FEED = [
-  { id: 1,  handle: '@manchesterunited', type: 'post',  time: '2m ago',  likes: 4521,  comments: 678,  shares: 234,  content: 'What a performance from the lads tonight. Rashford with the brace — absolute class. Old Trafford was rocking.', tag: { type: 'team', label: 'Manchester United' } },
+  { id: 1,  handle: '@manchesterunited', type: 'post',  time: '2m ago',  likes: 4521,  comments: 678,  shares: 234,  content: 'What a performance from the lads tonight. Rashford with the brace — absolute class. Old Trafford was rocking.', tag: { type: 'team', label: 'Manchester United', handle: '@manchesterunited' } },
   { id: 2,  handle: '@sportsphere',      type: 'post',  time: '15m ago', likes: 12430, comments: 1890, shares: 3456, content: 'BREAKING: Leny Yoro completes move to Manchester United for £58.9M. The 18-year-old signs a 5-year deal.', breaking: true },
   { id: 3,  handle: '@sarahchen',        type: 'photo', time: '32m ago', likes: 3456,  comments: 234,  shares: 89,   content: 'Match day at the Emirates. The atmosphere was electric tonight.' },
   { id: 4,  handle: '@footballdaily',    type: 'poll',  time: '1h ago',  likes: 890,   comments: 234,  shares: 56,   content: 'Who wins the Premier League this season?',
     poll: [{ label: 'Manchester City', pct: 42 }, { label: 'Arsenal', pct: 31 }, { label: 'Liverpool', pct: 18 }, { label: 'Chelsea', pct: 9 }], pollTotal: 12400 },
-  { id: 5,  handle: '@marcusj',          type: 'post',  time: '2h ago',  likes: 890,   comments: 123,  shares: 67,   content: 'Haaland breaking records again. 30 goals before January is insane. The guy is on another level entirely.', tag: { type: 'player', label: 'Erling Haaland' } },
+  { id: 5,  handle: '@marcusj',          type: 'post',  time: '2h ago',  likes: 890,   comments: 123,  shares: 67,   content: 'Haaland breaking records again. 30 goals before January is insane. The guy is on another level entirely.', tag: { type: 'player', label: 'Erling Haaland', handle: '@goalsdaily' } },
   { id: 6,  handle: '@goalsdaily',       type: 'video', time: '3h ago',  likes: 8934,  comments: 456,  shares: 1234, content: 'Every Rashford goal this season. Vol.1 — 12 goals, one video.' },
 ];
 
