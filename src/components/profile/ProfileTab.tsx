@@ -58,19 +58,13 @@ function GuestProfile() {
         className="w-full max-w-sm"
       >
         {/* Logo */}
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gold">
-            <span className="text-3xl font-black text-black">SS</span>
+        <div className="mb-8 flex flex-col items-center gap-4">
+          <img src="/logo.svg" alt="SportSphere" style={{height: 80, width: 'auto'}} />
+          <div className="flex items-baseline gap-0">
+            <span style={{fontSize:28,fontWeight:900,fontStyle:'italic',color:'#fff',lineHeight:1}}>Sport</span>
+            <span style={{fontSize:28,fontWeight:900,fontStyle:'italic',color:'#F5C518',lineHeight:1}}>Sphere</span>
           </div>
-          <div className="flex flex-col items-center gap-4 mb-2">
-            <img src="/logo.svg" alt="SportSphere" style={{height: 80, width: 'auto'}} />
-            <div className="flex items-baseline gap-0">
-              <span style={{fontSize:28,fontWeight:900,fontStyle:'italic',color:'#fff',lineHeight:1}}>Sport</span>
-              <span style={{fontSize:28,fontWeight:900,fontStyle:'italic',color:'#F5C518',lineHeight:1}}>Sphere</span>
-            </div>
-            <p className="text-sm text-muted-foreground text-center">The world&apos;s biggest sports social network.</p>
-          </div>
-          </p>
+          <p className="text-sm text-muted-foreground text-center">The world&apos;s biggest sports social network.</p>
         </div>
 
         {/* Join Options */}
@@ -213,7 +207,6 @@ function LoggedInProfile({
                 <h3 className="text-sm font-semibold text-yellow-400">Verification In Progress</h3>
                 <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                   Your {userProfile?.role} profile is under review. Our admin team will verify your credentials and award you a verified badge.
-                </p>
                 <div className="mt-3 flex items-center gap-2">
                   <span className="rounded-full bg-yellow-500/10 px-2.5 py-1 text-[10px] font-medium text-yellow-400 border border-yellow-500/20">
                     <Clock className="mr-1 inline h-2.5 w-2.5" />
@@ -454,7 +447,6 @@ function AdminVerificationPanel() {
             {isPending && 'Your documents are being reviewed. This typically takes 1-3 business days.'}
             {isVerified && 'Your profile has been verified by our admin team. Your verified badge is now visible to all users.'}
             {isRejected && 'Your verification was not approved. Please review the requirements and resubmit.'}
-          </p>
         </div>
 
         {userProfile?.roleData && Object.keys(userProfile.roleData).length > 0 && (
@@ -494,7 +486,6 @@ function AdminVerificationPanel() {
               <div className="rounded-xl bg-yellow-500/5 border border-yellow-500/20 p-3">
                 <p className="text-[10px] text-muted-foreground text-center">
                   Demo: Tap below to simulate admin approval or rejection
-                </p>
               </div>
               <div className="flex gap-2">
                 <button
@@ -705,7 +696,6 @@ function PeopleList({ title, onBack }: { title: string; onBack: () => void }) {
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
               {title === 'Following' ? 'You are not following anyone yet.' : 'No followers yet.'}
-            </p>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
