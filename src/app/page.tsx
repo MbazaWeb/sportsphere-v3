@@ -79,11 +79,6 @@ function LoginModal() {
             </button>
           </div>
 
-          <div className="mb-3 rounded-xl bg-gold/10 border border-gold/20 p-3">
-            <p className="text-xs text-gold font-medium">Test account password: <span className="font-black">SportSphere2024!</span></p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">e.g. david@example.com · rashford@mufc.com · pep@mancity.com</p>
-          </div>
-
           {error && (
             <div className="mb-3 rounded-xl bg-red-500/10 border border-red-500/20 p-3">
               <p className="text-xs text-red-400">{error}</p>
