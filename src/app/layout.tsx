@@ -21,8 +21,8 @@ export const metadata: Metadata = {
     title: "SportSphere",
   },
   icons: {
-    icon: "/icons/icon-192x192.svg",
-    apple: "/icons/icon-192x192.svg",
+    icon: "/favicon.svg",
+    apple: "/favicon.svg",
   },
 };
 

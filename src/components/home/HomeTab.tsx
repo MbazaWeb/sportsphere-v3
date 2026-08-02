@@ -260,7 +260,9 @@ export default function HomeTab() {
     <div className="mx-auto max-w-lg">
       <header className="sticky top-0 z-40 border-b border-surface-border bg-background/90 backdrop-blur-xl">
         <div className="flex h-14 items-center justify-between px-4">
-          <h1 className="text-xl font-black text-gold-gradient">SportSphere</h1>
+          <button onClick={() => window.scrollTo(0,0)} className="flex items-center">
+            <img src="/logo-wordmark.svg" alt="SportSphere" style={{ height: '28px', width: 'auto' }} />
+          </button>
           <div className="flex items-center gap-2">
             <button className="flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
               <Search className="h-4 w-4 text-muted-foreground" />

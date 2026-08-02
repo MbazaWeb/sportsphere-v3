@@ -1,35 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240">
-  <!-- 
-    Approach: Use stroke on a path to create thick S bands
-    The S path drawn thin, then stroke-width makes it thick and bold
-  -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- The S: thick stroked path, two-tone: gold top, white bottom -->
   
-  <!-- Shadow/depth layer -->
+  <!-- Full S path in gold -->
   <path 
-    d="M 155 50 C 155 25 135 12 110 12 L 55 12 C 30 12 15 27 15 50 C 15 73 30 88 55 88 L 110 88 C 125 88 135 98 135 112 C 135 126 125 136 110 136 L 45 136 C 20 136 5 151 5 174 C 5 197 20 212 45 212 L 145 212 C 170 212 185 197 185 174"
-    fill="none"
-    stroke="#C47D00"
-    stroke-width="44"
-    stroke-linecap="round"
-    opacity="0.4"
-  />
-  
-  <!-- Main S stroke — gold, thick, rounded -->
-  <path 
-    d="M 155 50 C 155 25 135 12 110 12 L 55 12 C 30 12 15 27 15 50 C 15 73 30 88 55 88 L 110 88 C 125 88 135 98 135 112 C 135 126 125 136 110 136 L 45 136 C 20 136 5 151 5 174 C 5 197 20 212 45 212 L 145 212 C 170 212 185 197 185 174"
+    d="M 160 28 C 160 14 148 6 132 6 L 52 6 C 36 6 24 16 24 30 C 24 44 36 54 52 56 L 130 70 C 148 73 162 84 162 100 C 162 116 148 128 130 128 L 46 128 C 28 128 14 140 14 156 C 14 172 28 184 46 184 L 160 184"
     fill="none"
     stroke="#F5C518"
-    stroke-width="40"
+    stroke-width="38"
     stroke-linecap="round"
   />
   
-  <!-- Highlight on top arc -->
+  <!-- White overlay on bottom arm to create two-tone effect -->
   <path 
-    d="M 155 50 C 155 25 135 12 110 12 L 55 12"
+    d="M 46 128 C 28 128 14 140 14 156 C 14 172 28 184 46 184 L 160 184"
     fill="none"
-    stroke="#FFE55C"
-    stroke-width="40"
+    stroke="white"
+    stroke-width="38"
     stroke-linecap="round"
-    opacity="0.3"
+    opacity="0.92"
+  />
+  
+  <!-- Diagonal slash through middle — the speed mark -->
+  <path
+    d="M 145 56 L 55 128"
+    fill="none"
+    stroke="#0A1628"
+    stroke-width="10"
   />
 </svg>
