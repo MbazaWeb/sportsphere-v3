@@ -631,7 +631,6 @@ const DEFAULT_MOCK: ProfileMockData = {
 Object.keys(PROFILE_TYPES).forEach((k) => {
   // mutate the map to remove rich mock fixtures introduced during development
   // components should use API-driven profile data instead of these values.
-  // @ts-expect-error runtime override
   (PROFILE_TYPES as any)[k].mockData = DEFAULT_MOCK;
 });
 
