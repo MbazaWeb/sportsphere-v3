@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { useUIStore } from '@/store/uiStore';
-import type { FeedUser } from '@/data/feedData';
+import type { ViewingUser as FeedUser } from '@/types';
 import {
   Heart, MessageCircle, Share2, Bookmark, Star, TrendingUp, Lock, Shield, Activity, DollarSign, Shirt,
   MapPin, Clock, Trophy, Users, ChevronRight, Zap, Play,
@@ -509,7 +509,7 @@ function PlayerOverviewEnhanced() {
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider">Current Team</h3>
         <button
-          onClick={() => { setViewingUser({ name: 'Manchester United', handle: '@manchesterunited', avatar: 'MU', verified: true, coverGradient: 'from-red-800 to-red-900', bio: 'Official Manchester United FC. 20x Premier League champions.', role: 'Team', location: 'Manchester, UK', joined: 'Jan 2024', followers: 8900000, following: 12, posts: 1240, isFollowing: false }); }}
+          onClick={async () => { try { const res = await fetch('/api/users?handle=@manchesterunited'); if (res.ok) { const u = await res.json(); const {apiUserToViewing} = await import('@/types'); setViewingUser(apiUserToViewing(u,false)); } } catch {} }}
           className="flex w-full items-center gap-3 rounded-xl bg-surface p-3 hover:bg-surface-elevated transition-colors">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-red-700 text-sm font-black text-white">MU</div>
           <div className="flex-1 text-left">
@@ -1352,9 +1352,8 @@ function FansContent() {
   return (
     <div className="flex flex-col gap-2">
       {fans.map((fan) => {
-        const user: FeedUser | null = { name: fan.name, handle: fan.handle, avatar: fan.avatar, verified: false, coverGradient: 'from-surface to-surface', bio: '', role: 'Fan', location: '', joined: '', followers: 0, following: 0, posts: 0, isFollowing: false };
         return (
-          <button key={fan.handle} onClick={() => user && setViewingUser(user)}
+          <button key={fan.handle} onClick={async () => { try { const res = await fetch(`/api/users?handle=${encodeURIComponent(fan.handle)}`); if(res.ok){const u=await res.json(); const {apiUserToViewing}=await import('@/types'); setViewingUser(apiUserToViewing(u,false));} } catch {} }}
             className="glass-card rounded-xl p-3 text-left glass-card-hover w-full">
             <div className="flex items-center gap-3">
               <div className={cn('flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold', user?.verified ? 'bg-gold text-black' : 'bg-surface text-white')}>
@@ -1684,9 +1683,8 @@ function TeamsContent() {
   return (
     <div className="flex flex-col gap-2">
       {teams.map((team, i) => {
-        const user: FeedUser | null = team.handle ? { name: team.name, handle: team.handle, avatar: team.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2), verified: false, coverGradient: 'from-surface to-surface', bio: '', role: 'Team', location: '', joined: '', followers: 0, following: 0, posts: 0, isFollowing: false } : null;
         return (
-          <div key={i} onClick={() => user && setViewingUser(user)}
+          <div key={i} onClick={async () => { if(!team.handle) return; try { const res = await fetch(`/api/users?handle=${encodeURIComponent(team.handle)}`); if(res.ok){const u=await res.json(); const {apiUserToViewing}=await import('@/types'); setViewingUser(apiUserToViewing(u,false));} } catch {} }}
             className={cn('glass-card rounded-xl p-3 glass-card-hover', user && 'cursor-pointer')}>
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold/10 text-xs font-bold text-gold">{i + 1}</div>

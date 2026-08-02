@@ -169,22 +169,24 @@ function ActivityList({ filter }: { filter: 'all' | 'social' | 'sports' }) {
     loadData();
   }, [filter]);
 
-  const handleUserClick = useCallback((item: ActivityItem) => {
+  const handleUserClick = useCallback(async (item: ActivityItem) => {
     if (!item.handle) return;
+    try {
+      const res = await fetch(`/api/users?handle=${encodeURIComponent(item.handle)}`);
+      if (res.ok) {
+        const u = await res.json();
+        const { apiUserToViewing } = await import('@/types');
+        setViewingUser(apiUserToViewing(u, false));
+        return;
+      }
+    } catch { /* noop */ }
+    // Fallback
     setViewingUser({
-      name: item.text.split(' ').slice(0, 2).join(' '),
-      handle: item.handle,
-      avatar: item.avatar,
-      verified: false,
-      coverGradient: 'from-surface to-surface',
-      bio: '',
-      role: 'User',
-      location: '',
-      joined: '',
-      followers: 0,
-      following: 0,
-      posts: 0,
-      isFollowing: false,
+      id: item.handle, name: item.text.split(' ').slice(0, 2).join(' '),
+      handle: item.handle, avatar: typeof item.avatar === 'string' ? item.avatar : '??',
+      verified: false, coverGradient: 'from-surface to-surface',
+      bio: '', role: 'User', location: '', joined: '',
+      followers: 0, following: 0, posts: 0, isFollowing: false,
     });
   }, [setViewingUser]);
 
@@ -274,21 +276,23 @@ function MessagesList() {
     loadData();
   }, []);
 
-  const handleChatClick = (chat: ApiMessageConversation) => {
+  const handleChatClick = async (chat: ApiMessageConversation) => {
+    try {
+      const res = await fetch(`/api/users?handle=${encodeURIComponent(chat.partnerHandle)}`);
+      if (res.ok) {
+        const u = await res.json();
+        const { apiUserToViewing } = await import('@/types');
+        setViewingUser(apiUserToViewing(u, false));
+        return;
+      }
+    } catch { /* noop */ }
+    // Fallback with data from message conversation
     setViewingUser({
-      name: chat.partnerName,
-      handle: chat.partnerHandle,
-      avatar: chat.partnerAvatar,
-      verified: chat.isVerified,
-      coverGradient: 'from-surface to-surface',
-      bio: '',
-      role: 'User',
-      location: '',
-      joined: '',
-      followers: 0,
-      following: 0,
-      posts: 0,
-      isFollowing: false,
+      id: chat.partnerId, name: chat.partnerName, handle: chat.partnerHandle,
+      avatar: chat.partnerAvatar, verified: chat.isVerified,
+      coverGradient: 'from-surface-elevated to-surface',
+      bio: '', role: 'User', location: '', joined: '',
+      followers: 0, following: 0, posts: 0, isFollowing: false,
     });
   };
 

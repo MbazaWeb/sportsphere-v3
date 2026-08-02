@@ -60,3 +60,60 @@ export interface MockUserData {
   isFollowing: boolean;
   coverGradient: string;
 }
+
+// API user shape — matches DB User model output from /api/users
+export interface ApiUser {
+  id: string;
+  name: string;
+  handle: string;
+  avatarInitials: string;
+  isVerified: boolean;
+  coverGradient: string;
+  bio: string;
+  role: string;
+  location: string;
+  followerCount: number;
+  followingCount: number;
+  postCount: number;
+  registeredAt: string;
+  verificationStatus: string;
+}
+
+// ViewingUser — used by uiStore when opening a profile overlay
+// Maps from ApiUser shape for display
+export interface ViewingUser {
+  id: string;
+  name: string;
+  handle: string;
+  avatar: string;       // avatarInitials
+  verified: boolean;    // isVerified
+  coverGradient: string;
+  bio: string;
+  role: string;
+  location: string;
+  joined: string;       // registeredAt formatted
+  followers: number;    // followerCount
+  following: number;    // followingCount
+  posts: number;        // postCount
+  isFollowing: boolean; // local state — not in DB yet
+}
+
+// Helper to map ApiUser → ViewingUser
+export function apiUserToViewing(u: ApiUser, isFollowing = false): ViewingUser {
+  return {
+    id: u.id,
+    name: u.name,
+    handle: u.handle,
+    avatar: u.avatarInitials || u.name.slice(0, 2).toUpperCase(),
+    verified: u.isVerified,
+    coverGradient: u.coverGradient || 'from-emerald-600 to-emerald-900',
+    bio: u.bio || '',
+    role: u.role || 'fan',
+    location: u.location || '',
+    joined: u.registeredAt ? new Date(u.registeredAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '',
+    followers: u.followerCount || 0,
+    following: u.followingCount || 0,
+    posts: u.postCount || 0,
+    isFollowing,
+  };
+}

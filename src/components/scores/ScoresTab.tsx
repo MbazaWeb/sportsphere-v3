@@ -173,27 +173,30 @@ function MatchSkeleton() {
   );
 }
 
-// --- TeamName (no longer needs getFeedUser) ----------------------
+// --- TeamName — fetches from API then opens profile ---------------
 function TeamName({ name, handle, align = 'left' }: { name: string; handle?: string | null; align?: 'left' | 'right' }) {
   const setViewingUser = useUIStore((s) => s.setViewingUser);
 
-  const handleClick = () => {
-    if (handle) {
-      setViewingUser({
-        name,
-        handle,
-        avatar: name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),
-        verified: false,
-        coverGradient: 'from-red-800 to-red-900',
-        bio: '',
-        role: 'Team',
-        location: '',
-        joined: '',
-        followers: 0,
-        following: 0,
-        posts: 0,
-        isFollowing: false,
-      });
+  const handleClick = async () => {
+    if (!handle) return;
+    try {
+      const res = await fetch(`/api/users?handle=${encodeURIComponent(handle)}`);
+      if (res.ok) {
+        const u = await res.json();
+        const { apiUserToViewing } = await import('@/types');
+        setViewingUser(apiUserToViewing(u, false));
+      } else {
+        // Fallback with basic data if not in DB yet
+        setViewingUser({
+          id: handle, name, handle,
+          avatar: name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2),
+          verified: false, coverGradient: 'from-red-800 to-red-900',
+          bio: '', role: 'Team', location: '', joined: '',
+          followers: 0, following: 0, posts: 0, isFollowing: false,
+        });
+      }
+    } catch {
+      // noop
     }
   };
 

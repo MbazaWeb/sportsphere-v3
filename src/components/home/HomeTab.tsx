@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Bell, Heart, MessageCircle, Share2, Bookmark, TrendingUp, Zap, Shield, X, Send, ChevronDown, Trophy, Sparkles, Flame, Crown } from 'lucide-react';
 import type { HomeSubTab } from '@/store/navigationStore';
+import { apiUserToViewing } from '@/types';
 import { useState, useRef, useEffect, useCallback } from 'react';
 
 const SUBTABS: { id: HomeSubTab; label: string }[] = [
@@ -617,21 +618,7 @@ function TrendingContent() {
     if (!isAuthenticated) { setLoginModalOpen(true); return; }
   };
 
-  const toFeedUser = useCallback((user: ApiUser) => ({
-    name: user.name,
-    handle: user.handle,
-    avatar: user.avatarInitials,
-    verified: user.isVerified,
-    coverGradient: user.coverGradient,
-    bio: user.bio,
-    role: user.role,
-    location: user.location || '',
-    joined: new Date(user.registeredAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-    followers: user.followerCount,
-    following: user.followingCount,
-    posts: user.postCount,
-    isFollowing: false,
-  }), []);
+  const toFeedUser = useCallback((user: ApiUser) => apiUserToViewing(user, false), []);
 
   const topics = [
     { t: '#PremierLeague', posts: '24.5K', hot: true },
@@ -780,21 +767,7 @@ function SpotlightContent() {
     setLikedItems(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
 
-  const toFeedUser = useCallback((user: ApiUser) => ({
-    name: user.name,
-    handle: user.handle,
-    avatar: user.avatarInitials,
-    verified: user.isVerified,
-    coverGradient: user.coverGradient,
-    bio: user.bio,
-    role: user.role,
-    location: user.location || '',
-    joined: new Date(user.registeredAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-    followers: user.followerCount,
-    following: user.followingCount,
-    posts: user.postCount,
-    isFollowing: false,
-  }), []);
+  const toFeedUser = useCallback((user: ApiUser) => apiUserToViewing(user, false), []);
 
   // Fallback gradients for spotlight cards
   const gradients = [

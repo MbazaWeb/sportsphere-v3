@@ -1,18 +1,20 @@
-// SportSphere — Feed User Type
-// Shared type used by uiStore for viewingUser. This is the minimal type needed.
+// SportSphere — feedData.ts
+// This file now only re-exports shared types from @/types.
+// All actual feed/user data comes from the API layer (/api/*).
+// Components should use /api/users?handle= to fetch users dynamically.
 
-export interface FeedUser {
-  name: string;
-  handle: string;
-  avatar: string;
-  verified: boolean;
-  coverGradient: string;
-  bio: string;
-  role: string;
-  location: string;
-  joined: string;
-  followers: number;
-  following: number;
-  posts: number;
-  isFollowing: boolean;
+export type { ViewingUser as FeedUser } from '@/types';
+export { apiUserToViewing as mapApiUserToFeedUser } from '@/types';
+
+// Helper to fetch a user by handle from the API
+export async function fetchUserByHandle(handle: string) {
+  try {
+    const res = await fetch(`/api/users?handle=${encodeURIComponent(handle)}`);
+    if (!res.ok) return null;
+    const user = await res.json();
+    const { apiUserToViewing } = await import('@/types');
+    return apiUserToViewing(user);
+  } catch {
+    return null;
+  }
 }

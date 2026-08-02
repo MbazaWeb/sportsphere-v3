@@ -1,6 +1,6 @@
 'use client';
 import { create } from 'zustand';
-import type { FeedUser } from '@/data/feedData';
+import type { ViewingUser } from '@/types';
 
 interface UIState {
   toastMessage: string | null;
@@ -9,7 +9,7 @@ interface UIState {
   createModalOpen: boolean;
   activeCreateType: string | null;
   viewingProfile: string | null;
-  viewingUser: FeedUser | null;
+  viewingUser: ViewingUser | null;
 
   showToast: (msg: string, duration?: number) => void;
   setLoginModalOpen: (o: boolean) => void;
@@ -17,7 +17,7 @@ interface UIState {
   setCreateModalOpen: (o: boolean) => void;
   setActiveCreateType: (t: string | null) => void;
   setViewingProfile: (id: string | null) => void;
-  setViewingUser: (u: FeedUser | null) => void;
+  setViewingUser: (u: ViewingUser | null) => void;
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -45,4 +45,5 @@ export const useUIStore = create<UIState>((set) => ({
 }));
 
 // Keep MockUserData as alias for backward compat
-export type MockUserData = FeedUser;
+export type MockUserData = ViewingUser;
+export type { ViewingUser };
