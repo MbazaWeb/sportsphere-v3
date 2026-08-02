@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { safeJsonParse } from '@/lib/json';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,9 +70,4 @@ export async function GET(request: NextRequest) {
     console.error('Matches API error:', error);
     return NextResponse.json({ error: 'Failed to fetch matches' }, { status: 500 });
   }
-}
-
-function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
-  if (!value) return fallback;
-  try { return JSON.parse(value) as T; } catch { return fallback; }
 }

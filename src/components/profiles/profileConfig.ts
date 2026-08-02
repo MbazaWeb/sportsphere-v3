@@ -1,24 +1,9 @@
 // SportSphere Unified Profile Configuration System
 // Every profile follows: Header → Overview → Content → Sports → Community → Commerce → About
 
-export type ProfileTypeId =
-  | 'team'
-  | 'competition'
-  | 'match'
-  | 'player'
-  | 'coach'
-  | 'stadium'
-  | 'venue'
-  | 'academy'
-  | 'community'
-  | 'organization'
-  | 'business'
-  | 'journalist'
-  | 'analyst'
-  | 'creator'
-  | 'scout'
-  | 'referee'
-  | 'fan';
+import type { ProfileTypeId } from '@/types';
+
+export type { ProfileTypeId };
 
 export type TabCategory = 'overview' | 'content' | 'sports' | 'community' | 'commerce' | 'about';
 
@@ -41,6 +26,8 @@ export interface ProfileTypeConfig {
   emoji: string;
   tabs: ProfileTab[];
   primaryActions: ProfileAction[];
+  // ⚠️ PLACEHOLDER: mockData is used as fallback when no real profile exists.
+  // In Phase B, this will be replaced by database-backed profile data.
   mockData: ProfileMockData;
 }
 

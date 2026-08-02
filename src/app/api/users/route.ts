@@ -1,30 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { serializePublicUser } from '@/lib/auth';
+import { USER_SELECT } from '@/lib/db-selects';
 
 export const dynamic = 'force-dynamic';
 
-// Whitelist columns — NEVER return passwordHash, resetToken, or resetTokenExpiry.
-const USER_SELECT = {
-  id: true,
-  name: true,
-  email: true,
-  handle: true,
-  avatarUrl: true,
-  avatarInitials: true,
-  role: true,
-  verificationStatus: true,
-  isVerified: true,
-  bio: true,
-  location: true,
-  coverGradient: true,
-  followerCount: true,
-  followingCount: true,
-  postCount: true,
-  sportsFollowing: true,
-  roleData: true,
-  registeredAt: true,
-} as const;
 
 export async function GET(request: NextRequest) {
   try {

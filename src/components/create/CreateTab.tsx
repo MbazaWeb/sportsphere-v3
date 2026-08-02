@@ -10,7 +10,7 @@ import {
   X, Send, Camera, Tag, Hash, MapPin, ChevronDown,
   Plus, Minus, Lock, Globe, Users, Search, Check, XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 const CREATE_TYPES = [
   { id: 'post',       label: 'Post',       icon: FileText,  color: 'bg-blue-500/10 text-blue-400',   desc: 'Share your thoughts' },
@@ -386,7 +386,7 @@ function Composer({ type, onBack }: { type: string; onBack: () => void }) {
 // ─── Media Upload (functional — accepts URL or file selection placeholder) ──
 function MediaUpload({ type, mediaUrls, onChange }: { type: string; mediaUrls: string[]; onChange: (urls: string[]) => void }) {
   const [urlInput, setUrlInput] = useState('');
-  const fileInputRef = useState<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const addUrl = () => {
     if (!urlInput.trim()) return;

@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Rich profile data served from the server (seed-driven).
-// This replaces direct client-side imports of static data.
+// ⚠️ PLACEHOLDER: This route uses hardcoded seed data for development only.
+// In Phase B, this will be replaced with database-backed queries using
+// normalized profile tables (PlayerProfile, TeamProfile, CompetitionProfile, etc.).
+// The data below is kept for development/demo purposes and should NOT be
+// considered production data.
+
+export const dynamic = 'force-dynamic';
 
 const PLAYER_DATA = {
   rashford: {

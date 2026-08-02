@@ -4,6 +4,7 @@ import { useNavigationStore } from '@/store/navigationStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { formatCount } from '@/store/useAppStore';
+import { formatTime, formatTimeShort } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Bell, Heart, MessageCircle, Share2, Bookmark, TrendingUp, Zap, Shield, X, Send, ChevronDown, Trophy, Sparkles, Flame, Crown, Check, Image as ImageIcon, Smile, Inbox, Info, BarChart3, Goal, Clock, ShoppingBag } from 'lucide-react';
@@ -18,31 +19,12 @@ const SUBTABS: { id: HomeSubTab; label: string }[] = [
   { id: 'spotlight', label: 'Spotlight' },
 ];
 
-// --- Shared time formatter (outside components to avoid purity issues) ---
-function formatTime(dateStr: string): string {
-  const d = new Date(dateStr);
-  const diff = Date.now() - d.getTime();
-  if (diff < 60000) return 'just now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-  return `${Math.floor(diff / 86400000)}d ago`;
-}
-
-function formatTimeShort(dateStr: string): string {
-  const d = new Date(dateStr);
-  const diff = Date.now() - d.getTime();
-  if (diff < 60000) return 'now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
-  return `${Math.floor(diff / 86400000)}d`;
-}
-
 // --- Types from API ---
 interface ApiUser {
   id: string; name: string; handle: string; avatarInitials: string;
   isVerified: boolean; coverGradient: string; bio: string; role: string;
   location: string; followerCount: number; followingCount: number;
-  postCount: number; registeredAt: string;
+  postCount: number; registeredAt: string; verificationStatus: string;
 }
 
 interface ApiPost {

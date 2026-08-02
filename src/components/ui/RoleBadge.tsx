@@ -1,14 +1,12 @@
 'use client';
 import { cn } from '@/lib/utils';
+import type { ProfileTypeId } from '@/types';
 import {
   Star, Users, Briefcase, Building, Trophy, Scale, Newspaper,
   BarChart3, Camera, Search, ShieldCheck, Award, Mic, Flag,
 } from 'lucide-react';
 
-export type RoleId =
-  | 'fan' | 'player' | 'coach' | 'referee' | 'journalist' | 'analyst'
-  | 'creator' | 'scout' | 'team' | 'competition' | 'match' | 'stadium'
-  | 'venue' | 'academy' | 'community' | 'organization' | 'business';
+export type RoleId = ProfileTypeId;
 
 interface RoleBadgeProps {
   role: string;

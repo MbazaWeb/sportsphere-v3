@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 
 import { useAppStore, type ScoresSubTab } from '@/store/useAppStore';
 import { useUIStore } from '@/store/uiStore';
+import { formatKickoffTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Clock, Trophy, ChevronDown, Globe, Flag, X, Crown } from 'lucide-react';
@@ -302,7 +303,7 @@ function TodayContent({ queryParams }: { queryParams: string }) {
     loadData();
   }, [queryParams]);
 
-  const formatTime = (dateStr: string) => new Date(dateStr).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const formatTime = formatKickoffTime;
 
   if (loading) return <div className="p-4 flex flex-col gap-3"><MatchSkeleton /><MatchSkeleton /></div>;
   if (!matches.length) return <EmptyState label="today's fixtures match" />;
@@ -359,7 +360,7 @@ function UpcomingContent({ queryParams }: { queryParams: string }) {
     return d.toLocaleDateString('en-US', { weekday: 'short' });
   };
 
-  const formatTime = (dateStr: string) => new Date(dateStr).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const formatTime = formatKickoffTime;
 
   if (loading) return <div className="p-4 flex flex-col gap-3"><MatchSkeleton /><MatchSkeleton /></div>;
   if (!matches.length) return <EmptyState label="upcoming fixtures match" />;
@@ -463,6 +464,7 @@ function StandingsContent({ tournament }: { tournament: string }) {
   const handleTeamClick = (row: StandingRow) => {
     if (row.handle) {
       setViewingUser({
+        id: row.handle || row.team,
         name: row.team,
         handle: row.handle,
         avatar: row.team.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),

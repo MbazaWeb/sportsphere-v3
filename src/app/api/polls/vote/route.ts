@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { safeJsonParse } from '@/lib/json';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,13 +28,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid option index.' }, { status: 400 });
     }
 
-    // Increment total votes (simplified — no per-user vote tracking table yet)
-    await db.poll.update({
-      where: { id: poll.id },
-      data: { totalVotes: { increment: 1 } },
+    // Check if user already voted (PollVote has @@unique([pollId, userId]))
+    const existingVote = await db.pollVote.findUnique({
+      where: { pollId_userId: { pollId: poll.id, userId } },
     });
+    if (existingVote) {
+      return NextResponse.json({ error: 'You have already voted on this poll.' }, { status: 409 });
+    }
 
-    const updated = await db.poll.findUnique({ where: { id: poll.id } });
+    // Create the vote record and increment total votes in a transaction
+    const [_, updated] = await db.$transaction([
+      db.pollVote.create({
+        data: { pollId: poll.id, userId, optionIdx: Number(optionIndex) },
+      }),
+      db.poll.update({
+        where: { id: poll.id },
+        data: { totalVotes: { increment: 1 } },
+      }),
+    ]);
     return NextResponse.json({
       ok: true,
       totalVotes: updated?.totalVotes ?? 0,
@@ -43,9 +55,4 @@ export async function POST(request: NextRequest) {
     console.error('Vote error:', error);
     return NextResponse.json({ error: 'Failed to vote' }, { status: 500 });
   }
-}
-
-function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
-  if (!value) return fallback;
-  try { return JSON.parse(value) as T; } catch { return fallback; }
 }

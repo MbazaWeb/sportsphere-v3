@@ -125,7 +125,7 @@ export default function ResetPasswordPage() {
               </h2>
               {!success && (
                 <button
-                  onClick={close}
+                  onClick={() => close()}
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors"
                 >
                   <X className="h-4 w-4 text-muted-foreground" />

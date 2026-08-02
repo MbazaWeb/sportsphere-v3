@@ -1,26 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { safeJsonParse } from '@/lib/json';
+import { USER_SELECT_FULL } from '@/lib/db-selects';
 
 export const dynamic = 'force-dynamic';
 
-const USER_SELECT = {
-  id: true, name: true, email: true, handle: true, avatarUrl: true, coverUrl: true,
-  avatarInitials: true, role: true, verificationStatus: true, isVerified: true,
-  bio: true, aboutMe: true, pronouns: true, location: true, coverGradient: true,
-  followerCount: true, followingCount: true, postCount: true, sportsFollowing: true,
-  roleData: true, registeredAt: true,
-  // Personal
-  dateOfBirth: true, gender: true, nationality: true, countryOfOrigin: true,
-  currentCountry: true, region: true, city: true, preferredLanguage: true, timezone: true,
-  // Contact
-  phone: true, website: true, whatsapp: true,
-  socialInstagram: true, socialX: true, socialTikTok: true, socialFacebook: true,
-  socialLinkedIn: true, socialYouTube: true, socialThreads: true,
-  // Appearance
-  theme: true, fontSize: true, reducedMotion: true, highContrast: true,
-  // Settings
-  privacySettings: true, notifPrefs: true, interests: true, roleProfile: true,
-} as const;
 
 // GET /api/profile?handle=@xxx — get full profile (public fields only for other users)
 // GET /api/profile (no handle) — get own full profile (all fields)
@@ -34,7 +18,7 @@ export async function GET(request: NextRequest) {
       // Viewing someone else's profile — return public fields only
       const user = await db.user.findUnique({
         where: { handle },
-        select: { ...USER_SELECT, favorites: true },
+        select: { ...USER_SELECT_FULL, favorites: true },
       });
       if (!user) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -60,8 +44,8 @@ export async function GET(request: NextRequest) {
 
       // Apply privacy — hide phone/email unless own profile or allowed
       if (!isOwnProfile) {
-        if (!privacy.showPhone) publicUser.phone = null;
-        if (!privacy.showEmail) publicUser.email = null;
+        if (!(privacy as Record<string, unknown>).showPhone) publicUser.phone = null;
+        if (!(privacy as Record<string, unknown>).showEmail) publicUser.email = null;
         // Don't expose notifPrefs or privacySettings to other users
         delete publicUser.notifPrefs;
         delete publicUser.privacySettings;
@@ -77,7 +61,7 @@ export async function GET(request: NextRequest) {
 
     const user = await db.user.findUnique({
       where: { id: currentUserId },
-      select: { ...USER_SELECT, favorites: true },
+      select: { ...USER_SELECT_FULL, favorites: true },
     });
 
     if (!user) {
@@ -180,7 +164,7 @@ export async function PUT(request: NextRequest) {
     const updated = await db.user.update({
       where: { id: userId },
       data: update,
-      select: USER_SELECT,
+      select: USER_SELECT_FULL,
     });
 
     return NextResponse.json({
@@ -197,9 +181,4 @@ export async function PUT(request: NextRequest) {
     console.error('Profile PUT error:', error);
     return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
   }
-}
-
-function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
-  if (!value) return fallback;
-  try { return JSON.parse(value) as T; } catch { return fallback; }
 }

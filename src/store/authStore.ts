@@ -1,10 +1,8 @@
 import { create } from 'zustand';
 import { useUIStore } from './uiStore';
+import type { ProfileTypeId } from '@/types';
 
-export type ProfileTypeId =
-  | "team" | "competition" | "match" | "player" | "coach" | "referee"
-  | "journalist" | "analyst" | "creator" | "scout" | "stadium" | "venue"
-  | "academy" | "community" | "organization" | "business" | "fan";
+export type { ProfileTypeId };
 
 export interface UserProfile {
   id: string; name: string; email: string; handle: string; avatar: string;

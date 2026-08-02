@@ -66,12 +66,12 @@ export interface ApiUser {
   id: string;
   name: string;
   handle: string;
-  avatarInitials: string;
+  avatarInitials: string | null;
   isVerified: boolean;
   coverGradient: string;
-  bio: string;
+  bio: string | null;
   role: string;
-  location: string;
+  location: string | null;
   followerCount: number;
   followingCount: number;
   postCount: number;

@@ -7,15 +7,11 @@ import {
   Search, ChevronRight, Users, Trophy, Star, Newspaper, BarChart3,
   Camera, Scale, Building, ShieldCheck, Briefcase, X,
 } from 'lucide-react';
-import type { ProfileTypeId } from './profileConfig';
+import type { ProfileTypeId } from '@/types';
 import { BadgeStack } from '@/components/ui/RoleBadge';
 import { useUIStore } from '@/store/uiStore';
 import { apiUserToViewing } from '@/types';
-
-// Hook to open a user's full profile
-function useUIStoreLocal() {
-  return useUIStore((s) => s.setViewingUser);
-}
+import { formatCount } from '@/constants';
 
 interface ProfileExplorerProps {
   onSelectProfile?: (id: ProfileTypeId) => void;
@@ -31,7 +27,11 @@ interface ApiUser {
   bio: string | null;
   location: string | null;
   followerCount: number;
+  followingCount: number;
+  postCount: number;
   coverGradient: string;
+  registeredAt: string;
+  verificationStatus: string;
 }
 
 const ROLE_GROUPS: { title: string; roles: string[]; icon: React.ElementType }[] = [
@@ -78,18 +78,12 @@ function getRoleAccent(role: string): string {
   return accents[role] || 'bg-surface text-muted-foreground';
 }
 
-function formatCount(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toString();
-}
-
 export default function ProfileExplorer({ onSelectProfile: _onSelectProfile }: ProfileExplorerProps) {
   const [users, setUsers] = useState<ApiUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [activeRole, setActiveRole] = useState<string | null>(null);
-  const setViewingUser = useUIStoreLocal();
+  const setViewingUser = useUIStore((s) => s.setViewingUser);
 
   useEffect(() => {
     async function loadUsers() {

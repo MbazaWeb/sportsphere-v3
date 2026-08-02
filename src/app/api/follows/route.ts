@@ -1,16 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { safeJsonParse } from '@/lib/json';
 import { db } from '@/lib/db';
+import { USER_SELECT } from '@/lib/db-selects';
 
 export const dynamic = 'force-dynamic';
 
-const USER_SELECT = {
-  id: true, name: true, email: true, handle: true, avatarUrl: true,
-  avatarInitials: true, role: true, verificationStatus: true, isVerified: true,
-  bio: true, location: true, coverGradient: true, followerCount: true,
-  followingCount: true, postCount: true, sportsFollowing: true, roleData: true,
-  registeredAt: true,
-} as const;
 
 // POST — toggle follow (requires auth)
 export async function POST(request: NextRequest) {

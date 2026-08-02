@@ -39,13 +39,15 @@ export async function POST(request: NextRequest) {
       // In production, replace this with an actual email send (resend,
       // nodemailer, Postmark, etc.). The reset URL format matches the
       // client-side route `/reset-password?token=…`.
-      const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
-      console.log('──────────────────────────────────────────────');
-      console.log(`🔑 Password reset requested for ${normalizedEmail}`);
-      console.log(`   Token: ${token}`);
-      console.log(`   Reset URL: ${resetUrl}`);
-      console.log(`   Expires: ${expiry.toISOString()}`);
-      console.log('──────────────────────────────────────────────');
+      if (process.env.NODE_ENV !== 'production') {
+        const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+        console.log('──────────────────────────────────────────────');
+        console.log(`🔑 Password reset requested for ${normalizedEmail}`);
+        console.log(`   Token: ${token}`);
+        console.log(`   Reset URL: ${resetUrl}`);
+        console.log(`   Expires: ${expiry.toISOString()}`);
+        console.log('──────────────────────────────────────────────');
+      }
     }
 
     return NextResponse.json({

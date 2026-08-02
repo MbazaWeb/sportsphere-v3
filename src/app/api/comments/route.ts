@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { USER_SELECT } from '@/lib/db-selects';
+import { safeJsonParse } from '@/lib/json';
 
 export const dynamic = 'force-dynamic';
 
-const USER_SELECT = {
-  id: true, name: true, email: true, handle: true, avatarUrl: true,
-  avatarInitials: true, role: true, verificationStatus: true, isVerified: true,
-  bio: true, location: true, coverGradient: true, followerCount: true,
-  followingCount: true, postCount: true, sportsFollowing: true, roleData: true,
-  registeredAt: true,
-} as const;
 
 export async function GET(request: NextRequest) {
   try {
@@ -93,9 +88,4 @@ export async function POST(request: NextRequest) {
     console.error('Create comment error:', error);
     return NextResponse.json({ error: 'Failed to create comment' }, { status: 500 });
   }
-}
-
-function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
-  if (!value) return fallback;
-  try { return JSON.parse(value) as T; } catch { return fallback; }
 }

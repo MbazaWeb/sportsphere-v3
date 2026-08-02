@@ -1,29 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { USER_SELECT } from '@/lib/db-selects';
+import { safeJsonParse } from '@/lib/json';
 
 export const dynamic = 'force-dynamic';
 
-// Whitelist User fields — never leak passwordHash, resetToken, etc.
-const USER_SELECT = {
-  id: true,
-  name: true,
-  email: true,
-  handle: true,
-  avatarUrl: true,
-  avatarInitials: true,
-  role: true,
-  verificationStatus: true,
-  isVerified: true,
-  bio: true,
-  location: true,
-  coverGradient: true,
-  followerCount: true,
-  followingCount: true,
-  postCount: true,
-  sportsFollowing: true,
-  roleData: true,
-  registeredAt: true,
-} as const;
 
 export async function GET(request: NextRequest) {
   try {
@@ -99,6 +80,18 @@ export async function GET(request: NextRequest) {
             createdAt: true,
             updatedAt: true,
             user: { select: USER_SELECT },
+            poll: true,
+            comments: {
+              select: {
+                id: true,
+                content: true,
+                createdAt: true,
+                userId: true,
+                user: { select: USER_SELECT },
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 3,
+            },
           },
           orderBy: { likeCount: 'desc' },
           take: 20,
@@ -165,14 +158,5 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Feed API error:', error);
     return NextResponse.json({ error: 'Failed to fetch feed' }, { status: 500 });
-  }
-}
-
-function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
-  if (!value) return fallback;
-  try {
-    return JSON.parse(value) as T;
-  } catch {
-    return fallback;
   }
 }

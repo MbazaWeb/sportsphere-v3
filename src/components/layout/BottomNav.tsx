@@ -1,12 +1,12 @@
 'use client';
 
-import { useNavigationStore } from '@/store/navigationStore';
+import { useNavigationStore, type TabId } from '@/store/navigationStore';
 import { Home, Trophy, PlusCircle, Bell, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
 type TabConfig = {
-  id: string;
+  id: TabId;
   label: string;
   Icon: React.ElementType;
   badge?: string;
@@ -16,7 +16,7 @@ const TABS: TabConfig[] = [
   { id: 'home',     label: 'Home',     Icon: Home },
   { id: 'scores',   label: 'Scores',   Icon: Trophy },
   { id: 'create',   label: 'Create',   Icon: PlusCircle },
-  { id: 'activity', label: 'Activity', Icon: Bell, badge: '3' },
+  { id: 'activity', label: 'Activity', Icon: Bell },
   { id: 'profile',  label: 'Profile',  Icon: User },
 ];
 
@@ -33,7 +33,7 @@ export default function BottomNav() {
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id)}
               aria-label={label}
               aria-current={isActive ? 'page' : undefined}
               className={cn(

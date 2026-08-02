@@ -1,9 +1,23 @@
 import { SignJWT, jwtVerify } from 'jose';
 
 // ─── Config ────────────────────────────────────────────────────
-const SESSION_SECRET =
-  process.env.SESSION_SECRET ||
-  'dev-only-insecure-secret-please-set-SESSION_SECRET-in-env-9f2a4c1b';
+const SESSION_SECRET = (() => {
+  const env = process.env.SESSION_SECRET;
+  if (env) return env;
+  // In production, a missing SESSION_SECRET is a critical security issue.
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'SESSION_SECRET environment variable is required in production. ' +
+      'Set it to a cryptographically random string (e.g. `openssl rand -hex 32`).'
+    );
+  }
+  // Dev-only fallback — never used in production.
+  console.warn(
+    '[SportSphere] WARNING: Using insecure dev SESSION_SECRET. ' +
+    'Set SESSION_SECRET in your .env for production.'
+  );
+  return 'dev-only-insecure-secret-please-set-SESSION_SECRET-in-env-9f2a4c1b';
+})();
 
 const SESSION_COOKIE_NAME = 'ss_session';
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days

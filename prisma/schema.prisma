@@ -37,6 +37,47 @@ model User {
   updatedAt           DateTime @updatedAt
   lastSeenAt          DateTime @default(now())
 
+  // ─── Extended Profile Fields ──────────────────────────────
+  coverUrl            String?
+
+  // Personal
+  aboutMe             String?
+  pronouns            String?
+  dateOfBirth         DateTime?
+  gender              String?
+  nationality         String?
+  countryOfOrigin     String?
+  currentCountry      String?
+  region              String?
+  city                String?
+  preferredLanguage   String?   @default("en")
+  timezone            String?
+
+  // Contact
+  phone               String?
+  website             String?
+  whatsapp            String?
+  socialInstagram     String?
+  socialX             String?
+  socialTikTok        String?
+  socialFacebook      String?
+  socialLinkedIn      String?
+  socialYouTube       String?
+  socialThreads       String?
+
+  // Appearance
+  theme               String?   @default("dark")
+  fontSize            String?   @default("medium")
+  reducedMotion       Boolean   @default(false)
+  highContrast        Boolean   @default(false)
+
+  // Settings (JSON)
+  privacySettings     Json      @default("{}")
+  notifPrefs          Json      @default("{}")
+  interests           Json      @default("[]")
+  roleProfile         Json      @default("{}")
+
+  // Relations
   posts               Post[]
   comments            Comment[]
   likes               PostLike[]
@@ -51,6 +92,7 @@ model User {
   communityMemberships CommunityMember[]
   createdCommunities  Community[]
   leaderboardEntries  LeaderboardEntry[]
+  favorites           UserFavorite[]  @relation("UserFavorites")
 
   @@index([handle])
   @@index([email])
@@ -292,4 +334,19 @@ model LeaderboardEntry {
   user           User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, period])
+}
+
+// ─── UserFavorite ────────────────────────────────────────────
+model UserFavorite {
+  id           String   @id @default(uuid())
+  userId       String
+  targetType   String   // team, player, coach, stadium, league, national_team, competition
+  targetName   String
+  targetHandle String?
+  createdAt    DateTime @default(now())
+
+  user         User @relation("UserFavorites", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetType, targetName])
+  @@index([userId])
 }

@@ -1,30 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { safeJsonParse } from '@/lib/json';
 import { db } from '@/lib/db';
+import { USER_SELECT } from '@/lib/db-selects';
 
 export const dynamic = 'force-dynamic';
 
-// Whitelist User fields — never leak passwordHash, resetToken, etc.
-const USER_SELECT = {
-  id: true,
-  name: true,
-  email: true,
-  handle: true,
-  avatarUrl: true,
-  avatarInitials: true,
-  role: true,
-  verificationStatus: true,
-  isVerified: true,
-  bio: true,
-  location: true,
-  coverGradient: true,
-  followerCount: true,
-  followingCount: true,
-  postCount: true,
-  sportsFollowing: true,
-  roleData: true,
-  registeredAt: true,
-} as const;
 
 export async function GET(request: NextRequest) {
   try {

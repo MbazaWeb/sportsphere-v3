@@ -2,6 +2,7 @@
 
 import { useAppStore, type ActivitySubTab } from '@/store/useAppStore';
 import { useUIStore } from '@/store/uiStore';
+import { formatTime, formatTimeShort } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import {
@@ -14,27 +15,8 @@ const activitySubTabs: { id: ActivitySubTab; label: string; badge?: string }[] =
   { id: 'all',      label: 'All' },
   { id: 'social',   label: 'Social' },
   { id: 'sports',   label: 'Sports' },
-  { id: 'messages', label: 'Messages', badge: '3' },
+  { id: 'messages', label: 'Messages' },
 ];
-
-// --- Shared time formatters (outside components to avoid React purity issues) ---
-function formatTime(dateStr: string): string {
-  const d = new Date(dateStr);
-  const diff = Date.now() - d.getTime();
-  if (diff < 60000) return 'now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-  return `${Math.floor(diff / 86400000)}d ago`;
-}
-
-function formatTimeShort(dateStr: string): string {
-  const d = new Date(dateStr);
-  const diff = Date.now() - d.getTime();
-  if (diff < 60000) return 'now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
-  return `${Math.floor(diff / 86400000)}d`;
-}
 
 // --- Types from API ---
 interface ApiNotification {

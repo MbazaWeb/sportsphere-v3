@@ -1,28 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { safeJsonParse } from '@/lib/json';
+import { USER_SELECT } from '@/lib/db-selects';
 
 export const dynamic = 'force-dynamic';
 
-const USER_SELECT = {
-  id: true,
-  name: true,
-  email: true,
-  handle: true,
-  avatarUrl: true,
-  avatarInitials: true,
-  role: true,
-  verificationStatus: true,
-  isVerified: true,
-  bio: true,
-  location: true,
-  coverGradient: true,
-  followerCount: true,
-  followingCount: true,
-  postCount: true,
-  sportsFollowing: true,
-  roleData: true,
-  registeredAt: true,
-} as const;
 
 export async function GET(request: NextRequest) {
   try {
@@ -72,6 +54,8 @@ export async function GET(request: NextRequest) {
       lastMessage: string;
       lastTime: string;
       unread: number;
+      sportsFollowing: unknown;
+      roleData: unknown;
     }>();
 
     const processMessage = (msg: typeof sentMessages[number], isSender: boolean) => {
@@ -91,6 +75,8 @@ export async function GET(request: NextRequest) {
           lastMessage: msg.content,
           lastTime: msg.createdAt.toISOString(),
           unread: isSender ? 0 : (msg.isRead ? 0 : 1),
+          sportsFollowing: safeJsonParse(partner.sportsFollowing, []),
+          roleData: safeJsonParse(partner.roleData, {}),
         });
       }
     };

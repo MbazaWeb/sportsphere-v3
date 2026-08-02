@@ -121,7 +121,7 @@ export default function UserProfileViewer() {
     async function loadUser() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/users?handle=${encodeURIComponent(viewingHandle)}`);
+        const res = await fetch(`/api/users?handle=${encodeURIComponent(viewingHandle as string)}`);
         if (res.ok) {
           const data = await res.json();
           setApiUser(data);

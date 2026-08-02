@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { safeJsonParse } from './json';
 
 // Re-export everything edge-safe from session.ts so callers have one import.
 // `lib/auth.ts` itself is server-only (it pulls in bcryptjs); middleware
@@ -71,12 +72,4 @@ export function serializePublicUser(u: {
     roleData: safeJsonParse(u.roleData, {}),
     registeredAt: u.registeredAt.toISOString(),
   };
-}
-
-function safeJsonParse<T>(value: unknown, fallback: T): T {
-  if (value === null || value === undefined) return fallback;
-  if (typeof value === 'string') {
-    try { return JSON.parse(value) as T; } catch { return fallback; }
-  }
-  return value as T; // Already parsed (PostgreSQL Json)
 }

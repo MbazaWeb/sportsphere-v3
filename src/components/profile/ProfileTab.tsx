@@ -1,6 +1,7 @@
 'use client';
 
-import { useAppStore, type ProfileTypeId, type VerificationStatus } from '@/store/useAppStore';
+import { useAppStore, type ProfileTypeId } from '@/store/useAppStore';
+import type { VerificationStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -773,7 +774,7 @@ export default function ProfileTab() {
       <RegistrationModal />
       {profileSection === 'main' && (
         <LoggedInProfile
-          onNavigate={setProfileSection}
+          onNavigate={(s: string) => setProfileSection(s as typeof profileSection)}
           onLogout={logout}
         />
       )}
