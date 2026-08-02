@@ -81,8 +81,11 @@
     "vaul": "^0.9.9",
     "zod": "^3.23.8",
     "zustand": "^5.0.1"
+    ,"@aws-sdk/client-s3": "^3.536.0",
+    "@google-cloud/storage": "^6.11.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.0",
     "@eslint/eslintrc": "^3.1.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/bcryptjs": "^2.4.6",
