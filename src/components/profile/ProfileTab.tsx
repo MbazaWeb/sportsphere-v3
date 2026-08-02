@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import RegistrationModal from '@/components/registration/RegistrationModal';
+import ProUpgradeModal from '@/components/registration/ProUpgradeModal';
 import EditProfileModal from '@/components/profile/edit/EditProfileModal';
 import ProfileExplorer from '@/components/profiles/ProfileExplorer';
 import { BadgeStack } from '@/components/ui/RoleBadge';
@@ -148,10 +149,13 @@ function LoggedInProfile({
   const userProfile = useAppStore((s) => s.userProfile);
   const [activeTab, setActiveTab] = useState<'posts' | 'media' | 'spotlight'>('posts');
   const [editOpen, setEditOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const isAdvanced = userProfile && userProfile.role !== 'fan';
   const isPending = userProfile?.verificationStatus === 'pending';
   const isVerified = userProfile?.verificationStatus === 'verified';
+  // Phase 8: Show upgrade button for fans (not verified, not pending)
+  const canUpgrade = userProfile?.role === 'fan' && !isVerified && !isPending;
 
   const profileTabs = [
     { id: 'posts' as const, label: 'Posts' },
@@ -251,6 +255,13 @@ function LoggedInProfile({
             <button onClick={() => setEditOpen(true)} className="mt-2 rounded-lg bg-surface border border-surface-border px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-surface-elevated">
               Edit Profile
             </button>
+            {/* Phase 8: Pro Upgrade button */}
+            {canUpgrade && (
+              <button onClick={() => setUpgradeOpen(true)} className="mt-2 ml-2 rounded-lg bg-gradient-to-r from-gold to-yellow-500 px-3 py-1.5 text-xs font-bold text-black transition-all hover:shadow-[0_4px_20px_rgba(245,197,24,0.3)] active:scale-[0.98]">
+                <Sparkles className="mr-1 inline h-3 w-3" />
+                Upgrade to PRO
+              </button>
+            )}
           </div>
         </div>
 
@@ -386,6 +397,9 @@ function LoggedInProfile({
 
       {/* Edit Profile Modal */}
       <EditProfileModal open={editOpen} onClose={() => setEditOpen(false)} />
+
+      {/* Phase 8: Pro Upgrade Modal */}
+      <ProUpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </div>
   );
 }

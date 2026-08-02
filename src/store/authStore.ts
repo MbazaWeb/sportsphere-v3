@@ -14,40 +14,40 @@ export interface UserProfile {
   postCount?: number;
   location?: string;
   coverGradient?: string;
+  roleId?: string;
+  roleTypeId?: string;
 }
 
 interface AuthState {
   isAuthenticated: boolean; userProfile: UserProfile | null;
-  registrationOpen: boolean; registrationStep: "choose"|"simple"|"advanced-role"|"advanced-form"|"complete";
-  selectedRole: ProfileTypeId | null;
+  registrationOpen: boolean; registrationStep: "choose"|"simple"|"complete";
   hydrated: boolean;
   setIsAuthenticated: (v: boolean) => void; setUserProfile: (p: UserProfile|null) => void;
   setRegistrationOpen: (o: boolean) => void; setRegistrationStep: (s: AuthState["registrationStep"]) => void;
-  setSelectedRole: (r: ProfileTypeId|null) => void;
   setHydrated: (v: boolean) => void;
-  completeSimpleRegistration: (d: {name:string;email:string;handle:string;password:string;sports:string[]}) => Promise<{ ok: boolean; error?: string }>;
-  completeAdvancedRegistration: (d: {name:string;email:string;handle:string;password:string;role:ProfileTypeId;roleData:Record<string,string>}) => Promise<{ ok: boolean; error?: string }>;
+  completeRegistration: (d: {name:string;email:string;handle:string;password:string;sports:string[]}) => Promise<{ ok: boolean; error?: string }>;
+  submitRoleUpgrade: (d: {roleId:string;roleTypeId:string;roleData?:Record<string,string>}) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false, userProfile: null, registrationOpen: false,
-  registrationStep: "choose", selectedRole: null, hydrated: false,
+  registrationStep: "choose", hydrated: false,
   setIsAuthenticated: (v) => set({ isAuthenticated: v }),
   setUserProfile: (p) => set({ userProfile: p }),
   setRegistrationOpen: (o) => set({ registrationOpen: o }),
   setRegistrationStep: (s) => set({ registrationStep: s }),
-  setSelectedRole: (r) => set({ selectedRole: r }),
   setHydrated: (v) => set({ hydrated: v }),
 
-  completeSimpleRegistration: async (d) => {
+  // Phase 5: Registration ONLY creates Fan accounts
+  completeRegistration: async (d) => {
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: d.name, email: d.email, handle: d.handle,
-          password: d.password, sports: d.sports, role: 'fan',
+          password: d.password, sports: d.sports,
         }),
       });
       const data = await res.json();
@@ -65,26 +65,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  completeAdvancedRegistration: async (d) => {
+  // Phase 8: Pro Upgrade — submit role change for verification
+  submitRoleUpgrade: async (d) => {
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch('/api/roles/upgrade', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: d.name, email: d.email, handle: d.handle,
-          password: d.password, role: d.role, roleData: d.roleData,
-        }),
+        body: JSON.stringify(d),
       });
       const data = await res.json();
-      if (!res.ok) return { ok: false, error: data.error || 'Registration failed.' };
+      if (!res.ok) return { ok: false, error: data.error || 'Upgrade request failed.' };
 
-      set({
-        isAuthenticated: true,
-        registrationOpen: false,
-        registrationStep: "choose",
-        selectedRole: null,
-        userProfile: data as UserProfile,
-      });
+      // Refresh user profile to reflect new role/verification status
+      const meRes = await fetch('/api/auth/me');
+      if (meRes.ok) {
+        const meData = await meRes.json();
+        set({ userProfile: meData as UserProfile });
+      }
+
       return { ok: true };
     } catch {
       return { ok: false, error: 'Network error. Please try again.' };
@@ -101,7 +99,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       userProfile: null,
       registrationOpen: false,
       registrationStep: "choose",
-      selectedRole: null,
     });
   },
 }));

@@ -21,8 +21,11 @@ export async function POST(request: NextRequest) {
       handle,
       password,
       sports = [],
-      role = 'fan',
-      roleData = {},
+      // Phase 5: Registration ONLY creates Fan accounts.
+      // Role upgrades are handled through the Pro Upgrade flow (/api/roles/upgrade).
+      // The 'role' field is ignored — all new registrations are Fan.
+      role: _ignoredRole,
+      roleData: _ignoredRoleData,
     } = body as {
       name?: string;
       email?: string;
@@ -39,9 +42,6 @@ export async function POST(request: NextRequest) {
     if (!email || !EMAIL_RE.test(String(email))) errors.push('A valid email is required.');
     if (!handle || !HANDLE_RE.test(String(handle))) errors.push('Handle must be 3–30 alphanumeric/underscore chars.');
     if (!password || String(password).length < 8) errors.push('Password must be at least 8 characters.');
-    if (role && !['fan','team','player','coach','referee','journalist','analyst','creator','scout','stadium','venue','academy','community','organization','business'].includes(role)) {
-      errors.push('Invalid role.');
-    }
     if (errors.length) {
       return NextResponse.json({ error: errors.join(' ') }, { status: 400 });
     }
@@ -61,9 +61,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'This handle is already taken.' }, { status: 409 });
     }
 
+    // ─── Resolve Fan role and Casual Fan type from DB ────────
+    const fanRole = await db.role.findUnique({ where: { slug: 'fan' } });
+    const casualType = fanRole
+      ? await db.roleType.findFirst({ where: { roleId: fanRole.id, slug: 'casual' } })
+      : null;
+
+    // Fallback IDs if seed hasn't run yet
+    const roleId = fanRole?.id ?? 'fan-default-role';
+    const roleTypeId = casualType?.id ?? 'fan-casual-type';
+
+    // ─── Resolve sports from DB ──────────────────────────────
+    let sportIds: string[] = [];
+    if (sports.length > 0) {
+      const sportRecords = await db.sport.findMany({
+        where: {
+          isActive: true,
+          OR: [
+            { slug: { in: sports.map((s: string) => s.toLowerCase().replace(/\s+/g, '-')) } },
+            { name: { in: sports } },
+          ],
+        },
+        select: { id: true },
+      });
+      sportIds = sportRecords.map(s => s.id);
+    }
+
     // ─── Create user ─────────────────────────────────────────
     const passwordHash = await hashPassword(String(password));
-    const isAdvanced = role !== 'fan';
 
     const user = await db.user.create({
       data: {
@@ -71,12 +96,24 @@ export async function POST(request: NextRequest) {
         email: normalizedEmail,
         handle: normalizedHandle,
         passwordHash,
-        role: String(role),
-        verificationStatus: isAdvanced ? 'pending' : 'none',
+        role: 'fan', // legacy slug — kept in sync
+        roleId,
+        roleTypeId,
+        verificationStatus: 'none',
         sportsFollowing: sports,
-        roleData: roleData,
       },
     });
+
+    // Create UserSport records for many-to-many
+    if (sportIds.length > 0) {
+      await db.userSport.createMany({
+        data: sportIds.map(sportId => ({
+          userId: user.id,
+          sportId,
+        })),
+        skipDuplicates: true,
+      });
+    }
 
     // ─── Issue session ───────────────────────────────────────
     const token = await signSession({

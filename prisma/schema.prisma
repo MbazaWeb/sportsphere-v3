@@ -10,6 +10,72 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Role (Normalized — never use enums) ─────────────────────
+model Role {
+  id            String     @id @default(uuid())
+  name          String     @unique
+  slug          String     @unique
+  description   String
+  icon          String     @default("👤")
+  category      String     @default("individual")  // individual, team_entity, organization, commercial, official, support, admin
+  displayOrder  Int        @default(0)
+  isActive      Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  types         RoleType[]
+  users         User[]     @relation("UserRole")
+}
+
+// ─── RoleType (Normalized — every Role has many Types) ───────
+model RoleType {
+  id            String     @id @default(uuid())
+  roleId        String
+  name          String
+  slug          String
+  description   String?
+  requirements  Json       @default("[]")  // dynamic form fields definition
+  displayOrder  Int        @default(0)
+  isActive      Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  role          Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  users         User[]     @relation("UserRoleType")
+
+  @@unique([roleId, slug])
+  @@index([roleId])
+}
+
+// ─── Sport (Normalized — no hardcoded sports) ────────────────
+model Sport {
+  id            String     @id @default(uuid())
+  name          String     @unique
+  slug          String     @unique
+  icon          String?
+  category      String?    // team_sport, individual, combat, motorsport, racquet, water
+  isActive      Boolean    @default(true)
+  displayOrder  Int        @default(0)
+  createdAt     DateTime   @default(now())
+
+  userSports    UserSport[]
+}
+
+// ─── UserSport (Many-to-many — users can have multiple sports) ─
+model UserSport {
+  id            String     @id @default(uuid())
+  userId        String
+  sportId       String
+  createdAt     DateTime   @default(now())
+
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sport         Sport      @relation(fields: [sportId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sportId])
+  @@index([userId])
+  @@index([sportId])
+}
+
 // ─── User ─────────────────────────────────────────────────────
 model User {
   id                  String   @id @default(uuid())
@@ -21,7 +87,7 @@ model User {
   resetTokenExpiry    DateTime?
   avatarUrl           String?
   avatarInitials      String?
-  role                String   @default("fan")
+  role                String   @default("fan")  // legacy slug — kept in sync via roleId
   verificationStatus  String   @default("none")
   isVerified          Boolean  @default(false)
   bio                 String?
@@ -31,11 +97,15 @@ model User {
   followingCount      Int      @default(0)
   postCount           Int      @default(0)
   roleData            Json     @default("{}")
-  sportsFollowing     Json     @default("[]")
+  sportsFollowing     Json     @default("[]")  // legacy — kept in sync via UserSport
   preferences         Json     @default("{}")
   registeredAt        DateTime @default(now())
   updatedAt           DateTime @updatedAt
   lastSeenAt          DateTime @default(now())
+
+  // ─── Normalized Role Architecture (Phase B) ────────────────
+  roleId              String   @default("fan-default-role")
+  roleTypeId          String   @default("fan-casual-type")
 
   // ─── Extended Profile Fields ──────────────────────────────
   coverUrl            String?
@@ -93,10 +163,14 @@ model User {
   createdCommunities  Community[]
   leaderboardEntries  LeaderboardEntry[]
   favorites           UserFavorite[]  @relation("UserFavorites")
+  userRole            Role       @relation("UserRole", fields: [roleId], references: [id])
+  userRoleType        RoleType   @relation("UserRoleType", fields: [roleTypeId], references: [id])
+  userSports          UserSport[]
 
   @@index([handle])
   @@index([email])
   @@index([role])
+  @@index([roleId])
   @@index([resetToken])
 }
 
@@ -307,7 +381,9 @@ model Message {
 model VerificationRequest {
   id          String    @id @default(uuid())
   userId      String
-  role        String
+  role        String     // legacy slug
+  roleId      String?    // normalized FK
+  roleTypeId  String?    // normalized FK
   roleData    Json      @default("{}")
   status      String    @default("pending")
   adminNotes  String?
@@ -318,6 +394,7 @@ model VerificationRequest {
   user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status])
+  @@index([roleId])
 }
 
 // ─── LeaderboardEntry ────────────────────────────────────────
