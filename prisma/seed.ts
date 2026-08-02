@@ -160,7 +160,13 @@ async function main() {
     userDefs.map(def =>
       prisma.user.upsert({
         where: { handle: def.handle },
-        update: {},
+        update: {
+          // Re-hash on every seed run so the test password always works.
+          passwordHash,
+          // Clear any leftover reset tokens.
+          resetToken: null,
+          resetTokenExpiry: null,
+        },
         create: {
           ...def,
           passwordHash,

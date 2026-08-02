@@ -4,6 +4,7 @@ import React from 'react';
 import { useNavigationStore } from '@/store/navigationStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
+import { useAuthSession } from '@/hooks/useAuthSession';
 import BottomNav from '@/components/layout/BottomNav';
 import HomeTab from '@/components/home/HomeTab';
 import ScoresTab from '@/components/scores/ScoresTab';
@@ -11,16 +12,21 @@ import CreateTab from '@/components/create/CreateTab';
 import ActivityTab from '@/components/activity/ActivityTab';
 import ProfileTab from '@/components/profile/ProfileTab';
 import RegistrationModal from '@/components/registration/RegistrationModal';
+import ForgotPasswordModal from '@/components/auth/ForgotPasswordModal';
+import ResetPasswordPage from '@/components/auth/ResetPasswordPage';
 import ProfileExplorer from '@/components/profiles/ProfileExplorer';
 import ProfilePage from '@/components/profiles/ProfilePage';
 import UserProfileViewer from '@/components/profiles/UserProfileViewer';
 import { PROFILE_TYPES, type ProfileTypeId } from '@/components/profiles/profileConfig';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useServiceWorker } from '@/hooks/useServiceWorker';
 
 function LoginModal() {
   const { loginModalOpen, setLoginModalOpen } = useUIStore();
+  const { setRegistrationOpen } = useAuthStore();
+  const [forgotOpen, setForgotOpen] = React.useState(false);
   const setIsAuthenticated = useAuthStore((s) => s.setIsAuthenticated);
   const setUserProfile = useAuthStore((s) => s.setUserProfile);
   const [email, setEmail] = React.useState('');
@@ -44,7 +50,7 @@ function LoginModal() {
         id: data.id, name: data.name, email: data.email,
         handle: data.handle, avatar: data.avatar, role: data.role,
         verificationStatus: data.verificationStatus, bio: data.bio,
-        sportsFollowing: data.sportsFollowing, registeredAt: new Date().toISOString(),
+        sportsFollowing: data.sportsFollowing, registeredAt: data.registeredAt || new Date().toISOString(),
         roleData: data.roleData,
       });
       setIsAuthenticated(true);
@@ -54,52 +60,72 @@ function LoginModal() {
     setLoading(false);
   };
 
+  const openRegister = () => {
+    setLoginModalOpen(false);
+    setTimeout(() => setRegistrationOpen(true), 150);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-      <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-sm rounded-3xl bg-surface-elevated border border-surface-border p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white">Sign In</h2>
-          <button onClick={() => setLoginModalOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
-            <X className="h-4 w-4 text-muted-foreground" />
-          </button>
-        </div>
-
-        <div className="mb-3 rounded-xl bg-gold/10 border border-gold/20 p-3">
-          <p className="text-xs text-gold font-medium">Test account password: <span className="font-black">SportSphere2024!</span></p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">e.g. david@example.com · rashford@mufc.com · pep@mancity.com</p>
-        </div>
-
-        {error && (
-          <div className="mb-3 rounded-xl bg-red-500/10 border border-red-500/20 p-3">
-            <p className="text-xs text-red-400">{error}</p>
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+        <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-sm rounded-3xl bg-surface-elevated border border-surface-border p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-white">Sign In</h2>
+            <button onClick={() => setLoginModalOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
+              <X className="h-4 w-4 text-muted-foreground" />
+            </button>
           </div>
-        )}
-        <div className="mb-3">
-          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Email</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            placeholder="your@email.com"
-            className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold" />
-        </div>
-        <div className="mb-5">
-          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Password</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            placeholder="••••••••"
-            className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold" />
-        </div>
-        <button onClick={handleLogin} disabled={loading || !email || !password}
-          className="w-full rounded-xl bg-gold py-3 text-sm font-bold text-black hover:bg-gold/90 transition-colors disabled:opacity-50">
-          {loading ? 'Signing in...' : 'Sign In'}
-        </button>
-        <div className="mt-3 text-center">
-          <p className="text-xs text-muted-foreground">
-            No account? <button onClick={() => { setLoginModalOpen(false); }} className="text-gold hover:underline">Create one</button>
-          </p>
-        </div>
-      </motion.div>
-    </div>
+
+          <div className="mb-3 rounded-xl bg-gold/10 border border-gold/20 p-3">
+            <p className="text-xs text-gold font-medium">Test account password: <span className="font-black">SportSphere2024!</span></p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">e.g. david@example.com · rashford@mufc.com · pep@mancity.com</p>
+          </div>
+
+          {error && (
+            <div className="mb-3 rounded-xl bg-red-500/10 border border-red-500/20 p-3">
+              <p className="text-xs text-red-400">{error}</p>
+            </div>
+          )}
+          <div className="mb-3">
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Email</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+              placeholder="your@email.com"
+              autoComplete="email"
+              className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold" />
+          </div>
+          <div className="mb-2">
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="block text-xs font-medium text-muted-foreground">Password</label>
+              <button
+                type="button"
+                onClick={() => { setLoginModalOpen(false); setTimeout(() => setForgotOpen(true), 150); }}
+                className="text-[11px] text-gold hover:underline"
+              >
+                Forgot password?
+              </button>
+            </div>
+            <PasswordInput
+              value={password}
+              onChange={setPassword}
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+              autoComplete="current-password"
+            />
+          </div>
+          <button onClick={handleLogin} disabled={loading || !email || !password}
+            className="mt-3 w-full rounded-xl bg-gold py-3 text-sm font-bold text-black hover:bg-gold/90 transition-colors disabled:opacity-50">
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+          <div className="mt-3 text-center">
+            <p className="text-xs text-muted-foreground">
+              No account? <button onClick={openRegister} className="text-gold hover:underline">Create one</button>
+            </p>
+          </div>
+        </motion.div>
+      </div>
+      <ForgotPasswordModal open={forgotOpen} onClose={() => setForgotOpen(false)} />
+    </>
   );
 }
 
@@ -167,11 +193,13 @@ export default function Home() {
   const viewingProfile = useUIStore((s) => s.viewingProfile);
   const viewingUser    = useUIStore((s) => s.viewingUser);
   useServiceWorker();
+  useAuthSession();
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
       <Toast />
       <LoginModal />
       <RegistrationModal />
+      <ResetPasswordPage />
       <ProfileTypeOverlay />
       <UserProfileViewer />
       <div className="flex-1 pb-16"><TabContent /></div>

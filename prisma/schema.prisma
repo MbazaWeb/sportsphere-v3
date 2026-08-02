@@ -17,6 +17,8 @@ model User {
   email               String   @unique
   handle              String   @unique
   passwordHash        String?
+  resetToken          String?
+  resetTokenExpiry    DateTime?
   avatarUrl           String?
   avatarInitials      String?
   role                String   @default("fan")
@@ -52,6 +54,7 @@ model User {
   @@index([handle])
   @@index([email])
   @@index([role])
+  @@index([resetToken])
 }
 
 // ─── Follows ───────────────────────────────────────────────────

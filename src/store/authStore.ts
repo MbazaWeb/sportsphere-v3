@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { create } from 'zustand';
 
 export type ProfileTypeId =
   | "team" | "competition" | "match" | "player" | "coach" | "referee"
@@ -9,41 +9,97 @@ export interface UserProfile {
   id: string; name: string; email: string; handle: string; avatar: string;
   role: ProfileTypeId; verificationStatus: "none"|"pending"|"verified"|"rejected";
   bio: string; sportsFollowing: string[]; registeredAt: string; roleData: Record<string,string>;
+  isVerified?: boolean;
+  followerCount?: number;
+  followingCount?: number;
+  postCount?: number;
+  location?: string;
+  coverGradient?: string;
 }
 
 interface AuthState {
   isAuthenticated: boolean; userProfile: UserProfile | null;
   registrationOpen: boolean; registrationStep: "choose"|"simple"|"advanced-role"|"advanced-form"|"complete";
   selectedRole: ProfileTypeId | null;
+  hydrated: boolean;
   setIsAuthenticated: (v: boolean) => void; setUserProfile: (p: UserProfile|null) => void;
   setRegistrationOpen: (o: boolean) => void; setRegistrationStep: (s: AuthState["registrationStep"]) => void;
   setSelectedRole: (r: ProfileTypeId|null) => void;
-  completeSimpleRegistration: (d: {name:string;email:string;handle:string;sports:string[]}) => void;
-  completeAdvancedRegistration: (d: {name:string;email:string;handle:string;role:ProfileTypeId;roleData:Record<string,string>}) => void;
-  logout: () => void;
+  setHydrated: (v: boolean) => void;
+  completeSimpleRegistration: (d: {name:string;email:string;handle:string;password:string;sports:string[]}) => Promise<{ ok: boolean; error?: string }>;
+  completeAdvancedRegistration: (d: {name:string;email:string;handle:string;password:string;role:ProfileTypeId;roleData:Record<string,string>}) => Promise<{ ok: boolean; error?: string }>;
+  logout: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false, userProfile: null, registrationOpen: false,
-  registrationStep: "choose", selectedRole: null,
+  registrationStep: "choose", selectedRole: null, hydrated: false,
   setIsAuthenticated: (v) => set({ isAuthenticated: v }),
   setUserProfile: (p) => set({ userProfile: p }),
   setRegistrationOpen: (o) => set({ registrationOpen: o }),
   setRegistrationStep: (s) => set({ registrationStep: s }),
   setSelectedRole: (r) => set({ selectedRole: r }),
-  completeSimpleRegistration: (d) => {
-    const avatar = d.name.split(" ").map(n=>n[0]).join("").toUpperCase().slice(0,2);
-    set({ isAuthenticated: true, registrationOpen: false, registrationStep: "choose",
-      userProfile: { id:`usr_${Date.now()}`, name:d.name, email:d.email, handle:d.handle,
-        avatar, role:"fan", verificationStatus:"none", bio:"", sportsFollowing:d.sports,
-        registeredAt:new Date().toISOString(), roleData:{} } });
+  setHydrated: (v) => set({ hydrated: v }),
+
+  completeSimpleRegistration: async (d) => {
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: d.name, email: d.email, handle: d.handle,
+          password: d.password, sports: d.sports, role: 'fan',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { ok: false, error: data.error || 'Registration failed.' };
+
+      set({
+        isAuthenticated: true,
+        registrationOpen: false,
+        registrationStep: "choose",
+        userProfile: data as UserProfile,
+      });
+      return { ok: true };
+    } catch {
+      return { ok: false, error: 'Network error. Please try again.' };
+    }
   },
-  completeAdvancedRegistration: (d) => {
-    const avatar = d.name.split(" ").map(n=>n[0]).join("").toUpperCase().slice(0,2);
-    set({ isAuthenticated: true, registrationOpen: false, registrationStep: "choose", selectedRole: null,
-      userProfile: { id:`usr_${Date.now()}`, name:d.name, email:d.email, handle:d.handle,
-        avatar, role:d.role, verificationStatus:"pending", bio:"", sportsFollowing:[],
-        registeredAt:new Date().toISOString(), roleData:d.roleData } });
+
+  completeAdvancedRegistration: async (d) => {
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: d.name, email: d.email, handle: d.handle,
+          password: d.password, role: d.role, roleData: d.roleData,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { ok: false, error: data.error || 'Registration failed.' };
+
+      set({
+        isAuthenticated: true,
+        registrationOpen: false,
+        registrationStep: "choose",
+        selectedRole: null,
+        userProfile: data as UserProfile,
+      });
+      return { ok: true };
+    } catch {
+      return { ok: false, error: 'Network error. Please try again.' };
+    }
   },
-  logout: () => set({ isAuthenticated:false, userProfile:null, registrationOpen:false, registrationStep:"choose", selectedRole:null }),
+
+  logout: async () => {
+    try { await fetch('/api/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
+    set({
+      isAuthenticated: false,
+      userProfile: null,
+      registrationOpen: false,
+      registrationStep: "choose",
+      selectedRole: null,
+    });
+  },
 }));

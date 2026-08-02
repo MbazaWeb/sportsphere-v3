@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronRight, ChevronLeft, Check, Users, ShieldCheck, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import type { ProfileTypeId } from '@/store/authStore';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 
 // ─── Step 1: Choose registration type ────────────────────────
 function ChooseStep({ onFan, onAdvanced, onClose }: { onFan: () => void; onAdvanced: () => void; onClose: () => void }) {
@@ -46,14 +47,17 @@ function ChooseStep({ onFan, onAdvanced, onClose }: { onFan: () => void; onAdvan
 }
 
 // ─── Step 2: Fan registration ─────────────────────────────────
-function FanStep({ onBack, onComplete }: { onBack: () => void; onComplete: (data: { name: string; email: string; handle: string; sports: string[] }) => void }) {
+function FanStep({ onBack, onComplete }: { onBack: () => void; onComplete: (data: { name: string; email: string; handle: string; password: string; sports: string[] }) => void }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [handle, setHandle] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [sports, setSports] = useState<string[]>([]);
 
   const toggleSport = (s: string) => setSports(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
-  const valid = name.trim() && email.trim() && handle.trim() && sports.length > 0;
+  const passwordsMatch = password && confirm && password === confirm;
+  const valid = name.trim() && email.trim() && handle.trim() && password.length >= 8 && passwordsMatch && sports.length > 0;
 
   return (
     <div>
@@ -80,22 +84,39 @@ function FanStep({ onBack, onComplete }: { onBack: () => void; onComplete: (data
             />
           </div>
         ))}
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Password <span className="text-muted-foreground/70">(min 8 chars)</span></label>
+          <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" placeholder="At least 8 characters" />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Confirm Password</label>
+          <PasswordInput
+            value={confirm}
+            onChange={setConfirm}
+            autoComplete="new-password"
+            placeholder="Re-enter password"
+            className={cn(confirm && !passwordsMatch && 'border-red-500/50 focus:ring-red-500')}
+          />
+          {confirm && !passwordsMatch && (
+            <p className="mt-1 text-[11px] text-red-400">Passwords do not match.</p>
+          )}
+        </div>
       </div>
       <div className="mb-6">
         <label className="mb-2 block text-xs font-medium text-muted-foreground">Sports you follow <span className="text-gold">*</span></label>
         <div className="flex flex-wrap gap-2">
           {SPORTS_LIST.slice(0, 10).map(sport => (
             <button key={sport} onClick={() => toggleSport(sport)}
-              className={cn('rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors', 
+              className={cn('rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
                 sports.includes(sport) ? 'bg-gold text-black' : 'bg-surface border border-surface-border text-muted-foreground hover:text-white')}>
               {sport}
             </button>
           ))}
         </div>
       </div>
-      <button onClick={() => valid && onComplete({ name, email, handle, sports })}
+      <button onClick={() => valid && onComplete({ name, email, handle, password, sports })}
         disabled={!valid}
-        className={cn('w-full rounded-xl py-3 text-sm font-bold transition-colors', 
+        className={cn('w-full rounded-xl py-3 text-sm font-bold transition-colors',
           valid ? 'bg-gold text-black hover:bg-gold/90 shadow-[0_4px_20px_rgba(245,197,24,0.2)]' : 'bg-surface border border-surface-border text-muted-foreground cursor-not-allowed')}>
         <Sparkles className="mr-2 inline h-4 w-4" />
         Create Account
@@ -137,13 +158,16 @@ function AdvancedRoleStep({ onBack, onSelect }: { onBack: () => void; onSelect: 
 function AdvancedFormStep({ role, onBack, onComplete }: {
   role: ProfileTypeId;
   onBack: () => void;
-  onComplete: (data: { name: string; email: string; handle: string; role: ProfileTypeId; roleData: Record<string, string> }) => void;
+  onComplete: (data: { name: string; email: string; handle: string; password: string; role: ProfileTypeId; roleData: Record<string, string> }) => void;
 }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [handle, setHandle] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [org, setOrg] = useState('');
-  const valid = name.trim() && email.trim() && handle.trim();
+  const passwordsMatch = password && confirm && password === confirm;
+  const valid = name.trim() && email.trim() && handle.trim() && password.length >= 8 && passwordsMatch;
 
   return (
     <div>
@@ -172,10 +196,27 @@ function AdvancedFormStep({ role, onBack, onComplete }: {
               className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold transition-colors" />
           </div>
         ))}
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Password <span className="text-muted-foreground/70">(min 8 chars)</span></label>
+          <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" placeholder="At least 8 characters" />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Confirm Password</label>
+          <PasswordInput
+            value={confirm}
+            onChange={setConfirm}
+            autoComplete="new-password"
+            placeholder="Re-enter password"
+            className={cn(confirm && !passwordsMatch && 'border-red-500/50 focus:ring-red-500')}
+          />
+          {confirm && !passwordsMatch && (
+            <p className="mt-1 text-[11px] text-red-400">Passwords do not match.</p>
+          )}
+        </div>
       </div>
-      <button onClick={() => valid && onComplete({ name, email, handle, role, roleData: { organisation: org } })}
+      <button onClick={() => valid && onComplete({ name, email, handle, password, role, roleData: { organisation: org } })}
         disabled={!valid}
-        className={cn('w-full rounded-xl py-3 text-sm font-bold transition-colors', 
+        className={cn('w-full rounded-xl py-3 text-sm font-bold transition-colors',
           valid ? 'bg-gold text-black hover:bg-gold/90 shadow-[0_4px_20px_rgba(245,197,24,0.2)]' : 'bg-surface border border-surface-border text-muted-foreground cursor-not-allowed')}>
         <ShieldCheck className="mr-2 inline h-4 w-4" />
         Submit for Verification
@@ -232,13 +273,47 @@ export default function RegistrationModal() {
   const [selectedRole, setSelectedRole] = useState<ProfileTypeId>('fan');
   const [completedName, setCompletedName] = useState('');
   const [isAdvanced, setIsAdvanced] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const handleClose = () => {
+    if (submitting) return;
     setRegistrationOpen(false);
-    setTimeout(() => setStep('choose'), 300);
+    setTimeout(() => {
+      setStep('choose');
+      setSubmitError('');
+    }, 300);
   };
 
   if (!registrationOpen) return null;
+
+  const handleFanComplete = async (d: { name: string; email: string; handle: string; password: string; sports: string[] }) => {
+    setSubmitting(true);
+    setSubmitError('');
+    const result = await completeSimpleRegistration(d);
+    setSubmitting(false);
+    if (result.ok) {
+      setCompletedName(d.name);
+      setIsAdvanced(false);
+      setStep('complete');
+    } else {
+      setSubmitError(result.error || 'Registration failed.');
+    }
+  };
+
+  const handleAdvancedComplete = async (d: { name: string; email: string; handle: string; password: string; role: ProfileTypeId; roleData: Record<string, string> }) => {
+    setSubmitting(true);
+    setSubmitError('');
+    const result = await completeAdvancedRegistration(d);
+    setSubmitting(false);
+    if (result.ok) {
+      setCompletedName(d.name);
+      setIsAdvanced(true);
+      setStep('complete');
+    } else {
+      setSubmitError(result.error || 'Registration failed.');
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-0 sm:px-4">
@@ -249,12 +324,23 @@ export default function RegistrationModal() {
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
         className="w-full max-w-lg rounded-t-3xl sm:rounded-3xl glass-card p-6 max-h-[90vh] overflow-y-auto scrollbar-hide"
       >
+        {submitError && (
+          <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/20 p-3">
+            <p className="text-xs text-red-400">{submitError}</p>
+          </div>
+        )}
+        {submitting && (
+          <div className="mb-4 rounded-xl bg-gold/10 border border-gold/20 p-3 flex items-center gap-2">
+            <div className="h-3 w-3 rounded-full bg-gold animate-pulse" />
+            <p className="text-xs text-gold font-medium">Creating your account…</p>
+          </div>
+        )}
         <AnimatePresence mode="wait">
           <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.15 }}>
             {step === 'choose'   && <ChooseStep onFan={() => setStep('fan')} onAdvanced={() => setStep('role')} onClose={handleClose} />}
-            {step === 'fan'      && <FanStep onBack={() => setStep('choose')} onComplete={d => { setCompletedName(d.name); setIsAdvanced(false); completeSimpleRegistration(d); setStep('complete'); }} />}
+            {step === 'fan'      && <FanStep onBack={() => setStep('choose')} onComplete={handleFanComplete} />}
             {step === 'role'     && <AdvancedRoleStep onBack={() => setStep('choose')} onSelect={r => { setSelectedRole(r); setStep('form'); }} />}
-            {step === 'form'     && <AdvancedFormStep role={selectedRole} onBack={() => setStep('role')} onComplete={d => { setCompletedName(d.name); setIsAdvanced(true); completeAdvancedRegistration(d); setStep('complete'); }} />}
+            {step === 'form'     && <AdvancedFormStep role={selectedRole} onBack={() => setStep('role')} onComplete={handleAdvancedComplete} />}
             {step === 'complete' && <CompleteStep name={completedName} isAdvanced={isAdvanced} onClose={handleClose} />}
           </motion.div>
         </AnimatePresence>

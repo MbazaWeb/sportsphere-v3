@@ -1,188 +1,256 @@
--- SportSphere Initial Migration
--- Generated from schema.prisma
-
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
-CREATE TYPE "UserRole" AS ENUM ('fan','team','player','coach','referee','journalist','analyst','creator','scout','stadium','venue','academy','community','organization','business');
-CREATE TYPE "VerificationStatus" AS ENUM ('none','pending','verified','rejected');
-CREATE TYPE "PostType" AS ENUM ('post','photo','video','spotlight','poll','prediction','highlight');
-CREATE TYPE "MatchStatus" AS ENUM ('upcoming','live','ht','ft','postponed','cancelled');
-CREATE TYPE "NotificationType" AS ENUM ('like','comment','follow','mention','match_start','match_goal','match_end','verification','system');
-
+-- CreateTable
 CREATE TABLE "User" (
-  "id" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-  "name" TEXT NOT NULL,
-  "email" TEXT NOT NULL,
-  "handle" TEXT NOT NULL,
-  "passwordHash" TEXT,
-  "avatarUrl" TEXT,
-  "avatarInitials" TEXT,
-  "role" "UserRole" NOT NULL DEFAULT 'fan',
-  "verificationStatus" "VerificationStatus" NOT NULL DEFAULT 'none',
-  "isVerified" BOOLEAN NOT NULL DEFAULT false,
-  "bio" TEXT,
-  "location" TEXT,
-  "coverGradient" TEXT NOT NULL DEFAULT 'from-emerald-600 to-emerald-900',
-  "followerCount" INTEGER NOT NULL DEFAULT 0,
-  "followingCount" INTEGER NOT NULL DEFAULT 0,
-  "postCount" INTEGER NOT NULL DEFAULT 0,
-  "roleData" JSONB NOT NULL DEFAULT '{}',
-  "sportsFollowing" TEXT[] DEFAULT ARRAY[]::TEXT[],
-  "registeredAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  "lastSeenAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "handle" TEXT NOT NULL,
+    "passwordHash" TEXT,
+    "resetToken" TEXT,
+    "resetTokenExpiry" DATETIME,
+    "avatarUrl" TEXT,
+    "avatarInitials" TEXT,
+    "role" TEXT NOT NULL DEFAULT 'fan',
+    "verificationStatus" TEXT NOT NULL DEFAULT 'none',
+    "isVerified" BOOLEAN NOT NULL DEFAULT false,
+    "bio" TEXT,
+    "location" TEXT,
+    "coverGradient" TEXT NOT NULL DEFAULT 'from-emerald-600 to-emerald-900',
+    "followerCount" INTEGER NOT NULL DEFAULT 0,
+    "followingCount" INTEGER NOT NULL DEFAULT 0,
+    "postCount" INTEGER NOT NULL DEFAULT 0,
+    "roleData" TEXT NOT NULL DEFAULT '{}',
+    "sportsFollowing" TEXT NOT NULL DEFAULT '[]',
+    "registeredAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    "lastSeenAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- CreateTable
+CREATE TABLE "Follow" (
+    "followerId" TEXT NOT NULL,
+    "followingId" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY ("followerId", "followingId"),
+    CONSTRAINT "Follow_followerId_fkey" FOREIGN KEY ("followerId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Follow_followingId_fkey" FOREIGN KEY ("followingId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Post" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "postType" TEXT NOT NULL DEFAULT 'post',
+    "mediaUrls" TEXT NOT NULL DEFAULT '[]',
+    "teamTag" TEXT,
+    "playerTag" TEXT,
+    "isBreaking" BOOLEAN NOT NULL DEFAULT false,
+    "likeCount" INTEGER NOT NULL DEFAULT 0,
+    "commentCount" INTEGER NOT NULL DEFAULT 0,
+    "shareCount" INTEGER NOT NULL DEFAULT 0,
+    "viewCount" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "Post_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "PostLike" (
+    "postId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY ("postId", "userId"),
+    CONSTRAINT "PostLike_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "PostLike_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Comment" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "postId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "likeCount" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Comment_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Comment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Poll" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "postId" TEXT NOT NULL,
+    "question" TEXT NOT NULL,
+    "options" TEXT NOT NULL DEFAULT '[]',
+    "totalVotes" INTEGER NOT NULL DEFAULT 0,
+    "endsAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Poll_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Match" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "league" TEXT NOT NULL,
+    "homeTeam" TEXT NOT NULL,
+    "awayTeam" TEXT NOT NULL,
+    "homeScore" INTEGER,
+    "awayScore" INTEGER,
+    "status" TEXT NOT NULL DEFAULT 'upcoming',
+    "minute" INTEGER,
+    "venue" TEXT,
+    "kickoffAt" DATETIME NOT NULL,
+    "events" TEXT NOT NULL DEFAULT '[]',
+    "continent" TEXT NOT NULL DEFAULT 'Europe',
+    "country" TEXT NOT NULL DEFAULT 'England',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "Prediction" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "matchId" TEXT,
+    "homeTeam" TEXT NOT NULL,
+    "awayTeam" TEXT NOT NULL,
+    "predictedHome" INTEGER,
+    "predictedAway" INTEGER,
+    "result" TEXT,
+    "isCorrect" BOOLEAN,
+    "pointsEarned" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Prediction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Prediction_matchId_fkey" FOREIGN KEY ("matchId") REFERENCES "Match" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Community" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "topic" TEXT,
+    "memberCount" INTEGER NOT NULL DEFAULT 0,
+    "createdById" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Community_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "CommunityMember" (
+    "communityId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "role" TEXT NOT NULL DEFAULT 'member',
+    "joinedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY ("communityId", "userId"),
+    CONSTRAINT "CommunityMember_communityId_fkey" FOREIGN KEY ("communityId") REFERENCES "Community" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "CommunityMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Notification" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "body" TEXT,
+    "isRead" BOOLEAN NOT NULL DEFAULT false,
+    "actorId" TEXT,
+    "referenceId" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Notification_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Message" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "senderId" TEXT NOT NULL,
+    "receiverId" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "isRead" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Message_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Message_receiverId_fkey" FOREIGN KEY ("receiverId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "VerificationRequest" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "role" TEXT NOT NULL,
+    "roleData" TEXT NOT NULL DEFAULT '{}',
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "adminNotes" TEXT,
+    "reviewedBy" TEXT,
+    "submittedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "reviewedAt" DATETIME,
+    CONSTRAINT "VerificationRequest_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "User_handle_key" ON "User"("handle");
+
+-- CreateIndex
 CREATE INDEX "User_handle_idx" ON "User"("handle");
+
+-- CreateIndex
+CREATE INDEX "User_email_idx" ON "User"("email");
+
+-- CreateIndex
 CREATE INDEX "User_role_idx" ON "User"("role");
 
-CREATE TABLE "Follow" (
-  "followerId" TEXT NOT NULL,
-  "followingId" TEXT NOT NULL,
-  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT "Follow_pkey" PRIMARY KEY ("followerId","followingId"),
-  CONSTRAINT "Follow_followerId_fkey" FOREIGN KEY ("followerId") REFERENCES "User"("id") ON DELETE CASCADE,
-  CONSTRAINT "Follow_followingId_fkey" FOREIGN KEY ("followingId") REFERENCES "User"("id") ON DELETE CASCADE
-);
+-- CreateIndex
+CREATE INDEX "User_resetToken_idx" ON "User"("resetToken");
 
-CREATE TABLE "Post" (
-  "id" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-  "userId" TEXT NOT NULL,
-  "content" TEXT NOT NULL,
-  "postType" "PostType" NOT NULL DEFAULT 'post',
-  "mediaUrls" TEXT[] DEFAULT ARRAY[]::TEXT[],
-  "teamTag" TEXT, "playerTag" TEXT,
-  "isBreaking" BOOLEAN NOT NULL DEFAULT false,
-  "likeCount" INTEGER NOT NULL DEFAULT 0,
-  "commentCount" INTEGER NOT NULL DEFAULT 0,
-  "shareCount" INTEGER NOT NULL DEFAULT 0,
-  "viewCount" INTEGER NOT NULL DEFAULT 0,
-  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT "Post_pkey" PRIMARY KEY ("id"),
-  CONSTRAINT "Post_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE
-);
+-- CreateIndex
+CREATE INDEX "Follow_followerId_idx" ON "Follow"("followerId");
+
+-- CreateIndex
+CREATE INDEX "Follow_followingId_idx" ON "Follow"("followingId");
+
+-- CreateIndex
 CREATE INDEX "Post_userId_idx" ON "Post"("userId");
+
+-- CreateIndex
 CREATE INDEX "Post_createdAt_idx" ON "Post"("createdAt" DESC);
 
-CREATE TABLE "PostLike" (
-  "postId" TEXT NOT NULL, "userId" TEXT NOT NULL,
-  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT "PostLike_pkey" PRIMARY KEY ("postId","userId"),
-  CONSTRAINT "PostLike_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE,
-  CONSTRAINT "PostLike_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE
-);
+-- CreateIndex
+CREATE INDEX "Post_postType_idx" ON "Post"("postType");
 
-CREATE TABLE "Comment" (
-  "id" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-  "postId" TEXT NOT NULL, "userId" TEXT NOT NULL,
-  "content" TEXT NOT NULL, "likeCount" INTEGER NOT NULL DEFAULT 0,
-  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT "Comment_pkey" PRIMARY KEY ("id"),
-  CONSTRAINT "Comment_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE,
-  CONSTRAINT "Comment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE
-);
+-- CreateIndex
+CREATE INDEX "Comment_postId_idx" ON "Comment"("postId");
 
-CREATE TABLE "Poll" (
-  "id" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-  "postId" TEXT NOT NULL, "question" TEXT NOT NULL,
-  "options" JSONB NOT NULL DEFAULT '[]',
-  "totalVotes" INTEGER NOT NULL DEFAULT 0, "endsAt" TIMESTAMPTZ,
-  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT "Poll_pkey" PRIMARY KEY ("id"),
-  CONSTRAINT "Poll_postId_key" UNIQUE ("postId"),
-  CONSTRAINT "Poll_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE
-);
+-- CreateIndex
+CREATE UNIQUE INDEX "Poll_postId_key" ON "Poll"("postId");
 
-CREATE TABLE "Match" (
-  "id" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-  "league" TEXT NOT NULL, "homeTeam" TEXT NOT NULL, "awayTeam" TEXT NOT NULL,
-  "homeScore" INTEGER, "awayScore" INTEGER,
-  "status" "MatchStatus" NOT NULL DEFAULT 'upcoming',
-  "minute" INTEGER, "venue" TEXT,
-  "kickoffAt" TIMESTAMPTZ NOT NULL,
-  "events" JSONB NOT NULL DEFAULT '[]',
-  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT "Match_pkey" PRIMARY KEY ("id")
-);
+-- CreateIndex
 CREATE INDEX "Match_status_idx" ON "Match"("status");
+
+-- CreateIndex
 CREATE INDEX "Match_kickoffAt_idx" ON "Match"("kickoffAt");
 
-CREATE TABLE "Prediction" (
-  "id" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-  "userId" TEXT NOT NULL, "matchId" TEXT,
-  "homeTeam" TEXT NOT NULL, "awayTeam" TEXT NOT NULL,
-  "predictedHome" INTEGER, "predictedAway" INTEGER,
-  "result" TEXT, "isCorrect" BOOLEAN, "pointsEarned" INTEGER NOT NULL DEFAULT 0,
-  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT "Prediction_pkey" PRIMARY KEY ("id"),
-  CONSTRAINT "Prediction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE,
-  CONSTRAINT "Prediction_matchId_fkey" FOREIGN KEY ("matchId") REFERENCES "Match"("id") ON DELETE SET NULL
-);
+-- CreateIndex
+CREATE INDEX "Match_league_idx" ON "Match"("league");
 
-CREATE TABLE "Community" (
-  "id" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-  "name" TEXT NOT NULL, "description" TEXT, "topic" TEXT,
-  "memberCount" INTEGER NOT NULL DEFAULT 0, "createdById" TEXT,
-  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT "Community_pkey" PRIMARY KEY ("id"),
-  CONSTRAINT "Community_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL
-);
+-- CreateIndex
+CREATE INDEX "Prediction_userId_idx" ON "Prediction"("userId");
 
-CREATE TABLE "CommunityMember" (
-  "communityId" TEXT NOT NULL, "userId" TEXT NOT NULL,
-  "role" TEXT NOT NULL DEFAULT 'member',
-  "joinedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT "CommunityMember_pkey" PRIMARY KEY ("communityId","userId"),
-  CONSTRAINT "CommunityMember_communityId_fkey" FOREIGN KEY ("communityId") REFERENCES "Community"("id") ON DELETE CASCADE,
-  CONSTRAINT "CommunityMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE
-);
+-- CreateIndex
+CREATE INDEX "Notification_userId_isRead_createdAt_idx" ON "Notification"("userId", "isRead", "createdAt" DESC);
 
-CREATE TABLE "Notification" (
-  "id" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-  "userId" TEXT NOT NULL, "type" "NotificationType" NOT NULL,
-  "title" TEXT NOT NULL, "body" TEXT, "isRead" BOOLEAN NOT NULL DEFAULT false,
-  "actorId" TEXT, "referenceId" TEXT,
-  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT "Notification_pkey" PRIMARY KEY ("id"),
-  CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE,
-  CONSTRAINT "Notification_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "User"("id") ON DELETE SET NULL
-);
-CREATE INDEX "Notification_userId_idx" ON "Notification"("userId","isRead","createdAt" DESC);
+-- CreateIndex
+CREATE INDEX "Message_senderId_idx" ON "Message"("senderId");
 
-CREATE TABLE "Message" (
-  "id" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-  "senderId" TEXT NOT NULL, "receiverId" TEXT NOT NULL,
-  "content" TEXT NOT NULL, "isRead" BOOLEAN NOT NULL DEFAULT false,
-  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT "Message_pkey" PRIMARY KEY ("id"),
-  CONSTRAINT "Message_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "User"("id") ON DELETE CASCADE,
-  CONSTRAINT "Message_receiverId_fkey" FOREIGN KEY ("receiverId") REFERENCES "User"("id") ON DELETE CASCADE
-);
+-- CreateIndex
+CREATE INDEX "Message_receiverId_idx" ON "Message"("receiverId");
 
-CREATE TABLE "VerificationRequest" (
-  "id" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-  "userId" TEXT NOT NULL, "role" TEXT NOT NULL,
-  "roleData" JSONB NOT NULL DEFAULT '{}',
-  "status" TEXT NOT NULL DEFAULT 'pending',
-  "adminNotes" TEXT, "reviewedBy" TEXT,
-  "submittedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(), "reviewedAt" TIMESTAMPTZ,
-  CONSTRAINT "VerificationRequest_pkey" PRIMARY KEY ("id"),
-  CONSTRAINT "VerificationRequest_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE
-);
+-- CreateIndex
+CREATE INDEX "VerificationRequest_status_idx" ON "VerificationRequest"("status");
 
--- Prisma migrations table
-CREATE TABLE IF NOT EXISTS "_prisma_migrations" (
-  "id" VARCHAR(36) NOT NULL,
-  "checksum" VARCHAR(64) NOT NULL,
-  "finished_at" TIMESTAMPTZ,
-  "migration_name" VARCHAR(255) NOT NULL,
-  "logs" TEXT,
-  "rolled_back_at" TIMESTAMPTZ,
-  "started_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  "applied_steps_count" INTEGER NOT NULL DEFAULT 0,
-  CONSTRAINT "_prisma_migrations_pkey" PRIMARY KEY ("id")
-);
