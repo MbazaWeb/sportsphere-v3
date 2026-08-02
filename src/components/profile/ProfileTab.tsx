@@ -8,7 +8,7 @@ import {
   Bookmark, Trophy, Users, BarChart3, X, Shield, Bell,
   Palette, Globe, HelpCircle, Info, Edit, Camera,
   Eye, ShieldCheck, Clock, CheckCircle2, AlertCircle, Sparkles,
-  BadgeCheck, Upload, ChevronDown, Compass
+  BadgeCheck, Upload, ChevronDown
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import RegistrationModal from '@/components/registration/RegistrationModal';
@@ -347,7 +347,7 @@ function LoggedInProfile({
           >
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gold/15">
-                <Compass className="h-4 w-4 text-gold" />
+                <Globe className="h-4 w-4 text-gold" />
               </div>
               <div className="text-left">
                 <span className="block text-sm font-semibold text-white">Explore Profiles</span>
