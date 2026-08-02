@@ -166,6 +166,19 @@ export default function RegistrationModal() {
     setActiveTab('profile');
   };
 
+  // Keyboard avoidance: reduce modal max-height while keyboard/focus is active
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const onFocusIn = () => setIsKeyboardOpen(true);
+    const onFocusOut = () => setIsKeyboardOpen(false);
+    document.addEventListener('focusin', onFocusIn);
+    document.addEventListener('focusout', onFocusOut);
+    return () => {
+      document.removeEventListener('focusin', onFocusIn);
+      document.removeEventListener('focusout', onFocusOut);
+    };
+  }, []);
+
   if (!registrationOpen) return null;
 
   const handleFanComplete = async (d: { name: string; email: string; handle: string; password: string; sports: string[] }) => {
@@ -188,7 +201,8 @@ export default function RegistrationModal() {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 60 }}
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-        className="w-full max-w-lg rounded-t-3xl sm:rounded-3xl glass-card p-6 max-h-[90vh] overflow-y-auto scrollbar-hide"
+        className="w-full max-w-lg rounded-t-3xl sm:rounded-3xl glass-card p-6 overflow-y-auto scrollbar-hide"
+        style={{ maxHeight: isKeyboardOpen ? '70vh' : '90vh' }}
       >
         <AuthLogo />
 

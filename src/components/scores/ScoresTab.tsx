@@ -85,7 +85,7 @@ function FilterDropdown({
         ref={btnRef}
         onClick={handleOpen}
         className={cn(
-          'flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors border flex-shrink-0',
+          'flex items-center gap-1.5 rounded-xl px-2 py-1.5 text-[10px] sm:px-3 sm:py-2 sm:text-xs font-semibold transition-colors border flex-shrink',
           value !== 'All'
             ? 'bg-gold/10 border-gold/30 text-gold'
             : 'bg-surface border-surface-border text-muted-foreground hover:text-foreground'
@@ -250,7 +250,7 @@ export default function ScoresTab() {
 
         {/* Filters */}
         {scoresSubTab !== 'standings' && (
-          <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
+          <div className="flex flex-wrap items-center gap-2 px-4 pb-3">
             <FilterDropdown
               label="Sport"
               options={['All', ...(sports?.map((s) => s.name) || [])]}

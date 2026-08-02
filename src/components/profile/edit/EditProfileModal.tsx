@@ -199,9 +199,26 @@ export default function EditProfileModal({ open, onClose }: { open: boolean; onC
             <Loader2 className="h-6 w-6 animate-spin text-gold" />
           </div>
         ) : (
-          <div className="flex-1 flex overflow-hidden">
-            {/* Section sidebar */}
-            <div className="w-44 flex-shrink-0 border-r border-surface-border overflow-y-auto scrollbar-hide">
+          <div className="flex-1 flex flex-col sm:flex-row overflow-hidden">
+            {/* Mobile: top tabs (hidden on sm+) */}
+            <div className="sm:hidden flex w-full overflow-x-auto scrollbar-hide border-b border-surface-border">
+              {SECTIONS.map(section => {
+                const isActive = activeSection === section.id;
+                const Icon = section.icon;
+                return (
+                  <button key={section.id} onClick={() => setActiveSection(section.id)}
+                    className={cn('flex-shrink-0 flex items-center gap-2 px-3 py-2 text-xs font-medium transition-colors',
+                      isActive ? 'border-b-2 border-gold text-gold' : 'text-muted-foreground')}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{section.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Section sidebar (desktop) */}
+            <div className="hidden sm:block w-44 flex-shrink-0 border-r border-surface-border overflow-y-auto scrollbar-hide">
               {SECTIONS.map(section => {
                 const Icon = section.icon;
                 const isActive = activeSection === section.id;
