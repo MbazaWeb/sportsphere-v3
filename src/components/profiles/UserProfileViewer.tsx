@@ -853,7 +853,7 @@ function StatsTab({ role, apiUser }: { role: string; apiUser: ApiUser | null }) 
           <BarChart3 className="h-4 w-4" /> Career Statistics
         </h3>
         <div className="grid grid-cols-3 gap-3">
-          {role === 'player' ? [
+          {(role === 'player' ? [
             { label: 'Goals', value: rp.goals || '150' },
             { label: 'Assists', value: rp.assists || '80' },
             { label: 'Apps', value: rp.appearances || '400' },
@@ -867,7 +867,7 @@ function StatsTab({ role, apiUser }: { role: string; apiUser: ApiUser | null }) 
             { label: 'Formation', value: rp.formation || '4-3-3' },
             { label: 'License', value: rp.license || 'UEFA Pro' },
             { label: 'Team', value: rp.currentTeam || 'Man City' },
-          ].map(s => <StatCard key={s.label} {...s} />)}
+          ]).map(s => <StatCard key={s.label} {...s} />)}
         </div>
       </div>
 
