@@ -58,7 +58,7 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
         style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 28, position: 'relative', zIndex: 1 }}
       >
         {/* S mark using SVG file */}
-        <Image src="/logo.svg" alt="SportSphere" width={120} height={120} priority />
+        <Image src="/logo.svg" alt="SportSphere" width={160} height={192} priority />
 
         {/* Wordmark */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 0 }}>
