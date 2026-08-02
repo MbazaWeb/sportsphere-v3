@@ -1,4 +1,5 @@
 'use client';
+import SplashScreen from '@/components/SplashScreen';
 import React from 'react';
 
 import { useNavigationStore } from '@/store/navigationStore';
@@ -182,10 +183,13 @@ function TabContent() {
 }
 
 export default function Home() {
+  const [splashDone, setSplashDone] = React.useState(false);
   const viewingProfile = useUIStore((s) => s.viewingProfile);
   const viewingUser    = useUIStore((s) => s.viewingUser);
   useServiceWorker();
   useAuthSession();
+  if (!splashDone) return <SplashScreen onDone={() => setSplashDone(true)} />;
+
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
       <Toast />
