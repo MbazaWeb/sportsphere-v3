@@ -48,15 +48,24 @@ model RoleType {
 }
 
 // ─── Sport (Normalized — no hardcoded sports) ────────────────
+// Spec: Phase 17 — "Architecture must allow unlimited sports."
+// Every sport has rich metadata for filtering, display, and provider matching.
 model Sport {
   id            String     @id @default(uuid())
   name          String     @unique
   slug          String     @unique
-  icon          String?
+  icon          String?    // emoji icon (e.g. ⚽)
   category      String?    // team_sport, individual, combat, motorsport, racquet, water
+  sportType     String?    // indoor, outdoor, mixed
+  format        String?    // individual, team, relay, pair
+  contactType   String?    // contact, non-contact, limited-contact
+  olympicStatus String?    // olympic, paralympic, both, none
+  description   String?    // short description of the sport
+  tags          Json       @default("[]")  // e.g. ["youth", "women", "professional", "amateur"]
   isActive      Boolean    @default(true)
   displayOrder  Int        @default(0)
   createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
   userSports    UserSport[]
 }

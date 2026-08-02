@@ -21,7 +21,7 @@ export interface UserProfile {
   roleIcon?: string;
   typeName?: string;
   typeSlug?: string;
-  sports?: Array<{ id: string; name: string; slug: string; icon: string | null }>;
+  sports?: Array<{ id: string; name: string; slug: string; icon: string | null; category: string | null; sportType: string | null; format: string | null }>;
 }
 
 interface AuthState {

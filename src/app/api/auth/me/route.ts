@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       roleId: true, roleTypeId: true,
       userRole: { select: { id: true, name: true, slug: true, icon: true, category: true } },
       userRoleType: { select: { id: true, name: true, slug: true } },
-      userSports: { select: { sport: { select: { id: true, name: true, slug: true, icon: true } } } },
+      userSports: { select: { sport: { select: { id: true, name: true, slug: true, icon: true, category: true, sportType: true, format: true } } } },
     },
   });
   if (!user) {

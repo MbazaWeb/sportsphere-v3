@@ -9,7 +9,7 @@ export type { UserProfile, ProfileTypeId } from './authStore';
 export type { TabId, HomeSubTab, ScoresSubTab, ActivitySubTab } from './navigationStore';
 
 // Constants — no mock data
-export { ADVANCED_ROLES, SPORTS_LIST, formatCount } from '@/constants';
+export { ADVANCED_ROLES, formatCount } from '@/constants';
 
 // ─── Unified selector hook (legacy surface) ────────────────────
 import { useAuthStore } from './authStore';

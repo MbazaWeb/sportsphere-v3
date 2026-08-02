@@ -56,21 +56,14 @@ function SelectField({ label, placeholder, value, onChange, options }: {
   );
 }
 
-const SPORTS_OPTIONS = [
-  { value: 'football', label: 'Football' },
-  { value: 'basketball', label: 'Basketball' },
-  { value: 'tennis', label: 'Tennis' },
-  { value: 'cricket', label: 'Cricket' },
-  { value: 'rugby', label: 'Rugby' },
-  { value: 'boxing', label: 'Boxing / MMA' },
-  { value: 'f1', label: 'Formula 1' },
-  { value: 'athletics', label: 'Athletics' },
-  { value: 'golf', label: 'Golf' },
-  { value: 'baseball', label: 'Baseball' },
-  { value: 'other', label: 'Other' },
-];
+// ─── Sport options — now fetched dynamically via useSports hook ──
+// E-2: Removed hardcoded SPORTS_OPTIONS. The hook provides the same
+// { value, label } shape from the database, so the SelectField doesn't change.
+
+import { useSports } from '@/hooks/useSports';
 
 export default function RoleForms({ role, data, onChange }: RoleFormsProps) {
+  const { selectOptions: SPORTS_OPTIONS } = useSports();
   const update = (key: string, value: string) => {
     onChange({ ...data, [key]: value });
   };

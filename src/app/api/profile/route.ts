@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       favorites: true,
       userRole: { select: { id: true, name: true, slug: true, icon: true, category: true, description: true } },
       userRoleType: { select: { id: true, name: true, slug: true, description: true } },
-      userSports: { select: { sport: { select: { id: true, name: true, slug: true, icon: true } } } },
+      userSports: { select: { sport: { select: { id: true, name: true, slug: true, icon: true, category: true, sportType: true, format: true } } } },
     };
 
     if (handle) {
@@ -182,6 +182,51 @@ export async function PUT(request: NextRequest) {
     if (body.interests !== undefined) update.interests = JSON.stringify(body.interests);
     if (body.sportsFollowing !== undefined) update.sportsFollowing = JSON.stringify(body.sportsFollowing);
     if (body.roleProfile !== undefined) update.roleProfile = JSON.stringify(body.roleProfile);
+
+    // ─── Sync UserSport junction table when sportsFollowing changes ──
+    // E-1: This was a critical bug — only the JSON field was updated, not
+    // the normalized UserSport records. Now both are kept in sync.
+    if (body.sportsFollowing !== undefined) {
+      const newSports: string[] = Array.isArray(body.sportsFollowing) ? body.sportsFollowing : [];
+      // Resolve sport names/slugs to DB IDs
+      const sportRecords = await db.sport.findMany({
+        where: {
+          isActive: true,
+          OR: [
+            { slug: { in: newSports.map((s: string) => s.toLowerCase().replace(/\s+/g, '-')) } },
+            { name: { in: newSports } },
+          ],
+        },
+        select: { id: true },
+      });
+      const newSportIds = sportRecords.map(s => s.id);
+
+      // Get current UserSport records
+      const currentUserSports = await db.userSport.findMany({
+        where: { userId },
+        select: { sportId: true },
+      });
+      const currentSportIds = new Set(currentUserSports.map(us => us.sportId));
+
+      // Determine adds and removes
+      const toAdd = newSportIds.filter(id => !currentSportIds.has(id));
+      const toRemove = [...currentSportIds].filter(id => !newSportIds.includes(id));
+
+      // Delete removed sports
+      if (toRemove.length > 0) {
+        await db.userSport.deleteMany({
+          where: { userId, sportId: { in: toRemove } },
+        });
+      }
+
+      // Create added sports
+      if (toAdd.length > 0) {
+        await db.userSport.createMany({
+          data: toAdd.map(sportId => ({ userId, sportId })),
+          skipDuplicates: true,
+        });
+      }
+    }
 
     // Handle uniqueness check if handle is changing
     if (update.handle) {

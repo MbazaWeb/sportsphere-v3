@@ -1,6 +1,7 @@
 // SportSphere — Application Constants
-// Non-data constants only. User/match data lives in the database (prisma/seed.ts)
-// and is served through API routes (/api/*)
+// Non-data constants only. User/match/sport data lives in the database
+// (prisma/seed.ts) and is served through API routes (/api/*).
+// E-2: Removed SPORTS_LIST — sports are now fetched from /api/sports.
 
 export const ADVANCED_ROLES = [
   { id: 'team',         label: 'Team',         description: 'Register a sports team or club' },
@@ -18,16 +19,8 @@ export const ADVANCED_ROLES = [
   { id: 'business',     label: 'Business',     description: 'Register a sports business' },
 ] as const;
 
-export const SPORTS_LIST = [
-  'Football', 'Basketball', 'Tennis', 'Cricket', 'Rugby',
-  'Boxing', 'MMA', 'F1', 'Athletics', 'Swimming',
-  'Golf', 'Baseball', 'Volleyball', 'Handball', 'Cycling',
-] as const;
-
 export function formatCount(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
   return n.toString();
 }
-
-export type Sport = typeof SPORTS_LIST[number];

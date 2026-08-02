@@ -10,11 +10,9 @@ import { PasswordInput } from '@/components/ui/PasswordInput';
 import { AuthLogo } from '@/components/auth/AuthLogo';
 
 // ─── SPORTS: fetched from /api/sports or fallback ──────────────
-const SPORTS_FALLBACK = [
-  'Football', 'Basketball', 'Tennis', 'Cricket', 'Rugby',
-  'Boxing', 'MMA', 'F1', 'Athletics', 'Swimming',
-  'Golf', 'Baseball', 'Volleyball', 'Handball', 'Cycling',
-];
+// ─── Sports data ──────────────────────────────────────────────
+// E-2: Removed hardcoded SPORTS_FALLBACK. The FanStep now fetches
+// from /api/sports and uses an empty fallback while loading.
 
 /**
  * FanStep — Phase 5 compliant: Registration ONLY creates Fan accounts.
@@ -29,8 +27,8 @@ function FanStep({ onBack, onComplete }: { onBack: () => void; onComplete: (data
   const [confirm, setConfirm] = useState('');
   const [sports, setSports] = useState<string[]>([]);
 
-  // Fetch sports from API when available
-  const [availableSports, setAvailableSports] = useState<string[]>(SPORTS_FALLBACK);
+  // Fetch sports from API — no hardcoded fallback
+  const [availableSports, setAvailableSports] = useState<string[]>([]);
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -40,7 +38,7 @@ function FanStep({ onBack, onComplete }: { onBack: () => void; onComplete: (data
         const data = await res.json();
         if (cancelled || !Array.isArray(data) || data.length === 0) return;
         setAvailableSports(data.map((s: { name: string }) => s.name));
-      } catch { /* fallback stays */ }
+      } catch { /* empty fallback stays */ }
     })();
     return () => { cancelled = true; };
   }, []);

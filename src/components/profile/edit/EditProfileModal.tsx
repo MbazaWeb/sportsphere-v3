@@ -11,9 +11,11 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
+import { useSports } from '@/hooks/useSports';
 
 // ─── Constants ────────────────────────────────────────────────
-const SPORTS = ['Football', 'Basketball', 'Volleyball', 'Rugby', 'Athletics', 'Cricket', 'Tennis', 'Golf', 'Swimming', 'Cycling', 'Boxing', 'MMA', 'Esports', 'Formula One', 'MotoGP', 'Baseball', 'Hockey', 'Netball', 'Handball', 'Other'];
+// NOTE: SPORTS is no longer hardcoded — fetched dynamically via useSports hook.
+// E-2: Replaced hardcoded array with data-driven approach.
 
 const INTERESTS = ['Transfers', 'Statistics', 'Fantasy', 'Highlights', 'Live Scores', 'Sports Business', 'Coaching', 'Fitness', 'Betting News', 'Analysis', 'Youth Academy', "Women's Sports", 'Local Football', 'International Football'];
 
@@ -544,6 +546,10 @@ function ContactSection({ data, update }: { data: Record<string, unknown>; updat
 // ─── Sports & Interests Section ───────────────────────────────
 function SportsInterestsSection({ data, update }: { data: Record<string, unknown>; update: (k: string, v: unknown) => void }) {
   const sports = (data.sportsFollowing as string[]) || [];
+  const { sports: availableSports, loading } = useSports();
+
+  // Use dynamic sport names from DB, fallback to empty while loading
+  const sportNames = loading ? sports : availableSports.map(s => s.name);
 
   return (
     <div>
@@ -553,7 +559,7 @@ function SportsInterestsSection({ data, update }: { data: Record<string, unknown
         <ChipSelector
           selected={sports}
           onChange={(v) => update('sportsFollowing', v)}
-          options={SPORTS}
+          options={sportNames}
           color="gold"
         />
       </Field>

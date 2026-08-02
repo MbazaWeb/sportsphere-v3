@@ -8,10 +8,13 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Clock, Trophy, ChevronDown, Globe, Flag, X, Crown } from 'lucide-react';
 import { useEffect } from 'react';
+import { useSports } from '@/hooks/useSports';
 
 // --- Filter definitions ----------------------------------------
+// E-2: Sport filter is now dynamic — fetched from /api/sports
+// Other filters (continent, country, tournament) remain static as they
+// are not sport-specific data but geographical/organizational.
 const FILTERS = {
-  sport:     ['All', 'Football', 'Basketball', 'Tennis', 'Cricket', 'Rugby', 'Boxing', 'MMA', 'F1', 'Athletics'],
   continent: ['All', 'Europe', 'Africa', 'South America', 'Asia', 'North America'],
   country:   ['All', 'England', 'Spain', 'Germany', 'France', 'Italy', 'Portugal', 'Netherlands', 'Africa'],
   tournament: ['All', 'Premier League', 'La Liga', 'Bundesliga', 'Ligue 1', 'Serie A', 'Champions League', 'Europa League', 'AFCON', 'World Cup'],
@@ -97,6 +100,10 @@ export default function ScoresTab() {
   const scoresSubTab    = useAppStore((s) => s.scoresSubTab);
   const setScoresSubTab = useAppStore((s) => s.setScoresSubTab);
 
+  // E-2: Dynamic sports list from DB
+  const { names: sportNames } = useSports();
+  const sportOptions = ['All', ...sportNames];
+
   const [sport,      setSport]      = useState('All');
   const [continent,  setContinent]  = useState('All');
   const [country,    setCountry]    = useState('All');
@@ -138,7 +145,7 @@ export default function ScoresTab() {
 
         {/* Filters */}
         <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
-          <FilterDropdown label="Sport"      options={FILTERS.sport}      value={sport}      onChange={setSport}      icon={Trophy} />
+          <FilterDropdown label="Sport"      options={sportOptions}       value={sport}      onChange={setSport}      icon={Trophy} />
           <FilterDropdown label="Continent"  options={FILTERS.continent}  value={continent}  onChange={setContinent}  icon={Globe} />
           <FilterDropdown label="Country"    options={FILTERS.country}    value={country}    onChange={setCountry}    icon={Flag}  />
           <FilterDropdown label="Tournament" options={FILTERS.tournament} value={tournament} onChange={setTournament} icon={Trophy} />
