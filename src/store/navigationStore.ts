@@ -7,7 +7,7 @@ export type ActivitySubTab = "all"|"social"|"sports"|"messages";
 
 interface NavigationState {
   activeTab: TabId; homeSubTab: HomeSubTab; scoresSubTab: ScoresSubTab; activitySubTab: ActivitySubTab;
-  profileSection: "main"|"settings"|"saved"|"achievements"|"predictions"|"communities"|"followers"|"following";
+  profileSection: "main"|"settings"|"saved"|"achievements"|"predictions"|"communities"|"followers"|"following"|"explore";
   settingsSection: string;
   setActiveTab: (t: TabId) => void; setHomeSubTab: (t: HomeSubTab) => void;
   setScoresSubTab: (t: ScoresSubTab) => void; setActivitySubTab: (t: ActivitySubTab) => void;

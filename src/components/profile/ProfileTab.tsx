@@ -4,14 +4,15 @@ import { useAppStore, type ProfileTypeId, type VerificationStatus } from '@/stor
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Settings, LogOut, ChevronRight, Heart, UserPlus, MessageCircle,
+  Settings, LogOut, ChevronRight, ChevronLeft, Heart, UserPlus, MessageCircle,
   Bookmark, Trophy, Users, BarChart3, X, Shield, Bell,
   Palette, Globe, HelpCircle, Info, Edit, Camera,
   Eye, ShieldCheck, Clock, CheckCircle2, AlertCircle, Sparkles,
-  BadgeCheck, Upload, ChevronDown
+  BadgeCheck, Upload, ChevronDown, Compass
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import RegistrationModal from '@/components/registration/RegistrationModal';
+import ProfileExplorer from '@/components/profiles/ProfileExplorer';
 
 // ====== VERIFICATION BADGE COMPONENT ======
 function VerificationBadge({ status }: { status: VerificationStatus }) {
@@ -337,6 +338,23 @@ function LoggedInProfile({
           >
             <span className="text-sm font-semibold text-white">More</span>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </button>
+
+          {/* Explore Profiles — directory of all 17 profile types */}
+          <button
+            onClick={() => onNavigate('explore')}
+            className="mt-2 flex w-full items-center justify-between rounded-xl bg-gradient-to-r from-gold/10 to-gold/5 border border-gold/20 p-4 transition-colors hover:from-gold/15 hover:to-gold/10"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gold/15">
+                <Compass className="h-4 w-4 text-gold" />
+              </div>
+              <div className="text-left">
+                <span className="block text-sm font-semibold text-white">Explore Profiles</span>
+                <span className="block text-[11px] text-muted-foreground">Browse teams, players, coaches & more</span>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 text-gold/60" />
           </button>
 
           <div className="mt-2 grid grid-cols-3 gap-2">
@@ -671,12 +689,36 @@ function PeopleList({ title, onBack }: { title: string; onBack: () => void }) {
   );
 }
 
+// ====== PROFILE EXPLORER SECTION (wrapped with header) ======
+function ProfileExplorerSection({ onBack, onSelectProfile }: {
+  onBack: () => void;
+  onSelectProfile: (id: string) => void;
+}) {
+  return (
+    <div>
+      <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-surface-border bg-background/95 backdrop-blur px-4 py-3">
+        <button
+          onClick={onBack}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-surface transition-colors hover:bg-surface-elevated"
+        >
+          <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+        </button>
+        <h1 className="text-lg font-bold text-white">Explore Profiles</h1>
+      </header>
+      <div className="p-4">
+        <ProfileExplorer onSelectProfile={onSelectProfile} />
+      </div>
+    </div>
+  );
+}
+
 // ====== MAIN EXPORT ======
 export default function ProfileTab() {
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const logout = useAppStore((s) => s.logout);
   const profileSection = useAppStore((s) => s.profileSection);
   const setProfileSection = useAppStore((s) => s.setProfileSection);
+  const setViewingProfile = useAppStore((s) => s.setViewingProfile);
 
   if (!isAuthenticated) {
     return (
@@ -700,6 +742,14 @@ export default function ProfileTab() {
         <SettingsSection
           onBack={() => setProfileSection('main')}
           onLogout={logout}
+        />
+      )}
+      {profileSection === 'explore' && (
+        <ProfileExplorerSection
+          onBack={() => setProfileSection('main')}
+          onSelectProfile={(id) => {
+            setViewingProfile(id);
+          }}
         />
       )}
       {profileSection === 'saved' && <GenericSection title="Saved" onBack={() => setProfileSection('main')} />}

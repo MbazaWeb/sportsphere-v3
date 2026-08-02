@@ -14,7 +14,6 @@ import ProfileTab from '@/components/profile/ProfileTab';
 import RegistrationModal from '@/components/registration/RegistrationModal';
 import ForgotPasswordModal from '@/components/auth/ForgotPasswordModal';
 import ResetPasswordPage from '@/components/auth/ResetPasswordPage';
-import ProfileExplorer from '@/components/profiles/ProfileExplorer';
 import ProfilePage from '@/components/profiles/ProfilePage';
 import UserProfileViewer from '@/components/profiles/UserProfileViewer';
 import { PROFILE_TYPES, type ProfileTypeId } from '@/components/profiles/profileConfig';
@@ -172,9 +171,7 @@ function ProfileTypeOverlay() {
 }
 
 function TabContent() {
-  const activeTab         = useNavigationStore((s) => s.activeTab);
-  const isAuthenticated   = useAuthStore((s) => s.isAuthenticated);
-  const setViewingProfile = useUIStore((s) => s.setViewingProfile);
+  const activeTab = useNavigationStore((s) => s.activeTab);
   return (
     <AnimatePresence mode="wait">
       <motion.div key={activeTab} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}
@@ -183,10 +180,7 @@ function TabContent() {
         {activeTab === 'scores'   && <ScoresTab />}
         {activeTab === 'create'   && <CreateTab />}
         {activeTab === 'activity' && <ActivityTab />}
-        {activeTab === 'profile'  && (isAuthenticated
-          ? <ProfileExplorer onSelectProfile={(id) => setViewingProfile(id)} />
-          : <ProfileTab />
-        )}
+        {activeTab === 'profile'  && <ProfileTab />}
       </motion.div>
     </AnimatePresence>
   );
