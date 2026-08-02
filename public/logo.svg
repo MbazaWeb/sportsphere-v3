@@ -1,22 +1,71 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 430">
   <defs>
     <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#FFD700"/>
-      <stop offset="60%" stop-color="#F5A623"/>
-      <stop offset="100%" stop-color="#D4860A"/>
+      <stop offset="50%" stop-color="#F5A623"/>
+      <stop offset="100%" stop-color="#C47D00"/>
+    </linearGradient>
+    <linearGradient id="goldH" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#F5A623"/>
     </linearGradient>
   </defs>
 
-  <!-- GOLD upper C-shape (top arm of S, opens to the right) -->
-  <!-- Outer arc -->
-  <path d="M 165 18 L 52 18 C 28 18 10 34 10 58 C 10 82 28 98 52 98 L 120 98"
-    fill="none" stroke="url(#gold)" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- Speed slash tip — top right diagonal cut -->
-  <polygon points="148,0 185,0 175,36 138,36" fill="#0A1628"/>
+  <!-- ═══ GOLD upper C-band ═══
+       Thick arc opening to the right (top half of S)
+       Has a sharp diagonal cut on the top-right tip
+  -->
+  <!-- Main gold upper band -->
+  <path d="
+    M 360 30
+    L 110 30
+    C 55 30 20 65 20 115
+    C 20 165 55 200 110 200
+    L 280 200
+    C 290 200 295 207 295 215
+    C 295 223 290 230 280 230
+    L 110 230
+    C 38 230 0 192 0 140
+    C 0 88 38 0 110 0
+    L 390 0
+    Z
+  " fill="url(#gold)"/>
 
-  <!-- WHITE lower C-shape (bottom arm of S, opens to the left) -->
-  <path d="M 35 82 L 148 82 C 172 82 190 98 190 122 C 190 146 172 162 148 162 L 30 162"
-    fill="none" stroke="white" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- Speed slash tip — bottom left diagonal cut -->
-  <polygon points="15,144 52,144 62,180 25,180" fill="#0A1628"/>
+  <!-- Sharp diagonal tip cut top-right of gold band -->
+  <polygon points="355,0 420,0 390,60 325,60" fill="#0A1628"/>
+
+  <!-- ═══ WHITE lower C-band ═══
+       Thick arc opening to the left (bottom half of S)  
+       Has a sharp diagonal cut on the bottom-left tip
+  -->
+  <!-- White lower band -->
+  <path d="
+    M 110 200
+    L 390 200
+    C 445 200 480 235 480 285
+    C 480 335 445 370 390 370
+    L 140 370
+    C 130 370 125 363 125 355
+    C 125 347 130 340 140 340
+    L 390 340
+    C 420 340 448 315 448 285
+    C 448 255 420 230 390 230
+    L 110 230
+    C 48 230 10 268 10 200
+    Z
+  " fill="white"/>
+
+  <!-- Sharp diagonal tip cut bottom-left of white band -->
+  <polygon points="80,340 145,340 110,400 45,400" fill="#0A1628"/>
+
+  <!-- SportSphere wordmark -->
+  <text x="250" y="415"
+    font-family="Arial Black, Impact, sans-serif"
+    font-size="62"
+    font-weight="900"
+    font-style="italic"
+    text-anchor="middle"
+    letter-spacing="-1">
+    <tspan fill="white">Sport</tspan><tspan fill="#F5C518">Sphere</tspan>
+  </text>
 </svg>
