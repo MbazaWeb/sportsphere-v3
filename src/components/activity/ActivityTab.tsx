@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import {
   Heart, UserPlus, MessageCircle, Circle, Trophy,
-  Users, Bell, ChevronRight, X, Flame, Crown,
+  Users, Bell, ChevronRight, X,
 } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 
@@ -162,14 +162,7 @@ function ActivityList({ filter }: { filter: 'all' | 'social' | 'sports' }) {
         return;
       }
     } catch { /* noop */ }
-    // Fallback
-    setViewingUser({
-      id: item.handle, name: item.text.split(' ').slice(0, 2).join(' '),
-      handle: item.handle, avatar: typeof item.avatar === 'string' ? item.avatar : '??',
-      verified: false, coverGradient: 'from-surface to-surface',
-      bio: '', role: 'User', location: '', joined: '',
-      followers: 0, following: 0, posts: 0, isFollowing: false,
-    });
+    // API unavailable — don't show fallback profile, just ignore the click
   }, [setViewingUser]);
 
   if (loading) {
@@ -194,8 +187,14 @@ function ActivityList({ filter }: { filter: 'all' | 'social' | 'sports' }) {
     <div className="p-4 flex flex-col gap-2">
       {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8">
-          <Bell className="h-8 w-8 text-muted-foreground/30 mb-2" />
-          <p className="text-sm text-muted-foreground">No activity yet</p>
+          {filter === 'social' ? <Users className="h-8 w-8 text-muted-foreground/30 mb-2" /> :
+           filter === 'sports' ? <Trophy className="h-8 w-8 text-muted-foreground/30 mb-2" /> :
+           <Bell className="h-8 w-8 text-muted-foreground/30 mb-2" />}
+          <p className="text-sm text-muted-foreground">
+            {filter === 'social' ? 'No social activity yet' :
+             filter === 'sports' ? 'No sports updates yet' :
+             'No activity yet'}
+          </p>
         </div>
       ) : items.map((item) => {
         const isClickable = !!item.handle;
@@ -268,14 +267,7 @@ function MessagesList() {
         return;
       }
     } catch { /* noop */ }
-    // Fallback with data from message conversation
-    setViewingUser({
-      id: chat.partnerId, name: chat.partnerName, handle: chat.partnerHandle,
-      avatar: chat.partnerAvatar, verified: chat.isVerified,
-      coverGradient: 'from-surface-elevated to-surface',
-      bio: '', role: 'User', location: '', joined: '',
-      followers: 0, following: 0, posts: 0, isFollowing: false,
-    });
+    // API unavailable — don't show fallback profile with fake data
   };
 
   if (loading) {
