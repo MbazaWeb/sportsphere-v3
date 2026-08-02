@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, X, ShieldCheck } from 'lucide-react';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { useAuthStore } from '@/store/authStore';
+import { useNavigationStore } from '@/store/navigationStore';
 
 /**
  * Step 2 of the forgot-password flow.
@@ -31,6 +32,7 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
   const setIsAuthenticated = useAuthStore((s) => s.setIsAuthenticated);
   const setUserProfile = useAuthStore((s) => s.setUserProfile);
+  const setActiveTab = useNavigationStore((s) => s.setActiveTab);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -47,7 +49,7 @@ export default function ResetPasswordPage() {
     router.replace(url.pathname + (url.search ? url.search : ''));
   };
 
-  const close = () => {
+  const close = (wasSuccess = false) => {
     setToken(null);
     setPassword('');
     setConfirm('');
@@ -55,6 +57,10 @@ export default function ResetPasswordPage() {
     setSuccess(false);
     setLoading(false);
     clearUrl();
+    if (wasSuccess) {
+      // Redirect to profile after a successful password reset (user is now logged in)
+      setActiveTab('profile');
+    }
   };
 
   const submit = async () => {
@@ -91,7 +97,7 @@ export default function ResetPasswordPage() {
       setIsAuthenticated(true);
       setSuccess(true);
       // Auto-close after a short delay so the user sees the confirmation
-      setTimeout(() => close(), 1800);
+      setTimeout(() => close(true), 1800);
     } catch {
       setError('Network error. Please try again.');
     }

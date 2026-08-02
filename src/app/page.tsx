@@ -26,6 +26,7 @@ import { useServiceWorker } from '@/hooks/useServiceWorker';
 function LoginModal() {
   const { loginModalOpen, setLoginModalOpen } = useUIStore();
   const { setRegistrationOpen } = useAuthStore();
+  const setActiveTab = useNavigationStore((s) => s.setActiveTab);
   const [forgotOpen, setForgotOpen] = React.useState(false);
   const setIsAuthenticated = useAuthStore((s) => s.setIsAuthenticated);
   const setUserProfile = useAuthStore((s) => s.setUserProfile);
@@ -56,6 +57,8 @@ function LoginModal() {
       setIsAuthenticated(true);
       setLoginModalOpen(false);
       setEmail(''); setPassword('');
+      // Redirect to the user's profile after successful login
+      setActiveTab('profile');
     } catch { setError('Network error. Please try again.'); }
     setLoading(false);
   };

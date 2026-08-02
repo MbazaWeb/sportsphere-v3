@@ -2,6 +2,7 @@
 
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore, ADVANCED_ROLES, SPORTS_LIST } from '@/store/useAppStore';
+import { useNavigationStore } from '@/store/navigationStore';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronRight, ChevronLeft, Check, Users, ShieldCheck, Sparkles } from 'lucide-react';
@@ -268,6 +269,7 @@ export default function RegistrationModal() {
   const setRegistrationOpen = useAuthStore(s => s.setRegistrationOpen);
   const completeSimpleRegistration = useAuthStore(s => s.completeSimpleRegistration);
   const completeAdvancedRegistration = useAuthStore(s => s.completeAdvancedRegistration);
+  const setActiveTab = useNavigationStore(s => s.setActiveTab);
 
   const [step, setStep] = useState<'choose' | 'fan' | 'role' | 'form' | 'complete'>('choose');
   const [selectedRole, setSelectedRole] = useState<ProfileTypeId>('fan');
@@ -283,6 +285,13 @@ export default function RegistrationModal() {
       setStep('choose');
       setSubmitError('');
     }, 300);
+  };
+
+  // Called only when the user dismisses the "Complete" step — i.e. they
+  // just finished registering. Redirect them to their profile.
+  const handleCompleteClose = () => {
+    handleClose();
+    setActiveTab('profile');
   };
 
   if (!registrationOpen) return null;
@@ -341,7 +350,7 @@ export default function RegistrationModal() {
             {step === 'fan'      && <FanStep onBack={() => setStep('choose')} onComplete={handleFanComplete} />}
             {step === 'role'     && <AdvancedRoleStep onBack={() => setStep('choose')} onSelect={r => { setSelectedRole(r); setStep('form'); }} />}
             {step === 'form'     && <AdvancedFormStep role={selectedRole} onBack={() => setStep('role')} onComplete={handleAdvancedComplete} />}
-            {step === 'complete' && <CompleteStep name={completedName} isAdvanced={isAdvanced} onClose={handleClose} />}
+            {step === 'complete' && <CompleteStep name={completedName} isAdvanced={isAdvanced} onClose={handleCompleteClose} />}
           </motion.div>
         </AnimatePresence>
       </motion.div>
