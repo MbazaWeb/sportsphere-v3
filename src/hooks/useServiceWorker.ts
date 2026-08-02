@@ -39,6 +39,16 @@ export function useServiceWorker() {
       }
     };
 
+    // Capture the beforeinstallprompt event so the app can show an install UI later
+    const handleBeforeInstall = (e: any) => {
+      try {
+        e.preventDefault();
+      } catch {}
+      // store for later (UI code can call window.__deferredPrompt.prompt())
+      try { (window as any).__deferredPrompt = e; } catch {}
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall as EventListener);
+
     if (document.readyState === 'complete') {
       registerSW();
     } else {
@@ -47,6 +57,7 @@ export function useServiceWorker() {
 
     return () => {
       window.removeEventListener('load', registerSW);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall as EventListener);
     };
   }, []);
 }
