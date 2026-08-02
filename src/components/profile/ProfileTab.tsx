@@ -252,7 +252,7 @@ function LoggedInProfile({
             </div>
             <p className="text-sm text-muted-foreground">{userProfile?.handle || '@davidmbaza'}</p>
             <div className="mt-2 flex items-center gap-2 flex-wrap">
-              <BadgeStack role={userProfile?.role || 'fan'} isVerified={isVerified} size="sm" />
+              <BadgeStack role={userProfile?.role || 'fan'} isVerified={isVerified} typeName={userProfile?.typeName} size="sm" />
             </div>
             <button onClick={() => setEditOpen(true)} className="mt-2 rounded-lg bg-surface border border-surface-border px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-surface-elevated">
               Edit Profile

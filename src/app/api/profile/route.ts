@@ -14,11 +14,20 @@ export async function GET(request: NextRequest) {
     const handle = searchParams.get('handle');
     const currentUserId = request.headers.get('x-user-id');
 
+    // Common select with role/type/sport joins
+    const selectWithRelations = {
+      ...USER_SELECT_FULL,
+      favorites: true,
+      userRole: { select: { id: true, name: true, slug: true, icon: true, category: true, description: true } },
+      userRoleType: { select: { id: true, name: true, slug: true, description: true } },
+      userSports: { select: { sport: { select: { id: true, name: true, slug: true, icon: true } } } },
+    };
+
     if (handle) {
       // Viewing someone else's profile — return public fields only
       const user = await db.user.findUnique({
         where: { handle },
-        select: { ...USER_SELECT_FULL, favorites: true },
+        select: selectWithRelations,
       });
       if (!user) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -30,6 +39,15 @@ export async function GET(request: NextRequest) {
 
       const publicUser: Record<string, unknown> = {
         ...user,
+        roleName: user.userRole?.name || 'Fan',
+        roleSlug: user.userRole?.slug || 'fan',
+        roleIcon: user.userRole?.icon || '⭐',
+        roleCategory: user.userRole?.category || 'individual',
+        roleDescription: user.userRole?.description || '',
+        typeName: user.userRoleType?.name || 'Casual Fan',
+        typeSlug: user.userRoleType?.slug || 'casual',
+        typeDescription: user.userRoleType?.description || null,
+        sports: user.userSports.map(us => us.sport),
         sportsFollowing: safeJsonParse(user.sportsFollowing, []),
         roleData: safeJsonParse(user.roleData, {}),
         roleProfile: safeJsonParse(user.roleProfile, {}),
@@ -41,6 +59,11 @@ export async function GET(request: NextRequest) {
           id: f.id, targetType: f.targetType, targetName: f.targetName, targetHandle: f.targetHandle,
         })),
       };
+
+      // Remove raw relation objects (already extracted above)
+      delete publicUser.userRole;
+      delete publicUser.userRoleType;
+      delete publicUser.userSports;
 
       // Apply privacy — hide phone/email unless own profile or allowed
       if (!isOwnProfile) {
@@ -61,7 +84,7 @@ export async function GET(request: NextRequest) {
 
     const user = await db.user.findUnique({
       where: { id: currentUserId },
-      select: { ...USER_SELECT_FULL, favorites: true },
+      select: selectWithRelations,
     });
 
     if (!user) {
@@ -70,6 +93,15 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       ...user,
+      roleName: user.userRole?.name || 'Fan',
+      roleSlug: user.userRole?.slug || 'fan',
+      roleIcon: user.userRole?.icon || '⭐',
+      roleCategory: user.userRole?.category || 'individual',
+      roleDescription: user.userRole?.description || '',
+      typeName: user.userRoleType?.name || 'Casual Fan',
+      typeSlug: user.userRoleType?.slug || 'casual',
+      typeDescription: user.userRoleType?.description || null,
+      sports: user.userSports.map(us => us.sport),
       sportsFollowing: safeJsonParse(user.sportsFollowing, []),
       roleData: safeJsonParse(user.roleData, {}),
       roleProfile: safeJsonParse(user.roleProfile, {}),
