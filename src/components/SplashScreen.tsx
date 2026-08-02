@@ -62,7 +62,7 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
             {/* S logo mark */}
             <div className="relative">
               {/* Outer glow disc */}
-              <div className="absolute inset-[-20px] rounded-[40px] bg-[#F5C518]/10 blur-xl" />
+              <div className="absolute inset-[-20px] rounded-[40px] bg-[#F5C518]/8 blur-2xl" />
               <div className="relative flex h-36 w-36 items-center justify-center rounded-[32px] bg-[#0F1D3A] border border-white/10"
                 style={{ boxShadow: '0 0 60px rgba(245,197,24,0.15)' }}>
                 {/* The S lettermark — matches logo */}
