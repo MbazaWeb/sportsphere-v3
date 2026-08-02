@@ -488,6 +488,7 @@ function AdminVerificationPanel() {
               <div className="rounded-xl bg-yellow-500/5 border border-yellow-500/20 p-3">
                 <p className="text-[10px] text-muted-foreground text-center">
                   Demo: Tap below to simulate admin approval or rejection
+                </p>
               </div>
               <div className="flex gap-2">
                 <button
@@ -698,6 +699,7 @@ function PeopleList({ title, onBack }: { title: string; onBack: () => void }) {
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
               {title === 'Following' ? 'You are not following anyone yet.' : 'No followers yet.'}
+            </p>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
