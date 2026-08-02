@@ -1,30 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
-  <!-- The S: thick stroked path, two-tone: gold top, white bottom -->
-  
-  <!-- Full S path in gold -->
-  <path 
-    d="M 160 28 C 160 14 148 6 132 6 L 52 6 C 36 6 24 16 24 30 C 24 44 36 54 52 56 L 130 70 C 148 73 162 84 162 100 C 162 116 148 128 130 128 L 46 128 C 28 128 14 140 14 156 C 14 172 28 184 46 184 L 160 184"
-    fill="none"
-    stroke="#F5C518"
-    stroke-width="38"
-    stroke-linecap="round"
-  />
-  
-  <!-- White overlay on bottom arm to create two-tone effect -->
-  <path 
-    d="M 46 128 C 28 128 14 140 14 156 C 14 172 28 184 46 184 L 160 184"
-    fill="none"
-    stroke="white"
-    stroke-width="38"
-    stroke-linecap="round"
-    opacity="0.92"
-  />
-  
-  <!-- Diagonal slash through middle — the speed mark -->
-  <path
-    d="M 145 56 L 55 128"
-    fill="none"
-    stroke="#0A1628"
-    stroke-width="10"
-  />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180">
+  <defs>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFD700"/>
+      <stop offset="60%" stop-color="#F5A623"/>
+      <stop offset="100%" stop-color="#D4860A"/>
+    </linearGradient>
+  </defs>
+
+  <!-- GOLD upper C-shape (top arm of S, opens to the right) -->
+  <!-- Outer arc -->
+  <path d="M 165 18 L 52 18 C 28 18 10 34 10 58 C 10 82 28 98 52 98 L 120 98"
+    fill="none" stroke="url(#gold)" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Speed slash tip — top right diagonal cut -->
+  <polygon points="148,0 185,0 175,36 138,36" fill="#0A1628"/>
+
+  <!-- WHITE lower C-shape (bottom arm of S, opens to the left) -->
+  <path d="M 35 82 L 148 82 C 172 82 190 98 190 122 C 190 146 172 162 148 162 L 30 162"
+    fill="none" stroke="white" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Speed slash tip — bottom left diagonal cut -->
+  <polygon points="15,144 52,144 62,180 25,180" fill="#0A1628"/>
 </svg>

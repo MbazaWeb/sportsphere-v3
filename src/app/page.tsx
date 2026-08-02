@@ -73,10 +73,18 @@ function LoginModal() {
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
         <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
           className="w-full max-w-sm rounded-3xl bg-surface-elevated border border-surface-border p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-white">Sign In</h2>
-            <button onClick={() => setLoginModalOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
-              <X className="h-4 w-4 text-muted-foreground" />
+          <div className="mb-5 flex flex-col items-center gap-3">
+            <div className="flex items-center gap-3">
+              <img src="/logo.svg" alt="S" style={{height: 40, width: 'auto'}} />
+              <span style={{fontSize:20,fontWeight:900,fontStyle:'italic',color:'#fff',lineHeight:1}}>Sport<span style={{color:'#F5C518'}}>Sphere</span></span>
+            </div>
+            <div className="flex w-full items-center justify-between">
+              <h2 className="text-base font-bold text-white">Sign In</h2>
+              <button onClick={() => setLoginModalOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
+          </div>
             </button>
           </div>
 
