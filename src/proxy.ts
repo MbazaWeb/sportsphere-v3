@@ -14,7 +14,7 @@ export async function proxy(request: NextRequest) {
 
   // ─── Skip public routes ──────────────────────────────────────
   // Auth API routes (login, register, forgot/reset password, verify-email)
-  if (pathname.startsWith('/api/auth/')) {
+  if (pathname === '/api/auth' || pathname.startsWith('/api/auth/')) {
     return NextResponse.next();
   }
 
