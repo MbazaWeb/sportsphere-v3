@@ -448,6 +448,7 @@ function AdminVerificationPanel() {
             {isPending && 'Your documents are being reviewed. This typically takes 1-3 business days.'}
             {isVerified && 'Your profile has been verified by our admin team. Your verified badge is now visible to all users.'}
             {isRejected && 'Your verification was not approved. Please review the requirements and resubmit.'}
+          </p>
         </div>
 
         {userProfile?.roleData && Object.keys(userProfile.roleData).length > 0 && (
