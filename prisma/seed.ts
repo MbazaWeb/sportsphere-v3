@@ -322,24 +322,46 @@ async function main() {
   // ─── Seed Sports ─────────────────────────────────────────────
   console.log('\n⚽ Seeding Sports...');
   for (const sportData of SPORTS) {
-    await prisma.sport.upsert({
-      where: { slug: sportData.slug },
-      update: {
-        name: sportData.name,
-        icon: sportData.icon,
-        category: sportData.category,
-        displayOrder: sportData.displayOrder,
-        isActive: true,
-      },
-      create: {
-        name: sportData.name,
-        slug: sportData.slug,
-        icon: sportData.icon,
-        category: sportData.category,
-        displayOrder: sportData.displayOrder,
-        isActive: true,
-      },
-    });
+    // Try upsert by slug first, fall back to update by name
+    try {
+      await prisma.sport.upsert({
+        where: { slug: sportData.slug },
+        update: {
+          name: sportData.name,
+          icon: sportData.icon,
+          category: sportData.category,
+          displayOrder: sportData.displayOrder,
+          isActive: true,
+        },
+        create: {
+          name: sportData.name,
+          slug: sportData.slug,
+          icon: sportData.icon,
+          category: sportData.category,
+          displayOrder: sportData.displayOrder,
+          isActive: true,
+        },
+      });
+    } catch (e: unknown) {
+      // Handle unique constraint on name — update existing sport with same name but different slug
+      if (e && typeof e === 'object' && 'code' in e && (e as { code: string }).code === 'P2002') {
+        const existing = await prisma.sport.findFirst({ where: { name: sportData.name } });
+        if (existing) {
+          await prisma.sport.update({
+            where: { id: existing.id },
+            data: {
+              slug: sportData.slug,
+              icon: sportData.icon,
+              category: sportData.category,
+              displayOrder: sportData.displayOrder,
+              isActive: true,
+            },
+          });
+        }
+      } else {
+        throw e;
+      }
+    }
   }
   console.log(`  ✅ ${SPORTS.length} sports seeded`);
 
