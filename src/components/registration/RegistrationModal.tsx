@@ -96,7 +96,7 @@ function FanStep({ onBack, onComplete }: { onBack: () => void; onComplete: (data
       <div className="mb-6">
         <label className="mb-2 block text-xs font-medium text-muted-foreground">Sports you follow <span className="text-gold">*</span></label>
         <div className="flex flex-wrap gap-2">
-          {availableSports.slice(0, 12).map(sport => (
+          {availableSports.map(sport => (
             <button key={sport} onClick={() => toggleSport(sport)}
               className={cn('rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
                 sports.includes(sport) ? 'bg-gold text-black' : 'bg-surface border border-surface-border text-muted-foreground hover:text-white')}>

@@ -186,6 +186,11 @@ export default function ScoresTab() {
 
     if (scoresSubTab !== 'standings') {
       fetchMatches();
+      // Auto-refresh every 30s on live tab
+      if (scoresSubTab === 'live') {
+        const interval = setInterval(fetchMatches, 30000);
+        return () => clearInterval(interval);
+      }
     }
   }, [scoresSubTab, sport, continent, country, tournament]);
 
@@ -340,12 +345,15 @@ export default function ScoresTab() {
                     <p className="text-sm font-semibold text-white">{m.homeTeam}</p>
                     <div className="flex items-center gap-2 mx-3">
                       <span className="text-lg font-bold text-gold">
-                        {m.status === 'live' && m.minute ? `${m.minute}'` : m.homeScore ?? '-'}
+                        {m.homeScore ?? '-'}
                       </span>
                       <span className="text-muted-foreground">-</span>
                       <span className="text-lg font-bold text-gold">
-                        {m.status === 'live' && m.minute ? m.minute : m.awayScore ?? '-'}
+                        {m.awayScore ?? '-'}
                       </span>
+                      {m.status === 'live' && m.minute && (
+                        <span className="text-[10px] font-bold text-red-400 animate-pulse ml-1">{m.minute}'</span>
+                      )}
                     </div>
                     <p className="text-right text-sm font-semibold text-white">{m.awayTeam}</p>
                   </div>

@@ -260,7 +260,7 @@ function LoggedInProfile({
                   ? 'border-yellow-400 bg-yellow-500/10 text-yellow-400'
                   : 'border-gold bg-surface-elevated text-gold'
             )}>
-              {userProfile?.avatar || 'DM'}
+              {userProfile?.avatar || '?'}
             </div>
             <button className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-gold">
               <Camera className="h-3.5 w-3.5 text-black" />
@@ -268,10 +268,10 @@ function LoggedInProfile({
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-bold text-white">{userProfile?.name || 'David Mbaza'}</h2>
+              <h2 className="text-xl font-bold text-white">{userProfile?.name || 'User'}</h2>
               {isVerified && <ShieldCheck className="h-5 w-5 text-gold" />}
             </div>
-            <p className="text-sm text-muted-foreground">{userProfile?.handle || '@davidmbaza'}</p>
+            <p className="text-sm text-muted-foreground">{userProfile?.handle || '@user'}</p>
             <div className="mt-2 flex items-center gap-2 flex-wrap">
               <BadgeStack role={userProfile?.role || 'fan'} isVerified={isVerified} typeName={userProfile?.typeName} size="sm" />
             </div>
@@ -671,6 +671,14 @@ function SettingsSection({ onBack, onLogout }: { onBack: () => void; onLogout: (
 
 // ====== GENERIC SECTION ======
 function GenericSection({ title, onBack }: { title: string; onBack: () => void }) {
+  const sectionMeta: Record<string, { icon: React.ElementType; msg: string }> = {
+    'Saved':        { icon: Bookmark,  msg: 'No saved items yet. Bookmark content to revisit it.' },
+    'Achievements': { icon: Trophy,    msg: 'No achievements yet. Participate to earn badges.' },
+    'Predictions':  { icon: BarChart3, msg: 'No predictions yet. Start predicting match outcomes!' },
+    'Communities':  { icon: Users,     msg: 'No communities yet. Join groups to connect with fans.' },
+  };
+  const meta = sectionMeta[title] || { icon: Bookmark, msg: 'No content yet. Start exploring to add items here.' };
+  const Icon = meta.icon;
   return (
     <div>
       <header className="sticky top-0 z-40 border-b border-surface-border bg-background/90 backdrop-blur-xl">
@@ -683,9 +691,9 @@ function GenericSection({ title, onBack }: { title: string; onBack: () => void }
       </header>
       <div className="flex flex-col items-center justify-center px-6 pt-20">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-elevated">
-          <Bookmark className="h-7 w-7 text-muted-foreground" />
+          <Icon className="h-7 w-7 text-muted-foreground" />
         </div>
-        <p className="mt-4 text-sm text-muted-foreground">No content yet. Start exploring to add items here.</p>
+        <p className="mt-4 text-sm text-muted-foreground">{meta.msg}</p>
       </div>
     </div>
   );
