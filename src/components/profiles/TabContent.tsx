@@ -1356,7 +1356,7 @@ function FansContent() {
           <button key={fan.handle} onClick={async () => { try { const res = await fetch(`/api/users?handle=${encodeURIComponent(fan.handle)}`); if(res.ok){const u=await res.json(); const {apiUserToViewing}=await import('@/types'); setViewingUser(apiUserToViewing(u,false));} } catch {} }}
             className="glass-card rounded-xl p-3 text-left glass-card-hover w-full">
             <div className="flex items-center gap-3">
-              <div className={cn('flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold', user?.verified ? 'bg-gold text-black' : 'bg-surface text-white')}>
+              <div className={cn('flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold', fan.verified ? 'bg-gold text-black' : 'bg-surface text-white')}>
                 {fan.avatar}
               </div>
               <div className="flex-1">
@@ -1685,7 +1685,7 @@ function TeamsContent() {
       {teams.map((team, i) => {
         return (
           <div key={i} onClick={async () => { if(!team.handle) return; try { const res = await fetch(`/api/users?handle=${encodeURIComponent(team.handle)}`); if(res.ok){const u=await res.json(); const {apiUserToViewing}=await import('@/types'); setViewingUser(apiUserToViewing(u,false));} } catch {} }}
-            className={cn('glass-card rounded-xl p-3 glass-card-hover', user && 'cursor-pointer')}>
+            className={cn('glass-card rounded-xl p-3 glass-card-hover', team.handle && 'cursor-pointer')}>
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold/10 text-xs font-bold text-gold">{i + 1}</div>
               <p className="flex-1 text-sm font-bold text-white">{team.name}</p>

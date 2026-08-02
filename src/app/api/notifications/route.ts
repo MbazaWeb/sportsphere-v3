@@ -1,28 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
+const USER_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  handle: true,
+  avatarUrl: true,
+  avatarInitials: true,
+  role: true,
+  verificationStatus: true,
+  isVerified: true,
+  bio: true,
+  location: true,
+  coverGradient: true,
+  followerCount: true,
+  followingCount: true,
+  postCount: true,
+  sportsFollowing: true,
+  roleData: true,
+  registeredAt: true,
+} as const;
+
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = request.nextUrl;
-    const userId = searchParams.get('userId');
-
-    // Default to david's user id from seed
-    let targetUserId = userId || undefined;
+    const targetUserId = request.headers.get('x-user-id');
 
     if (!targetUserId) {
-      // Try to find david's user
-      const david = await db.user.findUnique({ where: { handle: '@davidmbaza' } });
-      targetUserId = david?.id;
-    }
-
-    if (!targetUserId) {
-      return NextResponse.json([]);
+      return NextResponse.json(
+        { error: 'Authentication required.' },
+        { status: 401 }
+      );
     }
 
     const notifications = await db.notification.findMany({
       where: { userId: targetUserId },
-      include: {
-        actor: true,
+      select: {
+        id: true,
+        type: true,
+        title: true,
+        body: true,
+        isRead: true,
+        referenceId: true,
+        createdAt: true,
+        actor: { select: USER_SELECT },
       },
       orderBy: { createdAt: 'desc' },
       take: 30,

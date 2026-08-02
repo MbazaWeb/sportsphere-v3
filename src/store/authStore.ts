@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useUIStore } from './uiStore';
 
 export type ProfileTypeId =
   | "team" | "competition" | "match" | "player" | "coach" | "referee"
@@ -94,6 +95,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async () => {
     try { await fetch('/api/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
+    // Clear any open profile overlays so they don't linger over the guest UI
+    useUIStore.getState().setViewingProfile(null);
+    useUIStore.getState().setViewingUser(null);
     set({
       isAuthenticated: false,
       userProfile: null,

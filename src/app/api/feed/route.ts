@@ -1,6 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
+// Whitelist User fields — never leak passwordHash, resetToken, etc.
+const USER_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  handle: true,
+  avatarUrl: true,
+  avatarInitials: true,
+  role: true,
+  verificationStatus: true,
+  isVerified: true,
+  bio: true,
+  location: true,
+  coverGradient: true,
+  followerCount: true,
+  followingCount: true,
+  postCount: true,
+  sportsFollowing: true,
+  roleData: true,
+  registeredAt: true,
+} as const;
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
@@ -19,9 +43,34 @@ export async function GET(request: NextRequest) {
       case 'trending':
         posts = await db.post.findMany({
           where,
-          include: {
-            user: true,
+          select: {
+            id: true,
+            userId: true,
+            content: true,
+            postType: true,
+            mediaUrls: true,
+            teamTag: true,
+            playerTag: true,
+            isBreaking: true,
+            likeCount: true,
+            commentCount: true,
+            shareCount: true,
+            viewCount: true,
+            createdAt: true,
+            updatedAt: true,
+            user: { select: USER_SELECT },
             poll: true,
+            comments: {
+              select: {
+                id: true,
+                content: true,
+                createdAt: true,
+                userId: true,
+                user: { select: USER_SELECT },
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 3,
+            },
           },
           orderBy: { likeCount: 'desc' },
           take: 20,
@@ -34,8 +83,22 @@ export async function GET(request: NextRequest) {
             ...where,
             postType: { in: ['video', 'spotlight'] },
           },
-          include: {
-            user: true,
+          select: {
+            id: true,
+            userId: true,
+            content: true,
+            postType: true,
+            mediaUrls: true,
+            teamTag: true,
+            playerTag: true,
+            isBreaking: true,
+            likeCount: true,
+            commentCount: true,
+            shareCount: true,
+            viewCount: true,
+            createdAt: true,
+            updatedAt: true,
+            user: { select: USER_SELECT },
           },
           orderBy: { likeCount: 'desc' },
           take: 20,
@@ -46,9 +109,34 @@ export async function GET(request: NextRequest) {
       default:
         posts = await db.post.findMany({
           where,
-          include: {
-            user: true,
+          select: {
+            id: true,
+            userId: true,
+            content: true,
+            postType: true,
+            mediaUrls: true,
+            teamTag: true,
+            playerTag: true,
+            isBreaking: true,
+            likeCount: true,
+            commentCount: true,
+            shareCount: true,
+            viewCount: true,
+            createdAt: true,
+            updatedAt: true,
+            user: { select: USER_SELECT },
             poll: true,
+            comments: {
+              select: {
+                id: true,
+                content: true,
+                createdAt: true,
+                userId: true,
+                user: { select: USER_SELECT },
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 3,
+            },
           },
           orderBy: { createdAt: 'desc' },
           take: 30,
@@ -56,20 +144,20 @@ export async function GET(request: NextRequest) {
         break;
     }
 
-    // Parse JSON string fields
+    // Parse JSON string fields with safe fallback
     const parsed = posts.map((post) => ({
       ...post,
-      mediaUrls: JSON.parse(post.mediaUrls),
+      mediaUrls: safeJsonParse(post.mediaUrls, []),
       ...(post.poll && {
         poll: {
           ...post.poll,
-          options: JSON.parse(post.poll.options),
+          options: safeJsonParse(post.poll.options, []),
         },
       }),
       user: {
         ...post.user,
-        roleData: JSON.parse(post.user.roleData),
-        sportsFollowing: JSON.parse(post.user.sportsFollowing),
+        roleData: safeJsonParse(post.user.roleData, {}),
+        sportsFollowing: safeJsonParse(post.user.sportsFollowing, []),
       },
     }));
 
@@ -77,5 +165,14 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Feed API error:', error);
     return NextResponse.json({ error: 'Failed to fetch feed' }, { status: 500 });
+  }
+}
+
+function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
   }
 }

@@ -1,27 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
+// Whitelist User fields — never leak passwordHash, resetToken, etc.
+const USER_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  handle: true,
+  avatarUrl: true,
+  avatarInitials: true,
+  role: true,
+  verificationStatus: true,
+  isVerified: true,
+  bio: true,
+  location: true,
+  coverGradient: true,
+  followerCount: true,
+  followingCount: true,
+  postCount: true,
+  sportsFollowing: true,
+  roleData: true,
+  registeredAt: true,
+} as const;
+
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = request.nextUrl;
-    const userId = searchParams.get('userId');
-
-    // Default to david's user id from seed
-    let targetUserId = userId || undefined;
-
-    if (!targetUserId) {
-      const david = await db.user.findUnique({ where: { handle: '@davidmbaza' } });
-      targetUserId = david?.id;
-    }
+    // Read the authenticated user from the proxy-set header.
+    // This route is NOT in PUBLIC_API_PREFIXES, so the proxy guarantees
+    // x-user-id is present (returns 401 otherwise).
+    const targetUserId = request.headers.get('x-user-id');
 
     if (!targetUserId) {
-      return NextResponse.json({ notifications: [], messages: [] });
+      return NextResponse.json(
+        { error: 'Authentication required.' },
+        { status: 401 }
+      );
     }
 
     // Fetch notifications
     const notifications = await db.notification.findMany({
       where: { userId: targetUserId },
-      include: { actor: true },
+      select: {
+        id: true,
+        type: true,
+        title: true,
+        body: true,
+        isRead: true,
+        referenceId: true,
+        createdAt: true,
+        actor: { select: USER_SELECT },
+      },
       orderBy: { createdAt: 'desc' },
       take: 20,
     });
@@ -29,12 +59,26 @@ export async function GET(request: NextRequest) {
     // Fetch messages (conversations)
     const sentMessages = await db.message.findMany({
       where: { senderId: targetUserId },
-      include: { receiver: true, sender: true },
+      select: {
+        id: true,
+        content: true,
+        isRead: true,
+        createdAt: true,
+        receiver: { select: USER_SELECT },
+        sender: { select: USER_SELECT },
+      },
       orderBy: { createdAt: 'desc' },
     });
     const receivedMessages = await db.message.findMany({
       where: { receiverId: targetUserId },
-      include: { sender: true, receiver: true },
+      select: {
+        id: true,
+        content: true,
+        isRead: true,
+        createdAt: true,
+        sender: { select: USER_SELECT },
+        receiver: { select: USER_SELECT },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -74,9 +118,30 @@ export async function GET(request: NextRequest) {
       (a, b) => new Date(b.lastTime).getTime() - new Date(a.lastTime).getTime()
     );
 
-    return NextResponse.json({ notifications, messages });
+    // Serialize notifications — parse JSON fields on actor
+    const safeNotifications = notifications.map((n) => ({
+      ...n,
+      actor: n.actor
+        ? {
+            ...n.actor,
+            sportsFollowing: safeJsonParse(n.actor.sportsFollowing, []),
+            roleData: safeJsonParse(n.actor.roleData, {}),
+          }
+        : null,
+    }));
+
+    return NextResponse.json({ notifications: safeNotifications, messages });
   } catch (error) {
     console.error('Activity API error:', error);
     return NextResponse.json({ error: 'Failed to fetch activity' }, { status: 500 });
+  }
+}
+
+function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
   }
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import fs from 'fs';
-import path from 'path';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,8 +29,10 @@ export async function GET(request: NextRequest) {
 
       switch (group) {
         case 'today':
+          // Show today's matches regardless of status — a match that
+          // kicked off at 17:30 and is live at 18:15 should still appear.
           where.kickoffAt = { gte: today, lt: tomorrow };
-          where.status = 'upcoming';
+          where.status = { in: ['upcoming', 'live', 'ht', 'ft'] };
           break;
         case 'upcoming':
           where.status = 'upcoming';
@@ -57,10 +59,9 @@ export async function GET(request: NextRequest) {
       take: 50,
     });
 
-    // Parse JSON string fields
     const parsed = matches.map((m) => ({
       ...m,
-      events: JSON.parse(m.events),
+      events: safeJsonParse(m.events, []),
     }));
 
     return NextResponse.json(parsed);
@@ -68,4 +69,9 @@ export async function GET(request: NextRequest) {
     console.error('Matches API error:', error);
     return NextResponse.json({ error: 'Failed to fetch matches' }, { status: 500 });
   }
+}
+
+function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
+  if (!value) return fallback;
+  try { return JSON.parse(value) as T; } catch { return fallback; }
 }

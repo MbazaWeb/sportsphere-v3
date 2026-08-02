@@ -39,6 +39,12 @@ self.addEventListener('fetch', (event) => {
   // Skip API calls and external requests
   if (!event.request.url.startsWith(self.location.origin)) return;
 
+  // Never cache Next.js dev/prod chunks or API routes — these must
+  // always be served fresh to avoid stale module errors.
+  const url = new URL(event.request.url);
+  if (url.pathname.startsWith('/api/')) return;
+  if (url.pathname.startsWith('/_next/')) return;
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {

@@ -1,33 +1,64 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
+const USER_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  handle: true,
+  avatarUrl: true,
+  avatarInitials: true,
+  role: true,
+  verificationStatus: true,
+  isVerified: true,
+  bio: true,
+  location: true,
+  coverGradient: true,
+  followerCount: true,
+  followingCount: true,
+  postCount: true,
+  sportsFollowing: true,
+  roleData: true,
+  registeredAt: true,
+} as const;
+
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = request.nextUrl;
-    const userId = searchParams.get('userId');
-
-    // Default to david's user id from seed
-    let targetUserId = userId || undefined;
+    // Read authenticated user from proxy-set header (NOT a query param).
+    const targetUserId = request.headers.get('x-user-id');
 
     if (!targetUserId) {
-      const david = await db.user.findUnique({ where: { handle: '@davidmbaza' } });
-      targetUserId = david?.id;
+      return NextResponse.json(
+        { error: 'Authentication required.' },
+        { status: 401 }
+      );
     }
 
-    if (!targetUserId) {
-      return NextResponse.json([]);
-    }
-
-    // Get all conversations for this user
     const sentMessages = await db.message.findMany({
       where: { senderId: targetUserId },
-      include: { receiver: true, sender: true },
+      select: {
+        id: true,
+        content: true,
+        isRead: true,
+        createdAt: true,
+        receiver: { select: USER_SELECT },
+        sender: { select: USER_SELECT },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
     const receivedMessages = await db.message.findMany({
       where: { receiverId: targetUserId },
-      include: { sender: true, receiver: true },
+      select: {
+        id: true,
+        content: true,
+        isRead: true,
+        createdAt: true,
+        sender: { select: USER_SELECT },
+        receiver: { select: USER_SELECT },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -35,7 +66,9 @@ export async function GET(request: NextRequest) {
     const conversations = new Map<string, {
       partnerId: string;
       partnerName: string;
+      partnerHandle: string;
       partnerAvatar: string;
+      isVerified: boolean;
       lastMessage: string;
       lastTime: string;
       unread: number;
@@ -52,7 +85,9 @@ export async function GET(request: NextRequest) {
         conversations.set(key, {
           partnerId: partner.id,
           partnerName: partner.name,
+          partnerHandle: partner.handle,
           partnerAvatar: partner.avatarInitials || partner.name.slice(0, 2).toUpperCase(),
+          isVerified: partner.isVerified,
           lastMessage: msg.content,
           lastTime: msg.createdAt.toISOString(),
           unread: isSender ? 0 : (msg.isRead ? 0 : 1),

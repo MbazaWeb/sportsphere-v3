@@ -214,7 +214,10 @@ async function main() {
       teamTag: 'Arsenal', likeCount: 6700, commentCount: 890, shareCount: 456, viewCount: 123000 },
   ];
 
-  await Promise.all(
+  // Delete posts (and cascaded comments/polls) before re-seeding so
+  // we don't accumulate duplicates on every seed run.
+  await prisma.post.deleteMany({});
+  const posts = await Promise.all(
     postDefs.map(def =>
       prisma.post.create({
         data: {
@@ -225,6 +228,47 @@ async function main() {
     )
   );
   console.log(`✅ Created ${postDefs.length} posts`);
+
+  // ─── COMMENTS ───────────────────────────────────────────────
+  // Delete old comments first so re-seeding doesn't pile up duplicates
+  await prisma.comment.deleteMany({});
+  const commentDefs = [
+    { postId: posts[0].id, userId: userMap['@davidmbaza'].id, content: 'Massive signing! Been waiting for this all summer.' },
+    { postId: posts[0].id, userId: userMap['@marcusj'].id, content: 'Great signing. The future is bright.' },
+    { postId: posts[0].id, userId: userMap['@footballdaily'].id, content: 'Official announcement expected today.' },
+    { postId: posts[1].id, userId: userMap['@sarahchen'].id, content: 'What a night! Old Trafford was electric.' },
+    { postId: posts[1].id, userId: userMap['@davidmbaza'].id, content: 'Rashford is BACK. Different player this season.' },
+    { postId: posts[3].id, userId: userMap['@pepguardiola'].id, content: 'Smart business. Tonali is a class midfielder.' },
+    { postId: posts[7].id, userId: userMap['@davidmbaza'].id, content: 'HERE WE GO! The transfer of the summer.' },
+    { postId: posts[7].id, userId: userMap['@sarahchen'].id, content: 'Finally! Been waiting for this for months.' },
+    { postId: posts[7].id, userId: userMap['@marcusj'].id, content: 'Deserves the move. Best player in the world right now.' },
+  ];
+  await prisma.comment.createMany({ data: commentDefs });
+  // Update commentCount on the posts we added comments to
+  for (const postId of [...new Set(commentDefs.map((c) => c.postId))]) {
+    const count = commentDefs.filter((c) => c.postId === postId).length;
+    await prisma.post.update({ where: { id: postId }, data: { commentCount: { increment: count } } });
+  }
+  console.log(`✅ Created ${commentDefs.length} comments`);
+
+  // ─── POLLS ──────────────────────────────────────────────────
+  await prisma.poll.deleteMany({});
+  const pollDefs = [
+    {
+      postId: posts[2].id,
+      question: 'Who wins the Premier League this season?',
+      options: JSON.stringify(['Manchester City', 'Arsenal', 'Manchester United', 'Liverpool']),
+      totalVotes: 4521,
+    },
+    {
+      postId: posts[8].id,
+      question: 'Is Rashford back to his best?',
+      options: JSON.stringify(['Yes, world-class again', 'Almost there', 'Needs more time', "No, he's done"]),
+      totalVotes: 8930,
+    },
+  ];
+  await prisma.poll.createMany({ data: pollDefs });
+  console.log(`✅ Created ${pollDefs.length} polls`);
 
   // ─── MATCHES ────────────────────────────────────────────────
   const now = new Date();

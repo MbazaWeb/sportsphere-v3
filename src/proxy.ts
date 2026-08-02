@@ -6,10 +6,22 @@ import { verifySession, SESSION_COOKIE } from '@/lib/session';
 // The function name also changed from `middleware` to `proxy`.
 // Docs: https://nextjs.org/docs/messages/middleware-to-proxy
 
-// Routes that DON'T require a session. Anything under /api/auth/* is public
-// (login, register, forgot-password, reset-password, logout, me).
-// Everything else under /api/* is protected.
-const PUBLIC_API_PREFIXES = ['/api/auth'];
+// Routes that DON'T require a session.
+// - /api/auth/* — login, register, forgot/reset password, logout, me
+// - Public content routes — guests can browse Home, Scores, and view
+//   public profiles without logging in (spec: "Guests can view all
+//   scores, fixtures, standings, statistics, lineups, match details").
+const PUBLIC_API_PREFIXES = [
+  '/api/auth',
+  '/api/feed',
+  '/api/matches',
+  '/api/standings',
+  '/api/spotlight',
+  '/api/communities',
+  '/api/users',
+  '/api/profile-data',
+  '/api/comments',
+];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
