@@ -617,5 +617,23 @@ export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
   },
 };
 
+// Neutral runtime fallback: replace verbose developer mock fixtures
+// with a minimal, non-identifying placeholder so the UI uses
+// real API data wherever available.
+const DEFAULT_MOCK: ProfileMockData = {
+  name: '',
+  avatar: '',
+  coverGradient: 'from-gray-200 to-gray-400',
+  verified: false,
+  stats: [],
+};
+
+Object.keys(PROFILE_TYPES).forEach((k) => {
+  // mutate the map to remove rich mock fixtures introduced during development
+  // components should use API-driven profile data instead of these values.
+  // @ts-expect-error runtime override
+  (PROFILE_TYPES as any)[k].mockData = DEFAULT_MOCK;
+});
+
 // Helper to get all profile types as array
 export const ALL_PROFILE_TYPES: ProfileTypeConfig[] = Object.values(PROFILE_TYPES);
