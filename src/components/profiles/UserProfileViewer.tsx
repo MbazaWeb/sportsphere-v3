@@ -518,121 +518,20 @@ function PeopleListModal({ userId, type, onClose }: {
 function OverviewTab({ apiUser, user, role }: { apiUser: ApiUser | null; user: NonNullable<ReturnType<typeof useUIStore.getState>['viewingUser']>; role: string }) {
   return (
     <div className="flex flex-col gap-3">
-      {/* Quick stats based on role */}
+      {/* Quick stats - Display real user data */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
           <BarChart3 className="h-4 w-4" /> Quick Stats
         </h3>
         <div className="grid grid-cols-2 gap-3">
-          {role === 'team' && [
-            { label: 'Founded', value: '1878' },
-            { label: 'Trophies', value: '66' },
-            { label: 'Stadium', value: '74,310' },
-            { label: 'League', value: 'PL' },
-          ].map(s => <StatCard key={s.label} {...s} />)}
-          {role === 'player' && [
-            { label: 'Position', value: 'FW' },
-            { label: 'Goals', value: '150' },
-            { label: 'Assists', value: '80' },
-            { label: 'Apps', value: '400' },
-          ].map(s => <StatCard key={s.label} {...s} />)}
-          {role === 'business' && [
-            { label: 'Products', value: '450+' },
-            { label: 'Rating', value: '4.6★' },
-            { label: 'Countries', value: '120+' },
-            { label: 'Revenue', value: '$2.8B' },
-          ].map(s => <StatCard key={s.label} {...s} />)}
-          {role === 'coach' && [
-            { label: 'Trophies', value: '37' },
-            { label: 'Win Rate', value: '72%' },
-            { label: 'Experience', value: '15y' },
-            { label: 'Team', value: 'Man City' },
-          ].map(s => <StatCard key={s.label} {...s} />)}
-          {role === 'journalist' && [
-            { label: 'Articles', value: '2.4K' },
-            { label: 'Accuracy', value: '99%' },
-            { label: 'Experience', value: '12y' },
-            { label: 'Specialty', value: 'Transfers' },
-          ].map(s => <StatCard key={s.label} {...s} />)}
-          {role === 'analyst' && [
-            { label: 'Reports', value: '1.2K' },
-            { label: 'Accuracy', value: '94%' },
-            { label: 'Models', value: '120+' },
-            { label: 'Leagues', value: '80+' },
-          ].map(s => <StatCard key={s.label} {...s} />)}
-          {role === 'creator' && [
-            { label: 'Videos', value: '3.8K' },
-            { label: 'Views', value: '450M' },
-            { label: 'Subs', value: '2.1M' },
-            { label: 'Engagement', value: '8.7%' },
-          ].map(s => <StatCard key={s.label} {...s} />)}
-          {role === 'stadium' && [
-            { label: 'Capacity', value: '74,310' },
-            { label: 'Opened', value: '1910' },
-            { label: 'Surface', value: 'Grass' },
-            { label: 'Tenant', value: 'Man Utd' },
-          ].map(s => <StatCard key={s.label} {...s} />)}
-          {!['team','player','business','coach','journalist','analyst','creator','stadium'].includes(role) && [
-            { label: 'Followers', value: formatCount(user.followers) },
-            { label: 'Posts', value: formatCount(user.posts) },
-            { label: 'Following', value: formatCount(user.following) },
-            { label: 'Joined', value: user.joined },
-          ].map(s => <StatCard key={s.label} {...s} />)}
+          <StatCard label="Followers" value={formatCount(user.followers)} />
+          <StatCard label="Following" value={formatCount(user.following)} />
+          <StatCard label="Posts" value={formatCount(user.posts)} />
+          <StatCard label="Joined" value={user.joined} />
         </div>
       </div>
 
-      {/* Shop preview for teams/businesses */}
-      {(role === 'team' || role === 'business') && (
-        <div className="glass-card rounded-2xl p-4 glass-card-hover">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
-              <ShoppingBag className="h-4 w-4" /> Official Shop
-            </h3>
-            <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-bold text-green-400">OPEN</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { name: role === 'team' ? 'Home Kit 24/25' : 'Mercurial Boots', price: 'TSh 85,000', gradient: 'from-red-600 to-red-800' },
-              { name: role === 'team' ? 'Away Kit 24/25' : 'Team Kit', price: 'TSh 85,000', gradient: 'from-blue-600 to-blue-800' },
-              { name: role === 'team' ? 'Training Top' : 'Training Ball', price: 'TSh 55,000', gradient: 'from-gray-600 to-gray-800' },
-              { name: role === 'team' ? 'Scarf' : 'Scarf', price: 'TSh 25,000', gradient: 'from-red-500 to-yellow-600' },
-            ].map((item, i) => (
-              <div key={i} className="rounded-xl overflow-hidden bg-surface border border-surface-border">
-                <div className={cn('aspect-square bg-gradient-to-b flex items-center justify-center', item.gradient)}>
-                  <span className="text-2xl font-black text-white/20">SS</span>
-                </div>
-                <div className="p-2">
-                  <p className="text-[11px] font-bold text-white leading-tight">{item.name}</p>
-                  <p className="text-[11px] font-bold text-gold">{item.price}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Tickets preview for teams/stadiums */}
-      {(role === 'team' || role === 'stadium') && (
-        <div className="glass-card rounded-2xl p-4 glass-card-hover">
-          <h3 className="mb-3 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
-            <Ticket className="h-4 w-4" /> Upcoming Tickets
-          </h3>
-          <div className="flex flex-col gap-2">
-            {[
-              { match: 'vs Arsenal', date: 'Dec 14', price: 'From TSh 45,000' },
-              { match: 'vs Newcastle', date: 'Dec 26', price: 'From TSh 35,000' },
-            ].map((t, i) => (
-              <div key={i} className="flex items-center justify-between rounded-xl bg-surface p-3">
-                <div>
-                  <p className="text-sm font-bold text-white">{t.match}</p>
-                  <p className="text-[10px] text-muted-foreground">{t.date} · {t.price}</p>
-                </div>
-                <span className="rounded-lg bg-gold px-3 py-1 text-[10px] font-bold text-black uppercase">Pre-book</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Shop preview - removed hardcoded, users can navigate to Shop tab for real products */}
 
       {/* About preview */}
       {apiUser?.aboutMe && (
@@ -661,25 +560,8 @@ function StatCard({ label, value }: { label: string; value: string }) {
 function ShopTab({ role }: { role: string }) {
   const [shopSubtab, setShopSubtab] = useState<'products' | 'tickets'>('products');
 
-  const products = role === 'business'
-    ? [
-        { name: 'Mercurial Boots', price: 'TSh 180,000', usd: '$95', gradient: 'from-purple-600 to-pink-700', stock: 'In stock' },
-        { name: 'Team Kit 24/25', price: 'TSh 85,000', usd: '$45', gradient: 'from-blue-600 to-cyan-700', stock: 'In stock' },
-        { name: 'Training Ball', price: 'TSh 45,000', usd: '$24', gradient: 'from-orange-600 to-red-700', stock: 'Low stock' },
-        { name: 'Supporter Scarf', price: 'TSh 25,000', usd: '$13', gradient: 'from-red-500 to-yellow-600', stock: 'Sold out' },
-      ]
-    : [
-        { name: 'Home Kit 24/25', price: 'TSh 85,000', usd: '$45', gradient: 'from-red-600 to-red-800', stock: 'In stock' },
-        { name: 'Away Kit 24/25', price: 'TSh 85,000', usd: '$45', gradient: 'from-blue-600 to-blue-800', stock: 'In stock' },
-        { name: 'Training Top', price: 'TSh 55,000', usd: '$29', gradient: 'from-gray-600 to-gray-800', stock: 'Low stock' },
-        { name: 'Scarf', price: 'TSh 25,000', usd: '$13', gradient: 'from-red-500 to-yellow-600', stock: 'Sold out' },
-      ];
-
-  const tickets = [
-    { match: 'vs Arsenal', date: 'Sat Dec 14', kickoff: '17:30', price: 'From TSh 45,000', available: true },
-    { match: 'vs Newcastle', date: 'Thu Dec 26', kickoff: '20:00', price: 'From TSh 35,000', available: true },
-    { match: 'vs Liverpool', date: 'Sun Jan 5', kickoff: '16:30', price: 'From TSh 55,000', available: false },
-  ];
+  const products: any[] = [];
+  const tickets: any[] = [];
 
   return (
     <div>
@@ -718,56 +600,72 @@ function ShopTab({ role }: { role: string }) {
       {/* Products sub-tab */}
       {shopSubtab === 'products' && (
         <>
-          <div className="grid grid-cols-2 gap-3">
-            {products.map((item, i) => (
-              <div key={i} className="glass-card rounded-xl overflow-hidden glass-card-hover">
-                <div className={cn('relative aspect-square bg-gradient-to-b flex items-center justify-center', item.gradient)}>
-                  <span className="text-3xl font-black text-white/20">SS</span>
-                  {item.stock === 'Sold out' && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                      <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white uppercase">Sold Out</span>
-                    </div>
-                  )}
-                </div>
-                <div className="p-3">
-                  <p className="text-xs font-bold text-white leading-tight">{item.name}</p>
-                  <div className="mt-1 flex items-center justify-between">
-                    <p className="text-xs font-bold text-gold">{item.price}</p>
-                    <p className="text-[9px] text-muted-foreground">{item.usd}</p>
+          {products.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <ShoppingBag className="h-8 w-8 text-muted-foreground/30 mb-2" />
+              <p className="text-sm text-muted-foreground">No products available</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {products.map((item, i) => (
+                <div key={i} className="glass-card rounded-xl overflow-hidden glass-card-hover">
+                  <div className={cn('relative aspect-square bg-gradient-to-b flex items-center justify-center', item.gradient)}>
+                    <span className="text-3xl font-black text-white/20">SS</span>
+                    {item.stock === 'Sold out' && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                        <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white uppercase">Sold Out</span>
+                      </div>
+                    )}
                   </div>
-                  <p className={cn('mt-1 text-[9px] font-semibold', item.stock === 'Sold out' ? 'text-red-400' : item.stock === 'Low stock' ? 'text-yellow-400' : 'text-green-400')}>{item.stock}</p>
-                  {item.stock !== 'Sold out' && (
-                    <button className="mt-2 w-full rounded-lg bg-gold py-1.5 text-[10px] font-bold text-black">Add to Cart</button>
-                  )}
+                  <div className="p-3">
+                    <p className="text-xs font-bold text-white leading-tight">{item.name}</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <p className="text-xs font-bold text-gold">{item.price}</p>
+                      <p className="text-[9px] text-muted-foreground">{item.usd}</p>
+                    </div>
+                    <p className={cn('mt-1 text-[9px] font-semibold', item.stock === 'Sold out' ? 'text-red-400' : item.stock === 'Low stock' ? 'text-yellow-400' : 'text-green-400')}>{item.stock}</p>
+                    {item.stock !== 'Sold out' && (
+                      <button className="mt-2 w-full rounded-lg bg-gold py-1.5 text-[10px] font-bold text-black">Add to Cart</button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </>
       )}
 
       {/* Tickets sub-tab */}
       {shopSubtab === 'tickets' && (
-        <div className="flex flex-col gap-3">
-          {tickets.map((t, i) => (
-            <div key={i} className="glass-card rounded-2xl p-4 glass-card-hover">
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <p className="text-sm font-bold text-white">{t.match}</p>
-                  <p className="text-[10px] text-muted-foreground">{t.date} · {t.kickoff}</p>
-                </div>
-                <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold uppercase',
-                  t.available ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400')}>
-                  {t.available ? 'Available' : 'Sold Out'}
-                </span>
-              </div>
-              <p className="text-sm font-bold text-gold mb-2">{t.price}</p>
-              {t.available && (
-                <button className="w-full rounded-xl bg-gold py-2 text-sm font-bold text-black">Pre-Book</button>
-              )}
+        <>
+          {tickets.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <Ticket className="h-8 w-8 text-muted-foreground/30 mb-2" />
+              <p className="text-sm text-muted-foreground">No tickets available</p>
             </div>
-          ))}
-        </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {tickets.map((t, i) => (
+                <div key={i} className="glass-card rounded-2xl p-4 glass-card-hover">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="text-sm font-bold text-white">{t.match}</p>
+                      <p className="text-[10px] text-muted-foreground">{t.date} · {t.kickoff}</p>
+                    </div>
+                    <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold uppercase',
+                      t.available ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400')}>
+                      {t.available ? 'Available' : 'Sold Out'}
+                    </span>
+                  </div>
+                  <p className="text-sm font-bold text-gold mb-2">{t.price}</p>
+                  {t.available && (
+                    <button className="w-full rounded-xl bg-gold py-2 text-sm font-bold text-black">Pre-Book</button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Payment & Delivery info (shared) */}
@@ -804,29 +702,9 @@ function TicketsTab() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3">
-        {[
-          { match: 'vs Arsenal', date: 'Sat Dec 14', kickoff: '17:30', price: 'From TSh 45,000', available: true },
-          { match: 'vs Newcastle', date: 'Thu Dec 26', kickoff: '20:00', price: 'From TSh 35,000', available: true },
-          { match: 'vs Liverpool', date: 'Sun Jan 5', kickoff: '16:30', price: 'From TSh 55,000', available: false },
-        ].map((t, i) => (
-          <div key={i} className="glass-card rounded-2xl p-4 glass-card-hover">
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <p className="text-sm font-bold text-white">{t.match}</p>
-                <p className="text-[10px] text-muted-foreground">{t.date} · {t.kickoff}</p>
-              </div>
-              <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold uppercase',
-                t.available ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400')}>
-                {t.available ? 'Available' : 'Sold Out'}
-              </span>
-            </div>
-            <p className="text-sm font-bold text-gold mb-2">{t.price}</p>
-            {t.available && (
-              <button className="w-full rounded-xl bg-gold py-2 text-sm font-bold text-black">Pre-Book</button>
-            )}
-          </div>
-        ))}
+      <div className="flex flex-col items-center justify-center py-8">
+        <Ticket className="h-8 w-8 text-muted-foreground/30 mb-2" />
+        <p className="text-sm text-muted-foreground">Ticket data unavailable</p>
       </div>
 
       <div className="mt-4 glass-card rounded-2xl p-4">
@@ -854,19 +732,19 @@ function StatsTab({ role, apiUser }: { role: string; apiUser: ApiUser | null }) 
         </h3>
         <div className="grid grid-cols-3 gap-3">
           {(role === 'player' ? [
-            { label: 'Goals', value: rp.goals || '150' },
-            { label: 'Assists', value: rp.assists || '80' },
-            { label: 'Apps', value: rp.appearances || '400' },
-            { label: 'Position', value: rp.position || 'FW' },
-            { label: 'Height', value: rp.height || '180cm' },
-            { label: 'Foot', value: rp.preferredFoot || 'Right' },
+            { label: 'Goals', value: rp.goals || 'N/A' },
+            { label: 'Assists', value: rp.assists || 'N/A' },
+            { label: 'Apps', value: rp.appearances || 'N/A' },
+            { label: 'Position', value: rp.position || 'N/A' },
+            { label: 'Height', value: rp.height || 'N/A' },
+            { label: 'Foot', value: rp.preferredFoot || 'N/A' },
           ] : [
-            { label: 'Trophies', value: '37' },
-            { label: 'Win Rate', value: '72%' },
-            { label: 'Experience', value: '15y' },
-            { label: 'Formation', value: rp.formation || '4-3-3' },
-            { label: 'License', value: rp.license || 'UEFA Pro' },
-            { label: 'Team', value: rp.currentTeam || 'Man City' },
+            { label: 'Trophies', value: rp.trophies || 'N/A' },
+            { label: 'Win Rate', value: rp.winRate || 'N/A' },
+            { label: 'Experience', value: rp.experience || 'N/A' },
+            { label: 'Formation', value: rp.formation || 'N/A' },
+            { label: 'License', value: rp.license || 'N/A' },
+            { label: 'Team', value: rp.currentTeam || 'N/A' },
           ]).map(s => <StatCard key={s.label} {...s} />)}
         </div>
       </div>
@@ -876,20 +754,9 @@ function StatsTab({ role, apiUser }: { role: string; apiUser: ApiUser | null }) 
         <h3 className="mb-3 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
           <BarChart3 className="h-4 w-4" /> Last 5 Matches
         </h3>
-        <div className="flex items-end justify-between gap-2 h-32">
-          {[3, 2, 1, 2, 1].map((rating, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1">
-              <div className={cn('w-full rounded-t',
-                rating === 3 ? 'bg-green-500' : rating === 2 ? 'bg-yellow-500' : 'bg-red-500'
-              )} style={{ height: `${(rating / 3) * 100}%` }} />
-              <span className="text-[9px] text-muted-foreground">M{i + 1}</span>
-            </div>
-          ))}
-        </div>
-        <div className="mt-2 flex justify-between text-[10px]">
-          <span className="text-green-400">Win</span>
-          <span className="text-yellow-400">Draw</span>
-          <span className="text-red-400">Loss</span>
+        <div className="flex items-center justify-center py-8">
+          <BarChart3 className="h-8 w-8 text-muted-foreground/30 mb-2" />
+          <p className="text-sm text-muted-foreground">Performance data unavailable</p>
         </div>
       </div>
     </div>
@@ -903,22 +770,9 @@ function CareerTab() {
       <h3 className="mb-3 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
         <Trophy className="h-4 w-4" /> Career History
       </h3>
-      <div className="flex flex-col gap-3">
-        {[
-          { club: 'Manchester United', period: '2020 - Present', apps: 180, goals: 75 },
-          { club: 'Academy', period: '2016 - 2020', apps: 60, goals: 25 },
-        ].map((c, i) => (
-          <div key={i} className="rounded-xl bg-surface p-3">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-sm font-bold text-white">{c.club}</p>
-              <span className="text-[10px] text-muted-foreground">{c.period}</span>
-            </div>
-            <div className="flex gap-4 text-[10px] text-muted-foreground">
-              <span>Apps: <span className="text-white font-bold">{c.apps}</span></span>
-              <span>Goals: <span className="text-white font-bold">{c.goals}</span></span>
-            </div>
-          </div>
-        ))}
+      <div className="flex flex-col items-center justify-center py-8">
+        <Trophy className="h-8 w-8 text-muted-foreground/30 mb-2" />
+        <p className="text-sm text-muted-foreground">Career data unavailable</p>
       </div>
     </div>
   );
@@ -927,53 +781,9 @@ function CareerTab() {
 // ─── Analyst Tools Tab ────────────────────────────────────────
 function AnalystToolsTab() {
   return (
-    <div className="flex flex-col gap-3">
-      <div className="glass-card rounded-2xl p-4 glass-card-hover">
-        <h3 className="mb-3 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
-          <BarChart3 className="h-4 w-4" /> Performance Graph
-        </h3>
-        <div className="flex items-end justify-between gap-1 h-32">
-          {[65, 72, 80, 68, 85, 92, 78, 88, 95, 90].map((val, i) => (
-            <div key={i} className="flex-1 rounded-t bg-gradient-to-t from-cyan-500 to-blue-400" style={{ height: `${val}%` }} />
-          ))}
-        </div>
-      </div>
-      <div className="glass-card rounded-2xl p-4 glass-card-hover">
-        <h3 className="mb-3 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
-          <Target className="h-4 w-4" /> xG Analysis
-        </h3>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl bg-surface p-3">
-            <p className="text-[10px] text-muted-foreground uppercase">xG For</p>
-            <p className="text-xl font-black text-green-400">2.34</p>
-          </div>
-          <div className="rounded-xl bg-surface p-3">
-            <p className="text-[10px] text-muted-foreground uppercase">xG Against</p>
-            <p className="text-xl font-black text-red-400">0.89</p>
-          </div>
-        </div>
-      </div>
-      <div className="glass-card rounded-2xl p-4 glass-card-hover">
-        <h3 className="mb-3 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
-          <Database className="h-4 w-4" /> Models
-        </h3>
-        <div className="flex flex-col gap-2">
-          {[
-            { name: 'xG Model v3.2', accuracy: 94 },
-            { name: 'PPDA Pressure', accuracy: 87 },
-          ].map((m, i) => (
-            <div key={i} className="rounded-xl bg-surface p-2">
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-white">{m.name}</span>
-                <span className="text-cyan-400 font-bold">{m.accuracy}%</span>
-              </div>
-              <div className="h-1.5 rounded-full bg-surface-border">
-                <div className="h-full rounded-full bg-cyan-400" style={{ width: `${m.accuracy}%` }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="flex flex-col items-center justify-center py-8">
+      <Database className="h-8 w-8 text-muted-foreground/30 mb-2" />
+      <p className="text-sm text-muted-foreground">Analysis tools unavailable</p>
     </div>
   );
 }
@@ -981,27 +791,9 @@ function AnalystToolsTab() {
 // ─── Squad Tab ────────────────────────────────────────────────
 function SquadTab() {
   return (
-    <div className="glass-card rounded-2xl p-4 glass-card-hover">
-      <h3 className="mb-3 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
-        <Users className="h-4 w-4" /> Squad
-      </h3>
-      <div className="flex flex-col gap-2">
-        {[
-          { name: 'Marcus Rashford', pos: 'FW', num: 10 },
-          { name: 'Bruno Fernandes', pos: 'MF', num: 8 },
-          { name: 'Casemiro', pos: 'MF', num: 18 },
-          { name: 'Lisandro Martínez', pos: 'DF', num: 6 },
-        ].map((p, i) => (
-          <div key={i} className="flex items-center gap-3 rounded-xl bg-surface p-3">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/10 text-xs font-bold text-gold">{p.num}</span>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-white">{p.name}</p>
-              <p className="text-[10px] text-muted-foreground">{p.pos}</p>
-            </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
-          </div>
-        ))}
-      </div>
+    <div className="flex flex-col items-center justify-center py-8">
+      <Users className="h-8 w-8 text-muted-foreground/30 mb-2" />
+      <p className="text-sm text-muted-foreground">Squad data unavailable</p>
     </div>
   );
 }
@@ -1009,25 +801,9 @@ function SquadTab() {
 // ─── Facilities Tab ───────────────────────────────────────────
 function FacilitiesTab() {
   return (
-    <div className="flex flex-col gap-3">
-      <div className="glass-card rounded-2xl p-4 glass-card-hover">
-        <h3 className="mb-3 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
-          <Building className="h-4 w-4" /> Stadium Info
-        </h3>
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard label="Capacity" value="74,310" />
-          <StatCard label="Opened" value="1910" />
-          <StatCard label="Surface" value="Grass" />
-          <StatCard label="Pitch" value="105×68m" />
-        </div>
-      </div>
-      <div className="glass-card rounded-2xl p-4 glass-card-hover">
-        <h3 className="mb-3 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
-          <MapPin className="h-4 w-4" /> Location & Parking
-        </h3>
-        <p className="text-sm text-white">Sir Matt Busby Way, Manchester M16 0RA</p>
-        <p className="text-[10px] text-muted-foreground mt-1">3,000 parking spaces · Metro access</p>
-      </div>
+    <div className="flex flex-col items-center justify-center py-8">
+      <Building className="h-8 w-8 text-muted-foreground/30 mb-2" />
+      <p className="text-sm text-muted-foreground">Facilities data unavailable</p>
     </div>
   );
 }
@@ -1035,17 +811,9 @@ function FacilitiesTab() {
 // ─── Articles Tab (journalists) ───────────────────────────────
 function ArticlesTab() {
   return (
-    <div className="flex flex-col gap-2">
-      {[
-        { title: 'Breaking: Major transfer confirmed', time: '5m ago' },
-        { title: 'Match preview: Key tactical battles', time: '30m ago' },
-        { title: 'Injury update ahead of the weekend', time: '2h ago' },
-      ].map((a, i) => (
-        <div key={i} className="glass-card rounded-xl p-3 glass-card-hover">
-          <p className="text-sm font-bold text-white">{a.title}</p>
-          <p className="text-[10px] text-muted-foreground mt-1">{a.time}</p>
-        </div>
-      ))}
+    <div className="flex flex-col items-center justify-center py-8">
+      <Newspaper className="h-8 w-8 text-muted-foreground/30 mb-2" />
+      <p className="text-sm text-muted-foreground">Articles unavailable</p>
     </div>
   );
 }

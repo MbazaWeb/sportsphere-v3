@@ -385,25 +385,10 @@ function TeamOverview() {
         <h3 className="mb-3 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
           <Ticket className="h-4 w-4" /> Upcoming Match Tickets
         </h3>
-        <div className="flex flex-col gap-2">
-          {[
-            { match: 'vs Arsenal', date: 'Dec 14', price: 'From TSh 45,000', available: true },
-            { match: 'vs Newcastle', date: 'Dec 26', price: 'From TSh 35,000', available: true },
-            { match: 'vs Liverpool', date: 'Jan 5', price: 'From TSh 55,000', available: false },
-          ].map((t, i) => (
-            <div key={i} className="flex items-center justify-between rounded-xl bg-surface p-3">
-              <div>
-                <p className="text-sm font-bold text-white">{t.match}</p>
-                <p className="text-[10px] text-muted-foreground">{t.date} · {t.price}</p>
-              </div>
-              <span className={cn(
-                'rounded-lg px-3 py-1 text-[10px] font-bold uppercase',
-                t.available ? 'bg-gold text-black' : 'bg-surface border border-surface-border text-muted-foreground'
-              )}>
-                {t.available ? 'Pre-book' : 'Sold Out'}
-              </span>
-            </div>
-          ))}
+        <div className="flex flex-col items-center justify-center py-6">
+          <Ticket className="h-8 w-8 text-muted-foreground/30 mb-2" />
+          <p className="text-sm text-muted-foreground">Ticket data unavailable</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">Check the Fixtures tab for match details</p>
         </div>
       </div>
     </>
@@ -781,23 +766,14 @@ function CoachOverview() {
 function StadiumOverview() {
   return (
     <>
-      <InfoCard title="Next Event" subtitle="Dec 14" detail="Man Utd vs Arsenal · PL" accent="text-gold" icon={Calendar} />
-      <InfoCard title="Facilities" subtitle="Available" detail="Parking, VIP Boxes, Museum" accent="text-blue-400" icon={Building} />
+      <InfoCard title="Next Event" subtitle="N/A" detail="No upcoming matches" accent="text-gold" icon={Calendar} />
+      <InfoCard title="Facilities" subtitle="Available" detail="Contact for details" accent="text-blue-400" icon={Building} />
       
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 text-sm font-bold text-white">Stadium Information</h3>
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: 'Capacity', value: '74,310' },
-            { label: 'Built', value: '1910' },
-            { label: 'Surface', value: 'Grass' },
-            { label: 'Rating', value: '4.8 ★' },
-          ].map((info) => (
-            <div key={info.label} className="rounded-xl bg-surface p-3 text-center">
-              <p className="text-sm font-bold text-gold">{info.value}</p>
-              <p className="text-[10px] text-muted-foreground">{info.label}</p>
-            </div>
-          ))}
+        <div className="flex flex-col items-center justify-center py-6">
+          <Building className="h-8 w-8 text-muted-foreground/30 mb-2" />
+          <p className="text-sm text-muted-foreground">Stadium data unavailable</p>
         </div>
       </div>
     </>
@@ -808,23 +784,14 @@ function StadiumOverview() {
 function VenueOverview() {
   return (
     <>
-      <InfoCard title="Upcoming Event" subtitle="Next" detail="Concert: Taylor Swift · Dec 20" accent="text-gold" icon={Calendar} />
-      <InfoCard title="Location" subtitle="Address" detail="London, England · Wembley Park" accent="text-blue-400" icon={MapPin} />
+      <InfoCard title="Upcoming Event" subtitle="N/A" detail="No upcoming events" accent="text-gold" icon={Calendar} />
+      <InfoCard title="Location" subtitle="Address" detail="Contact venue for details" accent="text-blue-400" icon={MapPin} />
       
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 text-sm font-bold text-white">Venue Details</h3>
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: 'Capacity', value: '90,000' },
-            { label: 'Events/Yr', value: '32+' },
-            { label: 'Parking', value: '2,000' },
-            { label: 'Rating', value: '4.7 ★' },
-          ].map((info) => (
-            <div key={info.label} className="rounded-xl bg-surface p-3 text-center">
-              <p className="text-sm font-bold text-gold">{info.value}</p>
-              <p className="text-[10px] text-muted-foreground">{info.label}</p>
-            </div>
-          ))}
+        <div className="flex flex-col items-center justify-center py-6">
+          <MapPin className="h-8 w-8 text-muted-foreground/30 mb-2" />
+          <p className="text-sm text-muted-foreground">Venue data unavailable</p>
         </div>
       </div>
     </>
@@ -835,17 +802,14 @@ function VenueOverview() {
 function AcademyOverview() {
   return (
     <>
-      <InfoCard title="Current Enrollment" subtitle="2024/25 Season" detail="240 Students · 12 Teams" accent="text-gold" icon={Users} />
-      <InfoCard title="Programs" subtitle="Available" detail="U8 to U18 · Residential & Day" accent="text-blue-400" icon={GraduationCap} />
+      <InfoCard title="Current Enrollment" subtitle="2024/25 Season" detail="N/A" accent="text-gold" icon={Users} />
+      <InfoCard title="Programs" subtitle="Available" detail="Contact academy for details" accent="text-blue-400" icon={GraduationCap} />
       
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 text-sm font-bold text-white">Notable Alumni</h3>
-        <div className="flex gap-2 flex-wrap">
-          {['Messi', 'Xavi', 'Iniesta', 'Puyol', 'Busquets'].map((alum) => (
-            <span key={alum} className="rounded-lg bg-gold/10 border border-gold/20 px-3 py-1 text-xs font-semibold text-gold">
-              {alum}
-            </span>
-          ))}
+        <div className="flex flex-col items-center justify-center py-6">
+          <Award className="h-8 w-8 text-muted-foreground/30 mb-2" />
+          <p className="text-sm text-muted-foreground">Alumni data unavailable</p>
         </div>
       </div>
     </>
@@ -856,22 +820,14 @@ function AcademyOverview() {
 function CommunityOverview() {
   return (
     <>
-      <InfoCard title="Active Now" subtitle="Online" detail="2,412 members online" accent="text-gold" icon={Users} />
-      <InfoCard title="Top Discussion" subtitle="Trending" detail="Match day thread: Man Utd vs Arsenal" accent="text-yellow-400" icon={Flame} />
+      <InfoCard title="Active Now" subtitle="Online" detail="Members online" accent="text-gold" icon={Users} />
+      <InfoCard title="Top Discussion" subtitle="Trending" detail="Loading community data..." accent="text-yellow-400" icon={Flame} />
       
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 text-sm font-bold text-white">Community Stats</h3>
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: 'Members', value: '125K' },
-            { label: 'Posts/Day', value: '340' },
-            { label: 'Created', value: '2023' },
-          ].map((stat) => (
-            <div key={stat.label} className="rounded-xl bg-surface p-3 text-center">
-              <p className="text-sm font-bold text-gold">{stat.value}</p>
-              <p className="text-[10px] text-muted-foreground">{stat.label}</p>
-            </div>
-          ))}
+        <div className="flex flex-col items-center justify-center py-6">
+          <Users className="h-8 w-8 text-muted-foreground/30 mb-2" />
+          <p className="text-sm text-muted-foreground">Community data unavailable</p>
         </div>
       </div>
     </>
@@ -978,21 +934,9 @@ function BusinessOverview() {
         <h3 className="mb-3 flex items-center gap-1.5 text-sm font-bold text-white">
           <Tag className="h-4 w-4 text-gold" /> Official Sponsorships
         </h3>
-        <div className="flex flex-col gap-2">
-          {[
-            { team: 'Manchester United', type: 'Kit Sponsor', since: '2016' },
-            { team: 'Barcelona', type: 'Apparel', since: '2018' },
-            { team: 'Paris Saint-Germain', type: 'Kit Sponsor', since: '2019' },
-            { team: 'Brazil National Team', type: 'Apparel', since: '2020' },
-          ].map((s, i) => (
-            <div key={i} className="flex items-center justify-between rounded-xl bg-surface p-2.5">
-              <div>
-                <p className="text-xs font-bold text-white">{s.team}</p>
-                <p className="text-[10px] text-muted-foreground">{s.type} · Since {s.since}</p>
-              </div>
-              <span className="rounded-full bg-gold/10 px-2 py-0.5 text-[9px] font-bold text-gold uppercase">Active</span>
-            </div>
-          ))}
+        <div className="flex flex-col items-center justify-center py-6">
+          <Tag className="h-8 w-8 text-muted-foreground/30 mb-2" />
+          <p className="text-sm text-muted-foreground">Sponsorship data unavailable</p>
         </div>
       </div>
     </>
@@ -1547,22 +1491,12 @@ function StatisticsContent() {
 // ─── Matches Content ──────────────────────────────────────────
 function MatchesContent() {
   return (
-    <div className="flex flex-col gap-2">
-      {[
-        { title: 'Man Utd vs Arsenal', comp: 'Premier League', date: 'Dec 14', status: 'Upcoming' },
-        { title: 'Man Utd vs Bayern Munich', comp: 'Champions League', date: 'Dec 10', status: 'Finished 2–1' },
-        { title: 'Tottenham vs Man Utd', comp: 'Premier League', date: 'Dec 7', status: 'Finished 0–3' },
-      ].map((m, i) => (
-        <div key={i} className="glass-card rounded-xl p-3 glass-card-hover">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold text-white">{m.title}</p>
-              <p className="text-xs text-muted-foreground">{m.comp} · {m.date}</p>
-            </div>
-            <span className={cn('text-xs font-medium', m.status === 'Upcoming' ? 'text-gold' : 'text-muted-foreground')}>{m.status}</span>
-          </div>
-        </div>
-      ))}
+    <div className="flex flex-col items-center justify-center py-12">
+      <Trophy className="h-12 w-12 text-muted-foreground/30 mb-3" />
+      <h2 className="text-lg font-bold text-white mb-1">Match Data Unavailable</h2>
+      <p className="text-sm text-muted-foreground text-center max-w-xs">
+        Match information and results will be displayed here when real data is available.
+      </p>
     </div>
   );
 }
@@ -1570,11 +1504,11 @@ function MatchesContent() {
 // ─── Timeline Content ─────────────────────────────────────────
 function TimelineContent() {
   const events = [
-    { min: 78, type: 'goal', text: 'Rashford fires in the winner! 2–1 Man Utd', team: 'home' },
-    { min: 56, type: 'goal', text: 'Rashford equalizes! 1–1', team: 'home' },
+    { min: 78, type: 'goal', text: 'Match goal event', team: 'home' },
+    { min: 56, type: 'goal', text: 'Match goal event', team: 'home' },
     { min: 45, type: 'info', text: 'Second half begins', team: null },
-    { min: 34, type: 'goal', text: 'Saka scores for Arsenal 0–1', team: 'away' },
-    { min: 23, type: 'goal', text: 'Rashford opens the scoring! 1–0', team: 'home' },
+    { min: 34, type: 'goal', text: 'Match goal event', team: 'away' },
+    { min: 23, type: 'goal', text: 'Match goal event', team: 'home' },
     { min: 1,  type: 'info', text: 'Kick off!', team: null },
   ];
   return (
@@ -2231,130 +2165,16 @@ function ProductOrderFlow({ product, onClose }: {
 
 // ─── Tickets Content (full pre-book flow) ─────────────────────
 function TicketsContent() {
-  const [selectedMatch, setSelectedMatch] = useState<number | null>(null);
-
-  const matches = [
-    {
-      match: 'Man Utd vs Arsenal',
-      competition: 'Premier League',
-      date: 'Saturday, Dec 14',
-      kickoff: '17:30',
-      venue: 'Old Trafford',
-      available: true,
-      tiers: [
-        { name: 'Family Stand', price: 'TSh 45,000', priceUsd: '$24', available: 120, color: 'bg-green-500' },
-        { name: 'Stretford End', price: 'TSh 65,000', priceUsd: '$34', available: 45, color: 'bg-yellow-500' },
-        { name: 'East Stand', price: 'TSh 85,000', priceUsd: '$45', available: 18, color: 'bg-orange-500' },
-        { name: 'VIP Hospitality', price: 'TSh 250,000', priceUsd: '$130', available: 5, color: 'bg-red-500' },
-      ],
-    },
-    {
-      match: 'Man Utd vs Newcastle',
-      competition: 'Premier League',
-      date: 'Thursday, Dec 26',
-      kickoff: '20:00',
-      venue: 'Old Trafford',
-      available: true,
-      tiers: [
-        { name: 'Family Stand', price: 'TSh 35,000', priceUsd: '$18', available: 200, color: 'bg-green-500' },
-        { name: 'Stretford End', price: 'TSh 55,000', priceUsd: '$29', available: 80, color: 'bg-yellow-500' },
-        { name: 'East Stand', price: 'TSh 75,000', priceUsd: '$39', available: 30, color: 'bg-orange-500' },
-        { name: 'VIP Hospitality', price: 'TSh 220,000', priceUsd: '$115', available: 8, color: 'bg-red-500' },
-      ],
-    },
-    {
-      match: 'Man Utd vs Liverpool',
-      competition: 'Premier League',
-      date: 'Sunday, Jan 5',
-      kickoff: '16:30',
-      venue: 'Old Trafford',
-      available: false,
-      tiers: [],
-    },
-  ];
-
   return (
-    <div>
-      {/* Ticket info banner */}
-      <div className="mb-4 flex items-center justify-between rounded-2xl bg-gradient-to-r from-gold/10 to-gold/5 border border-gold/20 p-3">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/15">
-            <Ticket className="h-4 w-4 text-gold" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-white">Match Tickets</p>
-            <p className="text-[10px] text-muted-foreground">Pre-book · Mobile tickets · No queuing</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Match list */}
-      <div className="flex flex-col gap-3">
-        {matches.map((m, i) => (
-          <div key={i} className="glass-card rounded-2xl p-4 glass-card-hover">
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <p className="text-sm font-bold text-white">{m.match}</p>
-                <p className="text-[10px] text-muted-foreground">{m.competition}</p>
-              </div>
-              <span className={cn(
-                'rounded-full px-2 py-0.5 text-[9px] font-bold uppercase',
-                m.available ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'
-              )}>
-                {m.available ? 'Available' : 'Sold Out'}
-              </span>
-            </div>
-            <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-3">
-              <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {m.date}</span>
-              <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {m.kickoff}</span>
-              <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {m.venue}</span>
-            </div>
-
-            {m.available && (
-              <>
-                {m.tiers.length > 0 && (
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    {m.tiers.map((tier, ti) => (
-                      <div key={ti} className="rounded-xl bg-surface p-2.5 border border-surface-border">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className={cn('h-2 w-2 rounded-full', tier.color)} />
-                          <p className="text-[11px] font-bold text-white">{tier.name}</p>
-                        </div>
-                        <p className="text-xs font-bold text-gold">{tier.price}</p>
-                        <p className="text-[9px] text-muted-foreground">{tier.priceUsd} · {tier.available} left</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <button
-                  onClick={() => setSelectedMatch(selectedMatch === i ? null : i)}
-                  className="w-full rounded-xl bg-gold py-2.5 text-sm font-bold text-black hover:bg-gold/90"
-                >
-                  {selectedMatch === i ? 'Close' : 'Pre-Book Tickets'}
-                </button>
-                {selectedMatch === i && (
-                  <TicketBookingFlow match={m} onClose={() => setSelectedMatch(null)} />
-                )}
-              </>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Payment info */}
-      <div className="mt-4 glass-card rounded-2xl p-4">
-        <h3 className="mb-2 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
-          <CreditCard className="h-3.5 w-3.5" /> Payment & Delivery
-        </h3>
-        <div className="flex flex-wrap gap-1 mb-2">
-          {['M-Pesa', 'Tigo Pesa', 'Airtel Money', 'Visa', 'Mastercard'].map(p => (
-            <span key={p} className="rounded bg-surface px-1.5 py-0.5 text-[9px] text-white">{p}</span>
-          ))}
-        </div>
-        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-          <Truck className="h-3 w-3 text-gold" /> Mobile ticket · Instant delivery to your phone
-        </p>
-      </div>
+    <div className="flex flex-col items-center justify-center py-12">
+      <Ticket className="h-12 w-12 text-muted-foreground/30 mb-3" />
+      <h2 className="text-lg font-bold text-white mb-1">Ticket Data Unavailable</h2>
+      <p className="text-sm text-muted-foreground text-center max-w-xs">
+        Match tickets and booking information will be displayed here when real data is available.
+      </p>
+      <p className="text-xs text-muted-foreground/60 mt-3">
+        Check back later for upcoming matches and ticket availability.
+      </p>
     </div>
   );
 }
