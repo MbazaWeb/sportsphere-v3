@@ -1,4 +1,5 @@
 'use client';
+import React from 'react';
 
 import { useNavigationStore } from '@/store/navigationStore';
 import { useAuthStore } from '@/store/authStore';
@@ -21,7 +22,38 @@ import { useServiceWorker } from '@/hooks/useServiceWorker';
 function LoginModal() {
   const { loginModalOpen, setLoginModalOpen } = useUIStore();
   const setIsAuthenticated = useAuthStore((s) => s.setIsAuthenticated);
+  const setUserProfile = useAuthStore((s) => s.setUserProfile);
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+
   if (!loginModalOpen) return null;
+
+  const handleLogin = async () => {
+    setError(''); setLoading(true);
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Login failed'); setLoading(false); return; }
+      setUserProfile({
+        id: data.id, name: data.name, email: data.email,
+        handle: data.handle, avatar: data.avatar, role: data.role,
+        verificationStatus: data.verificationStatus, bio: data.bio,
+        sportsFollowing: data.sportsFollowing, registeredAt: new Date().toISOString(),
+        roleData: data.roleData,
+      });
+      setIsAuthenticated(true);
+      setLoginModalOpen(false);
+      setEmail(''); setPassword('');
+    } catch { setError('Network error. Please try again.'); }
+    setLoading(false);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
@@ -32,25 +64,39 @@ function LoginModal() {
             <X className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
-        <div className="mb-4">
+
+        <div className="mb-3 rounded-xl bg-gold/10 border border-gold/20 p-3">
+          <p className="text-xs text-gold font-medium">Test account password: <span className="font-black">SportSphere2024!</span></p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">e.g. david@example.com · rashford@mufc.com · pep@mancity.com</p>
+        </div>
+
+        {error && (
+          <div className="mb-3 rounded-xl bg-red-500/10 border border-red-500/20 p-3">
+            <p className="text-xs text-red-400">{error}</p>
+          </div>
+        )}
+        <div className="mb-3">
           <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Email</label>
-          <input type="email" placeholder="your@email.com" className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold" />
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            placeholder="your@email.com"
+            className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold" />
         </div>
-        <div className="mb-6">
+        <div className="mb-5">
           <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Password</label>
-          <input type="password" placeholder="••••••••" className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold" />
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            placeholder="••••••••"
+            className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold" />
         </div>
-        <button onClick={() => { setIsAuthenticated(true); setLoginModalOpen(false); }}
-          className="w-full rounded-xl bg-gold py-3 text-sm font-bold text-black hover:bg-gold/90 transition-colors">
-          Sign In
+        <button onClick={handleLogin} disabled={loading || !email || !password}
+          className="w-full rounded-xl bg-gold py-3 text-sm font-bold text-black hover:bg-gold/90 transition-colors disabled:opacity-50">
+          {loading ? 'Signing in...' : 'Sign In'}
         </button>
-        <div className="mt-4 flex gap-3">
-          {(['Google', 'Apple'] as const).map((p) => (
-            <button key={p} onClick={() => { setIsAuthenticated(true); setLoginModalOpen(false); }}
-              className="flex h-11 flex-1 items-center justify-center rounded-xl bg-surface border border-surface-border text-sm font-medium text-white hover:bg-surface-elevated transition-colors">
-              {p}
-            </button>
-          ))}
+        <div className="mt-3 text-center">
+          <p className="text-xs text-muted-foreground">
+            No account? <button onClick={() => { setLoginModalOpen(false); }} className="text-gold hover:underline">Create one</button>
+          </p>
         </div>
       </motion.div>
     </div>

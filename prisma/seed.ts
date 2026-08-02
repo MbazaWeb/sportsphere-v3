@@ -1,9 +1,15 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Seeding SportSphere database...');
+
+  // Default password for all test accounts: SportSphere2024!
+  const DEFAULT_PASSWORD = 'SportSphere2024!';
+  const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, 10);
+  console.log(`🔐 Password for all test accounts: ${DEFAULT_PASSWORD}`);
 
   // ─── USERS — one per role for testing ─────────────────────
   const userDefs = [
@@ -157,6 +163,7 @@ async function main() {
         update: {},
         create: {
           ...def,
+          passwordHash,
           sportsFollowing: JSON.stringify(['Football']),
           roleData: JSON.stringify({}),
         },
