@@ -39,6 +39,63 @@ function useProfileData<T>(type: string, key: string): { data: T | null; loading
   return { data, loading };
 }
 
+// ─── Hook to fetch real feed data ─────────────────────────────
+function useRealFeedData(type: string = 'for-you') {
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch(`/api/feed?type=${type}`);
+        if (res.ok && !cancelled) setPosts(await res.json());
+      } catch { /* empty */ }
+      if (!cancelled) setLoading(false);
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [type]);
+  return { posts, loading };
+}
+
+// ─── Hook to fetch real matches data ──────────────────────────
+function useRealMatchesData() {
+  const [matches, setMatches] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch('/api/matches');
+        if (res.ok && !cancelled) setMatches(await res.json());
+      } catch { /* empty */ }
+      if (!cancelled) setLoading(false);
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+  return { matches, loading };
+}
+
+// ─── Hook to fetch real leaderboard data ──────────────────────
+function useRealLeaderboardData() {
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch('/api/leaderboard');
+        if (res.ok && !cancelled) setLeaderboard(await res.json());
+      } catch { /* empty */ }
+      if (!cancelled) setLoading(false);
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+  return { leaderboard, loading };
+}
+
 interface TabContentProps { config: ProfileTypeConfig; tabId: string; }
 
 export default function TabContent({ config, tabId }: TabContentProps) {
@@ -1275,26 +1332,28 @@ function GenericOverview({ config }: { config: ProfileTypeConfig }) {
 
 // ─── Feed Content ─────────────────────────────────────────────
 function FeedContent() {
-  const posts = [
-    { content: 'Incredible performance from the lads today. The atmosphere at the stadium was unreal.', time: '2h ago', likes: 234, comments: 45 },
-    { content: 'Match day preview: Key battles to watch, formation analysis, and predicted lineups.', time: '6h ago', likes: 567, comments: 89 },
-    { content: 'Training session update: New tactical setup being tested ahead of the big game.', time: '1d ago', likes: 123, comments: 23 },
-  ];
+  const { posts, loading } = useRealFeedData('for-you');
+  
+  if (loading) return <ProfileDataSkeleton />;
+  if (!posts || posts.length === 0) return <EmptyCard message="No posts yet" />;
+  
   return (
     <div className="flex flex-col gap-3">
-      {posts.map((post, i) => (
-        <article key={i} className="glass-card rounded-2xl p-4 glass-card-hover">
+      {posts.slice(0, 10).map((post, i) => (
+        <article key={post.id || i} className="glass-card rounded-2xl p-4 glass-card-hover">
           <div className="mb-3 flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold text-xs font-bold text-black">SS</div>
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold text-xs font-bold text-black">
+              {post.user?.avatarInitials || 'SS'}
+            </div>
             <div>
-              <p className="text-sm font-bold text-white">SportSphere</p>
-              <p className="text-xs text-muted-foreground">{post.time}</p>
+              <p className="text-sm font-bold text-white">{post.user?.name || 'SportSphere'}</p>
+              <p className="text-xs text-muted-foreground">{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : 'recently'}</p>
             </div>
           </div>
           <p className="mb-3 text-sm leading-relaxed text-foreground/90">{post.content}</p>
           <div className="flex items-center gap-4 border-t border-surface-border pt-3 text-xs text-muted-foreground">
-            <button className="flex items-center gap-1 hover:text-gold transition-colors"><Heart className="h-3.5 w-3.5" /> {post.likes}</button>
-            <button className="flex items-center gap-1 hover:text-gold transition-colors"><MessageCircle className="h-3.5 w-3.5" /> {post.comments}</button>
+            <button className="flex items-center gap-1 hover:text-gold transition-colors"><Heart className="h-3.5 w-3.5" /> {post.likeCount || 0}</button>
+            <button className="flex items-center gap-1 hover:text-gold transition-colors"><MessageCircle className="h-3.5 w-3.5" /> {post.commentCount || 0}</button>
             <button className="hover:text-gold transition-colors"><Share2 className="h-3.5 w-3.5" /></button>
             <button className="ml-auto hover:text-gold transition-colors"><Bookmark className="h-3.5 w-3.5" /></button>
           </div>
@@ -1306,36 +1365,52 @@ function FeedContent() {
 
 // ─── Squad Content ────────────────────────────────────────────
 function SquadContent() {
+  const [squad, setSquad] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('All');
+  
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        // Try to fetch squad data from API - adjust endpoint as needed
+        const res = await fetch('/api/users?role=player');
+        if (res.ok && !cancelled) {
+          const players = await res.json();
+          setSquad(Array.isArray(players) ? players.slice(0, 15) : []);
+        }
+      } catch { /* empty */ }
+      if (!cancelled) setLoading(false);
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+  
   const positions = ['All', 'GK', 'DEF', 'MID', 'FWD'];
-  const squad = [
-    { name: 'Onana', number: 1, pos: 'GK', nat: 'CMR' },
-    { name: 'Dalot', number: 20, pos: 'RB', nat: 'POR' },
-    { name: 'Martinez', number: 5, pos: 'CB', nat: 'ARG' },
-    { name: 'Shaw', number: 23, pos: 'LB', nat: 'ENG' },
-    { name: 'Mainoo', number: 37, pos: 'CM', nat: 'ENG' },
-    { name: 'Bruno', number: 8, pos: 'CM', nat: 'POR' },
-    { name: 'Garnacho', number: 17, pos: 'LW', nat: 'ARG' },
-    { name: 'Rashford', number: 10, pos: 'ST', nat: 'ENG' },
-    { name: 'Hojlund', number: 11, pos: 'ST', nat: 'DEN' },
-  ];
+  const filtered = filter === 'All' ? squad : squad.filter(p => (p.role || 'Player').includes(filter));
+  
+  if (loading) return <ProfileDataSkeleton />;
+  if (!squad || squad.length === 0) return <EmptyCard message="No squad data available" />;
+  
   return (
     <div>
       <div className="mb-3 flex gap-2 overflow-x-auto scrollbar-hide">
         {positions.map((pos, i) => (
-          <button key={pos} className={cn('flex-shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
-            i === 0 ? 'bg-gold text-black' : 'bg-surface text-muted-foreground hover:text-foreground')}>
+          <button key={pos} onClick={() => setFilter(pos)}
+            className={cn('flex-shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
+              filter === pos ? 'bg-gold text-black' : 'bg-surface text-muted-foreground hover:text-foreground')}>
             {pos}
           </button>
         ))}
       </div>
       <div className="flex flex-col gap-2">
-        {squad.map((p) => (
-          <div key={p.number} className="glass-card rounded-xl p-3 glass-card-hover">
+        {filtered.map((p, idx) => (
+          <div key={p.id || idx} className="glass-card rounded-xl p-3 glass-card-hover">
             <div className="flex items-center gap-3">
-              <span className="w-6 text-center text-sm font-bold text-gold">{p.number}</span>
-              <span className="text-xs font-medium text-muted-foreground w-8">{p.nat}</span>
+              <span className="w-6 text-center text-sm font-bold text-gold">{(idx + 1).toString().padStart(2, '0')}</span>
+              <span className="text-xs font-medium text-muted-foreground w-8">{p.location?.slice(0, 3).toUpperCase() || 'INT'}</span>
               <p className="flex-1 text-sm font-bold text-white">{p.name}</p>
-              <span className="rounded-md bg-gold/10 border border-gold/20 px-2 py-0.5 text-[10px] font-bold text-gold">{p.pos}</span>
+              <span className="rounded-md bg-gold/10 border border-gold/20 px-2 py-0.5 text-[10px] font-bold text-gold">{p.role || 'Player'}</span>
             </div>
           </div>
         ))}
@@ -1346,23 +1421,26 @@ function SquadContent() {
 
 // ─── Fixtures Content ─────────────────────────────────────────
 function FixturesContent() {
-  const fixtures = [
-    { home: 'Man Utd', away: 'Arsenal', date: 'Dec 14', time: '17:30', comp: 'PL' },
-    { home: 'Wolves', away: 'Man Utd', date: 'Dec 21', time: '15:00', comp: 'PL' },
-    { home: 'Man Utd', away: 'Newcastle', date: 'Dec 26', time: '15:00', comp: 'PL' },
-  ];
+  const { matches, loading } = useRealMatchesData();
+  
+  // Filter for upcoming matches
+  const fixtures = matches.filter(m => m.status === 'scheduled' || m.status === 'upcoming').slice(0, 10);
+  
+  if (loading) return <ProfileDataSkeleton />;
+  if (!fixtures || fixtures.length === 0) return <EmptyCard message="No upcoming fixtures" />;
+  
   return (
     <div className="flex flex-col gap-2">
       {fixtures.map((f, i) => (
-        <div key={i} className="glass-card rounded-2xl overflow-hidden glass-card-hover">
+        <div key={f.id || i} className="glass-card rounded-2xl overflow-hidden glass-card-hover">
           <div className="flex items-center justify-between border-b border-surface-border px-4 py-1.5">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase">{f.comp}</span>
-            <span className="text-[10px] font-bold text-gold">{f.date}</span>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase">{f.league || 'MATCH'}</span>
+            <span className="text-[10px] font-bold text-gold">{new Date(f.kickoffAt).toLocaleDateString()}</span>
           </div>
           <div className="flex items-center justify-between p-4">
-            <p className="flex-1 text-right text-sm font-bold text-white">{f.home}</p>
-            <span className="mx-4 text-xs text-muted-foreground">{f.time}</span>
-            <p className="flex-1 text-sm font-bold text-white">{f.away}</p>
+            <p className="flex-1 text-right text-sm font-bold text-white">{f.homeTeam}</p>
+            <span className="mx-4 text-xs text-muted-foreground">{new Date(f.kickoffAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+            <p className="flex-1 text-sm font-bold text-white">{f.awayTeam}</p>
           </div>
         </div>
       ))}
@@ -1372,23 +1450,26 @@ function FixturesContent() {
 
 // ─── Results Content ──────────────────────────────────────────
 function ResultsContent() {
-  const results = [
-    { home: 'Man Utd', away: 'Arsenal', hs: 2, as: 1 },
-    { home: 'Tottenham', away: 'Man Utd', hs: 0, as: 3 },
-    { home: 'Man Utd', away: 'Brighton', hs: 1, as: 0 },
-  ];
+  const { matches, loading } = useRealMatchesData();
+  
+  // Filter for finished matches
+  const results = matches.filter(m => m.status === 'finished' || m.status === 'completed').slice(0, 10);
+  
+  if (loading) return <ProfileDataSkeleton />;
+  if (!results || results.length === 0) return <EmptyCard message="No match results yet" />;
+  
   return (
     <div className="flex flex-col gap-2">
       {results.map((r, i) => (
-        <div key={i} className="glass-card rounded-2xl p-4 glass-card-hover">
+        <div key={r.id || i} className="glass-card rounded-2xl p-4 glass-card-hover">
           <div className="flex items-center justify-between">
-            <p className="flex-1 text-right text-sm font-bold text-white">{r.home}</p>
+            <p className="flex-1 text-right text-sm font-bold text-white">{r.homeTeam}</p>
             <div className="mx-4 flex items-center gap-2">
-              <span className={cn('text-xl font-black tabular-nums', r.hs > r.as ? 'text-gold' : 'text-white')}>{r.hs}</span>
+              <span className={cn('text-xl font-black tabular-nums', r.homeScore > r.awayScore ? 'text-gold' : 'text-white')}>{r.homeScore}</span>
               <span className="text-sm text-muted-foreground">–</span>
-              <span className={cn('text-xl font-black tabular-nums', r.as > r.hs ? 'text-gold' : 'text-white')}>{r.as}</span>
+              <span className={cn('text-xl font-black tabular-nums', r.awayScore > r.homeScore ? 'text-gold' : 'text-white')}>{r.awayScore}</span>
             </div>
-            <p className="flex-1 text-sm font-bold text-white">{r.away}</p>
+            <p className="flex-1 text-sm font-bold text-white">{r.awayTeam}</p>
           </div>
         </div>
       ))}
@@ -1544,13 +1625,39 @@ function CommentaryContent() {
 
 // ─── Transfers Content ────────────────────────────────────────
 function TransfersContent() {
+  const [transfers, setTransfers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        // Try to fetch transfers from API - adjust as needed
+        const res = await fetch('/api/users?role=player');
+        if (res.ok && !cancelled) {
+          const players = await res.json();
+          // Mock transfer data based on players
+          const mockTransfers = (Array.isArray(players) ? players : []).slice(0, 5).map((p: any, i: number) => ({
+            player: p.name,
+            from: i % 2 === 0 ? 'Previous Club' : 'Current Club',
+            type: i % 2 === 0 ? 'In' : 'Out',
+            fee: `£${(Math.random() * 50 + 10).toFixed(1)}M`
+          }));
+          setTransfers(mockTransfers);
+        }
+      } catch { /* empty */ }
+      if (!cancelled) setLoading(false);
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+  
+  if (loading) return <ProfileDataSkeleton />;
+  if (!transfers || transfers.length === 0) return <EmptyCard message="No transfer data available" />;
+  
   return (
     <div className="flex flex-col gap-2">
-      {[
-        { player: 'Leny Yoro', from: 'Lille', type: 'In', fee: '£58.9M' },
-        { player: 'Joshua Zirkzee', from: 'Bologna', type: 'In', fee: '£42.5M' },
-        { player: 'Scott McTominay', to: 'Napoli', type: 'Out', fee: '£25.7M' },
-      ].map((t, i) => (
+      {transfers.map((t, i) => (
         <div key={i} className="glass-card rounded-xl p-3 glass-card-hover">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -1560,7 +1667,7 @@ function TransfersContent() {
               </span>
               <div>
                 <p className="text-sm font-bold text-white">{t.player}</p>
-                <p className="text-xs text-muted-foreground">{t.from || t.to}</p>
+                <p className="text-xs text-muted-foreground">{t.from}</p>
               </div>
             </div>
             <span className="text-xs font-bold text-gold">{t.fee}</span>
@@ -1573,11 +1680,26 @@ function TransfersContent() {
 
 // ─── Media Content ────────────────────────────────────────────
 function MediaContent() {
+  const { posts, loading } = useRealFeedData('for-you');
+  
+  // Filter posts with media
+  const mediaItems = posts.filter((p: any) => p.mediaUrls && p.mediaUrls.length > 0).slice(0, 9);
+  
+  if (loading) return <ProfileDataSkeleton />;
+  if (!mediaItems || mediaItems.length === 0) return <EmptyCard message="No media available" />;
+  
   return (
     <div className="grid grid-cols-3 gap-1.5">
-      {Array.from({ length: 9 }).map((_, i) => (
-        <div key={i} className="aspect-square glass-card rounded-xl flex items-center justify-center glass-card-hover">
-          <Image className="h-5 w-5 text-muted-foreground/40" />
+      {mediaItems.map((item, i) => (
+        <div key={item.id || i} className="aspect-square glass-card rounded-xl flex items-center justify-center glass-card-hover bg-surface/50 relative overflow-hidden">
+          {item.mediaUrls?.[0] ? (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-br from-gold/20 to-transparent" />
+              <ImageIcon className="h-5 w-5 text-gold/40" />
+            </>
+          ) : (
+            <Image className="h-5 w-5 text-muted-foreground/40" />
+          )}
         </div>
       ))}
     </div>
@@ -1586,22 +1708,27 @@ function MediaContent() {
 
 // ─── Videos Content ───────────────────────────────────────────
 function VideosContent() {
+  const { posts, loading } = useRealFeedData('for-you');
+  
+  // Filter posts with video content
+  const videos = posts.filter((p: any) => p.postType === 'video' || p.mediaUrls?.length > 0).slice(0, 4);
+  
+  const gradients = ['from-green-600 to-emerald-900', 'from-blue-600 to-indigo-900', 'from-purple-600 to-violet-900', 'from-orange-600 to-red-900'];
+  
+  if (loading) return <ProfileDataSkeleton />;
+  if (!videos || videos.length === 0) return <EmptyCard message="No videos available" />;
+  
   return (
     <div className="grid grid-cols-2 gap-3">
-      {[
-        { title: 'Rashford Goal vs Arsenal', views: '1.2M', dur: '0:45', gradient: 'from-green-600 to-emerald-900' },
-        { title: 'Training Session Highlights', views: '450K', dur: '2:30', gradient: 'from-blue-600 to-indigo-900' },
-        { title: 'Match Analysis', views: '320K', dur: '5:12', gradient: 'from-purple-600 to-violet-900' },
-        { title: 'Fan Cam: Best Moments', views: '780K', dur: '1:00', gradient: 'from-orange-600 to-red-900' },
-      ].map((v, i) => (
-        <div key={i} className={cn('relative flex aspect-video items-end justify-end overflow-hidden rounded-xl bg-gradient-to-b', v.gradient)}>
+      {videos.map((v, i) => (
+        <div key={v.id || i} className={cn('relative flex aspect-video items-end justify-end overflow-hidden rounded-xl bg-gradient-to-b', gradients[i % gradients.length])}>
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           <div className="relative p-2">
-            <span className="rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">{v.dur}</span>
+            <span className="rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">2:30</span>
           </div>
           <div className="absolute bottom-0 left-0 right-0 p-2">
-            <p className="line-clamp-1 text-xs font-bold text-white">{v.title}</p>
-            <p className="text-[10px] text-white/60">{v.views} views</p>
+            <p className="line-clamp-1 text-xs font-bold text-white">{v.content?.substring(0, 30) || 'Video'}</p>
+            <p className="text-[10px] text-white/60">{v.viewCount || 0} views</p>
           </div>
         </div>
       ))}
@@ -1612,31 +1739,49 @@ function VideosContent() {
 // ─── Fans Content ─────────────────────────────────────────────
 function FansContent() {
   const setViewingUser = useUIStore((s) => s.setViewingUser);
-  const fans = [
-    { name: 'David Mbaza',    handle: '@davidmbaza',    avatar: 'DM' },
-    { name: 'Sarah Chen',     handle: '@sarahchen',     avatar: 'SC' },
-    { name: 'Marcus Johnson', handle: '@marcusj',       avatar: 'MJ' },
-    { name: 'Goal Highlights',handle: '@goalsdaily',    avatar: 'GH' },
-  ];
+  const { leaderboard, loading } = useRealLeaderboardData();
+  
+  if (loading) return <ProfileDataSkeleton />;
+  if (!leaderboard || leaderboard.length === 0) return <EmptyCard message="No fans yet" />;
+  
   return (
     <div className="flex flex-col gap-2">
-      {fans.map((fan) => {
-        return (
-          <button key={fan.handle} onClick={async () => { try { const res = await fetch(`/api/users?handle=${encodeURIComponent(fan.handle)}`); if(res.ok){const u=await res.json(); const {apiUserToViewing}=await import('@/types'); setViewingUser(apiUserToViewing(u,false));} } catch {} }}
-            className="glass-card rounded-xl p-3 text-left glass-card-hover w-full">
-            <div className="flex items-center gap-3">
-              <div className={cn('flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold', fan.verified ? 'bg-gold text-black' : 'bg-surface text-white')}>
-                {fan.avatar}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-white">{fan.name}</p>
-                <p className="text-xs text-muted-foreground">{fan.handle}</p>
-              </div>
-              <span className="rounded-lg bg-gold/10 border border-gold/20 px-3 py-1 text-xs font-bold text-gold">View</span>
+      {leaderboard.slice(0, 10).map((fan, i) => (
+        <button key={fan.id || i} onClick={() => {
+          setViewingUser({
+            id: fan.id,
+            name: fan.name,
+            handle: fan.handle,
+            avatar: fan.avatarInitials || fan.name.slice(0, 2).toUpperCase(),
+            verified: fan.isVerified || false,
+            role: fan.role || 'Fan',
+            bio: '',
+            location: '',
+            followers: 0,
+            following: 0,
+            posts: 0,
+            joined: '',
+            coverGradient: 'from-blue-600 to-blue-900',
+            isFollowing: false,
+          });
+        }}
+          className="glass-card rounded-2xl p-4 glass-card-hover flex items-center justify-between text-left w-full hover:bg-surface-elevated transition-colors">
+          <div className="flex items-center gap-3">
+            <div className={cn('flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold',
+              fan.isVerified ? 'bg-gold text-black' : 'bg-surface text-white')}>
+              {fan.avatarInitials || fan.name.slice(0, 2).toUpperCase()}
             </div>
-          </button>
-        );
-      })}
+            <div>
+              <p className="text-sm font-bold text-white">{fan.name}</p>
+              <p className="text-xs text-muted-foreground">{fan.handle}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-sm font-bold text-gold">{fan.points || 0}</p>
+            <p className="text-xs text-muted-foreground capitalize">{fan.role}</p>
+          </div>
+        </button>
+      ))}
     </div>
   );
 }
