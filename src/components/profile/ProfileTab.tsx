@@ -174,11 +174,32 @@ function LoggedInProfile({
     { id: 'following', label: 'Following', icon: Heart, color: 'text-pink-400' },
   ];
 
-  const mockPosts = [
-    { id: 1, content: 'What a performance from the team today! The comeback was incredible.', time: '2h ago', likes: 234, comments: 45 },
-    { id: 2, content: 'Predicting a 3-1 win for Arsenal tonight. Who agrees?', time: '1d ago', likes: 89, comments: 123 },
-    { id: 3, content: 'Match day atmosphere at the stadium was electric. Best game this season!', time: '3d ago', likes: 567, comments: 78 },
-  ];
+  const [realPosts, setRealPosts] = useState<Array<{
+    id: string; content: string; createdAt: string; likeCount: number; commentCount: number;
+  }>>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadPosts() {
+      try {
+        const uid = userProfile?.id;
+        const url = uid ? `/api/feed?type=for-you&userId=${uid}` : '/api/feed?type=for-you';
+        const res = await fetch(url);
+        if (res.ok) setRealPosts(await res.json());
+      } catch { /* ignore */ }
+      setPostsLoading(false);
+    }
+    loadPosts();
+  }, [userProfile?.id]);
+
+  function timeAgo(dateStr: string) {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+  }
 
   return (
     <div>
@@ -283,22 +304,18 @@ function LoggedInProfile({
         )}
 
         {/* Stats */}
-        <div className="mb-6 grid grid-cols-4 gap-3 rounded-2xl bg-surface-elevated border border-surface-border p-4">
+        <div className="mb-6 grid grid-cols-3 gap-3 rounded-2xl bg-surface-elevated border border-surface-border p-4">
           <div className="text-center">
-            <p className="text-lg font-bold text-white">1.2K</p>
+            <p className="text-lg font-bold text-white">{userProfile?.followerCount ?? 0}</p>
             <p className="text-[10px] text-muted-foreground uppercase">Followers</p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-bold text-white">345</p>
+            <p className="text-lg font-bold text-white">{userProfile?.followingCount ?? 0}</p>
             <p className="text-[10px] text-muted-foreground uppercase">Following</p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-bold text-white">52</p>
+            <p className="text-lg font-bold text-white">{userProfile?.postCount ?? 0}</p>
             <p className="text-[10px] text-muted-foreground uppercase">Posts</p>
-          </div>
-          <div className="text-center">
-            <p className="text-lg font-bold text-white">89%</p>
-            <p className="text-[10px] text-muted-foreground uppercase">Accuracy</p>
           </div>
         </div>
 
@@ -336,19 +353,31 @@ function LoggedInProfile({
 
         {/* Content */}
         <div className="flex flex-col gap-3">
-          {mockPosts.map((post) => (
+          {postsLoading ? (
+            [1,2,3].map(i => (
+              <div key={i} className="rounded-xl bg-surface-elevated border border-surface-border p-4 animate-pulse">
+                <div className="h-3 bg-surface-border rounded w-3/4 mb-2" />
+                <div className="h-3 bg-surface-border rounded w-1/2" />
+              </div>
+            ))
+          ) : realPosts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10">
+              <MessageCircle className="h-8 w-8 text-muted-foreground/30 mb-2" />
+              <p className="text-sm text-muted-foreground">No posts yet</p>
+            </div>
+          ) : realPosts.map((post) => (
             <article key={post.id} className="rounded-xl bg-surface-elevated border border-surface-border p-4">
               <p className="mb-2 text-sm text-foreground/90">{post.content}</p>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{post.time}</span>
+                <span>{timeAgo(post.createdAt)}</span>
                 <div className="flex items-center gap-4">
                   <span className="flex items-center gap-1">
                     <Heart className="h-3 w-3" />
-                    {post.likes}
+                    {post.likeCount}
                   </span>
                   <span className="flex items-center gap-1">
                     <MessageCircle className="h-3 w-3" />
-                    {post.comments}
+                    {post.commentCount}
                   </span>
                 </div>
               </div>
