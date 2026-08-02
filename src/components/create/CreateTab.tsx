@@ -397,9 +397,10 @@ function MediaUpload({ type, mediaUrls, onChange }: { type: string; mediaUrls: s
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    // Convert files to object URLs for preview (in production, upload to S3/Cloudinary first)
     const urls = Array.from(files).map(f => URL.createObjectURL(f));
     onChange([...mediaUrls, ...urls]);
+    // Cleanup: revoke object URLs when component unmounts
+    return () => urls.forEach(u => URL.revokeObjectURL(u));
   };
 
   return (
@@ -562,7 +563,7 @@ function TagPicker({ onClose, onPick }: { onClose: () => void; onPick: (team?: s
 // ─── Hashtag Picker ────────────────────────────────────────────
 function HashtagPicker({ onClose, onAdd, existing }: { onClose: () => void; onAdd: (tag: string) => void; existing: string[] }) {
   const [input, setInput] = useState('');
-  const suggestions = ['Football', 'PremierLeague', 'ChampionsLeague', 'MUFC', 'AFC', 'MCFC', 'LFC', 'AFCON', 'Transfer', 'Goal', 'MatchDay', 'ComeOnYouReds'];
+  const suggestions = ['Football', 'Basketball', 'Tennis', 'Cricket', 'Rugby', 'Athletics', 'MatchDay', 'Goal', 'Transfer', 'SportNews', 'WorldCup', 'AFCON'];
 
   const addTag = (tag: string) => {
     const clean = tag.replace(/^#/, '').replace(/\s+/g, '');
@@ -629,7 +630,7 @@ function HashtagPicker({ onClose, onAdd, existing }: { onClose: () => void; onAd
 // ─── Location Picker ───────────────────────────────────────────
 function LocationPicker({ onClose, onPick }: { onClose: () => void; onPick: (loc: string) => void }) {
   const [input, setInput] = useState('');
-  const suggestions = ['London, UK', 'Manchester, UK', 'Liverpool, UK', 'Madrid, Spain', 'Barcelona, Spain', 'Munich, Germany', 'Paris, France', 'Turin, Italy', 'Dar es Salaam, Tanzania', 'Lagos, Nigeria', 'Nairobi, Kenya', 'Cairo, Egypt'];
+  const suggestions = ['Dar es Salaam, Tanzania', 'Nairobi, Kenya', 'Lagos, Nigeria', 'Cairo, Egypt', 'Johannesburg, South Africa', 'London, UK', 'Madrid, Spain', 'Paris, France', 'New York, USA', 'Dubai, UAE', 'Mumbai, India', 'São Paulo, Brazil'];
 
   return (
     <motion.div
