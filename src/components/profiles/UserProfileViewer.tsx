@@ -31,30 +31,31 @@ interface ApiPost {
 }
 
 // Role-aware tab configuration
+// Posts + Media are combined into "Feeds" (id: 'feeds')
+// Shop + Tickets are combined into "Shop" (id: 'shop') for teams/businesses/stadiums
 function getTabsForRole(role: string): Array<{ id: string; label: string }> {
-  const base = [{ id: 'posts', label: 'Posts' }, { id: 'media', label: 'Media' }];
+  const feeds = [{ id: 'feeds', label: 'Feeds' }];
 
   switch (role) {
     case 'team':
       return [
         { id: 'overview', label: 'Overview' },
-        ...base,
+        ...feeds,
         { id: 'squad', label: 'Squad' },
-        { id: 'shop', label: 'Shop' },
-        { id: 'tickets', label: 'Tickets' },
+        { id: 'shop', label: 'Shop' },   // combines products + tickets
         { id: 'about', label: 'About' },
       ];
     case 'business':
       return [
         { id: 'overview', label: 'Overview' },
-        ...base,
+        ...feeds,
         { id: 'shop', label: 'Shop' },
         { id: 'about', label: 'About' },
       ];
     case 'player':
       return [
         { id: 'overview', label: 'Overview' },
-        ...base,
+        ...feeds,
         { id: 'stats', label: 'Stats' },
         { id: 'career', label: 'Career' },
         { id: 'about', label: 'About' },
@@ -62,14 +63,14 @@ function getTabsForRole(role: string): Array<{ id: string; label: string }> {
     case 'coach':
       return [
         { id: 'overview', label: 'Overview' },
-        ...base,
+        ...feeds,
         { id: 'stats', label: 'Stats' },
         { id: 'about', label: 'About' },
       ];
     case 'analyst':
       return [
         { id: 'overview', label: 'Overview' },
-        ...base,
+        ...feeds,
         { id: 'tools', label: 'Tools' },
         { id: 'about', label: 'About' },
       ];
@@ -77,27 +78,27 @@ function getTabsForRole(role: string): Array<{ id: string; label: string }> {
     case 'venue':
       return [
         { id: 'overview', label: 'Overview' },
-        ...base,
+        ...feeds,
         { id: 'facilities', label: 'Facilities' },
-        { id: 'tickets', label: 'Tickets' },
+        { id: 'shop', label: 'Shop' },   // combines tickets + facilities
         { id: 'about', label: 'About' },
       ];
     case 'journalist':
       return [
         { id: 'overview', label: 'Overview' },
-        ...base,
+        ...feeds,
         { id: 'articles', label: 'Articles' },
         { id: 'about', label: 'About' },
       ];
     case 'creator':
       return [
         { id: 'overview', label: 'Overview' },
-        ...base,
+        ...feeds,
         { id: 'spotlight', label: 'Spotlight' },
         { id: 'about', label: 'About' },
       ];
     default:
-      return [...base, { id: 'spotlight', label: 'Spotlight' }, { id: 'about', label: 'About' }];
+      return [...feeds, { id: 'spotlight', label: 'Spotlight' }, { id: 'about', label: 'About' }];
   }
 }
 
@@ -108,6 +109,7 @@ export default function UserProfileViewer() {
   const [following, setFollowing] = useState(false);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState('overview');
+  const [feedsSubtab, setFeedsSubtab] = useState<'posts' | 'media'>('posts');
   const [userPosts, setUserPosts] = useState<ApiPost[]>([]);
   const [apiUser, setApiUser] = useState<ApiUser | null>(null);
   const [loading, setLoading] = useState(false);
@@ -278,53 +280,77 @@ export default function UserProfileViewer() {
             {/* Tab Content */}
             <div className="p-4 flex flex-col gap-3 pb-20">
               {activeTab === 'overview' && <OverviewTab apiUser={apiUser} user={user} role={role} />}
-              {activeTab === 'posts' && (
-                loading ? (
-                  <div className="flex flex-col gap-3">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="glass-card rounded-xl p-4">
-                        <div className="h-3 w-full rounded bg-surface animate-pulse mb-2" />
-                        <div className="h-3 w-3/4 rounded bg-surface animate-pulse" />
-                      </div>
-                    ))}
+              {/* Feeds tab — combines Posts + Media */}
+              {activeTab === 'feeds' && (
+                <>
+                  {/* Sub-tabs: Posts / Media */}
+                  <div className="flex gap-1 rounded-xl bg-surface p-1">
+                    <button
+                      onClick={() => setFeedsSubtab('posts')}
+                      className={cn('flex-1 rounded-lg py-1.5 text-xs font-bold transition-colors',
+                        feedsSubtab === 'posts' ? 'bg-gold text-black' : 'text-muted-foreground')}
+                    >
+                      Posts
+                    </button>
+                    <button
+                      onClick={() => setFeedsSubtab('media')}
+                      className={cn('flex-1 rounded-lg py-1.5 text-xs font-bold transition-colors',
+                        feedsSubtab === 'media' ? 'bg-gold text-black' : 'text-muted-foreground')}
+                    >
+                      Media
+                    </button>
                   </div>
-                ) : userPosts.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <Crown className="h-7 w-7 text-muted-foreground/40 mb-2" />
-                    <p className="text-sm text-muted-foreground">No posts yet</p>
-                  </div>
-                ) : (
-                  userPosts.map((post) => (
-                    <article key={post.id} className="glass-card rounded-xl p-4 glass-card-hover">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className={cn('flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold',
-                          user.verified ? 'bg-gold text-black' : 'bg-surface text-white')}>
-                          {user.avatar}
-                        </div>
-                        <span className="text-sm font-bold text-white">{user.name}</span>
-                        <span className="text-xs text-muted-foreground">· {formatTime(post.createdAt)}</span>
+
+                  {feedsSubtab === 'posts' && (
+                    loading ? (
+                      <div className="flex flex-col gap-3">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="glass-card rounded-xl p-4">
+                            <div className="h-3 w-full rounded bg-surface animate-pulse mb-2" />
+                            <div className="h-3 w-3/4 rounded bg-surface animate-pulse" />
+                          </div>
+                        ))}
                       </div>
-                      <p className="mb-3 text-sm text-foreground/90">{post.content}</p>
-                      <div className="flex items-center gap-4 border-t border-surface-border pt-2 text-xs text-muted-foreground">
-                        <button onClick={() => setLikedPosts(prev => { const n = new Set(prev); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
-                          className={cn('flex items-center gap-1 transition-colors', likedPosts.has(post.id) ? 'text-pink-400' : 'hover:text-pink-400')}>
-                          <Heart className={cn('h-3.5 w-3.5', likedPosts.has(post.id) && 'fill-current')} />
-                          {post.likeCount + (likedPosts.has(post.id) ? 1 : 0)}
-                        </button>
-                        <span className="flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" />{post.commentCount}</span>
-                        <button className="ml-auto hover:text-gold transition-colors"><Share2 className="h-3.5 w-3.5" /></button>
-                        <button className="hover:text-gold transition-colors"><Bookmark className="h-3.5 w-3.5" /></button>
+                    ) : userPosts.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12">
+                        <Crown className="h-7 w-7 text-muted-foreground/40 mb-2" />
+                        <p className="text-sm text-muted-foreground">No posts yet</p>
                       </div>
-                    </article>
-                  ))
-                )
-              )}
-              {activeTab === 'media' && (
-                <div className="grid grid-cols-3 gap-1">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="aspect-square glass-card rounded-lg glass-card-hover" />
-                  ))}
-                </div>
+                    ) : (
+                      userPosts.map((post) => (
+                        <article key={post.id} className="glass-card rounded-xl p-4 glass-card-hover">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className={cn('flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold',
+                              user.verified ? 'bg-gold text-black' : 'bg-surface text-white')}>
+                              {user.avatar}
+                            </div>
+                            <span className="text-sm font-bold text-white">{user.name}</span>
+                            <span className="text-xs text-muted-foreground">· {formatTime(post.createdAt)}</span>
+                          </div>
+                          <p className="mb-3 text-sm text-foreground/90">{post.content}</p>
+                          <div className="flex items-center gap-4 border-t border-surface-border pt-2 text-xs text-muted-foreground">
+                            <button onClick={() => setLikedPosts(prev => { const n = new Set(prev); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
+                              className={cn('flex items-center gap-1 transition-colors', likedPosts.has(post.id) ? 'text-pink-400' : 'hover:text-pink-400')}>
+                              <Heart className={cn('h-3.5 w-3.5', likedPosts.has(post.id) && 'fill-current')} />
+                              {post.likeCount + (likedPosts.has(post.id) ? 1 : 0)}
+                            </button>
+                            <span className="flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" />{post.commentCount}</span>
+                            <button className="ml-auto hover:text-gold transition-colors"><Share2 className="h-3.5 w-3.5" /></button>
+                            <button className="hover:text-gold transition-colors"><Bookmark className="h-3.5 w-3.5" /></button>
+                          </div>
+                        </article>
+                      ))
+                    )
+                  )}
+
+                  {feedsSubtab === 'media' && (
+                    <div className="grid grid-cols-3 gap-1">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="aspect-square glass-card rounded-lg glass-card-hover" />
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
               {activeTab === 'spotlight' && (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -334,8 +360,10 @@ export default function UserProfileViewer() {
                   <p className="text-sm text-muted-foreground">No spotlight videos yet</p>
                 </div>
               )}
-              {activeTab === 'shop' && <ShopTab role={role} />}
-              {activeTab === 'tickets' && <TicketsTab />}
+              {/* Shop tab — combines Products + Tickets (for teams/businesses/stadiums) */}
+              {activeTab === 'shop' && (
+                <ShopTab role={role} />
+              )}
               {activeTab === 'stats' && <StatsTab role={role} apiUser={apiUser} />}
               {activeTab === 'career' && <CareerTab />}
               {activeTab === 'tools' && <AnalystToolsTab />}
@@ -494,7 +522,10 @@ function StatCard({ label, value }: { label: string; value: string }) {
 }
 
 // ─── Shop Tab ─────────────────────────────────────────────────
+// ─── Shop Tab (combines Products + Tickets) ───────────────────
 function ShopTab({ role }: { role: string }) {
+  const [shopSubtab, setShopSubtab] = useState<'products' | 'tickets'>('products');
+
   const products = role === 'business'
     ? [
         { name: 'Mercurial Boots', price: 'TSh 180,000', usd: '$95', gradient: 'from-purple-600 to-pink-700', stock: 'In stock' },
@@ -509,8 +540,15 @@ function ShopTab({ role }: { role: string }) {
         { name: 'Scarf', price: 'TSh 25,000', usd: '$13', gradient: 'from-red-500 to-yellow-600', stock: 'Sold out' },
       ];
 
+  const tickets = [
+    { match: 'vs Arsenal', date: 'Sat Dec 14', kickoff: '17:30', price: 'From TSh 45,000', available: true },
+    { match: 'vs Newcastle', date: 'Thu Dec 26', kickoff: '20:00', price: 'From TSh 35,000', available: true },
+    { match: 'vs Liverpool', date: 'Sun Jan 5', kickoff: '16:30', price: 'From TSh 55,000', available: false },
+  ];
+
   return (
     <div>
+      {/* Shop header */}
       <div className="mb-4 flex items-center justify-between rounded-2xl bg-gradient-to-r from-gold/10 to-gold/5 border border-gold/20 p-3">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/15">
@@ -524,32 +562,80 @@ function ShopTab({ role }: { role: string }) {
         <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-bold text-green-400">OPEN</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        {products.map((item, i) => (
-          <div key={i} className="glass-card rounded-xl overflow-hidden glass-card-hover">
-            <div className={cn('relative aspect-square bg-gradient-to-b flex items-center justify-center', item.gradient)}>
-              <span className="text-3xl font-black text-white/20">SS</span>
-              {item.stock === 'Sold out' && (
-                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                  <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white uppercase">Sold Out</span>
-                </div>
-              )}
-            </div>
-            <div className="p-3">
-              <p className="text-xs font-bold text-white leading-tight">{item.name}</p>
-              <div className="mt-1 flex items-center justify-between">
-                <p className="text-xs font-bold text-gold">{item.price}</p>
-                <p className="text-[9px] text-muted-foreground">{item.usd}</p>
-              </div>
-              <p className={cn('mt-1 text-[9px] font-semibold', item.stock === 'Sold out' ? 'text-red-400' : item.stock === 'Low stock' ? 'text-yellow-400' : 'text-green-400')}>{item.stock}</p>
-              {item.stock !== 'Sold out' && (
-                <button className="mt-2 w-full rounded-lg bg-gold py-1.5 text-[10px] font-bold text-black">Add to Cart</button>
-              )}
-            </div>
-          </div>
-        ))}
+      {/* Sub-tabs: Products / Tickets */}
+      <div className="mb-4 flex gap-1 rounded-xl bg-surface p-1">
+        <button
+          onClick={() => setShopSubtab('products')}
+          className={cn('flex-1 rounded-lg py-2 text-xs font-bold transition-colors',
+            shopSubtab === 'products' ? 'bg-gold text-black' : 'text-muted-foreground')}
+        >
+          <ShoppingBag className="mr-1 inline h-3.5 w-3.5" /> Products
+        </button>
+        <button
+          onClick={() => setShopSubtab('tickets')}
+          className={cn('flex-1 rounded-lg py-2 text-xs font-bold transition-colors',
+            shopSubtab === 'tickets' ? 'bg-gold text-black' : 'text-muted-foreground')}
+        >
+          <Ticket className="mr-1 inline h-3.5 w-3.5" /> Tickets
+        </button>
       </div>
 
+      {/* Products sub-tab */}
+      {shopSubtab === 'products' && (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            {products.map((item, i) => (
+              <div key={i} className="glass-card rounded-xl overflow-hidden glass-card-hover">
+                <div className={cn('relative aspect-square bg-gradient-to-b flex items-center justify-center', item.gradient)}>
+                  <span className="text-3xl font-black text-white/20">SS</span>
+                  {item.stock === 'Sold out' && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white uppercase">Sold Out</span>
+                    </div>
+                  )}
+                </div>
+                <div className="p-3">
+                  <p className="text-xs font-bold text-white leading-tight">{item.name}</p>
+                  <div className="mt-1 flex items-center justify-between">
+                    <p className="text-xs font-bold text-gold">{item.price}</p>
+                    <p className="text-[9px] text-muted-foreground">{item.usd}</p>
+                  </div>
+                  <p className={cn('mt-1 text-[9px] font-semibold', item.stock === 'Sold out' ? 'text-red-400' : item.stock === 'Low stock' ? 'text-yellow-400' : 'text-green-400')}>{item.stock}</p>
+                  {item.stock !== 'Sold out' && (
+                    <button className="mt-2 w-full rounded-lg bg-gold py-1.5 text-[10px] font-bold text-black">Add to Cart</button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Tickets sub-tab */}
+      {shopSubtab === 'tickets' && (
+        <div className="flex flex-col gap-3">
+          {tickets.map((t, i) => (
+            <div key={i} className="glass-card rounded-2xl p-4 glass-card-hover">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <p className="text-sm font-bold text-white">{t.match}</p>
+                  <p className="text-[10px] text-muted-foreground">{t.date} · {t.kickoff}</p>
+                </div>
+                <span className={cn('rounded-full px-2 py-0.5 text-[9px] font-bold uppercase',
+                  t.available ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400')}>
+                  {t.available ? 'Available' : 'Sold Out'}
+                </span>
+              </div>
+              <p className="text-sm font-bold text-gold mb-2">{t.price}</p>
+              {t.available && (
+                <button className="w-full rounded-xl bg-gold py-2 text-sm font-bold text-black">Pre-Book</button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Payment & Delivery info (shared) */}
       <div className="mt-4 glass-card rounded-2xl p-4">
         <h3 className="mb-2 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
           <CreditCard className="h-3.5 w-3.5" /> Payment & Delivery
@@ -560,7 +646,7 @@ function ShopTab({ role }: { role: string }) {
           ))}
         </div>
         <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-          <Truck className="h-3 w-3 text-gold" /> 2-5 days delivery · Pickup available
+          <Truck className="h-3 w-3 text-gold" /> {shopSubtab === 'tickets' ? 'Mobile ticket · Instant delivery' : '2-5 days delivery · Pickup available'}
         </p>
       </div>
     </div>
