@@ -207,6 +207,7 @@ function LoggedInProfile({
                 <h3 className="text-sm font-semibold text-yellow-400">Verification In Progress</h3>
                 <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                   Your {userProfile?.role} profile is under review. Our admin team will verify your credentials and award you a verified badge.
+                </p>
                 <div className="mt-3 flex items-center gap-2">
                   <span className="rounded-full bg-yellow-500/10 px-2.5 py-1 text-[10px] font-medium text-yellow-400 border border-yellow-500/20">
                     <Clock className="mr-1 inline h-2.5 w-2.5" />
