@@ -7,3 +7,9 @@ bun.lock
 next-env.d.ts
 android/
 ios/
+
+# Local SQLite database — each developer should run `npx tsx prisma/seed.ts`
+# to generate their own. Never commit this file.
+prisma/dev.db
+prisma/*.db
+prisma/*.db-journal
