@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { safeJsonParse } from '@/lib/json';
 import { db } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
@@ -101,7 +102,3 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
-  if (!value) return fallback;
-  try { return JSON.parse(value) as T; } catch { return fallback; }
-}

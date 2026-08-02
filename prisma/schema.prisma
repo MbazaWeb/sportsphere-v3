@@ -1,16 +1,16 @@
 // SportSphere — Prisma Schema
-// Database: SQLite (local development)
+// SQLite for local dev, PostgreSQL for VPS production
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// ─── Users ─────────────────────────────────────────────────────
+// ─── User ─────────────────────────────────────────────────────
 model User {
   id                  String   @id @default(uuid())
   name                String
@@ -20,128 +20,69 @@ model User {
   resetToken          String?
   resetTokenExpiry    DateTime?
   avatarUrl           String?
-  coverUrl            String?
   avatarInitials      String?
   role                String   @default("fan")
   verificationStatus  String   @default("none")
   isVerified          Boolean  @default(false)
   bio                 String?
-  aboutMe             String?
-  pronouns            String?
   location            String?
   coverGradient       String   @default("from-emerald-600 to-emerald-900")
   followerCount       Int      @default(0)
   followingCount      Int      @default(0)
   postCount           Int      @default(0)
-  roleData            String   @default("{}")
-  sportsFollowing     String   @default("[]")
+  roleData            Json     @default("{}")
+  sportsFollowing     Json     @default("[]")
+  preferences         Json     @default("{}")
   registeredAt        DateTime @default(now())
   updatedAt           DateTime @updatedAt
   lastSeenAt          DateTime @default(now())
 
-  // ─── Personal ──────────────────────────────────────────────
-  dateOfBirth         DateTime?
-  gender              String?
-  nationality         String?
-  countryOfOrigin     String?
-  currentCountry      String?
-  region              String?
-  city                String?
-  preferredLanguage   String?
-  timezone            String?
-
-  // ─── Contact ───────────────────────────────────────────────
-  phone               String?
-  website             String?
-  whatsapp            String?
-  socialInstagram     String?
-  socialX             String?
-  socialTikTok        String?
-  socialFacebook      String?
-  socialLinkedIn      String?
-  socialYouTube       String?
-  socialThreads       String?
-
-  // ─── Appearance (stored inline for simplicity) ────────────
-  theme               String   @default("dark")
-  fontSize            String   @default("medium")
-  reducedMotion       Boolean  @default(false)
-  highContrast        Boolean  @default(false)
-
-  // ─── Privacy (stored as JSON for flexibility) ─────────────
-  privacySettings     String   @default("{}")
-
-  // ─── Notification preferences (stored as JSON) ────────────
-  notifPrefs          String   @default("{}")
-
-  // ─── Interests (stored as JSON array) ─────────────────────
-  interests           String   @default("[]")
-
-  // ─── Role-specific extended data (stored as JSON) ─────────
-  roleProfile         String   @default("{}")
-
-  // Relations
   posts               Post[]
   comments            Comment[]
   likes               PostLike[]
-  sentFollows         Follow[]           @relation("Follower")
-  receivedFollows     Follow[]           @relation("Following")
-  notifications       Notification[]     @relation("NotificationUser")
-  actorNotifications  Notification[]     @relation("NotificationActor")
-  sentMessages        Message[]          @relation("MessageSender")
-  receivedMessages    Message[]          @relation("MessageReceiver")
+  sentFollows         Follow[]        @relation("Follower")
+  receivedFollows     Follow[]        @relation("Following")
+  notifications       Notification[]  @relation("NotifUser")
+  actorNotifications  Notification[]  @relation("NotifActor")
+  sentMessages        Message[]       @relation("MsgSender")
+  receivedMessages    Message[]       @relation("MsgReceiver")
   predictions         Prediction[]
   verificationReqs    VerificationRequest[]
   communityMemberships CommunityMember[]
   createdCommunities  Community[]
-  favorites           UserFavorite[]
+  leaderboardEntries  LeaderboardEntry[]
 
   @@index([handle])
   @@index([email])
   @@index([role])
   @@index([resetToken])
-  @@index([countryOfOrigin])
-  @@index([currentCountry])
 }
 
-// ─── User Favorites (teams, players, coaches, stadiums, leagues, national teams) ──
-model UserFavorite {
-  id          String   @id @default(uuid())
-  userId      String
-  targetType  String   // 'team' | 'player' | 'coach' | 'stadium' | 'league' | 'national_team' | 'competition'
-  targetName  String   // display name (e.g. "Manchester United")
-  targetHandle String? // @handle if the target is a user on the platform
-  createdAt   DateTime @default(now())
-
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, targetType, targetName])
-  @@index([userId, targetType])
-}
-
-// ─── Follows ───────────────────────────────────────────────────
+// ─── Follow ───────────────────────────────────────────────────
 model Follow {
   followerId   String
   followingId  String
   createdAt    DateTime @default(now())
 
-  follower     User     @relation("Follower",  fields: [followerId],  references: [id], onDelete: Cascade)
-  following    User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+  follower     User @relation("Follower",  fields: [followerId],  references: [id], onDelete: Cascade)
+  following    User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@id([followerId, followingId])
   @@index([followerId])
   @@index([followingId])
 }
 
-// ─── Posts ─────────────────────────────────────────────────────
+// ─── Post ─────────────────────────────────────────────────────
 model Post {
   id           String   @id @default(uuid())
   userId       String
   content      String
   postType     String   @default("post")
-  mediaUrls    String   @default("[]")
+  mediaUrls    Json     @default("[]")
   teamTag      String?
   playerTag    String?
+  hashtags     Json     @default("[]")
+  location     String?
   isBreaking   Boolean  @default(false)
   likeCount    Int      @default(0)
   commentCount Int      @default(0)
@@ -150,7 +91,7 @@ model Post {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   comments     Comment[]
   likes        PostLike[]
   poll         Poll?
@@ -160,19 +101,19 @@ model Post {
   @@index([postType])
 }
 
-// ─── Post Likes ────────────────────────────────────────────────
+// ─── PostLike ─────────────────────────────────────────────────
 model PostLike {
   postId    String
   userId    String
   createdAt DateTime @default(now())
 
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([postId, userId])
 }
 
-// ─── Comments ──────────────────────────────────────────────────
+// ─── Comment ─────────────────────────────────────────────────
 model Comment {
   id        String   @id @default(uuid())
   postId    String
@@ -181,29 +122,45 @@ model Comment {
   likeCount Int      @default(0)
   createdAt DateTime @default(now())
 
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([postId])
 }
 
-// ─── Polls ─────────────────────────────────────────────────────
+// ─── Poll ─────────────────────────────────────────────────────
 model Poll {
-  id         String   @id @default(uuid())
-  postId     String   @unique
+  id         String    @id @default(uuid())
+  postId     String    @unique
   question   String
-  options    String   @default("[]")
-  totalVotes Int      @default(0)
+  options    Json      @default("[]")
+  totalVotes Int       @default(0)
   endsAt     DateTime?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
 
-  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post       Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  votes      PollVote[]
 }
 
-// ─── Matches ───────────────────────────────────────────────────
+// ─── PollVote ────────────────────────────────────────────────
+model PollVote {
+  id         String   @id @default(uuid())
+  pollId     String
+  userId     String
+  optionIdx  Int
+  createdAt  DateTime @default(now())
+
+  poll       Poll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, userId])
+}
+
+// ─── Match ───────────────────────────────────────────────────
 model Match {
   id         String   @id @default(uuid())
   league     String
+  continent  String   @default("Europe")
+  country    String   @default("England")
   homeTeam   String
   awayTeam   String
   homeScore  Int?
@@ -212,9 +169,7 @@ model Match {
   minute     Int?
   venue      String?
   kickoffAt  DateTime
-  events     String   @default("[]")
-  continent  String   @default("Europe")
-  country    String   @default("England")
+  events     Json     @default("[]")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -225,7 +180,7 @@ model Match {
   @@index([league])
 }
 
-// ─── Predictions ───────────────────────────────────────────────
+// ─── Prediction ──────────────────────────────────────────────
 model Prediction {
   id             String   @id @default(uuid())
   userId         String
@@ -239,13 +194,13 @@ model Prediction {
   pointsEarned   Int      @default(0)
   createdAt      DateTime @default(now())
 
-  user           User     @relation(fields: [userId],  references: [id], onDelete: Cascade)
-  match          Match?   @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  match          Match? @relation(fields: [matchId], references: [id], onDelete: SetNull)
 
   @@index([userId])
 }
 
-// ─── Communities ───────────────────────────────────────────────
+// ─── Community ───────────────────────────────────────────────
 model Community {
   id          String   @id @default(uuid())
   name        String
@@ -255,10 +210,11 @@ model Community {
   createdById String?
   createdAt   DateTime @default(now())
 
-  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
   members     CommunityMember[]
 }
 
+// ─── CommunityMember ─────────────────────────────────────────
 model CommunityMember {
   communityId String
   userId      String
@@ -271,7 +227,7 @@ model CommunityMember {
   @@id([communityId, userId])
 }
 
-// ─── Notifications ─────────────────────────────────────────────
+// ─── Notification ────────────────────────────────────────────
 model Notification {
   id          String   @id @default(uuid())
   userId      String
@@ -283,13 +239,13 @@ model Notification {
   referenceId String?
   createdAt   DateTime @default(now())
 
-  user        User             @relation("NotificationUser",  fields: [userId],  references: [id], onDelete: Cascade)
-  actor       User?            @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  user        User  @relation("NotifUser",  fields: [userId],  references: [id], onDelete: Cascade)
+  actor       User? @relation("NotifActor", fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([userId, isRead, createdAt(sort: Desc)])
 }
 
-// ─── Messages ──────────────────────────────────────────────────
+// ─── Message ─────────────────────────────────────────────────
 model Message {
   id         String   @id @default(uuid())
   senderId   String
@@ -298,26 +254,42 @@ model Message {
   isRead     Boolean  @default(false)
   createdAt  DateTime @default(now())
 
-  sender     User     @relation("MessageSender",   fields: [senderId],   references: [id], onDelete: Cascade)
-  receiver   User     @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User @relation("MsgSender",   fields: [senderId],   references: [id], onDelete: Cascade)
+  receiver   User @relation("MsgReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
 
   @@index([senderId])
   @@index([receiverId])
 }
 
-// ─── Verification Requests ─────────────────────────────────────
+// ─── VerificationRequest ─────────────────────────────────────
 model VerificationRequest {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   userId      String
   role        String
-  roleData    String   @default("{}")
-  status      String   @default("pending")
+  roleData    Json      @default("{}")
+  status      String    @default("pending")
   adminNotes  String?
   reviewedBy  String?
-  submittedAt DateTime @default(now())
+  submittedAt DateTime  @default(now())
   reviewedAt  DateTime?
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status])
+}
+
+// ─── LeaderboardEntry ────────────────────────────────────────
+model LeaderboardEntry {
+  id             String   @id @default(uuid())
+  userId         String
+  period         String   @default("monthly")
+  correctPredictions Int  @default(0)
+  totalPredictions   Int  @default(0)
+  points             Int  @default(0)
+  rank               Int  @default(0)
+  updatedAt      DateTime @updatedAt
+
+  user           User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, period])
 }

@@ -48,8 +48,8 @@ export function serializePublicUser(u: {
   followerCount: number;
   followingCount: number;
   postCount: number;
-  sportsFollowing: string;
-  roleData: string;
+  sportsFollowing: unknown;
+  roleData: unknown;
   registeredAt: Date;
 }) {
   return {
@@ -73,11 +73,10 @@ export function serializePublicUser(u: {
   };
 }
 
-function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
-  if (!value) return fallback;
-  try {
-    return JSON.parse(value) as T;
-  } catch {
-    return fallback;
+function safeJsonParse<T>(value: unknown, fallback: T): T {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === 'string') {
+    try { return JSON.parse(value) as T; } catch { return fallback; }
   }
+  return value as T; // Already parsed (PostgreSQL Json)
 }

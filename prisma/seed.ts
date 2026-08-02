@@ -170,8 +170,8 @@ async function main() {
         create: {
           ...def,
           passwordHash,
-          sportsFollowing: JSON.stringify(['Football']),
-          roleData: JSON.stringify({}),
+          sportsFollowing: ['Football'],
+          roleData: {},
         },
       })
     )
@@ -222,7 +222,7 @@ async function main() {
       prisma.post.create({
         data: {
           ...def,
-          mediaUrls: JSON.stringify([]),
+          mediaUrls: [],
         },
       })
     )
@@ -277,7 +277,7 @@ async function main() {
       homeTeam: 'Manchester United', awayTeam: 'Arsenal',
       homeScore: 2, awayScore: 1, status: 'live', minute: 78, venue: 'Old Trafford',
       kickoffAt: new Date(now.getTime() - 78 * 60000),
-      events: JSON.stringify([
+      events: ([
         { minute: 23, type: 'goal', player: 'Rashford', team: 'home' },
         { minute: 34, type: 'goal', player: 'Saka', team: 'away' },
         { minute: 56, type: 'goal', player: 'Rashford', team: 'home' },
@@ -286,7 +286,7 @@ async function main() {
       homeTeam: 'Real Madrid', awayTeam: 'Barcelona',
       homeScore: 1, awayScore: 1, status: 'ht', minute: 45, venue: 'Santiago Bernabeu',
       kickoffAt: new Date(now.getTime() - 45 * 60000),
-      events: JSON.stringify([
+      events: ([
         { minute: 18, type: 'goal', player: 'Vinicius Jr', team: 'home' },
         { minute: 38, type: 'goal', player: 'Lewandowski', team: 'away' },
       ]) },
@@ -294,48 +294,48 @@ async function main() {
       homeTeam: 'Inter Milan', awayTeam: 'AC Milan',
       homeScore: 0, awayScore: 0, status: 'live', minute: 34, venue: 'San Siro',
       kickoffAt: new Date(now.getTime() - 34 * 60000),
-      events: JSON.stringify([]) },
+      events: ([]) },
     { league: 'AFCON', continent: 'Africa', country: 'Africa',
       homeTeam: 'Nigeria', awayTeam: 'Cameroon',
       homeScore: 1, awayScore: 0, status: 'live', minute: 62, venue: 'Cairo Stadium',
       kickoffAt: new Date(now.getTime() - 62 * 60000),
-      events: JSON.stringify([{ minute: 45, type: 'goal', player: 'Osimhen', team: 'home' }]) },
+      events: ([{ minute: 45, type: 'goal', player: 'Osimhen', team: 'home' }]) },
     { league: 'Premier League', continent: 'Europe', country: 'England',
       homeTeam: 'Liverpool', awayTeam: 'Chelsea',
       homeScore: null, awayScore: null, status: 'upcoming', minute: null, venue: 'Anfield',
-      kickoffAt: new Date(now.getTime() + 3 * 3600000), events: JSON.stringify([]) },
+      kickoffAt: new Date(now.getTime() + 3 * 3600000), events: ([]) },
     { league: 'Premier League', continent: 'Europe', country: 'England',
       homeTeam: 'Tottenham', awayTeam: 'Newcastle',
       homeScore: null, awayScore: null, status: 'upcoming', minute: null, venue: 'Tottenham Stadium',
-      kickoffAt: new Date(now.getTime() + 5 * 3600000), events: JSON.stringify([]) },
+      kickoffAt: new Date(now.getTime() + 5 * 3600000), events: ([]) },
     { league: 'Bundesliga', continent: 'Europe', country: 'Germany',
       homeTeam: 'Bayern Munich', awayTeam: 'Borussia Dortmund',
       homeScore: null, awayScore: null, status: 'upcoming', minute: null, venue: 'Allianz Arena',
-      kickoffAt: new Date(now.getTime() + 4 * 3600000), events: JSON.stringify([]) },
+      kickoffAt: new Date(now.getTime() + 4 * 3600000), events: ([]) },
     { league: 'Ligue 1', continent: 'Europe', country: 'France',
       homeTeam: 'PSG', awayTeam: 'Lyon',
       homeScore: null, awayScore: null, status: 'upcoming', minute: null, venue: 'Parc des Princes',
-      kickoffAt: new Date(now.getTime() + 6 * 3600000), events: JSON.stringify([]) },
+      kickoffAt: new Date(now.getTime() + 6 * 3600000), events: ([]) },
     { league: 'Champions League', continent: 'Europe', country: 'England',
       homeTeam: 'Manchester City', awayTeam: 'Napoli',
       homeScore: null, awayScore: null, status: 'upcoming', minute: null, venue: 'Etihad Stadium',
-      kickoffAt: new Date(now.getTime() + 28 * 3600000), events: JSON.stringify([]) },
+      kickoffAt: new Date(now.getTime() + 28 * 3600000), events: ([]) },
     { league: 'AFCON', continent: 'Africa', country: 'Africa',
       homeTeam: 'Senegal', awayTeam: 'Ghana',
       homeScore: null, awayScore: null, status: 'upcoming', minute: null, venue: 'Cairo Stadium',
-      kickoffAt: new Date(now.getTime() + 48 * 3600000), events: JSON.stringify([]) },
+      kickoffAt: new Date(now.getTime() + 48 * 3600000), events: ([]) },
     { league: 'Premier League', continent: 'Europe', country: 'England',
       homeTeam: 'Chelsea', awayTeam: 'Manchester City',
       homeScore: 1, awayScore: 3, status: 'ft', minute: null, venue: 'Stamford Bridge',
-      kickoffAt: new Date(now.getTime() - 3 * 3600000), events: JSON.stringify([]) },
+      kickoffAt: new Date(now.getTime() - 3 * 3600000), events: ([]) },
     { league: 'Serie A', continent: 'Europe', country: 'Italy',
       homeTeam: 'Juventus', awayTeam: 'Roma',
       homeScore: 2, awayScore: 0, status: 'ft', minute: null, venue: 'Allianz Stadium',
-      kickoffAt: new Date(now.getTime() - 4 * 3600000), events: JSON.stringify([]) },
+      kickoffAt: new Date(now.getTime() - 4 * 3600000), events: ([]) },
     { league: 'La Liga', continent: 'Europe', country: 'Spain',
       homeTeam: 'Atletico Madrid', awayTeam: 'Sevilla',
       homeScore: 1, awayScore: 0, status: 'ft', minute: null, venue: 'Metropolitano',
-      kickoffAt: new Date(now.getTime() - 5 * 3600000), events: JSON.stringify([]) },
+      kickoffAt: new Date(now.getTime() - 5 * 3600000), events: ([]) },
   ];
 
   await Promise.all(matchDefs.map(def => prisma.match.create({ data: def })));

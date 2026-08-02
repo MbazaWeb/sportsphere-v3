@@ -73,8 +73,8 @@ export async function POST(request: NextRequest) {
         passwordHash,
         role: String(role),
         verificationStatus: isAdvanced ? 'pending' : 'none',
-        sportsFollowing: JSON.stringify(sports),
-        roleData: JSON.stringify(roleData),
+        sportsFollowing: sports,
+        roleData: roleData,
       },
     });
 
