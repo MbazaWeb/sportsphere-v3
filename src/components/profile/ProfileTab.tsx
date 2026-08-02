@@ -342,7 +342,7 @@ function LoggedInProfile({
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </button>
 
-          {/* Explore Profiles — directory of all 17 profile types */}
+          {/* Browse Profiles — directory of real users on the platform */}
           <button
             onClick={() => onNavigate('explore')}
             className="mt-2 flex w-full items-center justify-between rounded-xl bg-gradient-to-r from-gold/10 to-gold/5 border border-gold/20 p-4 transition-colors hover:from-gold/15 hover:to-gold/10"
@@ -352,8 +352,8 @@ function LoggedInProfile({
                 <Globe className="h-4 w-4 text-gold" />
               </div>
               <div className="text-left">
-                <span className="block text-sm font-semibold text-white">Explore Profiles</span>
-                <span className="block text-[11px] text-muted-foreground">Browse teams, players, coaches & more</span>
+                <span className="block text-sm font-semibold text-white">Browse Profiles</span>
+                <span className="block text-[11px] text-muted-foreground">Discover teams, players, coaches & more</span>
               </div>
             </div>
             <ChevronRight className="h-4 w-4 text-gold/60" />
@@ -744,18 +744,16 @@ function ProfileExplorerSection({ onBack, onSelectProfile }: {
 }) {
   return (
     <div>
-      <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-surface-border bg-background/95 backdrop-blur px-4 py-3">
+      <header className="sticky top-0 z-40 flex items-center gap-3 border-b border-surface-border bg-background/95 backdrop-blur-xl px-4 py-3">
         <button
           onClick={onBack}
           className="flex h-9 w-9 items-center justify-center rounded-full bg-surface transition-colors hover:bg-surface-elevated"
         >
           <ChevronLeft className="h-4 w-4 text-muted-foreground" />
         </button>
-        <h1 className="text-lg font-bold text-white">Explore Profiles</h1>
+        <h1 className="text-lg font-bold text-white">Browse Profiles</h1>
       </header>
-      <div className="p-4">
-        <ProfileExplorer onSelectProfile={onSelectProfile} />
-      </div>
+      <ProfileExplorer onSelectProfile={onSelectProfile} />
     </div>
   );
 }
