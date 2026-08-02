@@ -16,6 +16,12 @@ export interface UserProfile {
   coverGradient?: string;
   roleId?: string;
   roleTypeId?: string;
+  roleName?: string;
+  roleSlug?: string;
+  roleIcon?: string;
+  typeName?: string;
+  typeSlug?: string;
+  sports?: Array<{ id: string; name: string; slug: string; icon: string | null }>;
 }
 
 interface AuthState {
