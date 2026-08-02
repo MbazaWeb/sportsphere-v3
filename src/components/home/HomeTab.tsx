@@ -6,7 +6,7 @@ import { useUIStore } from '@/store/uiStore';
 import { formatCount } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Bell, Heart, MessageCircle, Share2, Bookmark, TrendingUp, Zap, Shield, X, Send, ChevronDown, Trophy, Sparkles, Flame, Crown, Check, Image as ImageIcon, Smile, Inbox } from 'lucide-react';
+import { Search, Bell, Heart, MessageCircle, Share2, Bookmark, TrendingUp, Zap, Shield, X, Send, ChevronDown, Trophy, Sparkles, Flame, Crown, Check, Image as ImageIcon, Smile, Inbox, Info, BarChart3, Goal, Clock } from 'lucide-react';
 import type { HomeSubTab } from '@/store/navigationStore';
 import { apiUserToViewing } from '@/types';
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -332,24 +332,26 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
   const [liveMatches, setLiveMatches] = useState<ApiMatch[]>([]);
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [teams, setTeams] = useState<Array<{ id: string; name: string; handle: string; avatarInitials: string | null; coverGradient: string }>>([]);
+  const [leaderboard, setLeaderboard] = useState<Array<{ id: string; rank: number; name: string; handle: string; avatarInitials: string | null; points: number; isVerified: boolean; role: string }>>([]);
   const [loading, setLoading] = useState(true);
   const setViewingUser = useUIStore((s) => s.setViewingUser);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [matchesRes, feedRes, usersRes] = await Promise.all([
+        const [matchesRes, feedRes, usersRes, leaderboardRes] = await Promise.all([
           fetch('/api/matches?status=live'),
           fetch('/api/feed?type=for-you'),
           fetch('/api/users'),
+          fetch('/api/leaderboard'),
         ]);
         if (matchesRes.ok) setLiveMatches(await matchesRes.json());
         if (feedRes.ok) setPosts(await feedRes.json());
         if (usersRes.ok) {
           const allUsers = await usersRes.json();
-          // Filter to teams only for "Choose Your Teams"
           setTeams(allUsers.filter((u: { role: string }) => u.role === 'team').slice(0, 10));
         }
+        if (leaderboardRes.ok) setLeaderboard(await leaderboardRes.json());
       } catch (e) {
         // empty state on error
       }
@@ -359,6 +361,56 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
   }, []);
 
   const featuredMatch = liveMatches[0];
+  const [matchDetailOpen, setMatchDetailOpen] = useState(false);
+
+  const openTeamByName = async (teamName: string) => {
+    // Try to find the team by matching name → handle pattern
+    // Handles in seed are like @manchesterunited, @arsenal etc.
+    const handleGuess = '@' + teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    try {
+      const res = await fetch(`/api/users?handle=${encodeURIComponent(handleGuess)}`);
+      if (res.ok) {
+        const u = await res.json();
+        const { apiUserToViewing } = await import('@/types');
+        setViewingUser(apiUserToViewing(u, false));
+        return;
+      }
+    } catch { /* ignore */ }
+    // Fallback: search all teams for a name match
+    try {
+      const res = await fetch('/api/users');
+      if (res.ok) {
+        const all = await res.json();
+        const match = all.find((u: { name: string; role: string }) =>
+          u.role === 'team' && u.name.toLowerCase() === teamName.toLowerCase()
+        );
+        if (match) {
+          const { apiUserToViewing } = await import('@/types');
+          setViewingUser(apiUserToViewing(match, false));
+        }
+      }
+    } catch { /* ignore */ }
+  };
+
+  const openPlayerByName = async (playerName: string) => {
+    // Search players by name
+    try {
+      const res = await fetch('/api/users');
+      if (res.ok) {
+        const all = await res.json();
+        const match = all.find((u: { name: string; role: string }) =>
+          u.role === 'player' && (
+            u.name.toLowerCase().includes(playerName.toLowerCase()) ||
+            playerName.toLowerCase().includes(u.name.toLowerCase().split(' ')[0])
+          )
+        );
+        if (match) {
+          const { apiUserToViewing } = await import('@/types');
+          setViewingUser(apiUserToViewing(match, false));
+        }
+      }
+    } catch { /* ignore */ }
+  };
 
   const openTeamByHandle = async (handle: string) => {
     try {
@@ -373,48 +425,111 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      {/* Hero Banner — Image of the Day (featured live match) */}
+      {/* Hero Banner — Featured live match with premium rotating glow border */}
       {featuredMatch && (
-        <button
-          onClick={() => openTeamByHandle(`@${featuredMatch.homeTeam.toLowerCase().replace(/\s+/g, '')}`)}
-          className="relative overflow-hidden rounded-2xl block w-full text-left group"
-        >
-          {/* Background image — using a sports-themed gradient + pattern as the "image of the day" */}
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 via-green-700 to-emerald-900" />
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0di0ySDI0djJoMTJ6TTM2IDI0djJIMjR2LTJoMTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        <div className="premium-glow-border">
+          <div className="relative overflow-hidden rounded-[14px] bg-gradient-to-br from-emerald-700 via-green-800 to-emerald-900">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0di0ySDI0djJoMTJ6TTM2IDI0djJIMjR2LTJoMTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-          {/* Live badge */}
-          <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-red-500 px-2.5 py-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-            <span className="text-[10px] font-bold text-white uppercase tracking-wider">Live · {featuredMatch.minute}&apos;</span>
-          </div>
+            {/* Top bar: Live badge + Info button */}
+            <div className="relative flex items-center justify-between p-3">
+              <div className="flex items-center gap-1.5 rounded-full bg-red-500 px-2.5 py-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                <span className="text-[10px] font-bold text-white uppercase tracking-wider">Live · {featuredMatch.minute}&apos;</span>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); setMatchDetailOpen(true); }}
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 border border-white/20 hover:bg-white/20 transition-colors"
+                title="Match details & stats"
+              >
+                <Info className="h-3.5 w-3.5 text-white" />
+              </button>
+            </div>
 
-          {/* Match content */}
-          <div className="relative p-5 pt-16">
-            <p className="text-[10px] font-bold uppercase text-white/70 tracking-wider mb-3">{featuredMatch.league}</p>
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex flex-col items-center gap-1 flex-1">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 border border-white/20 text-lg font-black text-white">
-                  {featuredMatch.homeTeam.slice(0, 2).toUpperCase()}
+            {/* League name */}
+            <div className="relative px-4 pb-2">
+              <p className="text-[10px] font-bold uppercase text-white/70 tracking-wider">{featuredMatch.league}</p>
+            </div>
+
+            {/* Match content — home team + score + away team (each team clickable) */}
+            <div className="relative px-4 pb-4">
+              <div className="flex items-center justify-between gap-3">
+                {/* Home team — clickable */}
+                <button
+                  onClick={() => openTeamByName(featuredMatch.homeTeam)}
+                  className="flex flex-col items-center gap-1.5 flex-1 group"
+                >
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 border-2 border-white/20 text-lg font-black text-white group-hover:border-gold group-hover:scale-105 transition-all">
+                    {featuredMatch.homeTeam.slice(0, 2).toUpperCase()}
+                  </div>
+                  <p className="text-xs font-bold text-white text-center leading-tight group-hover:text-gold transition-colors">{featuredMatch.homeTeam}</p>
+                </button>
+
+                {/* Score — clickable for match details */}
+                <button
+                  onClick={() => setMatchDetailOpen(true)}
+                  className="flex flex-col items-center group"
+                >
+                  <p className="text-4xl font-black text-white">
+                    {featuredMatch.homeScore} <span className="text-white/40 mx-1">-</span> {featuredMatch.awayScore}
+                  </p>
+                  <p className="text-[10px] text-white/60 mt-1 group-hover:text-gold transition-colors flex items-center gap-1">
+                    <Info className="h-2.5 w-2.5" /> Tap for stats
+                  </p>
+                </button>
+
+                {/* Away team — clickable */}
+                <button
+                  onClick={() => openTeamByName(featuredMatch.awayTeam)}
+                  className="flex flex-col items-center gap-1.5 flex-1 group"
+                >
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 border-2 border-white/20 text-lg font-black text-white group-hover:border-gold group-hover:scale-105 transition-all">
+                    {featuredMatch.awayTeam.slice(0, 2).toUpperCase()}
+                  </div>
+                  <p className="text-xs font-bold text-white text-center leading-tight group-hover:text-gold transition-colors">{featuredMatch.awayTeam}</p>
+                </button>
+              </div>
+
+              {/* Goal scorers — clickable to open player profiles */}
+              {featuredMatch.events && featuredMatch.events.length > 0 && (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="flex flex-col gap-1">
+                    {featuredMatch.events.filter((e: { team: string }) => e.team === 'home').map((e: { minute: number; player: string; type: string }, i: number) => (
+                      <button
+                        key={i}
+                        onClick={() => openPlayerByName(e.player)}
+                        className="flex items-center gap-1.5 text-left text-[11px] text-white/80 hover:text-gold transition-colors"
+                      >
+                        <span className="h-1 w-1 rounded-full bg-gold" />
+                        <span className="font-semibold">{e.player}</span>
+                        <span className="text-white/50">{e.minute}&apos;</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-col gap-1 items-end">
+                    {featuredMatch.events.filter((e: { team: string }) => e.team === 'away').map((e: { minute: number; player: string; type: string }, i: number) => (
+                      <button
+                        key={i}
+                        onClick={() => openPlayerByName(e.player)}
+                        className="flex items-center gap-1.5 text-right text-[11px] text-white/80 hover:text-gold transition-colors"
+                      >
+                        <span className="text-white/50">{e.minute}&apos;</span>
+                        <span className="font-semibold">{e.player}</span>
+                        <span className="h-1 w-1 rounded-full bg-gold" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <p className="text-xs font-bold text-white text-center leading-tight">{featuredMatch.homeTeam}</p>
-              </div>
-              <div className="flex flex-col items-center">
-                <p className="text-3xl font-black text-white">
-                  {featuredMatch.homeScore} <span className="text-white/40 mx-1">-</span> {featuredMatch.awayScore}
-                </p>
-                <p className="text-[10px] text-white/60 mt-1">Tap for stats</p>
-              </div>
-              <div className="flex flex-col items-center gap-1 flex-1">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 border border-white/20 text-lg font-black text-white">
-                  {featuredMatch.awayTeam.slice(0, 2).toUpperCase()}
-                </div>
-                <p className="text-xs font-bold text-white text-center leading-tight">{featuredMatch.awayTeam}</p>
-              </div>
+              )}
             </div>
           </div>
-        </button>
+        </div>
+      )}
+
+      {/* Match Detail Modal */}
+      {matchDetailOpen && featuredMatch && (
+        <MatchDetailModal match={featuredMatch} onClose={() => setMatchDetailOpen(false)} onTeamClick={openTeamByName} onPlayerClick={openPlayerByName} />
       )}
 
       {/* Match Intelligence Card */}
@@ -464,29 +579,46 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
         </div>
       )}
 
-      {/* Leaderboard */}
+      {/* Leaderboard — real data from /api/leaderboard */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <div className="flex items-center gap-2 mb-3">
           <Crown className="h-4 w-4 text-gold" />
-          <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Leaderboard</h3>
+          <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Top Accounts</h3>
         </div>
-        <div className="flex flex-col gap-2">
-          {[
-            { rank: 1, name: 'Michael Brown', team: 'RKS 2018', points: '9+', avatar: 'MB', color: 'text-gold' },
-            { rank: 2, name: 'Sarah Chen', team: 'Phoenix FC', points: '7+', avatar: 'SC', color: 'text-muted-foreground' },
-            { rank: 3, name: 'Marcus J', team: 'United FC', points: '5+', avatar: 'MJ', color: 'text-muted-foreground' },
-          ].map((item) => (
-            <div key={item.rank} className="flex items-center gap-3 rounded-xl bg-surface p-2.5">
-              <span className={cn('w-5 text-center text-sm font-black', item.color)}>{item.rank}</span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/10 text-xs font-bold text-gold">{item.avatar}</div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-white">{item.name}</p>
-                <p className="text-[10px] text-muted-foreground">{item.team}</p>
-              </div>
-              <span className="text-sm font-bold text-gold">{item.points}</span>
-            </div>
-          ))}
-        </div>
+        {leaderboard.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-2">No leaderboard data.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {leaderboard.slice(0, 5).map((item) => (
+              <button
+                key={item.id}
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`/api/users?handle=${encodeURIComponent(item.handle)}`);
+                    if (res.ok) {
+                      const u = await res.json();
+                      const { apiUserToViewing } = await import('@/types');
+                      setViewingUser(apiUserToViewing(u, false));
+                    }
+                  } catch { /* ignore */ }
+                }}
+                className="flex items-center gap-3 rounded-xl bg-surface p-2.5 text-left hover:bg-surface-elevated transition-colors w-full"
+              >
+                <span className={cn('w-5 text-center text-sm font-black', item.rank === 1 ? 'text-gold' : item.rank === 2 ? 'text-gray-300' : item.rank === 3 ? 'text-orange-400' : 'text-muted-foreground')}>
+                  {item.rank}
+                </span>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/10 text-xs font-bold text-gold">
+                  {item.avatarInitials || item.name.slice(0, 2).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">{item.name}</p>
+                  <p className="text-[10px] text-muted-foreground capitalize">{item.role}</p>
+                </div>
+                <span className="text-sm font-bold text-gold">{formatCount(item.points)}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Choose Your Teams — real teams from API */}
@@ -575,7 +707,7 @@ function FeedCard({ item, onShare, onComment, formatTime }: {
   };
 
   return (
-    <article className="glass-card rounded-2xl overflow-hidden glass-card-hover">
+    <article className="glass-card premium-card rounded-2xl overflow-hidden glass-card-hover">
       {item.isBreaking && (
         <div className="flex items-center gap-2 border-b border-gold/20 bg-gold/5 px-4 py-2">
           <span className="flex h-1.5 w-1.5 rounded-full bg-gold animate-pulse" />
@@ -998,6 +1130,162 @@ function SpotlightContent() {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// ─── Match Detail Modal ────────────────────────────────────────
+function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }: {
+  match: ApiMatch;
+  onClose: () => void;
+  onTeamClick: (name: string) => void;
+  onPlayerClick: (name: string) => void;
+}) {
+  const events = (match.events || []) as Array<{ minute: number; type: string; player: string; team: string }>;
+  const homeGoals = events.filter(e => e.type === 'goal' && e.team === 'home');
+  const awayGoals = events.filter(e => e.type === 'goal' && e.team === 'away');
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
+      <motion.div
+        initial={{ y: '100%', opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: '100%', opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl bg-surface-elevated border border-surface-border"
+      >
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-surface-border bg-surface-elevated px-4 py-3">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-gold" />
+            <h2 className="text-sm font-bold text-white">Match Details</h2>
+          </div>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated">
+            <X className="h-4 w-4 text-muted-foreground" />
+          </button>
+        </div>
+
+        <div className="p-4 flex flex-col gap-4">
+          {/* Score header */}
+          <div className="premium-glow-border">
+            <div className="rounded-[14px] bg-gradient-to-br from-emerald-700 to-green-900 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold uppercase text-white/70 tracking-wider">{match.league}</span>
+                <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold uppercase', match.status === 'live' ? 'bg-red-500 text-white' : 'bg-surface text-muted-foreground')}>
+                  {match.status === 'live' ? `Live · ${match.minute}'` : match.status.toUpperCase()}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <button onClick={() => onTeamClick(match.homeTeam)} className="flex flex-col items-center gap-1 flex-1 group">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 border border-white/20 text-sm font-black text-white group-hover:border-gold transition-colors">
+                    {match.homeTeam.slice(0, 2).toUpperCase()}
+                  </div>
+                  <p className="text-xs font-bold text-white text-center group-hover:text-gold">{match.homeTeam}</p>
+                </button>
+                <div className="text-center">
+                  <p className="text-3xl font-black text-white">{match.homeScore} - {match.awayScore}</p>
+                </div>
+                <button onClick={() => onTeamClick(match.awayTeam)} className="flex flex-col items-center gap-1 flex-1 group">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 border border-white/20 text-sm font-black text-white group-hover:border-gold transition-colors">
+                    {match.awayTeam.slice(0, 2).toUpperCase()}
+                  </div>
+                  <p className="text-xs font-bold text-white text-center group-hover:text-gold">{match.awayTeam}</p>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Venue + Kickoff */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-xl bg-surface border border-surface-border p-3">
+              <p className="text-[10px] text-muted-foreground uppercase">Venue</p>
+              <p className="text-sm font-semibold text-white">{match.venue || 'TBD'}</p>
+            </div>
+            <div className="rounded-xl bg-surface border border-surface-border p-3">
+              <p className="text-[10px] text-muted-foreground uppercase">Kick-off</p>
+              <p className="text-sm font-semibold text-white">{new Date(match.kickoffAt).toLocaleString()}</p>
+            </div>
+          </div>
+
+          {/* Goal Scorers */}
+          {events.length > 0 && (
+            <div>
+              <h3 className="mb-2 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
+                <Goal className="h-3.5 w-3.5" /> Goal Scorers
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-1">
+                  {homeGoals.map((e, i) => (
+                    <button key={i} onClick={() => onPlayerClick(e.player)} className="flex items-center gap-2 rounded-lg bg-surface p-2 text-left hover:bg-surface-elevated transition-colors">
+                      <span className="h-1.5 w-1.5 rounded-full bg-gold" />
+                      <span className="text-xs font-semibold text-white">{e.player}</span>
+                      <span className="text-[10px] text-muted-foreground ml-auto">{e.minute}'</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex flex-col gap-1">
+                  {awayGoals.map((e, i) => (
+                    <button key={i} onClick={() => onPlayerClick(e.player)} className="flex items-center gap-2 rounded-lg bg-surface p-2 text-right hover:bg-surface-elevated transition-colors justify-end">
+                      <span className="text-[10px] text-muted-foreground">{e.minute}'</span>
+                      <span className="text-xs font-semibold text-white">{e.player}</span>
+                      <span className="h-1.5 w-1.5 rounded-full bg-gold" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Match Stats (mock — would come from API in production) */}
+          <div>
+            <h3 className="mb-2 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
+              <BarChart3 className="h-3.5 w-3.5" /> Match Stats
+            </h3>
+            <div className="flex flex-col gap-2">
+              {[
+                { label: 'Possession', home: 58, away: 42, unit: '%' },
+                { label: 'Shots', home: 14, away: 9, unit: '' },
+                { label: 'Shots on Target', home: 6, away: 3, unit: '' },
+                { label: 'Corners', home: 7, away: 4, unit: '' },
+                { label: 'Fouls', home: 8, away: 12, unit: '' },
+              ].map((stat) => {
+                const total = stat.home + stat.away || 1;
+                const homePct = (stat.home / total) * 100;
+                return (
+                  <div key={stat.label} className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-white">{stat.home}{stat.unit}</span>
+                      <span className="text-muted-foreground">{stat.label}</span>
+                      <span className="font-bold text-white">{stat.away}{stat.unit}</span>
+                    </div>
+                    <div className="flex h-1.5 overflow-hidden rounded-full bg-surface">
+                      <div className="bg-gold" style={{ width: `${homePct}%` }} />
+                      <div className="bg-blue-400" style={{ width: `${100 - homePct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Timeline */}
+          {events.length > 0 && (
+            <div>
+              <h3 className="mb-2 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
+                <Clock className="h-3.5 w-3.5" /> Timeline
+              </h3>
+              <div className="flex flex-col gap-1">
+                {events.sort((a, b) => a.minute - b.minute).map((e, i) => (
+                  <div key={i} className="flex items-center gap-2 rounded-lg bg-surface p-2">
+                    <span className="text-[10px] font-bold text-gold w-8">{e.minute}'</span>
+                    <span className="text-xs text-white">{e.type === 'goal' ? '⚽' : e.type} {e.player} ({e.team === 'home' ? match.homeTeam : match.awayTeam})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 }

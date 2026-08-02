@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 
 // --- Filter definitions ----------------------------------------
 const FILTERS = {
+  sport:     ['All', 'Football', 'Basketball', 'Tennis', 'Cricket', 'Rugby', 'Boxing', 'MMA', 'F1', 'Athletics'],
   continent: ['All', 'Europe', 'Africa', 'South America', 'Asia', 'North America'],
   country:   ['All', 'England', 'Spain', 'Germany', 'France', 'Italy', 'Portugal', 'Netherlands', 'Africa'],
   tournament: ['All', 'Premier League', 'La Liga', 'Bundesliga', 'Ligue 1', 'Serie A', 'Champions League', 'Europa League', 'AFCON', 'World Cup'],
@@ -95,13 +96,14 @@ export default function ScoresTab() {
   const scoresSubTab    = useAppStore((s) => s.scoresSubTab);
   const setScoresSubTab = useAppStore((s) => s.setScoresSubTab);
 
+  const [sport,      setSport]      = useState('All');
   const [continent,  setContinent]  = useState('All');
   const [country,    setCountry]    = useState('All');
   const [tournament, setTournament] = useState('All');
 
-  const hasFilter = continent !== 'All' || country !== 'All' || tournament !== 'All';
+  const hasFilter = sport !== 'All' || continent !== 'All' || country !== 'All' || tournament !== 'All';
 
-  const clearFilters = () => { setContinent('All'); setCountry('All'); setTournament('All'); };
+  const clearFilters = () => { setSport('All'); setContinent('All'); setCountry('All'); setTournament('All'); };
 
   const buildParams = () => {
     const params = new URLSearchParams();
@@ -135,6 +137,7 @@ export default function ScoresTab() {
 
         {/* Filters */}
         <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
+          <FilterDropdown label="Sport"      options={FILTERS.sport}      value={sport}      onChange={setSport}      icon={Trophy} />
           <FilterDropdown label="Continent"  options={FILTERS.continent}  value={continent}  onChange={setContinent}  icon={Globe} />
           <FilterDropdown label="Country"    options={FILTERS.country}    value={country}    onChange={setCountry}    icon={Flag}  />
           <FilterDropdown label="Tournament" options={FILTERS.tournament} value={tournament} onChange={setTournament} icon={Trophy} />
@@ -146,7 +149,7 @@ export default function ScoresTab() {
         </div>
       </header>
 
-      <motion.div key={scoresSubTab + continent + country + tournament}
+      <motion.div key={scoresSubTab + sport + continent + country + tournament}
         initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
         {scoresSubTab === 'live'      && <LiveContent queryParams={buildParams()} />}
         {scoresSubTab === 'today'     && <TodayContent queryParams={buildParams()} />}

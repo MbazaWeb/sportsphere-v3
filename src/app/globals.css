@@ -199,6 +199,66 @@
   animation: gold-glow 2s ease-in-out infinite;
 }
 
+/* 🏆 Premium Rotating Glow Border — for hero cards, featured posts, etc. */
+@keyframes border-rotate {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.premium-glow-border {
+  position: relative;
+  border-radius: 1rem;
+  padding: 1.5px;
+  background: linear-gradient(120deg,
+    rgba(245, 197, 24, 0.8),
+    rgba(16, 185, 129, 0.6),
+    rgba(59, 130, 246, 0.6),
+    rgba(245, 197, 24, 0.8)
+  );
+  background-size: 300% 300%;
+  animation: border-rotate 4s ease infinite;
+}
+
+.premium-glow-border-inner {
+  border-radius: calc(1rem - 1.5px);
+  background: var(--background);
+  height: 100%;
+  width: 100%;
+}
+
+/* Subtle premium glow for feed posts */
+.premium-card {
+  position: relative;
+  transition: box-shadow 0.3s ease;
+}
+.premium-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(120deg,
+    rgba(245, 197, 24, 0.3),
+    rgba(16, 185, 129, 0.2),
+    rgba(245, 197, 24, 0.3)
+  );
+  background-size: 200% 200%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  animation: border-rotate 6s ease infinite;
+  pointer-events: none;
+}
+.premium-card:hover::before {
+  opacity: 1;
+}
+.premium-card:hover {
+  box-shadow: 0 0 25px rgba(245, 197, 24, 0.1);
+}
+
 /* Slide Up Animation */
 @keyframes slideUp {
   from {

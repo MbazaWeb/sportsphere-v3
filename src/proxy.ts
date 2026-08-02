@@ -23,6 +23,7 @@ const PUBLIC_GET_PREFIXES = [
   '/api/profile-data',
   '/api/comments',
   '/api/follows',   // GET (list followers/following) is public
+  '/api/leaderboard',
 ];
 
 export async function proxy(request: NextRequest) {
