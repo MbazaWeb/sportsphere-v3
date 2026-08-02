@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Settings, LogOut, ChevronRight, ChevronLeft, Heart, UserPlus, MessageCircle,
-  Bookmark, Trophy, Users, BarChart3, X, Shield, Bell,
+  Bookmark, Trophy, Users, BarChart3, X, Shield, Bell, Mail,
   Palette, Globe, HelpCircle, Info, Edit, Camera,
   Eye, ShieldCheck, Clock, CheckCircle2, AlertCircle, Sparkles,
   BadgeCheck, Upload, ChevronDown
@@ -17,6 +17,7 @@ import ProUpgradeModal from '@/components/registration/ProUpgradeModal';
 import EditProfileModal from '@/components/profile/edit/EditProfileModal';
 import ProfileExplorer from '@/components/profiles/ProfileExplorer';
 import { BadgeStack } from '@/components/ui/RoleBadge';
+import VerifyEmailModal from '@/components/auth/VerifyEmailModal';
 
 // ====== VERIFICATION BADGE COMPONENT ======
 function VerificationBadge({ status }: { status: VerificationStatus }) {
@@ -150,6 +151,7 @@ function LoggedInProfile({
   const [activeTab, setActiveTab] = useState<'posts' | 'media' | 'spotlight'>('posts');
   const [editOpen, setEditOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [verifyEmailOpen, setVerifyEmailOpen] = useState(false);
 
   const isAdvanced = userProfile && userProfile.role !== 'fan';
   const isPending = userProfile?.verificationStatus === 'pending';
@@ -264,6 +266,21 @@ function LoggedInProfile({
             )}
           </div>
         </div>
+
+        {/* Email verification banner — Phase 4 */}
+        {userProfile && !userProfile.emailVerified && (
+          <button
+            onClick={() => setVerifyEmailOpen(true)}
+            className="mb-4 w-full rounded-xl bg-gold/10 border border-gold/20 p-3 flex items-center gap-3 text-left hover:bg-gold/15 transition-colors"
+          >
+            <Mail className="h-5 w-5 text-gold flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-gold">Verify your email</p>
+              <p className="text-[11px] text-muted-foreground">Confirm your email to access all features</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-gold/60 flex-shrink-0" />
+          </button>
+        )}
 
         {/* Stats */}
         <div className="mb-6 grid grid-cols-4 gap-3 rounded-2xl bg-surface-elevated border border-surface-border p-4">
@@ -400,6 +417,9 @@ function LoggedInProfile({
 
       {/* Phase 8: Pro Upgrade Modal */}
       <ProUpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+
+      {/* Phase 4: Email Verification Modal */}
+      <VerifyEmailModal open={verifyEmailOpen} onClose={() => setVerifyEmailOpen(false)} />
     </div>
   );
 }

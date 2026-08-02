@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, X, ShieldCheck } from 'lucide-react';
 import { PasswordInput } from '@/components/ui/PasswordInput';
+import { AuthLogo } from '@/components/auth/AuthLogo';
 import { useAuthStore } from '@/store/authStore';
 import { useNavigationStore } from '@/store/navigationStore';
 
@@ -117,8 +118,9 @@ export default function ResetPasswordPage() {
             initial={{ opacity: 0, scale: 0.96, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 12 }}
-            className="w-full max-w-sm rounded-3xl bg-surface-elevated border border-surface-border p-6"
+            className="w-full max-w-sm rounded-3xl glass-card p-6"
           >
+            <AuthLogo />
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-white">
                 {success ? 'Password Reset' : 'Set New Password'}

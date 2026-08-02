@@ -85,6 +85,9 @@ model User {
   passwordHash        String?
   resetToken          String?
   resetTokenExpiry    DateTime?
+  emailVerified       Boolean  @default(false)
+  emailVerifyToken    String?
+  emailVerifyExpiry   DateTime?
   avatarUrl           String?
   avatarInitials      String?
   role                String   @default("fan")  // legacy slug — kept in sync via roleId
@@ -172,6 +175,7 @@ model User {
   @@index([role])
   @@index([roleId])
   @@index([resetToken])
+  @@index([emailVerifyToken])
 }
 
 // ─── Follow ───────────────────────────────────────────────────

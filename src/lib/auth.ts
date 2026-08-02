@@ -43,6 +43,7 @@ export function serializePublicUser(u: {
   role: string;
   verificationStatus: string;
   isVerified: boolean;
+  emailVerified: boolean;
   bio: string | null;
   location: string | null;
   coverGradient: string;
@@ -52,6 +53,8 @@ export function serializePublicUser(u: {
   sportsFollowing: unknown;
   roleData: unknown;
   registeredAt: Date;
+  roleId: string;
+  roleTypeId: string;
 }) {
   return {
     id: u.id,
@@ -62,6 +65,7 @@ export function serializePublicUser(u: {
     role: u.role,
     verificationStatus: u.verificationStatus,
     isVerified: u.isVerified,
+    emailVerified: u.emailVerified,
     bio: u.bio || '',
     location: u.location || '',
     coverGradient: u.coverGradient,
@@ -71,5 +75,7 @@ export function serializePublicUser(u: {
     sportsFollowing: safeJsonParse(u.sportsFollowing, []),
     roleData: safeJsonParse(u.roleData, {}),
     registeredAt: u.registeredAt.toISOString(),
+    roleId: u.roleId,
+    roleTypeId: u.roleTypeId,
   };
 }
