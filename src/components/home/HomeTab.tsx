@@ -6,7 +6,7 @@ import { useUIStore } from '@/store/uiStore';
 import { formatCount } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Bell, Heart, MessageCircle, Share2, Bookmark, TrendingUp, Zap, Shield, X, Send, ChevronDown, Trophy, Sparkles, Flame, Crown, Check, Image as ImageIcon, Smile, Inbox, Info, BarChart3, Goal, Clock } from 'lucide-react';
+import { Search, Bell, Heart, MessageCircle, Share2, Bookmark, TrendingUp, Zap, Shield, X, Send, ChevronDown, Trophy, Sparkles, Flame, Crown, Check, Image as ImageIcon, Smile, Inbox, Info, BarChart3, Goal, Clock, ShoppingBag } from 'lucide-react';
 import type { HomeSubTab } from '@/store/navigationStore';
 import { apiUserToViewing } from '@/types';
 import { BadgeStack } from '@/components/ui/RoleBadge';
@@ -264,6 +264,11 @@ export default function HomeTab() {
           <div className="flex items-center gap-2">
             <button className="flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
               <Search className="h-4 w-4 text-muted-foreground" />
+            </button>
+            {/* Cart icon — visible to all users (fans can shop) */}
+            <button className="relative flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
+              <ShoppingBag className="h-4 w-4 text-gold" />
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[8px] font-bold text-black">0</span>
             </button>
             <button onClick={() => { if (!isAuthenticated) setLoginModalOpen(true); else setActiveTab('activity'); }}
               className="relative flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
@@ -531,53 +536,6 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
       {/* Match Detail Modal */}
       {matchDetailOpen && featuredMatch && (
         <MatchDetailModal match={featuredMatch} onClose={() => setMatchDetailOpen(false)} onTeamClick={openTeamByName} onPlayerClick={openPlayerByName} />
-      )}
-
-      {/* Match Intelligence Card */}
-      {featuredMatch && (
-        <div className="glass-card rounded-2xl p-4 glass-card-hover">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-gold" />
-              <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Today&apos;s Match Intelligence</h3>
-            </div>
-            <span className="flex h-2 w-2 rounded-full bg-gold animate-pulse" />
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="text-center">
-              <div className="mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20 text-xs font-bold text-red-400 border border-red-500/20">
-                {featuredMatch.homeTeam.slice(0, 2).toUpperCase()}
-              </div>
-              <p className="text-xs font-semibold text-white">{featuredMatch.homeTeam.split(' ').pop()}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-black text-gold">{featuredMatch.homeScore}</span>
-              <span className="text-xs text-muted-foreground">–</span>
-              <span className="text-2xl font-black text-white">{featuredMatch.awayScore}</span>
-            </div>
-            <div className="text-center">
-              <div className="mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20 text-xs font-bold text-red-400 border border-red-500/20">
-                {featuredMatch.awayTeam.slice(0, 2).toUpperCase()}
-              </div>
-              <p className="text-xs font-semibold text-white">{featuredMatch.awayTeam.split(' ').pop()}</p>
-            </div>
-          </div>
-          {featuredMatch.events.length > 0 && (
-            <div className="mt-2 flex justify-center gap-3 text-[10px] text-muted-foreground">
-              {featuredMatch.events.map((e, i) => (
-                <span key={i} className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-gold" /> {e.player} {e.minute}&apos;
-                </span>
-              ))}
-            </div>
-          )}
-          <div className="mt-3 flex items-center justify-between border-t border-surface-border pt-2">
-            <span className="text-[10px] text-muted-foreground">{featuredMatch.minute}&apos; · {featuredMatch.league}</span>
-            <span className="flex h-5 items-center rounded-full bg-gold/10 px-2 text-[10px] font-bold text-gold">
-              {featuredMatch.status === 'ht' ? 'HT' : 'LIVE'}
-            </span>
-          </div>
-        </div>
       )}
 
       {/* Leaderboard — real data from /api/leaderboard */}

@@ -734,9 +734,8 @@ function PeopleList({ title, onBack }: { title: string; onBack: () => void }) {
 }
 
 // ====== PROFILE EXPLORER SECTION (wrapped with header) ======
-function ProfileExplorerSection({ onBack, onSelectProfile }: {
+function ProfileExplorerSection({ onBack }: {
   onBack: () => void;
-  onSelectProfile: (id: string) => void;
 }) {
   return (
     <div>
@@ -749,7 +748,7 @@ function ProfileExplorerSection({ onBack, onSelectProfile }: {
         </button>
         <h1 className="text-lg font-bold text-white">Browse Profiles</h1>
       </header>
-      <ProfileExplorer onSelectProfile={onSelectProfile} />
+      <ProfileExplorer />
     </div>
   );
 }
@@ -760,7 +759,6 @@ export default function ProfileTab() {
   const logout = useAppStore((s) => s.logout);
   const profileSection = useAppStore((s) => s.profileSection);
   const setProfileSection = useAppStore((s) => s.setProfileSection);
-  const setViewingProfile = useAppStore((s) => s.setViewingProfile);
 
   if (!isAuthenticated) {
     return (
@@ -789,9 +787,6 @@ export default function ProfileTab() {
       {profileSection === 'explore' && (
         <ProfileExplorerSection
           onBack={() => setProfileSection('main')}
-          onSelectProfile={(id) => {
-            setViewingProfile(id);
-          }}
         />
       )}
       {profileSection === 'saved' && <GenericSection title="Saved" onBack={() => setProfileSection('main')} />}

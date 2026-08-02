@@ -9,9 +9,16 @@ import {
 } from 'lucide-react';
 import type { ProfileTypeId } from './profileConfig';
 import { BadgeStack } from '@/components/ui/RoleBadge';
+import { useUIStore } from '@/store/uiStore';
+import { apiUserToViewing } from '@/types';
+
+// Hook to open a user's full profile
+function useUIStoreLocal() {
+  return useUIStore((s) => s.setViewingUser);
+}
 
 interface ProfileExplorerProps {
-  onSelectProfile: (id: ProfileTypeId) => void;
+  onSelectProfile?: (id: ProfileTypeId) => void;
 }
 
 interface ApiUser {
@@ -82,6 +89,7 @@ export default function ProfileExplorer({ onSelectProfile: _onSelectProfile }: P
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [activeRole, setActiveRole] = useState<string | null>(null);
+  const setViewingUser = useUIStoreLocal();
 
   useEffect(() => {
     async function loadUsers() {
@@ -199,7 +207,10 @@ export default function ProfileExplorer({ onSelectProfile: _onSelectProfile }: P
                     return (
                       <button
                         key={user.id}
-                        onClick={() => _onSelectProfile(user.role as ProfileTypeId)}
+                        onClick={() => {
+                          // Open the REAL user profile (with full tabs), not a generic role mockup
+                          setViewingUser(apiUserToViewing(user, false));
+                        }}
                         className="flex items-center gap-3 rounded-xl bg-surface-elevated border border-surface-border p-3 text-left hover:border-gold/30 transition-colors w-full group"
                       >
                         <div className={cn('flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold', getRoleAccent(user.role))}>
