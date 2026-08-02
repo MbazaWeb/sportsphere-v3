@@ -10,7 +10,7 @@ import {
   X, Send, Camera, Tag, Hash, MapPin, ChevronDown,
   Plus, Minus, Lock, Globe, Users, Search, Check, XCircle,
 } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 const CREATE_TYPES = [
   { id: 'post',       label: 'Post',       icon: FileText,  color: 'bg-blue-500/10 text-blue-400',   desc: 'Share your thoughts' },
