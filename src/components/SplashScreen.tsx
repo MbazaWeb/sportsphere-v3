@@ -61,18 +61,18 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
         transition={{ duration: 0.65, ease: [0.34, 1.56, 0.64, 1] }}
         className="flex flex-col items-center gap-8 relative z-10"
       >
-        {/* S mark */}
-        <svg viewBox="0 0 120 120" width="120" height="120" fill="none">
-          {/* Top arm */}
-          <path d="M28 22 L82 22 L92 34 L58 34 L58 52 L28 52 L18 40 Z" fill="#F5C518"/>
-          {/* Middle bridge */}
-          <path d="M28 52 L58 52 L58 68 L28 68 Z" fill="#F5C518"/>
-          {/* Bottom arm */}
-          <path d="M62 68 L92 68 L102 80 L62 80 L62 98 L28 98 L38 86 L62 86 Z" fill="#F5C518"/>
-          {/* Speed cut top-left */}
-          <path d="M28 22 L40 22 L28 34 Z" fill="#0A1628" opacity="0.7"/>
-          {/* Speed cut bottom-right */}
-          <path d="M80 86 L92 86 L80 98 Z" fill="#0A1628" opacity="0.7"/>
+        {/* S mark — smooth italic style matching logo */}
+        <svg viewBox="0 0 100 130" width="90" height="117" fill="none">
+          {/* Top horizontal bar */}
+          <path d="M15 8 L78 8 Q88 8 88 18 L88 18 Q88 28 78 28 L42 28 L42 55 L15 55 Q5 55 5 45 L5 18 Q5 8 15 8 Z" fill="#F5C518"/>
+          {/* Bottom horizontal bar */}
+          <path d="M22 75 L58 75 L58 102 Q58 112 68 112 L85 112 Q95 112 95 122 L95 122 Q95 122 85 122 L22 122 Q12 122 12 112 L12 85 Q12 75 22 75 Z" fill="#F5C518"/>
+          {/* Middle connector — diagonal italic feel */}
+          <path d="M42 55 L58 55 L58 75 L42 75 Z" fill="#F5C518"/>
+          {/* Top-left italic slash */}
+          <path d="M5 8 L22 8 L5 28 Z" fill="#0A1628"/>
+          {/* Bottom-right italic slash */}
+          <path d="M95 102 L78 122 L95 122 Z" fill="#0A1628"/>
         </svg>
 
         {/* Wordmark */}
