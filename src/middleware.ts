@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySession, SESSION_COOKIE } from '@/lib/auth';
+import { verifySession, SESSION_COOKIE } from '@/lib/session';
 
 // Routes that DON'T require a session. Anything under /api/auth/* is public
 // (login, register, forgot-password, reset-password, logout, me).
