@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import RegistrationModal from '@/components/registration/RegistrationModal';
+import EditProfileModal from '@/components/profile/edit/EditProfileModal';
 import ProfileExplorer from '@/components/profiles/ProfileExplorer';
 
 // ====== VERIFICATION BADGE COMPONENT ======
@@ -145,6 +146,7 @@ function LoggedInProfile({
 }) {
   const userProfile = useAppStore((s) => s.userProfile);
   const [activeTab, setActiveTab] = useState<'posts' | 'media' | 'spotlight'>('posts');
+  const [editOpen, setEditOpen] = useState(false);
 
   const isAdvanced = userProfile && userProfile.role !== 'fan';
   const isPending = userProfile?.verificationStatus === 'pending';
@@ -250,7 +252,7 @@ function LoggedInProfile({
               )}
               <VerificationBadge status={userProfile?.verificationStatus || 'none'} />
             </div>
-            <button className="mt-2 rounded-lg bg-surface border border-surface-border px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-surface-elevated">
+            <button onClick={() => setEditOpen(true)} className="mt-2 rounded-lg bg-surface border border-surface-border px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-surface-elevated">
               Edit Profile
             </button>
           </div>
@@ -385,6 +387,9 @@ function LoggedInProfile({
           Logout
         </button>
       </div>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal open={editOpen} onClose={() => setEditOpen(false)} />
     </div>
   );
 }

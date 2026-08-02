@@ -20,11 +20,14 @@ model User {
   resetToken          String?
   resetTokenExpiry    DateTime?
   avatarUrl           String?
+  coverUrl            String?
   avatarInitials      String?
   role                String   @default("fan")
   verificationStatus  String   @default("none")
   isVerified          Boolean  @default(false)
   bio                 String?
+  aboutMe             String?
+  pronouns            String?
   location            String?
   coverGradient       String   @default("from-emerald-600 to-emerald-900")
   followerCount       Int      @default(0)
@@ -35,6 +38,47 @@ model User {
   registeredAt        DateTime @default(now())
   updatedAt           DateTime @updatedAt
   lastSeenAt          DateTime @default(now())
+
+  // ─── Personal ──────────────────────────────────────────────
+  dateOfBirth         DateTime?
+  gender              String?
+  nationality         String?
+  countryOfOrigin     String?
+  currentCountry      String?
+  region              String?
+  city                String?
+  preferredLanguage   String?
+  timezone            String?
+
+  // ─── Contact ───────────────────────────────────────────────
+  phone               String?
+  website             String?
+  whatsapp            String?
+  socialInstagram     String?
+  socialX             String?
+  socialTikTok        String?
+  socialFacebook      String?
+  socialLinkedIn      String?
+  socialYouTube       String?
+  socialThreads       String?
+
+  // ─── Appearance (stored inline for simplicity) ────────────
+  theme               String   @default("dark")
+  fontSize            String   @default("medium")
+  reducedMotion       Boolean  @default(false)
+  highContrast        Boolean  @default(false)
+
+  // ─── Privacy (stored as JSON for flexibility) ─────────────
+  privacySettings     String   @default("{}")
+
+  // ─── Notification preferences (stored as JSON) ────────────
+  notifPrefs          String   @default("{}")
+
+  // ─── Interests (stored as JSON array) ─────────────────────
+  interests           String   @default("[]")
+
+  // ─── Role-specific extended data (stored as JSON) ─────────
+  roleProfile         String   @default("{}")
 
   // Relations
   posts               Post[]
@@ -50,11 +94,29 @@ model User {
   verificationReqs    VerificationRequest[]
   communityMemberships CommunityMember[]
   createdCommunities  Community[]
+  favorites           UserFavorite[]
 
   @@index([handle])
   @@index([email])
   @@index([role])
   @@index([resetToken])
+  @@index([countryOfOrigin])
+  @@index([currentCountry])
+}
+
+// ─── User Favorites (teams, players, coaches, stadiums, leagues, national teams) ──
+model UserFavorite {
+  id          String   @id @default(uuid())
+  userId      String
+  targetType  String   // 'team' | 'player' | 'coach' | 'stadium' | 'league' | 'national_team' | 'competition'
+  targetName  String   // display name (e.g. "Manchester United")
+  targetHandle String? // @handle if the target is a user on the platform
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetType, targetName])
+  @@index([userId, targetType])
 }
 
 // ─── Follows ───────────────────────────────────────────────────

@@ -21,8 +21,9 @@ const PUBLIC_GET_PREFIXES = [
   '/api/communities',
   '/api/users',
   '/api/profile-data',
+  '/api/profile',        // GET profile by handle is public
   '/api/comments',
-  '/api/follows',   // GET (list followers/following) is public
+  '/api/follows',        // GET (list followers/following) is public
   '/api/leaderboard',
 ];
 
@@ -49,6 +50,19 @@ export async function proxy(request: NextRequest) {
     (p) => pathname === p || pathname.startsWith(`${p}/`)
   );
   if (isPublicGetRoute && (method === 'GET' || method === 'HEAD')) {
+    // Even for public GETs, if the user IS logged in, pass their session
+    // info through so the route can personalize (e.g. /api/profile without
+    // a handle returns the logged-in user's own profile).
+    const token = request.cookies.get(SESSION_COOKIE)?.value;
+    const session = await verifySession(token);
+    if (session) {
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set('x-user-id', session.sub);
+      requestHeaders.set('x-user-email', session.email);
+      requestHeaders.set('x-user-handle', session.handle);
+      requestHeaders.set('x-user-role', session.role);
+      return NextResponse.next({ request: { headers: requestHeaders } });
+    }
     return NextResponse.next();
   }
 
