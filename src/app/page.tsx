@@ -102,31 +102,6 @@ export default function Home() {
       <ProfileTypeOverlay />
       <UserProfileViewer />
 
-      {/* ===== SEARCH OVERLAY ===== */}
-      {isSearchOpen && (
-        <div className="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/80" onClick={() => setIsSearchOpen(false)}>
-          <div className="w-full max-w-md rounded-xl bg-[#1a2332] p-6 border border-gold/30 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mb-4 text-xl font-bold text-gold">Search</h2>
-            <input type="text" placeholder="Type to search..." className="w-full rounded-lg border border-gray-700 bg-[#0b1426] p-3 text-white mb-4" autoFocus />
-            <button onClick={() => setIsSearchOpen(false)} className="w-full rounded-lg bg-gray-700 py-2 hover:bg-gray-600 transition-colors">Close</button>
-          </div>
-        </div>
-      )}
-
-      {/* ===== CART OVERLAY ===== */}
-      {isCartOpen && (
-        <div className="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/80" onClick={() => setIsCartOpen(false)}>
-          <div className="w-full max-w-md rounded-xl bg-[#1a2332] p-6 border border-gold/30 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mb-4 text-xl font-bold text-gold">Your Cart</h2>
-            <div className="mb-4 rounded-lg border border-gray-700 bg-[#0b1426] p-4 text-left">
-              <p className="py-2 border-b border-gray-700/50">?? Sport Jersey - .99</p>
-              <p className="py-2">? Football - .99</p>
-            </div>
-            <button onClick={() => setIsCartOpen(false)} className="w-full rounded-lg bg-gray-700 py-2 hover:bg-gray-600 transition-colors">Close</button>
-          </div>
-        </div>
-      )}
-
       <div className="flex-1 pb-16"><TabContent /></div>
       {!viewingProfile && !viewingUser && <BottomNav />}
     </div>

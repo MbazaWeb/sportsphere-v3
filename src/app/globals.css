@@ -150,8 +150,6 @@
 /* 🏆 Scrollbar Hide */
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
-* { -ms-overflow-style: none; scrollbar-width: none; }
-*::-webkit-scrollbar { display: none; }
 
 /* Gold Shimmer Animation */
 @keyframes shimmer {
@@ -289,32 +287,4 @@
 
 .animate-scale-in {
   animation: scaleIn 0.3s ease-out forwards;
-}
-/* Add to globals.css - Fix text visibility */
-.text-foreground {
-  color: #ffffff !important;
-}
-
-.text-muted-foreground {
-  color: rgba(255, 255, 255, 0.6) !important;
-}
-
-/* Fix dark text on dark backgrounds */
-.bg-gold .text-black {
-  color: #000000 !important;
-}
-
-/* Ensure all body text is white */
-body, p, span, div, h1, h2, h3, h4, h5, h6 {
-  color: #ffffff;
-}
-
-/* Fix input text */
-input, textarea, select {
-  color: #ffffff !important;
-}
-
-/* Fix placeholder text */
-::placeholder {
-  color: rgba(255, 255, 255, 0.4) !important;
 }
