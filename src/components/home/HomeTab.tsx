@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import Image from 'next/image';
 import { useNavigationStore } from '@/store/navigationStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
@@ -279,7 +280,14 @@ export default function HomeTab() {
       <header className="sticky top-0 z-40 border-b border-surface-border bg-background/90 backdrop-blur-xl">
         <div className="flex h-14 items-center justify-between px-4">
           <button onClick={() => window.scrollTo(0,0)} className="flex items-center">
-            <img src="/logo-wordmark.svg" alt="SportSphere" style={{ height: '28px', width: 'auto' }} />
+            <Image 
+              src="/logo-wordmark.svg" 
+              alt="SportSphere" 
+              width={120} 
+              height={28}
+              priority
+              className="h-7 w-auto"
+            />
           </button>
           <div className="flex items-center gap-2">
             
