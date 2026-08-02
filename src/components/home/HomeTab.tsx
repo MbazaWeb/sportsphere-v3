@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Bell, Heart, MessageCircle, Share2, Bookmark, TrendingUp, Zap, Shield, X, Send, ChevronDown, Trophy, Sparkles, Flame, Crown, Check, Image as ImageIcon, Smile, Inbox, Info, BarChart3, Goal, Clock } from 'lucide-react';
 import type { HomeSubTab } from '@/store/navigationStore';
 import { apiUserToViewing } from '@/types';
+import { BadgeStack } from '@/components/ui/RoleBadge';
 import { useState, useRef, useEffect, useCallback } from 'react';
 
 const SUBTABS: { id: HomeSubTab; label: string }[] = [
@@ -722,9 +723,9 @@ function FeedCard({ item, onShare, onComment, formatTime }: {
             {user.avatarInitials}
           </div>
           <div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-sm font-semibold text-white">{user.name}</span>
-              {user.isVerified && <Shield className="h-3.5 w-3.5 text-gold" />}
+              <BadgeStack role={user.role} isVerified={user.isVerified} size="xs" />
             </div>
             <span className="text-xs text-muted-foreground">{user.handle} · {formatTime(item.createdAt)}</span>
           </div>

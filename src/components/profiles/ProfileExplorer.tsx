@@ -8,6 +8,7 @@ import {
   Camera, Scale, Building, ShieldCheck, Briefcase, X,
 } from 'lucide-react';
 import type { ProfileTypeId } from './profileConfig';
+import { BadgeStack } from '@/components/ui/RoleBadge';
 
 interface ProfileExplorerProps {
   onSelectProfile: (id: ProfileTypeId) => void;
@@ -205,9 +206,9 @@ export default function ProfileExplorer({ onSelectProfile: _onSelectProfile }: P
                           {user.avatarInitials || user.name.slice(0, 2).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <p className="text-sm font-bold text-white truncate group-hover:text-gold transition-colors">{user.name}</p>
-                            {user.isVerified && <ShieldCheck className="h-3.5 w-3.5 text-gold flex-shrink-0" />}
+                            <BadgeStack role={user.role} isVerified={user.isVerified} size="xs" />
                           </div>
                           <p className="text-xs text-muted-foreground truncate">{user.handle}</p>
                           {user.bio && <p className="text-[11px] text-muted-foreground/70 truncate mt-0.5">{user.bio}</p>}

@@ -16,6 +16,7 @@ import {
   Video, Image, Camera, Tv, Radio, Newspaper, BookOpen,
   GraduationCap, Briefcase, Building, Home, Wifi, Coffee,
   Utensils, Car, Bus, Train, Plane, Globe, Compass, Info,
+  Database, ShoppingBag, CreditCard, Truck, MapPinned, Tag,
 } from 'lucide-react';
 
 // ─── Fetch hook for profile data (replaces static imports) ──
@@ -851,7 +852,8 @@ function AnalystOverview() {
     <>
       <InfoCard title="Reports Produced" subtitle="Career" detail="1.2K Data Reports" accent="text-gold" icon={BarChart3} />
       <InfoCard title="Data Coverage" subtitle="Leagues" detail="80+ Leagues Monitored" accent="text-blue-400" icon={Globe} />
-      
+
+      {/* Stats grid */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 text-sm font-bold text-white">Analytics Stats</h3>
         <div className="grid grid-cols-2 gap-3">
@@ -864,6 +866,150 @@ function AnalystOverview() {
             <div key={stat.label} className="rounded-xl bg-surface p-3 text-center">
               <p className="text-sm font-bold text-gold">{stat.value}</p>
               <p className="text-[10px] text-muted-foreground">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ─── Analyst Tools: Performance Graph ─── */}
+      <div className="glass-card rounded-2xl p-4 glass-card-hover">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="flex items-center gap-1.5 text-sm font-bold text-white">
+            <BarChart3 className="h-4 w-4 text-cyan-400" /> Team Performance Index
+          </h3>
+          <span className="text-[10px] text-muted-foreground">Last 10 matches</span>
+        </div>
+        {/* Bar chart (CSS-based) */}
+        <div className="flex items-end justify-between gap-1 h-32 mb-2">
+          {[65, 72, 80, 68, 85, 92, 78, 88, 95, 90].map((val, i) => (
+            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+              <div
+                className="w-full rounded-t bg-gradient-to-t from-cyan-500 to-blue-400 transition-all hover:opacity-80"
+                style={{ height: `${val}%` }}
+                title={`Match ${i + 1}: ${val}%`}
+              />
+              <span className="text-[8px] text-muted-foreground">M{i + 1}</span>
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-between text-[10px] text-muted-foreground border-t border-surface-border pt-2">
+          <span>Avg: <span className="text-cyan-400 font-bold">81.3%</span></span>
+          <span>Trend: <span className="text-green-400 font-bold">↗ +12%</span></span>
+        </div>
+      </div>
+
+      {/* ─── Analyst Tools: xG vs xGA Radar ─── */}
+      <div className="glass-card rounded-2xl p-4 glass-card-hover">
+        <h3 className="mb-3 flex items-center gap-1.5 text-sm font-bold text-white">
+          <Target className="h-4 w-4 text-gold" /> Expected Goals (xG) Analysis
+        </h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl bg-surface p-3">
+            <p className="text-[10px] text-muted-foreground uppercase">xG For</p>
+            <p className="text-xl font-black text-green-400">2.34</p>
+            <div className="mt-1 h-1.5 rounded-full bg-surface-border">
+              <div className="h-full rounded-full bg-green-400" style={{ width: '78%' }} />
+            </div>
+          </div>
+          <div className="rounded-xl bg-surface p-3">
+            <p className="text-[10px] text-muted-foreground uppercase">xG Against</p>
+            <p className="text-xl font-black text-red-400">0.89</p>
+            <div className="mt-1 h-1.5 rounded-full bg-surface-border">
+              <div className="h-full rounded-full bg-red-400" style={{ width: '30%' }} />
+            </div>
+          </div>
+        </div>
+        <p className="mt-2 text-[10px] text-muted-foreground">xG Difference: <span className="text-gold font-bold">+1.45</span> (elite)</p>
+      </div>
+
+      {/* ─── Analyst Tools: Pitch Touch Map ─── */}
+      <div className="glass-card rounded-2xl p-4 glass-card-hover">
+        <h3 className="mb-3 flex items-center gap-1.5 text-sm font-bold text-white">
+          <MapPin className="h-4 w-4 text-purple-400" /> Pitch Touch Map
+        </h3>
+        <p className="mb-2 text-[10px] text-muted-foreground">Heat zones from last match (touches per zone)</p>
+        {/* Football pitch visualization (CSS) */}
+        <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-green-900 border border-green-600/30">
+          {/* Pitch lines */}
+          <div className="absolute inset-2 border-2 border-white/20 rounded" />
+          <div className="absolute top-1/2 left-2 right-2 h-px bg-white/20" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-12 w-12 border-2 border-white/20 rounded-full" />
+          {/* Center circle */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-16 w-16 border border-white/10 rounded-full" />
+          {/* Heat zones */}
+          <div className="absolute top-[15%] left-[30%] h-8 w-8 rounded-full bg-red-500/40 blur-sm" />
+          <div className="absolute top-[25%] left-[55%] h-10 w-10 rounded-full bg-orange-500/40 blur-sm" />
+          <div className="absolute top-[45%] left-[40%] h-14 w-14 rounded-full bg-yellow-500/50 blur-md" />
+          <div className="absolute top-[60%] left-[25%] h-10 w-10 rounded-full bg-orange-500/40 blur-sm" />
+          <div className="absolute top-[70%] left-[50%] h-12 w-12 rounded-full bg-red-500/50 blur-sm" />
+          <div className="absolute top-[80%] left-[40%] h-8 w-8 rounded-full bg-red-500/60 blur-sm" />
+        </div>
+        <div className="mt-2 flex items-center justify-between text-[9px] text-muted-foreground">
+          <span>Low</span>
+          <div className="flex gap-1">
+            <span className="h-2 w-4 rounded bg-yellow-500/50" />
+            <span className="h-2 w-4 rounded bg-orange-500/50" />
+            <span className="h-2 w-4 rounded bg-red-500/50" />
+          </div>
+          <span>High</span>
+        </div>
+      </div>
+
+      {/* ─── Analyst Tools: Video Analysis ─── */}
+      <div className="glass-card rounded-2xl p-4 glass-card-hover">
+        <h3 className="mb-3 flex items-center gap-1.5 text-sm font-bold text-white">
+          <Video className="h-4 w-4 text-pink-400" /> Video Analysis Clips
+        </h3>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { title: 'Pressing Structure', dur: '3:24', gradient: 'from-purple-600 to-pink-700' },
+            { title: 'Build-up Patterns', dur: '4:12', gradient: 'from-blue-600 to-cyan-700' },
+            { title: 'Set Piece Analysis', dur: '2:48', gradient: 'from-green-600 to-emerald-700' },
+            { title: 'Player Heatmap', dur: '5:30', gradient: 'from-orange-600 to-red-700' },
+          ].map((clip, i) => (
+            <button key={i} className="group relative aspect-video rounded-xl overflow-hidden">
+              <div className={cn('absolute inset-0 bg-gradient-to-br', clip.gradient)} />
+              <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur group-hover:scale-110 transition-transform">
+                  <span className="text-white text-sm">▶</span>
+                </div>
+              </div>
+              <div className="absolute bottom-1 left-1 right-1 flex items-center justify-between">
+                <span className="text-[9px] font-semibold text-white">{clip.title}</span>
+                <span className="rounded bg-black/60 px-1 text-[8px] text-white">{clip.dur}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ─── Analyst Tools: Data Models ─── */}
+      <div className="glass-card rounded-2xl p-4 glass-card-hover">
+        <h3 className="mb-3 flex items-center gap-1.5 text-sm font-bold text-white">
+          <Database className="h-4 w-4 text-cyan-400" /> Predictive Models
+        </h3>
+        <div className="flex flex-col gap-2">
+          {[
+            { name: 'xG Model v3.2', accuracy: 94, status: 'active' },
+            { name: 'PPDA Pressure Model', accuracy: 87, status: 'active' },
+            { name: 'Transfer Value Predictor', accuracy: 78, status: 'beta' },
+            { name: 'Injury Risk Assessment', accuracy: 82, status: 'active' },
+          ].map((model, i) => (
+            <div key={i} className="rounded-xl bg-surface p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-semibold text-white">{model.name}</span>
+                <span className={cn(
+                  'rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase',
+                  model.status === 'active' ? 'bg-green-500/15 text-green-400' : 'bg-yellow-500/15 text-yellow-400'
+                )}>{model.status}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-1.5 rounded-full bg-surface-border">
+                  <div className="h-full rounded-full bg-cyan-400" style={{ width: `${model.accuracy}%` }} />
+                </div>
+                <span className="text-[10px] font-bold text-cyan-400">{model.accuracy}%</span>
+              </div>
             </div>
           ))}
         </div>
@@ -1536,27 +1682,282 @@ function AboutContent({ config }: { config: ProfileTypeConfig }) {
   );
 }
 
-// ─── Shop Content ─────────────────────────────────────────────
+// ─── Shop Content (Sponsor/Shop with full e-commerce flow) ────
 function ShopContent() {
+  const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
+
+  const products = [
+    {
+      name: 'Simba SC Home Kit 2026/27',
+      price: 'TSh 85,000',
+      priceUsd: '$45',
+      gradient: 'from-red-600 to-red-800',
+      category: 'Kit',
+      available: true,
+      stock: 'In stock',
+      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+      payment: ['M-Pesa', 'Tigo Pesa', 'Airtel Money', 'Card'],
+      delivery: '2-5 days nationwide',
+      sponsor: 'Simba SC Official Store',
+    },
+    {
+      name: 'Simba SC Away Kit 2026/27',
+      price: 'TSh 85,000',
+      priceUsd: '$45',
+      gradient: 'from-blue-600 to-blue-800',
+      category: 'Kit',
+      available: true,
+      stock: 'In stock',
+      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+      payment: ['M-Pesa', 'Tigo Pesa', 'Airtel Money', 'Card'],
+      delivery: '2-5 days nationwide',
+      sponsor: 'Simba SC Official Store',
+    },
+    {
+      name: 'Training Top 2026/27',
+      price: 'TSh 55,000',
+      priceUsd: '$29',
+      gradient: 'from-gray-600 to-gray-800',
+      category: 'Training',
+      available: true,
+      stock: 'Low stock',
+      sizes: ['S', 'M', 'L', 'XL'],
+      payment: ['M-Pesa', 'Card'],
+      delivery: '2-5 days',
+      sponsor: 'Nike',
+    },
+    {
+      name: 'Supporter Scarf',
+      price: 'TSh 25,000',
+      priceUsd: '$13',
+      gradient: 'from-red-500 to-yellow-600',
+      category: 'Accessory',
+      available: false,
+      stock: 'Sold out',
+      sizes: ['One Size'],
+      payment: ['M-Pesa', 'Card'],
+      delivery: '1-3 days',
+      sponsor: 'Simba SC Official Store',
+    },
+  ];
+
   return (
-    <div className="grid grid-cols-2 gap-3">
-      {[
-        { name: 'Home Kit 24/25', price: '£89.99', gradient: 'from-red-600 to-red-800' },
-        { name: 'Away Kit 24/25', price: '£89.99', gradient: 'from-blue-600 to-blue-800' },
-        { name: 'Training Top', price: '£54.99', gradient: 'from-gray-600 to-gray-800' },
-        { name: 'Scarf', price: '£24.99', gradient: 'from-red-500 to-yellow-600' },
-      ].map((item, i) => (
-        <div key={i} className="glass-card rounded-xl overflow-hidden glass-card-hover">
-          <div className={cn('aspect-square bg-gradient-to-b flex items-center justify-center', item.gradient)}>
-            <span className="text-3xl font-black text-white/20">SS</span>
+    <div>
+      {/* Sponsor banner */}
+      <div className="mb-4 flex items-center justify-between rounded-2xl bg-gradient-to-r from-gold/10 to-gold/5 border border-gold/20 p-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/15">
+            <Tag className="h-4 w-4 text-gold" />
           </div>
-          <div className="p-3">
-            <p className="text-xs font-bold text-white">{item.name}</p>
-            <p className="text-xs font-bold text-gold">{item.price}</p>
+          <div>
+            <p className="text-xs font-bold text-white">Official Shop</p>
+            <p className="text-[10px] text-muted-foreground">Powered by SportsSphere Commerce</p>
           </div>
         </div>
-      ))}
+        <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-bold text-green-400">OPEN</span>
+      </div>
+
+      {/* Products grid */}
+      <div className="grid grid-cols-2 gap-3">
+        {products.map((item, i) => (
+          <button
+            key={i}
+            onClick={() => item.available && setSelectedProduct(selectedProduct === i ? null : i)}
+            className="glass-card rounded-xl overflow-hidden glass-card-hover text-left"
+          >
+            <div className={cn('relative aspect-square bg-gradient-to-b flex items-center justify-center', item.gradient)}>
+              <span className="text-3xl font-black text-white/20">SS</span>
+              {!item.available && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                  <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white uppercase">Sold Out</span>
+                </div>
+              )}
+              <span className="absolute top-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[8px] font-bold text-white uppercase">{item.category}</span>
+            </div>
+            <div className="p-3">
+              <p className="text-xs font-bold text-white leading-tight">{item.name}</p>
+              <div className="mt-1 flex items-center justify-between">
+                <p className="text-xs font-bold text-gold">{item.price}</p>
+                <p className="text-[9px] text-muted-foreground">{item.priceUsd}</p>
+              </div>
+              <p className={cn('mt-1 text-[9px] font-semibold', item.available ? 'text-green-400' : 'text-red-400')}>
+                {item.stock}
+              </p>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Product detail / order flow */}
+      {selectedProduct !== null && (
+        <ProductOrderFlow product={products[selectedProduct]} onClose={() => setSelectedProduct(null)} />
+      )}
+
+      {/* Payment & delivery info */}
+      <div className="mt-4 glass-card rounded-2xl p-4">
+        <h3 className="mb-2 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
+          <CreditCard className="h-3.5 w-3.5" /> Payment & Delivery
+        </h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-[10px] text-muted-foreground mb-1">Accepted Payments</p>
+            <div className="flex flex-wrap gap-1">
+              {['M-Pesa', 'Tigo Pesa', 'Airtel Money', 'Visa', 'Mastercard'].map(p => (
+                <span key={p} className="rounded bg-surface px-1.5 py-0.5 text-[9px] text-white">{p}</span>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground mb-1">Delivery</p>
+            <div className="flex items-center gap-1 text-[10px] text-white">
+              <Truck className="h-3 w-3 text-gold" />
+              2-5 days nationwide
+            </div>
+            <div className="flex items-center gap-1 text-[10px] text-white mt-1">
+              <MapPinned className="h-3 w-3 text-gold" />
+              Pickup available
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+  );
+}
+
+// ─── Product Order Flow ───────────────────────────────────────
+function ProductOrderFlow({ product, onClose }: {
+  product: {
+    name: string; price: string; priceUsd: string; gradient: string;
+    sizes: string[]; payment: string[]; delivery: string; sponsor: string;
+  };
+  onClose: () => void;
+}) {
+  const [step, setStep] = useState<'details' | 'payment' | 'confirmation'>('details');
+  const [size, setSize] = useState('');
+  const [qty, setQty] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState('');
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mt-4 glass-card rounded-2xl p-4 border-2 border-gold/30"
+    >
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-sm font-bold text-white">Order: {product.name}</h3>
+        <button onClick={onClose} className="text-muted-foreground hover:text-white">
+          ✕
+        </button>
+      </div>
+
+      {step === 'details' && (
+        <div className="flex flex-col gap-3">
+          <div>
+            <p className="mb-1.5 text-[10px] font-bold text-gold uppercase">Select Size</p>
+            <div className="flex flex-wrap gap-1.5">
+              {product.sizes.map(s => (
+                <button
+                  key={s}
+                  onClick={() => setSize(s)}
+                  className={cn(
+                    'rounded-lg px-3 py-1.5 text-xs font-bold border',
+                    size === s ? 'bg-gold text-black border-gold' : 'bg-surface text-white border-surface-border'
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="mb-1.5 text-[10px] font-bold text-gold uppercase">Quantity</p>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setQty(Math.max(1, qty - 1))} className="h-8 w-8 rounded-lg bg-surface border border-surface-border text-white">−</button>
+              <span className="text-sm font-bold text-white w-8 text-center">{qty}</span>
+              <button onClick={() => setQty(qty + 1)} className="h-8 w-8 rounded-lg bg-surface border border-surface-border text-white">+</button>
+            </div>
+          </div>
+          <div className="rounded-xl bg-surface p-3">
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Price</span>
+              <span className="text-white font-semibold">{product.price}</span>
+            </div>
+            <div className="flex justify-between text-xs mt-1">
+              <span className="text-muted-foreground">Quantity</span>
+              <span className="text-white font-semibold">×{qty}</span>
+            </div>
+            <div className="flex justify-between text-sm mt-2 pt-2 border-t border-surface-border">
+              <span className="text-gold font-bold">Total</span>
+              <span className="text-gold font-bold">{product.price}</span>
+            </div>
+          </div>
+          <button
+            onClick={() => setStep('payment')}
+            disabled={!size}
+            className="rounded-xl bg-gold py-2.5 text-sm font-bold text-black disabled:opacity-50"
+          >
+            Continue to Payment
+          </button>
+        </div>
+      )}
+
+      {step === 'payment' && (
+        <div className="flex flex-col gap-3">
+          <div>
+            <p className="mb-1.5 text-[10px] font-bold text-gold uppercase">Payment Method</p>
+            <div className="flex flex-col gap-1.5">
+              {product.payment.map(p => (
+                <button
+                  key={p}
+                  onClick={() => setPaymentMethod(p)}
+                  className={cn(
+                    'flex items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold border',
+                    paymentMethod === p ? 'bg-gold/10 text-gold border-gold/30' : 'bg-surface text-white border-surface-border'
+                  )}
+                >
+                  <span>{p}</span>
+                  {paymentMethod === p && <CheckCircle className="h-3.5 w-3.5 text-gold" />}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-xl bg-surface p-3 text-[10px] text-muted-foreground">
+            <p className="flex items-center gap-1">
+              <Truck className="h-3 w-3 text-gold" />
+              Delivery: {product.delivery}
+            </p>
+            <p className="mt-1">Sponsor: {product.sponsor}</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setStep('details')} className="flex-1 rounded-xl bg-surface border border-surface-border py-2.5 text-sm font-bold text-white">
+              Back
+            </button>
+            <button
+              onClick={() => setStep('confirmation')}
+              disabled={!paymentMethod}
+              className="flex-1 rounded-xl bg-gold py-2.5 text-sm font-bold text-black disabled:opacity-50"
+            >
+              Place Order
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 'confirmation' && (
+        <div className="text-center py-4">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-green-500/15">
+            <CheckCircle className="h-7 w-7 text-green-400" />
+          </div>
+          <p className="text-sm font-bold text-white">Order Placed!</p>
+          <p className="text-xs text-muted-foreground mt-1">{product.name} · Size {size} · ×{qty}</p>
+          <p className="text-xs text-gold mt-2">Paid via {paymentMethod}</p>
+          <p className="text-[10px] text-muted-foreground mt-3">Delivery: {product.delivery}</p>
+          <button onClick={onClose} className="mt-4 w-full rounded-xl bg-surface border border-surface-border py-2.5 text-sm font-bold text-white">
+            Done
+          </button>
+        </div>
+      )}
+    </motion.div>
   );
 }
 

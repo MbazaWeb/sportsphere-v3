@@ -35,6 +35,25 @@ const SECTIONS = [
   { id: 'role', label: 'Role Profile', icon: Award },
 ] as const;
 
+// ─── Fan Types (15 types with icons + descriptions) ───────────
+const FAN_TYPES = [
+  { id: 'casual',         label: 'Casual Fan',           icon: '☕', desc: 'Enjoy the game, no stress' },
+  { id: 'diehard',        label: 'Die-hard Fan',         icon: '🔥', desc: 'Live and breathe your team' },
+  { id: 'ultra',          label: 'Ultra Supporter',      icon: '📣', desc: 'Chants, tifos, away days' },
+  { id: 'loyalist',       label: 'Team Loyalist',        icon: '🛡️', desc: 'Through thick and thin' },
+  { id: 'player-fan',     label: 'Player Fan',           icon: '⭐', desc: 'Follow your favorite player' },
+  { id: 'match-goer',     label: 'Match-Goer',           icon: '🎟️', desc: 'In the stands every weekend' },
+  { id: 'fantasy',        label: 'Fantasy Player',       icon: '🎮', desc: 'FPL, fantasy leagues, stats' },
+  { id: 'stats',          label: 'Stats Enthusiast',     icon: '📊', desc: 'xG, PPDA, data-driven' },
+  { id: 'content',        label: 'Content Creator',      icon: '🎥', desc: 'Posts, reels, fan channels' },
+  { id: 'community',      label: 'Community Leader',     icon: '👥', desc: 'Run fan groups & meetups' },
+  { id: 'collector',      label: 'Merch Collector',      icon: '👕', desc: 'Kits, scarves, memorabilia' },
+  { id: 'highlights',     label: 'Highlight Watcher',    icon: '⚡', desc: 'Catch every goal & skill' },
+  { id: 'predictor',      label: 'Predictor',            icon: '🎯', desc: 'Predictions, scores, outcomes' },
+  { id: 'multi-sport',    label: 'Multi-Sport Fan',      icon: '🏆', desc: 'Football, basketball, F1...' },
+  { id: 'national',       label: 'National Team Fan',     icon: '🌍', desc: 'Behind your country' },
+];
+
 type SectionId = typeof SECTIONS[number]['id'];
 
 // ─── Main Edit Profile Modal ──────────────────────────────────
@@ -835,9 +854,9 @@ function RoleProfileSection({ data, update }: { data: Record<string, unknown>; u
   };
 
   // Role-specific fields
-  const roleConfigs: Record<string, Array<{ key: string; label: string; type: 'text' | 'textarea' | 'select' | 'chips'; options?: string[]; placeholder?: string }>> = {
+  const roleConfigs: Record<string, Array<{ key: string; label: string; type: 'text' | 'textarea' | 'select' | 'chips' | 'fanTypes'; options?: string[]; placeholder?: string }>> = {
     fan: [
-      { key: 'fanType', label: 'Fan Type', type: 'select', options: ['Ultra', 'Casual', 'Family', 'Collector', 'Content Creator', 'Fantasy Player', 'Analyst', 'Scout'] },
+      { key: 'fanTypes', label: 'Fan Types', type: 'fanTypes' as const },
       { key: 'supporterSince', label: 'Supporter Since (Year)', type: 'text', placeholder: '2005' },
       { key: 'dreamStadium', label: 'Dream Stadium', type: 'text', placeholder: 'Old Trafford' },
       { key: 'favoriteMatch', label: 'Favorite Match Attended', type: 'text', placeholder: 'Man Utd vs Arsenal 2008' },
@@ -984,8 +1003,109 @@ function RoleProfileSection({ data, update }: { data: Record<string, unknown>; u
               placeholder="Select..."
             />
           )}
+          {field.type === 'fanTypes' && (
+            <FanTypeSelector
+              value={roleProfile[field.key] as { primary?: string; secondary?: string[] } | undefined}
+              onChange={(v) => updateRole(field.key, v)}
+            />
+          )}
         </Field>
       ))}
+    </div>
+  );
+}
+
+// ─── Fan Type Selector (1 primary + up to 3 secondary) ────────
+function FanTypeSelector({ value, onChange }: {
+  value: { primary?: string; secondary?: string[] } | undefined;
+  onChange: (v: { primary?: string; secondary?: string[] }) => void;
+}) {
+  const primary = value?.primary;
+  const secondary = value?.secondary || [];
+
+  const togglePrimary = (id: string) => {
+    if (primary === id) {
+      onChange({ ...value, primary: undefined });
+    } else {
+      onChange({ ...value, primary: id });
+    }
+  };
+
+  const toggleSecondary = (id: string) => {
+    if (secondary.includes(id)) {
+      onChange({ ...value, secondary: secondary.filter(s => s !== id) });
+    } else if (secondary.length < 3) {
+      onChange({ ...value, secondary: [...secondary, id] });
+    }
+  };
+
+  return (
+    <div>
+      <p className="mb-2 text-[10px] font-bold text-gold uppercase tracking-wider">Primary Fan Type (required)</p>
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {FAN_TYPES.map(ft => {
+          const isSelected = primary === ft.id;
+          return (
+            <button
+              key={ft.id}
+              onClick={() => togglePrimary(ft.id)}
+              className={cn(
+                'flex flex-col items-center gap-1 rounded-xl border p-3 text-center transition-all',
+                isSelected
+                  ? 'border-gold bg-gold/10 scale-[1.02]'
+                  : 'border-surface-border bg-surface hover:border-gold/30'
+              )}
+            >
+              <span className="text-xl">{ft.icon}</span>
+              <span className={cn('text-[10px] font-bold leading-tight', isSelected ? 'text-gold' : 'text-white')}>{ft.label}</span>
+              <span className="text-[9px] text-muted-foreground leading-tight">{ft.desc}</span>
+              {isSelected && (
+                <span className="mt-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold">
+                  <Check className="h-2.5 w-2.5 text-black" strokeWidth={3} />
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="mb-2 text-[10px] font-bold text-gold uppercase tracking-wider">
+        Secondary Fan Types (optional, up to 3)
+      </p>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {FAN_TYPES.filter(ft => ft.id !== primary).map(ft => {
+          const isSelected = secondary.includes(ft.id);
+          const isDisabled = !isSelected && secondary.length >= 3;
+          return (
+            <button
+              key={ft.id}
+              onClick={() => toggleSecondary(ft.id)}
+              disabled={isDisabled}
+              className={cn(
+                'flex flex-col items-center gap-1 rounded-xl border p-3 text-center transition-all',
+                isSelected
+                  ? 'border-blue-400 bg-blue-500/10'
+                  : isDisabled
+                    ? 'border-surface-border bg-surface opacity-40 cursor-not-allowed'
+                    : 'border-surface-border bg-surface hover:border-blue-400/30'
+              )}
+            >
+              <span className="text-xl">{ft.icon}</span>
+              <span className={cn('text-[10px] font-bold leading-tight', isSelected ? 'text-blue-400' : 'text-white')}>{ft.label}</span>
+              <span className="text-[9px] text-muted-foreground leading-tight">{ft.desc}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {primary && (
+        <p className="mt-3 text-[10px] text-muted-foreground">
+          Primary: <span className="text-gold font-semibold">{FAN_TYPES.find(f => f.id === primary)?.label}</span>
+          {secondary.length > 0 && (
+            <> · Secondary: <span className="text-blue-400 font-semibold">{secondary.map(s => FAN_TYPES.find(f => f.id === s)?.label).join(', ')}</span></>
+          )}
+        </p>
+      )}
     </div>
   );
 }
