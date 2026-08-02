@@ -1,6 +1,6 @@
 'use client';
 import SplashScreen from '@/components/SplashScreen';
-import React from 'react';
+import React, { useState } from 'react';
 
 import { useNavigationStore } from '@/store/navigationStore';
 import { useAuthStore } from '@/store/authStore';
@@ -82,9 +82,21 @@ export default function Home() {
   const [verifyEmailOpen, setVerifyEmailOpen] = React.useState(false);
   const viewingProfile = useUIStore((s) => s.viewingProfile);
   const viewingUser    = useUIStore((s) => s.viewingUser);
+  
+  // --- NEW STATES FOR SEARCH AND CART ---
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  // ---------------------------------------
+
   useServiceWorker();
   useAuthSession();
   if (!splashDone) return <SplashScreen onDone={() => setSplashDone(true)} />;
+
+  // Expose toggle functions globally so HomeTab can call them
+  if (typeof window !== 'undefined') {
+    window.__triggerSearch = () => setIsSearchOpen(true);
+    window.__triggerCart = () => setIsCartOpen(true);
+  }
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
@@ -95,6 +107,32 @@ export default function Home() {
       <VerifyEmailModal open={verifyEmailOpen} onClose={() => setVerifyEmailOpen(false)} />
       <ProfileTypeOverlay />
       <UserProfileViewer />
+
+      {/* ===== SEARCH OVERLAY ===== */}
+      {isSearchOpen && (
+        <div className="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/80" onClick={() => setIsSearchOpen(false)}>
+          <div className="w-full max-w-md rounded-xl bg-[#1a2332] p-6 border border-gold/30 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="mb-4 text-xl font-bold text-gold">Search</h2>
+            <input type="text" placeholder="Type to search..." className="w-full rounded-lg border border-gray-700 bg-[#0b1426] p-3 text-white mb-4" autoFocus />
+            <button onClick={() => setIsSearchOpen(false)} className="w-full rounded-lg bg-gray-700 py-2 hover:bg-gray-600 transition-colors">Close</button>
+          </div>
+        </div>
+      )}
+
+      {/* ===== CART OVERLAY ===== */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/80" onClick={() => setIsCartOpen(false)}>
+          <div className="w-full max-w-md rounded-xl bg-[#1a2332] p-6 border border-gold/30 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="mb-4 text-xl font-bold text-gold">Your Cart</h2>
+            <div className="mb-4 rounded-lg border border-gray-700 bg-[#0b1426] p-4 text-left">
+              <p className="py-2 border-b border-gray-700/50">?? Sport Jersey - .99</p>
+              <p className="py-2">? Football - .99</p>
+            </div>
+            <button onClick={() => setIsCartOpen(false)} className="w-full rounded-lg bg-gray-700 py-2 hover:bg-gray-600 transition-colors">Close</button>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 pb-16"><TabContent /></div>
       {!viewingProfile && !viewingUser && <BottomNav />}
     </div>

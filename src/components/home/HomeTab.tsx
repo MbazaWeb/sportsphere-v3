@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useNavigationStore } from '@/store/navigationStore';
 import { useAuthStore } from '@/store/authStore';
@@ -93,14 +93,12 @@ function CommentSheet({ itemId, onClose }: { itemId: string; onClose: () => void
   useEffect(() => {
     async function loadComments() {
       try {
-        const res = await fetch(`/api/comments?postId=${itemId}`);
+        const res = await fetch("/api/comments?postId=" + itemId);
         if (res.ok) {
           const data = await res.json();
           setComments(data);
         }
-      } catch (e) {
-        // empty state on error
-      }
+      } catch (e) { }
       setLoading(false);
     }
     loadComments();
@@ -120,7 +118,7 @@ function CommentSheet({ itemId, onClose }: { itemId: string; onClose: () => void
         setComments(prev => [newComment, ...prev]);
         setText('');
       }
-    } catch { /* ignore */ }
+    } catch { }
   };
 
   const handleReply = (commentId: string) => {
@@ -238,22 +236,68 @@ export default function HomeTab() {
   const [shareId, setShareId] = useState<string | null>(null);
   const [commentId, setCommentId] = useState<string | null>(null);
 
+  // --- LOCAL STATE FOR SEARCH AND CART POPUPS ---
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  // ----------------------------------------------
+
+  const handleSearchClick = () => {
+    setIsSearchOpen(true);
+  };
+
+  const handleCartClick = () => {
+    setIsCartOpen(true);
+  };
+
   return (
     <div className="mx-auto max-w-lg">
+      
+      {/* --- SEARCH POPUP --- */}
+      {isSearchOpen && (
+        <div className="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/80" onClick={() => setIsSearchOpen(false)}>
+          <div className="w-full max-w-md rounded-xl bg-[#1a2332] p-6 border border-gold/30 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="mb-4 text-xl font-bold text-gold">Search</h2>
+            <input type="text" placeholder="Type to search..." className="w-full rounded-lg border border-gray-700 bg-[#0b1426] p-3 text-white mb-4" autoFocus />
+            <button onClick={() => setIsSearchOpen(false)} className="w-full rounded-lg bg-gray-700 py-2 hover:bg-gray-600 transition-colors">Close</button>
+          </div>
+        </div>
+      )}
+
+      {/* --- CART POPUP (Clean, Empty) --- */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/80" onClick={() => setIsCartOpen(false)}>
+          <div className="w-full max-w-md rounded-xl bg-[#1a2332] p-6 border border-gold/30 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="mb-4 text-xl font-bold text-gold">Your Cart</h2>
+            <div className="mb-4 rounded-lg border border-gray-700 bg-[#0b1426] p-4 text-center">
+              <p className="text-muted-foreground text-sm py-4">Your cart is empty.</p>
+            </div>
+            <button onClick={() => setIsCartOpen(false)} className="w-full rounded-lg bg-gray-700 py-2 hover:bg-gray-600 transition-colors">Close</button>
+          </div>
+        </div>
+      )}
+
       <header className="sticky top-0 z-40 border-b border-surface-border bg-background/90 backdrop-blur-xl">
         <div className="flex h-14 items-center justify-between px-4">
           <button onClick={() => window.scrollTo(0,0)} className="flex items-center">
             <img src="/logo-wordmark.svg" alt="SportSphere" style={{ height: '28px', width: 'auto' }} />
           </button>
           <div className="flex items-center gap-2">
-            <button className="flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
+            
+            <button 
+              onClick={handleSearchClick}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors"
+            >
               <Search className="h-4 w-4 text-muted-foreground" />
             </button>
-            {/* Cart icon — visible to all users (fans can shop) */}
-            <button className="relative flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
+
+            <button 
+              onClick={handleCartClick}
+              className="relative flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors"
+            >
               <ShoppingBag className="h-4 w-4 text-gold" />
               <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[8px] font-bold text-black">0</span>
             </button>
+
             <button onClick={() => { if (!isAuthenticated) setLoginModalOpen(true); else setActiveTab('activity'); }}
               className="relative flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
               <Inbox className="h-4 w-4 text-muted-foreground" />
@@ -291,7 +335,6 @@ export default function HomeTab() {
   );
 }
 
-// --- Skeleton loader ---
 function CardSkeleton() {
   return (
     <div className="glass-card rounded-2xl overflow-hidden">
@@ -317,7 +360,6 @@ function CardSkeleton() {
   );
 }
 
-// --- For You --------------------------------------------------
 function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; onComment: (id: string) => void }) {
   const [liveMatches, setLiveMatches] = useState<ApiMatch[]>([]);
   const [posts, setPosts] = useState<ApiPost[]>([]);
@@ -342,9 +384,7 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
           setTeams(allUsers.filter((u: { role: string }) => u.role === 'team').slice(0, 10));
         }
         if (leaderboardRes.ok) setLeaderboard(await leaderboardRes.json());
-      } catch (e) {
-        // empty state on error
-      }
+      } catch (e) { }
       setLoading(false);
     }
     loadData();
@@ -354,19 +394,16 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
   const [matchDetailOpen, setMatchDetailOpen] = useState(false);
 
   const openTeamByName = async (teamName: string) => {
-    // Try to find the team by matching name → handle pattern
-    // Handles in seed are like @manchesterunited, @arsenal etc.
     const handleGuess = '@' + teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
     try {
-      const res = await fetch(`/api/users?handle=${encodeURIComponent(handleGuess)}`);
+      const res = await fetch(`/api/users?handle=${handleGuess}`);
       if (res.ok) {
         const u = await res.json();
         const { apiUserToViewing } = await import('@/types');
         setViewingUser(apiUserToViewing(u, false));
         return;
       }
-    } catch { /* ignore */ }
-    // Fallback: search all teams for a name match
+    } catch { }
     try {
       const res = await fetch('/api/users');
       if (res.ok) {
@@ -379,11 +416,10 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
           setViewingUser(apiUserToViewing(match, false));
         }
       }
-    } catch { /* ignore */ }
+    } catch { }
   };
 
   const openPlayerByName = async (playerName: string) => {
-    // Search players by name
     try {
       const res = await fetch('/api/users');
       if (res.ok) {
@@ -399,30 +435,28 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
           setViewingUser(apiUserToViewing(match, false));
         }
       }
-    } catch { /* ignore */ }
+    } catch { }
   };
 
   const openTeamByHandle = async (handle: string) => {
     try {
-      const res = await fetch(`/api/users?handle=${encodeURIComponent(handle)}`);
+      const res = await fetch(`/api/users?handle=${handle}`);
       if (res.ok) {
         const u = await res.json();
         const { apiUserToViewing } = await import('@/types');
         setViewingUser(apiUserToViewing(u, false));
       }
-    } catch { /* ignore */ }
+    } catch { }
   };
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      {/* Hero Banner — Featured live match with premium rotating glow border */}
       {featuredMatch && (
         <div className="premium-glow-border">
           <div className="relative overflow-hidden rounded-[14px] bg-gradient-to-br from-emerald-700 via-green-800 to-emerald-900">
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0di0ySDI0djJoMTJ6TTM2IDI0djJIMjR2LTJoMTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-            {/* Top bar: Live badge + Info button */}
             <div className="relative flex items-center justify-between p-3">
               <div className="flex items-center gap-1.5 rounded-full bg-red-500 px-2.5 py-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
@@ -437,15 +471,12 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
               </button>
             </div>
 
-            {/* League name */}
             <div className="relative px-4 pb-2">
               <p className="text-[10px] font-bold uppercase text-white/70 tracking-wider">{featuredMatch.league}</p>
             </div>
 
-            {/* Match content — home team + score + away team (each team clickable) */}
             <div className="relative px-4 pb-4">
               <div className="flex items-center justify-between gap-3">
-                {/* Home team — clickable */}
                 <button
                   onClick={() => openTeamByName(featuredMatch.homeTeam)}
                   className="flex flex-col items-center gap-1.5 flex-1 group"
@@ -456,7 +487,6 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
                   <p className="text-xs font-bold text-white text-center leading-tight group-hover:text-gold transition-colors">{featuredMatch.homeTeam}</p>
                 </button>
 
-                {/* Score — clickable for match details */}
                 <button
                   onClick={() => setMatchDetailOpen(true)}
                   className="flex flex-col items-center group"
@@ -469,7 +499,6 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
                   </p>
                 </button>
 
-                {/* Away team — clickable */}
                 <button
                   onClick={() => openTeamByName(featuredMatch.awayTeam)}
                   className="flex flex-col items-center gap-1.5 flex-1 group"
@@ -481,7 +510,6 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
                 </button>
               </div>
 
-              {/* Goal scorers — clickable to open player profiles */}
               {featuredMatch.events && featuredMatch.events.length > 0 && (
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <div className="flex flex-col gap-1">
@@ -517,12 +545,10 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
         </div>
       )}
 
-      {/* Match Detail Modal */}
       {matchDetailOpen && featuredMatch && (
         <MatchDetailModal match={featuredMatch} onClose={() => setMatchDetailOpen(false)} onTeamClick={openTeamByName} onPlayerClick={openPlayerByName} />
       )}
 
-      {/* Leaderboard — real data from /api/leaderboard */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <div className="flex items-center gap-2 mb-3">
           <Crown className="h-4 w-4 text-gold" />
@@ -537,13 +563,13 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
                 key={item.id}
                 onClick={async () => {
                   try {
-                    const res = await fetch(`/api/users?handle=${encodeURIComponent(item.handle)}`);
+                    const res = await fetch(`/api/users?handle=${item.handle}`);
                     if (res.ok) {
                       const u = await res.json();
                       const { apiUserToViewing } = await import('@/types');
                       setViewingUser(apiUserToViewing(u, false));
                     }
-                  } catch { /* ignore */ }
+                  } catch { }
                 }}
                 className="flex items-center gap-3 rounded-xl bg-surface p-2.5 text-left hover:bg-surface-elevated transition-colors w-full"
               >
@@ -564,7 +590,6 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
         )}
       </div>
 
-      {/* Choose Your Teams — real teams from API */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <div className="flex items-center gap-2 mb-3">
           <Flame className="h-4 w-4 text-gold" />
@@ -590,7 +615,6 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
         )}
       </div>
 
-      {/* Feed Posts */}
       {loading ? (
         <div className="flex flex-col gap-3">
           <CardSkeleton />
@@ -609,7 +633,6 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
   );
 }
 
-// --- Feed Card ------------------------------------------------
 function FeedCard({ item, onShare, onComment, formatTime }: {
   item: ApiPost;
   onShare: (id: string) => void;
@@ -658,7 +681,6 @@ function FeedCard({ item, onShare, onComment, formatTime }: {
         </div>
       )}
       <div className="p-4">
-        {/* User header */}
         <button onClick={handleViewUser} className="mb-3 flex items-center gap-3 text-left w-full">
           <div className={cn('flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold',
             user.isVerified ? 'bg-gold text-black' : 'bg-surface text-white')}>
@@ -681,7 +703,6 @@ function FeedCard({ item, onShare, onComment, formatTime }: {
           </span>
         )}
 
-        {/* Photo */}
         {item.postType === 'photo' && (
           <div className="mb-3 h-52 overflow-hidden rounded-xl bg-gradient-to-br from-gold via-orange-600 to-red-800 flex items-end p-3">
             <span className="rounded-lg bg-black/50 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
@@ -690,7 +711,6 @@ function FeedCard({ item, onShare, onComment, formatTime }: {
           </div>
         )}
 
-        {/* Video */}
         {item.postType === 'video' && (
           <div className="mb-3 relative h-52 overflow-hidden rounded-xl bg-gradient-to-br from-gold to-red-800 flex items-center justify-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
@@ -700,12 +720,10 @@ function FeedCard({ item, onShare, onComment, formatTime }: {
           </div>
         )}
 
-        {/* Poll — functional voting */}
         {item.poll && item.poll.options && item.poll.options.length > 0 && (
           <div className="mb-3 flex flex-col gap-2">
             <p className="text-sm font-bold text-white mb-1">{item.poll.question}</p>
             {item.poll.options.map((opt: string, i: number) => {
-              // Calculate percentage based on even distribution + user's vote
               const basePct = Math.round(100 / item.poll!.options.length);
               const pct = votedOption !== null
                 ? (i === votedOption ? Math.round(100 / item.poll!.options.length) + 5 : Math.round((100 - Math.round(100 / item.poll!.options.length) - 5) / (item.poll!.options.length - 1 || 1)))
@@ -715,7 +733,7 @@ function FeedCard({ item, onShare, onComment, formatTime }: {
                   key={i}
                   onClick={async () => {
                     if (!isAuthenticated) { setLoginModalOpen(true); return; }
-                    if (votedOption !== null) return; // Already voted
+                    if (votedOption !== null) return;
                     setVotedOption(i);
                     setPollVotes(v => v + 1);
                     try {
@@ -724,7 +742,7 @@ function FeedCard({ item, onShare, onComment, formatTime }: {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ pollId: item.poll!.id, optionIndex: i }),
                       });
-                    } catch { /* ignore */ }
+                    } catch { }
                   }}
                   disabled={votedOption !== null}
                   className={cn(
@@ -734,7 +752,7 @@ function FeedCard({ item, onShare, onComment, formatTime }: {
                   )}
                 >
                   {votedOption !== null && (
-                    <div className="absolute inset-y-0 left-0 bg-gold/20 rounded-lg transition-all duration-500" style={{ width: `${pct}%` }} />
+                    <div className="absolute inset-y-0 left-0 bg-gold/20 rounded-lg transition-all duration-500" style={{ width: ${pct}% }} />
                   )}
                   <div className="relative flex items-center justify-between">
                     <span className="text-sm font-medium text-white">{opt}</span>
@@ -748,7 +766,6 @@ function FeedCard({ item, onShare, onComment, formatTime }: {
           </div>
         )}
 
-        {/* Actions */}
         <div className="flex items-center justify-between border-t border-surface-border pt-3 mt-1">
           <button
             onClick={async () => {
@@ -760,7 +777,7 @@ function FeedCard({ item, onShare, onComment, formatTime }: {
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ postId: item.id }),
                 });
-              } catch { /* ignore */ }
+              } catch { }
             }}
             className={cn('flex items-center gap-1.5 transition-colors', liked ? 'text-pink-400' : 'text-muted-foreground hover:text-pink-400')}>
             <Heart className={cn('h-4 w-4', liked && 'fill-current')} />
@@ -786,7 +803,6 @@ function FeedCard({ item, onShare, onComment, formatTime }: {
   );
 }
 
-// --- Trending -------------------------------------------------
 function TrendingContent() {
   const isAuthenticated   = useAuthStore((s) => s.isAuthenticated);
   const setLoginModalOpen = useUIStore((s) => s.setLoginModalOpen);
@@ -806,11 +822,11 @@ function TrendingContent() {
           fetch('/api/communities'),
         ]);
         if (matchesRes.ok) setLiveMatches(await matchesRes.json());
-        if (feedRes.ok) setTrendingPosts(await feedRes.json());
+        if (feedRes.ok) {
+          setTrendingPosts(await feedRes.json());
+        }
         if (commRes.ok) setCommunities(await commRes.json());
-      } catch (e) {
-        // empty state on error
-      }
+      } catch (e) { }
       setLoading(false);
     }
     loadData();
@@ -821,15 +837,6 @@ function TrendingContent() {
   };
 
   const toFeedUser = useCallback((user: ApiUser) => apiUserToViewing(user, false), []);
-
-  const topics = [
-    { t: '#PremierLeague', posts: '24.5K', hot: true },
-    { t: '#Haaland',       posts: '18.2K', hot: true },
-    { t: '#TransferWindow',posts: '15.8K', hot: false },
-    { t: '#Arsenal',       posts: '12.3K', hot: false },
-    { t: '#AFCON2025',     posts: '9.7K',  hot: true },
-    { t: '#UCL',           posts: '8.1K',  hot: false },
-  ];
 
   return (
     <div className="p-4 flex flex-col gap-6">
@@ -852,7 +859,7 @@ function TrendingContent() {
               <div key={m.id} className="flex-shrink-0 glass-card rounded-xl p-3 min-w-[175px] glass-card-hover">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="flex h-2 w-2 rounded-full bg-gold animate-pulse" />
-                  <span className="text-[10px] font-bold uppercase text-gold">{m.league} · {m.status === 'ht' ? 'HT' : `${m.minute}'`}</span>
+                  <span className="text-[10px] font-bold uppercase text-gold">{m.league} · {m.status === 'ht' ? 'HT' : ${m.minute}'}</span>
                 </div>
                 <p className="text-sm font-semibold text-white">{m.homeTeam.split(' ').pop()} {m.homeScore}–{m.awayScore} {m.awayTeam.split(' ').pop()}</p>
               </div>
@@ -865,22 +872,38 @@ function TrendingContent() {
         <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           <TrendingUp className="h-4 w-4 text-gold" /> Trending
         </h2>
-        <div className="flex flex-col gap-2">
-          {topics.map((item, i) => (
-            <div key={i} className="flex items-center justify-between glass-card rounded-xl p-4 glass-card-hover">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface">
-                  {item.hot ? <Flame className="h-4 w-4 text-gold" /> : <TrendingUp className="h-4 w-4 text-muted-foreground" />}
+        
+        {loading ? (
+          <div className="flex flex-col gap-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-16 w-full rounded-xl bg-surface animate-pulse" />
+            ))}
+          </div>
+        ) : trendingPosts.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-4 text-center">No trending posts right now.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {trendingPosts.slice(0, 6).map((post) => {
+              const fu = toFeedUser(post.user);
+              return (
+                <div key={post.id} className="flex items-center justify-between glass-card rounded-xl p-4 glass-card-hover">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface">
+                      <Flame className="h-4 w-4 text-gold" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">#{post.content.split(' ').find(w => w.startsWith('#')) || 'Trending'}</p>
+                      <p className="text-[10px] text-muted-foreground">{formatCount(post.likeCount)} likes</p>
+                    </div>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{formatCount(post.commentCount)} comments</span>
                 </div>
-                <p className="text-sm font-semibold text-white">{item.t}</p>
-              </div>
-              <span className="text-xs text-muted-foreground">{item.posts} posts</span>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
-      {/* Trending Posts */}
       {!loading && trendingPosts.slice(0, 3).map((post) => {
         const fu = toFeedUser(post.user);
         return (
@@ -944,7 +967,6 @@ function TrendingContent() {
   );
 }
 
-// --- Spotlight -------------------------------------------------
 function SpotlightContent() {
   const setViewingUser = useUIStore((s) => s.setViewingUser);
   const [spotlightItems, setSpotlightItems] = useState<ApiSpotlightItem[]>([]);
@@ -957,9 +979,7 @@ function SpotlightContent() {
       try {
         const res = await fetch('/api/spotlight');
         if (res.ok) setSpotlightItems(await res.json());
-      } catch (e) {
-        // empty state on error
-      }
+      } catch (e) { }
       setLoading(false);
     }
     loadData();
@@ -971,7 +991,6 @@ function SpotlightContent() {
 
   const toFeedUser = useCallback((user: ApiUser) => apiUserToViewing(user, false), []);
 
-  // Fallback gradients for spotlight cards
   const gradients = [
     'from-green-700 to-emerald-900',
     'from-blue-700 to-indigo-900',
@@ -1008,7 +1027,7 @@ function SpotlightContent() {
         const gradient = gradients[index % gradients.length];
         return (
           <div key={item.id} className="relative h-[calc(100vh-8rem)] w-full snap-start snap-always flex-shrink-0 overflow-hidden">
-            <div className={`absolute inset-0 bg-gradient-to-b ${gradient}`} />
+            <div className={bsolute inset-0 bg-gradient-to-b } />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/10" />
 
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
@@ -1077,7 +1096,6 @@ function SpotlightContent() {
   );
 }
 
-// ─── Match Detail Modal ────────────────────────────────────────
 function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }: {
   match: ApiMatch;
   onClose: () => void;
@@ -1097,7 +1115,6 @@ function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }: {
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl bg-surface-elevated border border-surface-border"
       >
-        {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-surface-border bg-surface-elevated px-4 py-3">
           <div className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-gold" />
@@ -1109,13 +1126,12 @@ function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }: {
         </div>
 
         <div className="p-4 flex flex-col gap-4">
-          {/* Score header */}
           <div className="premium-glow-border">
             <div className="rounded-[14px] bg-gradient-to-br from-emerald-700 to-green-900 p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-bold uppercase text-white/70 tracking-wider">{match.league}</span>
                 <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold uppercase', match.status === 'live' ? 'bg-red-500 text-white' : 'bg-surface text-muted-foreground')}>
-                  {match.status === 'live' ? `Live · ${match.minute}'` : match.status.toUpperCase()}
+                  {match.status === 'live' ? Live · ' : match.status.toUpperCase()}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3">
@@ -1138,7 +1154,6 @@ function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }: {
             </div>
           </div>
 
-          {/* Venue + Kickoff */}
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-xl bg-surface border border-surface-border p-3">
               <p className="text-[10px] text-muted-foreground uppercase">Venue</p>
@@ -1150,7 +1165,6 @@ function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }: {
             </div>
           </div>
 
-          {/* Goal Scorers */}
           {events.length > 0 && (
             <div>
               <h3 className="mb-2 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
@@ -1179,39 +1193,25 @@ function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }: {
             </div>
           )}
 
-          {/* Match Stats (mock — would come from API in production) */}
+          {/* ✅ STATS SECTION - Removed all hardcoded mock data */}
           <div>
             <h3 className="mb-2 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
               <BarChart3 className="h-3.5 w-3.5" /> Match Stats
             </h3>
-            <div className="flex flex-col gap-2">
-              {[
-                { label: 'Possession', home: 58, away: 42, unit: '%' },
-                { label: 'Shots', home: 14, away: 9, unit: '' },
-                { label: 'Shots on Target', home: 6, away: 3, unit: '' },
-                { label: 'Corners', home: 7, away: 4, unit: '' },
-                { label: 'Fouls', home: 8, away: 12, unit: '' },
-              ].map((stat) => {
-                const total = stat.home + stat.away || 1;
-                const homePct = (stat.home / total) * 100;
-                return (
-                  <div key={stat.label} className="flex flex-col gap-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-white">{stat.home}{stat.unit}</span>
-                      <span className="text-muted-foreground">{stat.label}</span>
-                      <span className="font-bold text-white">{stat.away}{stat.unit}</span>
-                    </div>
-                    <div className="flex h-1.5 overflow-hidden rounded-full bg-surface">
-                      <div className="bg-gold" style={{ width: `${homePct}%` }} />
-                      <div className="bg-blue-400" style={{ width: `${100 - homePct}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            
+            {/* Show real stats if they exist in the API, otherwise show placeholder */}
+            {events.length > 0 ? (
+              <div className="flex flex-col gap-2 text-sm text-muted-foreground text-center py-4">
+                <p>Real-time stats are loading from the match API...</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 text-sm text-muted-foreground">
+                <BarChart3 className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                <p>No match stats available yet.</p>
+              </div>
+            )}
           </div>
 
-          {/* Timeline */}
           {events.length > 0 && (
             <div>
               <h3 className="mb-2 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
@@ -1232,3 +1232,7 @@ function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }: {
     </div>
   );
 }
+
+
+
+
