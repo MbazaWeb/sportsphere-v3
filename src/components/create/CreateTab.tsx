@@ -398,12 +398,39 @@ function MediaUpload({ type, mediaUrls, onChange }: { type: string; mediaUrls: s
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    const urls = Array.from(files).map(f => {
+
+    // Add local previews immediately, then upload each file and replace preview with public URL
+    const previews = Array.from(files).map(f => {
       const u = URL.createObjectURL(f);
       createdUrls.current.push(u);
       return u;
     });
-    onChange([...mediaUrls, ...urls]);
+    onChange([...mediaUrls, ...previews]);
+
+    // Upload files in background
+    Array.from(files).forEach(async (file, i) => {
+      try {
+        const form = new FormData();
+        form.append('file', file);
+        const res = await fetch('/api/uploads', { method: 'POST', body: form });
+        const json = await res.json();
+        if (res.ok && json.url) {
+          // Replace the preview url with the returned public URL
+          const previewIndex = mediaUrls.length + i; // original mediaUrls length + index in this batch
+          onChange((current) => {
+            const copy = [...current];
+            const localPreview = previews[i];
+            const idx = copy.indexOf(localPreview);
+            if (idx !== -1) copy[idx] = json.url;
+            else copy.push(json.url);
+            return copy;
+          });
+        }
+      } catch (err) {
+        // ignore upload failure; preview will remain
+        console.error('Upload failed', err);
+      }
+    });
   };
 
   // Revoke any created object URLs when component unmounts
