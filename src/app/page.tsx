@@ -92,12 +92,6 @@ export default function Home() {
   useAuthSession();
   if (!splashDone) return <SplashScreen onDone={() => setSplashDone(true)} />;
 
-  // Expose toggle functions globally so HomeTab can call them
-  if (typeof window !== 'undefined') {
-    window.__triggerSearch = () => setIsSearchOpen(true);
-    window.__triggerCart = () => setIsCartOpen(true);
-  }
-
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
       <Toast />
