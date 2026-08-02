@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Check, User, MapPin, Phone, Globe, Heart, Bell, Palette,
@@ -70,7 +70,7 @@ export default function EditProfileModal({ open, onClose }: { open: boolean; onC
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [completion, setCompletion] = useState(0);
-  const fileInputRef = (null as unknown) as React.RefObject<HTMLInputElement>;
+  
 
   // Load profile data
   useEffect(() => {
