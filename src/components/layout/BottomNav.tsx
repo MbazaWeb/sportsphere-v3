@@ -3,7 +3,7 @@
 import { useNavigationStore, type TabId } from '@/store/navigationStore';
 import { Home, Trophy, PlusCircle, Bell, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 type TabConfig = {
   id: TabId;
@@ -23,6 +23,7 @@ const TABS: TabConfig[] = [
 export default function BottomNav() {
   const activeTab    = useNavigationStore((s) => s.activeTab);
   const setActiveTab = useNavigationStore((s) => s.setActiveTab);
+  const prefersReducedMotion = useReducedMotion();
 
   return (
     <nav className="fixed bottom-0 inset-x-0 z-50 border-t border-surface-border bg-background/95 backdrop-blur-xl">
@@ -54,7 +55,7 @@ export default function BottomNav() {
                 <motion.div
                   layoutId="activeTab"
                   className="absolute -top-px left-2 right-2 h-0.5 rounded-full bg-gold"
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 30 }}
                 />
               )}
             </button>

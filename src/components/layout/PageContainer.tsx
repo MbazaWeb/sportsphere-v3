@@ -58,6 +58,7 @@ export default function PageContainer({
                 {showBack && (
                   <button
                     onClick={handleBack}
+                    aria-label={title ? `Back from ${title}` : 'Go back'}
                     className="flex h-9 w-9 items-center justify-center rounded-full bg-surface transition-colors hover:bg-surface-elevated"
                   >
                     <ArrowLeft className="h-4 w-4" />
