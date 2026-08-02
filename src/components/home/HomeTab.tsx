@@ -469,18 +469,19 @@ function FeedCard({ item, onShare, onComment, formatTime }: {
 
   const handleViewUser = useCallback(() => {
     setViewingUser({
+      id: user.id,
       name: user.name,
       handle: user.handle,
       avatar: user.avatarInitials,
       verified: user.isVerified,
       coverGradient: user.coverGradient,
-      bio: user.bio,
+      bio: user.bio || '',
       role: user.role,
       location: user.location || '',
-      joined: new Date(user.registeredAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-      followers: user.followerCount,
-      following: user.followingCount,
-      posts: user.postCount,
+      joined: user.registeredAt ? new Date(user.registeredAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '',
+      followers: user.followerCount || 0,
+      following: user.followingCount || 0,
+      posts: user.postCount || 0,
       isFollowing: false,
     });
   }, [user, setViewingUser]);

@@ -5,794 +5,329 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding SportSphere database...');
 
-  // ─── Clean existing data (optional — idempotent upserts below) ──
-  // We use deleteMany first then recreate for clean data
+  // ─── USERS — one per role for testing ─────────────────────
+  const userDefs = [
+    // Official
+    { handle: '@sportsphere', name: 'SportSphere Official', email: 'official@sportsphere.com',
+      avatarInitials: 'SS', role: 'organization', isVerified: true, verificationStatus: 'verified',
+      bio: 'The official SportSphere account. Breaking sports news worldwide.',
+      location: 'London, UK', followerCount: 4580000, followingCount: 120, postCount: 2340,
+      coverGradient: 'from-emerald-600 via-green-500 to-emerald-900' },
 
-  // ─── Users ─────────────────────────────────────────────────
-  const users = await Promise.all([
-    prisma.user.upsert({
-      where: { handle: '@sportsphere' },
-      update: {},
-      create: {
-        name: 'SportSphere Official', handle: '@sportsphere', email: 'official@sportsphere.com',
-        avatarInitials: 'SS', role: 'organization', isVerified: true,
-        verificationStatus: 'verified', bio: 'The official SportSphere account. Breaking sports news worldwide.',
-        location: 'London, UK', followerCount: 4580000, followingCount: 120, postCount: 2340,
-        coverGradient: 'from-emerald-600 via-green-500 to-emerald-900',
-        sportsFollowing: JSON.stringify(['Football', 'Basketball', 'Tennis']),
-        roleData: JSON.stringify({ type: 'official', category: 'sports-media' }),
-      },
-    }),
-    prisma.user.upsert({
-      where: { handle: '@sarahchen' },
-      update: {},
-      create: {
-        name: 'Sarah Chen', handle: '@sarahchen', email: 'sarah@example.com',
-        avatarInitials: 'SC', role: 'creator', isVerified: true,
-        verificationStatus: 'verified', bio: 'Arsenal season ticket holder. Football photographer.',
-        location: 'London, UK', followerCount: 34500, followingCount: 412, postCount: 189,
-        coverGradient: 'from-pink-600 via-violet-500 to-purple-900',
-        sportsFollowing: JSON.stringify(['Football']),
-        roleData: JSON.stringify({ category: 'photography' }),
-      },
-    }),
-    prisma.user.upsert({
-      where: { handle: '@footballdaily' },
-      update: {},
-      create: {
-        name: 'Football Daily', handle: '@footballdaily', email: 'news@footballdaily.com',
-        avatarInitials: 'FD', role: 'journalist', isVerified: true,
-        verificationStatus: 'verified', bio: 'Your daily dose of football news, transfers, and analysis.',
-        location: 'Manchester, UK', followerCount: 1200000, followingCount: 89, postCount: 3450,
-        coverGradient: 'from-teal-600 via-cyan-500 to-teal-900',
-        sportsFollowing: JSON.stringify(['Football']),
-        roleData: JSON.stringify({ publication: 'Football Daily', founded: 2020 }),
-      },
-    }),
-    prisma.user.upsert({
-      where: { handle: '@marcusj' },
-      update: {},
-      create: {
-        name: 'Marcus Johnson', handle: '@marcusj', email: 'marcus@example.com',
-        avatarInitials: 'MJ', role: 'fan', isVerified: false,
-        bio: 'Premier League obsessed. Stats nerd. Occasional hot takes.',
-        location: 'Lagos, Nigeria', followerCount: 8900, followingCount: 567, postCount: 234,
-        coverGradient: 'from-blue-600 via-indigo-500 to-blue-900',
-        sportsFollowing: JSON.stringify(['Football', 'Basketball']),
-        roleData: JSON.stringify({}),
-      },
-    }),
-    prisma.user.upsert({
-      where: { handle: '@goalsdaily' },
-      update: {},
-      create: {
-        name: 'Goal Highlights HD', handle: '@goalsdaily', email: 'goals@highlightshd.com',
-        avatarInitials: 'GH', role: 'creator', isVerified: true,
-        verificationStatus: 'verified', bio: 'Every goal, every game, every highlight. 4K quality.',
-        location: 'Dubai, UAE', followerCount: 2100000, followingCount: 45, postCount: 3800,
-        coverGradient: 'from-yellow-600 via-amber-500 to-orange-800',
-        sportsFollowing: JSON.stringify(['Football']),
-        roleData: JSON.stringify({ category: 'highlights' }),
-      },
-    }),
-    prisma.user.upsert({
-      where: { handle: '@gkunion' },
-      update: {},
-      create: {
-        name: 'GK Union', handle: '@gkunion', email: 'gk@union.com',
-        avatarInitials: 'GU', role: 'community', isVerified: true,
-        verificationStatus: 'verified', bio: 'The goalkeeper community. Saves, tips, and training drills.',
-        location: 'Global', followerCount: 67800, followingCount: 234, postCount: 890,
-        coverGradient: 'from-lime-600 via-green-500 to-emerald-800',
-        sportsFollowing: JSON.stringify(['Football']),
-        roleData: JSON.stringify({ topic: 'Goalkeeping' }),
-      },
-    }),
-    prisma.user.upsert({
-      where: { handle: '@davidmbaza' },
-      update: {},
-      create: {
-        name: 'David Mbaza', handle: '@davidmbaza', email: 'david@sportsphere.com',
-        avatarInitials: 'DM', role: 'fan', isVerified: false,
-        bio: 'Football is life. Man Utd till I die. Predictions guru.',
-        location: 'Dar es Salaam, Tanzania', followerCount: 1200, followingCount: 345, postCount: 52,
-        coverGradient: 'from-red-600 via-red-500 to-red-800',
-        sportsFollowing: JSON.stringify(['Football', 'Basketball']),
-        roleData: JSON.stringify({}),
-      },
-    }),
-    prisma.user.upsert({
-      where: { handle: '@skillzhd' },
-      update: {},
-      create: {
-        name: 'Skillz HD', handle: '@skillzhd', email: 'skillz@example.com',
-        avatarInitials: 'SH', role: 'creator', isVerified: true,
-        verificationStatus: 'verified', bio: 'Skills, dribbles, free kicks — all in 4K.',
-        location: 'Madrid, Spain', followerCount: 890000, followingCount: 23, postCount: 1200,
-        coverGradient: 'from-purple-600 via-purple-500 to-purple-900',
-        sportsFollowing: JSON.stringify(['Football']),
-        roleData: JSON.stringify({ category: 'skills' }),
-      },
-    }),
-    prisma.user.upsert({
-      where: { handle: '@techniqueking' },
-      update: {},
-      create: {
-        name: 'Technique King', handle: '@techniqueking', email: 'technique@example.com',
-        avatarInitials: 'TK', role: 'analyst', isVerified: true,
-        verificationStatus: 'verified', bio: 'Football technique breakdowns and tutorials.',
-        location: 'Paris, France', followerCount: 234000, followingCount: 89, postCount: 567,
-        coverGradient: 'from-sky-600 via-sky-500 to-blue-900',
-        sportsFollowing: JSON.stringify(['Football']),
-        roleData: JSON.stringify({ speciality: 'tactical-analysis' }),
-      },
-    }),
-    prisma.user.upsert({
-      where: { handle: '@laligahd' },
-      update: {},
-      create: {
-        name: 'LaLiga HD', handle: '@laligahd', email: 'laliga@example.com',
-        avatarInitials: 'LH', role: 'creator', isVerified: true,
-        verificationStatus: 'verified', bio: 'Official LaLiga highlights and match coverage.',
-        location: 'Barcelona, Spain', followerCount: 3400000, followingCount: 34, postCount: 2100,
-        coverGradient: 'from-orange-600 via-orange-500 to-red-900',
-        sportsFollowing: JSON.stringify(['Football']),
-        roleData: JSON.stringify({ league: 'La Liga' }),
-      },
-    }),
-    prisma.user.upsert({
-      where: { handle: '@goonercam' },
-      update: {},
-      create: {
-        name: 'Gooner Cam', handle: '@goonercam', email: 'gooner@example.com',
-        avatarInitials: 'GC', role: 'creator', isVerified: false,
-        bio: 'Arsenal match reactions and fan POV.',
-        location: 'London, UK', followerCount: 145000, followingCount: 67, postCount: 456,
-        coverGradient: 'from-red-600 via-rose-500 to-rose-900',
-        sportsFollowing: JSON.stringify(['Football']),
-        roleData: JSON.stringify({}),
-      },
-    }),
-    prisma.user.upsert({
-      where: { handle: '@manchesterunited' },
-      update: {},
-      create: {
-        name: 'Manchester United', handle: '@manchesterunited', email: 'manutd@example.com',
-        avatarInitials: 'MU', role: 'team', isVerified: true,
-        verificationStatus: 'verified', bio: 'Official Manchester United FC. 20x Premier League champions.',
-        location: 'Manchester, UK', followerCount: 8900000, followingCount: 12, postCount: 1240,
-        coverGradient: 'from-red-700 to-red-900',
-        sportsFollowing: JSON.stringify(['Football']),
-        roleData: JSON.stringify({ founded: 1878, stadium: 'Old Trafford', league: 'Premier League' }),
-      },
-    }),
-  ]);
+    // Fan (quick registration)
+    { handle: '@davidmbaza', name: 'David Mbaza', email: 'david@example.com',
+      avatarInitials: 'DM', role: 'fan', isVerified: false, verificationStatus: 'none',
+      bio: 'Football is life. Man Utd till I die. Predictions guru.',
+      location: 'Dar es Salaam, Tanzania', followerCount: 1200, followingCount: 345, postCount: 52,
+      coverGradient: 'from-red-600 via-red-500 to-red-800' },
+    { handle: '@marcusj', name: 'Marcus Johnson', email: 'marcus@example.com',
+      avatarInitials: 'MJ', role: 'fan', isVerified: false, verificationStatus: 'none',
+      bio: 'Premier League obsessed. Stats nerd. Occasional hot takes.',
+      location: 'Lagos, Nigeria', followerCount: 8900, followingCount: 567, postCount: 234,
+      coverGradient: 'from-blue-600 via-indigo-500 to-blue-900' },
 
-  const [ss, sarah, fd, marcus, goals, gku, david, skillz, techKing, laliga, gooner, manutd] = users;
-  console.log(`✅ Created ${users.length} users`);
+    // Player
+    { handle: '@rashford10', name: 'Marcus Rashford', email: 'rashford@mufc.com',
+      avatarInitials: 'MR', role: 'player', isVerified: true, verificationStatus: 'verified',
+      bio: 'Forward @ManUtd | England international | Academy graduate.',
+      location: 'Manchester, UK', followerCount: 3200000, followingCount: 89, postCount: 145,
+      coverGradient: 'from-red-700 via-red-600 to-red-900' },
+    { handle: '@salah11', name: 'Mohamed Salah', email: 'salah@lfc.com',
+      avatarInitials: 'MS', role: 'player', isVerified: true, verificationStatus: 'verified',
+      bio: 'Winger @LFC | Egypt Captain | Golden Boot holder.',
+      location: 'Liverpool, UK', followerCount: 5100000, followingCount: 45, postCount: 210,
+      coverGradient: 'from-red-500 via-red-400 to-orange-600' },
 
-  // ─── Matches ───────────────────────────────────────────────
+    // Team
+    { handle: '@manchesterunited', name: 'Manchester United', email: 'info@manutd.com',
+      avatarInitials: 'MU', role: 'team', isVerified: true, verificationStatus: 'verified',
+      bio: 'Official Manchester United FC. 20x Premier League champions. Theatre of Dreams.',
+      location: 'Manchester, UK', followerCount: 8900000, followingCount: 12, postCount: 1240,
+      coverGradient: 'from-red-800 via-red-700 to-red-900' },
+    { handle: '@arsenal', name: 'Arsenal FC', email: 'info@arsenal.com',
+      avatarInitials: 'AR', role: 'team', isVerified: true, verificationStatus: 'verified',
+      bio: 'Official Arsenal FC. North London is Red. Est. 1886.',
+      location: 'London, UK', followerCount: 7200000, followingCount: 8, postCount: 980,
+      coverGradient: 'from-red-600 via-red-500 to-red-700' },
+
+    // Coach
+    { handle: '@pepguardiola', name: 'Pep Guardiola', email: 'pep@mancity.com',
+      avatarInitials: 'PG', role: 'coach', isVerified: true, verificationStatus: 'verified',
+      bio: 'Head Coach @ManCity | 37 major trophies | Football philosopher.',
+      location: 'Manchester, UK', followerCount: 5100000, followingCount: 23, postCount: 89,
+      coverGradient: 'from-sky-600 via-cyan-500 to-blue-900' },
+
+    // Referee
+    { handle: '@michaeloliver', name: 'Michael Oliver', email: 'oliver@pgmol.com',
+      avatarInitials: 'MO', role: 'referee', isVerified: true, verificationStatus: 'verified',
+      bio: 'FIFA & Premier League Referee. 520+ top-flight matches officiated.',
+      location: 'London, UK', followerCount: 45000, followingCount: 12, postCount: 34,
+      coverGradient: 'from-lime-600 via-green-500 to-emerald-800' },
+
+    // Journalist
+    { handle: '@fabrizioromano', name: 'Fabrizio Romano', email: 'fabrizio@transfer.com',
+      avatarInitials: 'FR', role: 'journalist', isVerified: true, verificationStatus: 'verified',
+      bio: '"Here we go!" Transfer journalist. Guardian / CBS Sports.',
+      location: 'London, UK', followerCount: 12000000, followingCount: 890, postCount: 2400,
+      coverGradient: 'from-teal-600 via-cyan-500 to-teal-900' },
+    { handle: '@footballdaily', name: 'Football Daily', email: 'news@footballdaily.com',
+      avatarInitials: 'FD', role: 'journalist', isVerified: true, verificationStatus: 'verified',
+      bio: 'Your daily dose of football news, transfers, and analysis.',
+      location: 'Manchester, UK', followerCount: 1200000, followingCount: 89, postCount: 3450,
+      coverGradient: 'from-teal-600 via-cyan-500 to-teal-900' },
+
+    // Analyst
+    { handle: '@statsperform', name: 'Stats Perform', email: 'data@statsperform.com',
+      avatarInitials: 'SP', role: 'analyst', isVerified: true, verificationStatus: 'verified',
+      bio: 'AI-powered sports data & analytics. 80+ leagues. 5B+ data points.',
+      location: 'Chicago, USA', followerCount: 450000, followingCount: 45, postCount: 1200,
+      coverGradient: 'from-emerald-600 via-green-500 to-emerald-900' },
+
+    // Creator
+    { handle: '@goalsdaily', name: 'Goal Highlights HD', email: 'goals@highlightshd.com',
+      avatarInitials: 'GH', role: 'creator', isVerified: true, verificationStatus: 'verified',
+      bio: 'Every goal, every game. 4K quality. 2.1M subscribers.',
+      location: 'Dubai, UAE', followerCount: 2100000, followingCount: 45, postCount: 3800,
+      coverGradient: 'from-yellow-600 via-amber-500 to-orange-800' },
+    { handle: '@sarahchen', name: 'Sarah Chen', email: 'sarah@example.com',
+      avatarInitials: 'SC', role: 'creator', isVerified: true, verificationStatus: 'verified',
+      bio: 'Arsenal season ticket holder. Football photographer. Match day vlogs.',
+      location: 'London, UK', followerCount: 34500, followingCount: 412, postCount: 189,
+      coverGradient: 'from-pink-600 via-violet-500 to-purple-900' },
+
+    // Scout
+    { handle: '@scoutafrica', name: 'James Tshiani', email: 'scout@africatalent.com',
+      avatarInitials: 'JT', role: 'scout', isVerified: false, verificationStatus: 'pending',
+      bio: 'Talent scout across East & West Africa. Finding the next generation.',
+      location: 'Nairobi, Kenya', followerCount: 12000, followingCount: 234, postCount: 89,
+      coverGradient: 'from-yellow-600 via-amber-500 to-orange-800' },
+
+    // Stadium
+    { handle: '@oldtrafford', name: 'Old Trafford', email: 'info@oldtrafford.com',
+      avatarInitials: 'OT', role: 'stadium', isVerified: true, verificationStatus: 'verified',
+      bio: 'The Theatre of Dreams. Home of Manchester United. Capacity 74,310.',
+      location: 'Manchester, UK', followerCount: 890000, followingCount: 5, postCount: 345,
+      coverGradient: 'from-amber-600 via-orange-500 to-red-800' },
+
+    // Academy
+    { handle: '@lamasia', name: 'La Masia', email: 'academy@fcbarcelona.cat',
+      avatarInitials: 'LM', role: 'academy', isVerified: true, verificationStatus: 'verified',
+      bio: 'FC Barcelona youth academy. Produced Messi, Xavi, Iniesta. Est. 1979.',
+      location: 'Barcelona, Spain', followerCount: 780000, followingCount: 23, postCount: 456,
+      coverGradient: 'from-blue-600 via-red-500 to-blue-900' },
+
+    // Community
+    { handle: '@gooners', name: 'Gooners', email: 'community@gooners.com',
+      avatarInitials: 'GO', role: 'community', isVerified: false, verificationStatus: 'none',
+      bio: 'The biggest Arsenal fan community on SportSphere. 125K members.',
+      location: 'London, UK', followerCount: 125000, followingCount: 12, postCount: 890,
+      coverGradient: 'from-red-600 via-red-500 to-rose-800' },
+    { handle: '@gkunion', name: 'GK Union', email: 'gku@goalkeepers.com',
+      avatarInitials: 'GU', role: 'community', isVerified: true, verificationStatus: 'verified',
+      bio: 'Goalkeeper community. Saves, tips, training drills. 67K members.',
+      location: 'Global', followerCount: 67800, followingCount: 234, postCount: 890,
+      coverGradient: 'from-lime-600 via-green-500 to-emerald-800' },
+
+    // Organization
+    { handle: '@fifaofficial', name: 'FIFA', email: 'contact@fifa.com',
+      avatarInitials: 'FI', role: 'organization', isVerified: true, verificationStatus: 'verified',
+      bio: 'Fédération Internationale de Football Association. Governing body of world football.',
+      location: 'Zurich, Switzerland', followerCount: 18000000, followingCount: 45, postCount: 1800,
+      coverGradient: 'from-blue-700 via-indigo-500 to-blue-900' },
+
+    // Business
+    { handle: '@nikefootball', name: 'Nike Football', email: 'football@nike.com',
+      avatarInitials: 'NK', role: 'business', isVerified: true, verificationStatus: 'verified',
+      bio: 'Official Nike Football. Kit supplier to 45+ top clubs worldwide.',
+      location: 'Beaverton, USA', followerCount: 8500000, followingCount: 67, postCount: 2100,
+      coverGradient: 'from-gray-700 via-gray-600 to-black' },
+
+    // Venue
+    { handle: '@wembley', name: 'Wembley Stadium', email: 'info@wembley.com',
+      avatarInitials: 'WS', role: 'venue', isVerified: true, verificationStatus: 'verified',
+      bio: 'Home of English football. 90,000 capacity. FA Cup finals & England home.',
+      location: 'London, UK', followerCount: 1800000, followingCount: 8, postCount: 234,
+      coverGradient: 'from-stone-500 via-stone-600 to-stone-800' },
+  ];
+
+  const users = await Promise.all(
+    userDefs.map(def =>
+      prisma.user.upsert({
+        where: { handle: def.handle },
+        update: {},
+        create: {
+          ...def,
+          sportsFollowing: JSON.stringify(['Football']),
+          roleData: JSON.stringify({}),
+        },
+      })
+    )
+  );
+
+  const userMap = Object.fromEntries(users.map(u => [u.handle, u]));
+  console.log(`✅ Created ${users.length} users (all roles covered)`);
+
+  // ─── POSTS ─────────────────────────────────────────────────
+  const postDefs = [
+    { userId: userMap['@sportsphere'].id, postType: 'post', isBreaking: true,
+      content: 'BREAKING: Leny Yoro completes move to Manchester United for £58.9M. The 18-year-old centre-back signs a 5-year deal at Old Trafford.',
+      likeCount: 12430, commentCount: 1890, shareCount: 3456, viewCount: 234000 },
+    { userId: userMap['@manchesterunited'].id, postType: 'post', isBreaking: false,
+      content: 'What a performance from the lads tonight. Rashford with the brace — absolute class. Old Trafford was rocking. #MUFC',
+      teamTag: 'Manchester United', likeCount: 4521, commentCount: 678, shareCount: 234, viewCount: 89000 },
+    { userId: userMap['@sarahchen'].id, postType: 'photo', isBreaking: false,
+      content: 'Match day at the Emirates. The atmosphere was electric tonight. Gooners never stop believing. ❤️',
+      likeCount: 3456, commentCount: 234, shareCount: 89, viewCount: 45000 },
+    { userId: userMap['@footballdaily'].id, postType: 'post', isBreaking: true,
+      content: 'TRANSFER UPDATE: Chelsea in advanced talks to sign Sandro Tonali from Newcastle. Fee expected around £65M. Medical scheduled for next week.',
+      likeCount: 4521, commentCount: 678, shareCount: 890, viewCount: 89000 },
+    { userId: userMap['@marcusj'].id, postType: 'post', isBreaking: false,
+      content: 'Haaland breaking records again. 30 goals before January is insane. The guy is on another level entirely. Best striker in the world right now.',
+      playerTag: 'Erling Haaland', likeCount: 890, commentCount: 123, shareCount: 67, viewCount: 8900 },
+    { userId: userMap['@goalsdaily'].id, postType: 'video', isBreaking: false,
+      content: 'Every Rashford goal this season. Vol.1 — 12 goals, one video. The return of the king. 🔥',
+      likeCount: 8934, commentCount: 456, shareCount: 1234, viewCount: 450000 },
+    { userId: userMap['@gkunion'].id, postType: 'post', isBreaking: false,
+      content: 'Today\'s training tip: The 1-2 save drill. Set up two shooters at each post. Make the first save then immediately reset for the second. Reaction time is everything.',
+      likeCount: 2341, commentCount: 123, shareCount: 234, viewCount: 34000 },
+    { userId: userMap['@fabrizioromano'].id, postType: 'post', isBreaking: true,
+      content: 'Kylian Mbappé to Real Madrid, here we go! Contract signed until June 2029. Medical completed yesterday. Official announcement imminent. ✅',
+      likeCount: 89000, commentCount: 12400, shareCount: 34000, viewCount: 2300000 },
+    { userId: userMap['@rashford10'].id, postType: 'post', isBreaking: false,
+      content: 'Buzzing to be back scoring. The hard work in training always pays off. Thanks to the fans — your support means everything. On to the next one. 🔴',
+      likeCount: 45000, commentCount: 3400, shareCount: 1200, viewCount: 890000 },
+    { userId: userMap['@arsenal'].id, postType: 'post', isBreaking: false,
+      content: 'North London is Red. Matchday preview: Bukayo Saka returns to training ahead of Sunday\'s clash. We go again. 💪 #AFC',
+      teamTag: 'Arsenal', likeCount: 6700, commentCount: 890, shareCount: 456, viewCount: 123000 },
+  ];
+
+  await Promise.all(
+    postDefs.map(def =>
+      prisma.post.create({
+        data: {
+          ...def,
+          mediaUrls: JSON.stringify([]),
+        },
+      })
+    )
+  );
+  console.log(`✅ Created ${postDefs.length} posts`);
+
+  // ─── MATCHES ────────────────────────────────────────────────
   const now = new Date();
+  const matchDefs = [
+    { league: 'Premier League', continent: 'Europe', country: 'England',
+      homeTeam: 'Manchester United', awayTeam: 'Arsenal',
+      homeScore: 2, awayScore: 1, status: 'live', minute: 78, venue: 'Old Trafford',
+      kickoffAt: new Date(now.getTime() - 78 * 60000),
+      events: JSON.stringify([
+        { minute: 23, type: 'goal', player: 'Rashford', team: 'home' },
+        { minute: 34, type: 'goal', player: 'Saka', team: 'away' },
+        { minute: 56, type: 'goal', player: 'Rashford', team: 'home' },
+      ]) },
+    { league: 'La Liga', continent: 'Europe', country: 'Spain',
+      homeTeam: 'Real Madrid', awayTeam: 'Barcelona',
+      homeScore: 1, awayScore: 1, status: 'ht', minute: 45, venue: 'Santiago Bernabeu',
+      kickoffAt: new Date(now.getTime() - 45 * 60000),
+      events: JSON.stringify([
+        { minute: 18, type: 'goal', player: 'Vinicius Jr', team: 'home' },
+        { minute: 38, type: 'goal', player: 'Lewandowski', team: 'away' },
+      ]) },
+    { league: 'Serie A', continent: 'Europe', country: 'Italy',
+      homeTeam: 'Inter Milan', awayTeam: 'AC Milan',
+      homeScore: 0, awayScore: 0, status: 'live', minute: 34, venue: 'San Siro',
+      kickoffAt: new Date(now.getTime() - 34 * 60000),
+      events: JSON.stringify([]) },
+    { league: 'AFCON', continent: 'Africa', country: 'Africa',
+      homeTeam: 'Nigeria', awayTeam: 'Cameroon',
+      homeScore: 1, awayScore: 0, status: 'live', minute: 62, venue: 'Cairo Stadium',
+      kickoffAt: new Date(now.getTime() - 62 * 60000),
+      events: JSON.stringify([{ minute: 45, type: 'goal', player: 'Osimhen', team: 'home' }]) },
+    { league: 'Premier League', continent: 'Europe', country: 'England',
+      homeTeam: 'Liverpool', awayTeam: 'Chelsea',
+      homeScore: null, awayScore: null, status: 'upcoming', minute: null, venue: 'Anfield',
+      kickoffAt: new Date(now.getTime() + 3 * 3600000), events: JSON.stringify([]) },
+    { league: 'Premier League', continent: 'Europe', country: 'England',
+      homeTeam: 'Tottenham', awayTeam: 'Newcastle',
+      homeScore: null, awayScore: null, status: 'upcoming', minute: null, venue: 'Tottenham Stadium',
+      kickoffAt: new Date(now.getTime() + 5 * 3600000), events: JSON.stringify([]) },
+    { league: 'Bundesliga', continent: 'Europe', country: 'Germany',
+      homeTeam: 'Bayern Munich', awayTeam: 'Borussia Dortmund',
+      homeScore: null, awayScore: null, status: 'upcoming', minute: null, venue: 'Allianz Arena',
+      kickoffAt: new Date(now.getTime() + 4 * 3600000), events: JSON.stringify([]) },
+    { league: 'Ligue 1', continent: 'Europe', country: 'France',
+      homeTeam: 'PSG', awayTeam: 'Lyon',
+      homeScore: null, awayScore: null, status: 'upcoming', minute: null, venue: 'Parc des Princes',
+      kickoffAt: new Date(now.getTime() + 6 * 3600000), events: JSON.stringify([]) },
+    { league: 'Champions League', continent: 'Europe', country: 'England',
+      homeTeam: 'Manchester City', awayTeam: 'Napoli',
+      homeScore: null, awayScore: null, status: 'upcoming', minute: null, venue: 'Etihad Stadium',
+      kickoffAt: new Date(now.getTime() + 28 * 3600000), events: JSON.stringify([]) },
+    { league: 'AFCON', continent: 'Africa', country: 'Africa',
+      homeTeam: 'Senegal', awayTeam: 'Ghana',
+      homeScore: null, awayScore: null, status: 'upcoming', minute: null, venue: 'Cairo Stadium',
+      kickoffAt: new Date(now.getTime() + 48 * 3600000), events: JSON.stringify([]) },
+    { league: 'Premier League', continent: 'Europe', country: 'England',
+      homeTeam: 'Chelsea', awayTeam: 'Manchester City',
+      homeScore: 1, awayScore: 3, status: 'ft', minute: null, venue: 'Stamford Bridge',
+      kickoffAt: new Date(now.getTime() - 3 * 3600000), events: JSON.stringify([]) },
+    { league: 'Serie A', continent: 'Europe', country: 'Italy',
+      homeTeam: 'Juventus', awayTeam: 'Roma',
+      homeScore: 2, awayScore: 0, status: 'ft', minute: null, venue: 'Allianz Stadium',
+      kickoffAt: new Date(now.getTime() - 4 * 3600000), events: JSON.stringify([]) },
+    { league: 'La Liga', continent: 'Europe', country: 'Spain',
+      homeTeam: 'Atletico Madrid', awayTeam: 'Sevilla',
+      homeScore: 1, awayScore: 0, status: 'ft', minute: null, venue: 'Metropolitano',
+      kickoffAt: new Date(now.getTime() - 5 * 3600000), events: JSON.stringify([]) },
+  ];
 
-  // Helper to create kickoff times
-  const hrs = (h: number) => new Date(now.getTime() + h * 3600000);
-  const ago = (m: number) => new Date(now.getTime() - m * 60000);
+  await Promise.all(matchDefs.map(def => prisma.match.create({ data: def })));
+  console.log(`✅ Created ${matchDefs.length} matches`);
 
-  const matches = await Promise.all([
-    // ── LIVE matches ──
-    prisma.match.upsert({
-      where: { id: 'match-mu-ars' },
-      update: { minute: 78, homeScore: 2, awayScore: 1 },
-      create: {
-        id: 'match-mu-ars', league: 'Premier League',
-        homeTeam: 'Manchester United', awayTeam: 'Arsenal',
-        homeScore: 2, awayScore: 1, status: 'live', minute: 78,
-        venue: 'Old Trafford', continent: 'Europe', country: 'England',
-        kickoffAt: ago(78),
-        events: JSON.stringify([
-          { minute: 23, type: 'goal', player: 'Rashford', team: 'home' },
-          { minute: 34, type: 'goal', player: 'Saka', team: 'away' },
-          { minute: 56, type: 'goal', player: 'Rashford', team: 'home' },
-        ]),
-      },
-    }),
-    prisma.match.upsert({
-      where: { id: 'match-rm-barca' },
-      update: {},
-      create: {
-        id: 'match-rm-barca', league: 'La Liga',
-        homeTeam: 'Real Madrid', awayTeam: 'Barcelona',
-        homeScore: 1, awayScore: 1, status: 'ht', minute: 45,
-        venue: 'Santiago Bernabeu', continent: 'Europe', country: 'Spain',
-        kickoffAt: ago(45),
-        events: JSON.stringify([
-          { minute: 18, type: 'goal', player: 'Vinicius Jr', team: 'home' },
-          { minute: 38, type: 'goal', player: 'Lewandowski', team: 'away' },
-        ]),
-      },
-    }),
-    prisma.match.upsert({
-      where: { id: 'match-inter-milan' },
-      update: {},
-      create: {
-        id: 'match-inter-milan', league: 'Serie A',
-        homeTeam: 'Inter Milan', awayTeam: 'AC Milan',
-        homeScore: 0, awayScore: 0, status: 'live', minute: 34,
-        venue: 'San Siro', continent: 'Europe', country: 'Italy',
-        kickoffAt: ago(34),
-        events: JSON.stringify([]),
-      },
-    }),
-    prisma.match.upsert({
-      where: { id: 'match-nig-cmr' },
-      update: {},
-      create: {
-        id: 'match-nig-cmr', league: 'AFCON',
-        homeTeam: 'Nigeria', awayTeam: 'Cameroon',
-        homeScore: 1, awayScore: 0, status: 'live', minute: 62,
-        venue: 'Stade Olympique', continent: 'Africa', country: 'Africa',
-        kickoffAt: ago(62),
-        events: JSON.stringify([{ minute: 45, type: 'goal', player: 'Osimhen', team: 'home' }]),
-      },
-    }),
+  // ─── COMMUNITIES ────────────────────────────────────────────
+  const communityDefs = [
+    { name: 'Gooners', description: 'The official Arsenal fan community on SportSphere', topic: 'Arsenal', memberCount: 125000, createdById: userMap['@gooners'].id },
+    { name: 'Red Devils', description: 'Manchester United fans worldwide', topic: 'Manchester United', memberCount: 98000, createdById: userMap['@manchesterunited'].id },
+    { name: 'GK Union', description: 'Goalkeeper community — saves, tips, drills', topic: 'Goalkeeping', memberCount: 67800, createdById: userMap['@gkunion'].id },
+    { name: 'Culer Nation', description: 'FC Barcelona supporters worldwide', topic: 'FC Barcelona', memberCount: 87000, createdById: userMap['@fifaofficial'].id },
+    { name: 'AFCON Watch Party', description: 'Following the African Cup of Nations together', topic: 'AFCON', memberCount: 45000, createdById: userMap['@sportsphere'].id },
+  ];
 
-    // ── Today (upcoming, same day) ──
-    prisma.match.upsert({
-      where: { id: 'match-liv-che' },
-      update: {},
-      create: {
-        id: 'match-liv-che', league: 'Premier League',
-        homeTeam: 'Liverpool', awayTeam: 'Chelsea',
-        status: 'upcoming', venue: 'Anfield',
-        continent: 'Europe', country: 'England',
-        kickoffAt: hrs(3),
-        events: JSON.stringify([]),
-      },
-    }),
-    prisma.match.upsert({
-      where: { id: 'match-tot-new' },
-      update: {},
-      create: {
-        id: 'match-tot-new', league: 'Premier League',
-        homeTeam: 'Tottenham', awayTeam: 'Newcastle',
-        status: 'upcoming', venue: 'Tottenham Hotspur Stadium',
-        continent: 'Europe', country: 'England',
-        kickoffAt: hrs(5),
-        events: JSON.stringify([]),
-      },
-    }),
-    prisma.match.upsert({
-      where: { id: 'match-bay-dor' },
-      update: {},
-      create: {
-        id: 'match-bay-dor', league: 'Bundesliga',
-        homeTeam: 'Bayern Munich', awayTeam: 'Borussia Dortmund',
-        status: 'upcoming', venue: 'Allianz Arena',
-        continent: 'Europe', country: 'Germany',
-        kickoffAt: hrs(4),
-        events: JSON.stringify([]),
-      },
-    }),
-    prisma.match.upsert({
-      where: { id: 'match-psg-lyon' },
-      update: {},
-      create: {
-        id: 'match-psg-lyon', league: 'Ligue 1',
-        homeTeam: 'PSG', awayTeam: 'Lyon',
-        status: 'upcoming', venue: 'Parc des Princes',
-        continent: 'Europe', country: 'France',
-        kickoffAt: hrs(6),
-        events: JSON.stringify([]),
-      },
-    }),
-    prisma.match.upsert({
-      where: { id: 'match-sen-gha' },
-      update: {},
-      create: {
-        id: 'match-sen-gha', league: 'AFCON',
-        homeTeam: 'Senegal', awayTeam: 'Ghana',
-        status: 'upcoming', venue: 'Cairo Stadium',
-        continent: 'Africa', country: 'Africa',
-        kickoffAt: hrs(2),
-        events: JSON.stringify([]),
-      },
-    }),
-
-    // ── Upcoming (future days) ──
-    prisma.match.upsert({
-      where: { id: 'match-mci-nap' },
-      update: {},
-      create: {
-        id: 'match-mci-nap', league: 'Champions League',
-        homeTeam: 'Manchester City', awayTeam: 'Napoli',
-        status: 'upcoming', venue: 'Etihad Stadium',
-        continent: 'Europe', country: 'England',
-        kickoffAt: hrs(28),
-        events: JSON.stringify([]),
-      },
-    }),
-    prisma.match.upsert({
-      where: { id: 'match-rm-inter' },
-      update: {},
-      create: {
-        id: 'match-rm-inter', league: 'Champions League',
-        homeTeam: 'Real Madrid', awayTeam: 'Inter Milan',
-        status: 'upcoming', venue: 'Santiago Bernabeu',
-        continent: 'Europe', country: 'Spain',
-        kickoffAt: hrs(52),
-        events: JSON.stringify([]),
-      },
-    }),
-    prisma.match.upsert({
-      where: { id: 'match-ars-psv' },
-      update: {},
-      create: {
-        id: 'match-ars-psv', league: 'Europa League',
-        homeTeam: 'Arsenal', awayTeam: 'PSV Eindhoven',
-        status: 'upcoming', venue: 'Emirates Stadium',
-        continent: 'Europe', country: 'England',
-        kickoffAt: hrs(76),
-        events: JSON.stringify([]),
-      },
-    }),
-    prisma.match.upsert({
-      where: { id: 'match-egy-mor' },
-      update: {},
-      create: {
-        id: 'match-egy-mor', league: 'AFCON',
-        homeTeam: 'Egypt', awayTeam: 'Morocco',
-        status: 'upcoming', venue: 'Stade de la Réunification',
-        continent: 'Africa', country: 'Africa',
-        kickoffAt: hrs(100),
-        events: JSON.stringify([]),
-      },
-    }),
-    prisma.match.upsert({
-      where: { id: 'match-lei-frk' },
-      update: {},
-      create: {
-        id: 'match-lei-frk', league: 'Bundesliga',
-        homeTeam: 'RB Leipzig', awayTeam: 'Eintracht Frankfurt',
-        status: 'upcoming', venue: 'Red Bull Arena',
-        continent: 'Europe', country: 'Germany',
-        kickoffAt: hrs(124),
-        events: JSON.stringify([]),
-      },
-    }),
-
-    // ── Finished (FT) ──
-    prisma.match.upsert({
-      where: { id: 'match-che-mci-ft' },
-      update: {},
-      create: {
-        id: 'match-che-mci-ft', league: 'Premier League',
-        homeTeam: 'Chelsea', awayTeam: 'Manchester City',
-        homeScore: 1, awayScore: 3, status: 'ft',
-        venue: 'Stamford Bridge', continent: 'Europe', country: 'England',
-        kickoffAt: ago(180),
-        events: JSON.stringify([]),
-      },
-    }),
-    prisma.match.upsert({
-      where: { id: 'match-juve-rom-ft' },
-      update: {},
-      create: {
-        id: 'match-juve-rom-ft', league: 'Serie A',
-        homeTeam: 'Juventus', awayTeam: 'Roma',
-        homeScore: 2, awayScore: 0, status: 'ft',
-        venue: 'Allianz Stadium', continent: 'Europe', country: 'Italy',
-        kickoffAt: ago(240),
-        events: JSON.stringify([]),
-      },
-    }),
-    prisma.match.upsert({
-      where: { id: 'match-avl-bha-ft' },
-      update: {},
-      create: {
-        id: 'match-avl-bha-ft', league: 'Premier League',
-        homeTeam: 'Aston Villa', awayTeam: 'Brighton',
-        homeScore: 3, awayScore: 1, status: 'ft',
-        venue: 'Villa Park', continent: 'Europe', country: 'England',
-        kickoffAt: ago(300),
-        events: JSON.stringify([]),
-      },
-    }),
-    prisma.match.upsert({
-      where: { id: 'match-whw-wol-ft' },
-      update: {},
-      create: {
-        id: 'match-whw-wol-ft', league: 'Premier League',
-        homeTeam: 'West Ham', awayTeam: 'Wolves',
-        homeScore: 2, awayScore: 0, status: 'ft',
-        venue: 'London Stadium', continent: 'Europe', country: 'England',
-        kickoffAt: ago(360),
-        events: JSON.stringify([]),
-      },
-    }),
-    prisma.match.upsert({
-      where: { id: 'match-atl-sev-ft' },
-      update: {},
-      create: {
-        id: 'match-atl-sev-ft', league: 'La Liga',
-        homeTeam: 'Atletico Madrid', awayTeam: 'Sevilla',
-        homeScore: 1, awayScore: 0, status: 'ft',
-        venue: 'Metropolitano', continent: 'Europe', country: 'Spain',
-        kickoffAt: ago(360),
-        events: JSON.stringify([]),
-      },
-    }),
-    prisma.match.upsert({
-      where: { id: 'match-ivc-mal-ft' },
-      update: {},
-      create: {
-        id: 'match-ivc-mal-ft', league: 'AFCON',
-        homeTeam: 'Ivory Coast', awayTeam: 'Mali',
-        homeScore: 2, awayScore: 2, status: 'ft',
-        venue: 'Stade Félix Houphouët-Boigny', continent: 'Africa', country: 'Africa',
-        kickoffAt: ago(360),
-        events: JSON.stringify([]),
-      },
-    }),
-    prisma.match.upsert({
-      where: { id: 'match-dor-lev-ft' },
-      update: {},
-      create: {
-        id: 'match-dor-lev-ft', league: 'Bundesliga',
-        homeTeam: 'Borussia Dortmund', awayTeam: 'Bayer Leverkusen',
-        homeScore: 1, awayScore: 3, status: 'ft',
-        venue: 'Signal Iduna Park', continent: 'Europe', country: 'Germany',
-        kickoffAt: ago(420),
-        events: JSON.stringify([]),
-      },
-    }),
-  ]);
-  console.log(`✅ Created ${matches.length} matches`);
-
-  // ─── Posts ──────────────────────────────────────────────────
-  const posts = await Promise.all([
-    // Breaking news posts
-    prisma.post.upsert({
-      where: { id: 'post-break-yoro' },
-      update: {},
-      create: {
-        id: 'post-break-yoro', userId: ss.id, postType: 'post', isBreaking: true,
-        content: "BREAKING: Manchester United confirm the signing of Leny Yoro from Lille for £58.9M. The 18-year-old defender becomes one of the most expensive teenage transfers in history. 🔴",
-        likeCount: 2847, commentCount: 342, shareCount: 156, viewCount: 45000,
-        teamTag: 'Manchester United',
-      },
-    }),
-    prisma.post.upsert({
-      where: { id: 'post-break-mbappe' },
-      update: {},
-      create: {
-        id: 'post-break-mbappe', userId: fd.id, postType: 'post', isBreaking: true,
-        content: "OFFICIAL: Real Madrid have activated the release clause of Kylian Mbappé. The French superstar signs a 5-year deal at the Bernabeu. Transfer fee: £178M.",
-        likeCount: 15670, commentCount: 2341, shareCount: 3456, viewCount: 234000,
-      },
-    }),
-    // Fan posts
-    prisma.post.upsert({
-      where: { id: 'post-mu-perf' },
-      update: {},
-      create: {
-        id: 'post-mu-perf', userId: manutd.id, postType: 'post', isBreaking: false,
-        content: 'What a performance from the lads tonight. Rashford with the brace — absolute class. Old Trafford was rocking.',
-        likeCount: 4521, commentCount: 678, shareCount: 234, viewCount: 89000,
-        teamTag: 'Manchester United', playerTag: 'Rashford',
-      },
-    }),
-    prisma.post.upsert({
-      where: { id: 'post-sarah-emirates' },
-      update: {},
-      create: {
-        id: 'post-sarah-emirates', userId: sarah.id, postType: 'photo',
-        content: 'Match day at the Emirates. The atmosphere was electric tonight.',
-        mediaUrls: JSON.stringify(['https://example.com/photo/emirates-matchday.jpg']),
-        likeCount: 3456, commentCount: 234, shareCount: 89, viewCount: 45000,
-        teamTag: 'Arsenal',
-      },
-    }),
-    // Poll
-    prisma.post.upsert({
-      where: { id: 'post-poll-pl' },
-      update: {},
-      create: {
-        id: 'post-poll-pl', userId: fd.id, postType: 'post',
-        content: 'Who wins the Premier League this season?',
-        likeCount: 890, commentCount: 234, shareCount: 56, viewCount: 12000,
-      },
-    }),
-    // Marcus hot take
-    prisma.post.upsert({
-      where: { id: 'post-marcus-haaland' },
-      update: {},
-      create: {
-        id: 'post-marcus-haaland', userId: marcus.id, postType: 'post',
-        content: "Hot take: Haaland's goal-per-game ratio makes him the most efficient striker in Premier League history. The stats don't lie. Change my mind.",
-        likeCount: 567, commentCount: 234, shareCount: 23, viewCount: 8900,
-        playerTag: 'Erling Haaland',
-      },
-    }),
-    // Video / spotlight posts
-    prisma.post.upsert({
-      where: { id: 'post-rashford-goals' },
-      update: {},
-      create: {
-        id: 'post-rashford-goals', userId: goals.id, postType: 'video',
-        content: 'Every Rashford goal this season 🔥 What a player when he\'s in form. Vol. 1 — 12 goals in one video.',
-        mediaUrls: JSON.stringify(['https://example.com/video/rashford-goals.mp4']),
-        likeCount: 8934, commentCount: 456, shareCount: 1234, viewCount: 450000,
-        playerTag: 'Rashford',
-      },
-    }),
-    prisma.post.upsert({
-      where: { id: 'post-sarah-spotlight' },
-      update: {},
-      create: {
-        id: 'post-sarah-spotlight', userId: sarah.id, postType: 'spotlight',
-        content: 'The atmosphere at the Emirates last night was absolutely electric. Arsenal fans were incredible from start to finish. This team is going places. 📸',
-        likeCount: 1234, commentCount: 89, shareCount: 45, viewCount: 18000,
-        teamTag: 'Arsenal',
-      },
-    }),
-    // GK training
-    prisma.post.upsert({
-      where: { id: 'post-gk-drill' },
-      update: {},
-      create: {
-        id: 'post-gk-drill', userId: gku.id, postType: 'post',
-        content: "Today's training tip: The 1-2 save drill. Set up two shooters, one at each post. Make the first save then immediately reset for the second. Reaction time is everything.",
-        likeCount: 2341, commentCount: 123, shareCount: 234, viewCount: 34000,
-      },
-    }),
-    // Transfer news
-    prisma.post.upsert({
-      where: { id: 'post-tonali' },
-      update: {},
-      create: {
-        id: 'post-tonali', userId: fd.id, postType: 'post',
-        content: 'TRANSFER UPDATE: Chelsea in advanced talks to sign Sandro Tonali from Newcastle for £65M. The Italian midfielder is keen on a return to top European football.',
-        likeCount: 4521, commentCount: 678, shareCount: 890, viewCount: 89000,
-        playerTag: 'Sandro Tonali',
-      },
-    }),
-    // More spotlight/video content for spotlight feed
-    prisma.post.upsert({
-      where: { id: 'post-mbappe-skills' },
-      update: {},
-      create: {
-        id: 'post-mbappe-skills', userId: skillz.id, postType: 'spotlight',
-        content: 'Mbappe Skills Compilation — The French wizard at his best. Every dribble, every trick, every finish.',
-        mediaUrls: JSON.stringify(['https://example.com/video/mbappe-skills.mp4']),
-        likeCount: 6700, commentCount: 312, shareCount: 890, viewCount: 320000,
-        playerTag: 'Mbappe',
-      },
-    }),
-    prisma.post.upsert({
-      where: { id: 'post-gooner-reaction' },
-      update: {},
-      create: {
-        id: 'post-gooner-reaction', userId: gooner.id, postType: 'spotlight',
-        content: 'Fan Reaction — Arsenal Win! The Emirates was bouncing today. What a performance from the lads!',
-        mediaUrls: JSON.stringify(['https://example.com/video/gooner-reaction.mp4']),
-        likeCount: 2300, commentCount: 156, shareCount: 78, viewCount: 65000,
-        teamTag: 'Arsenal',
-      },
-    }),
-    prisma.post.upsert({
-      where: { id: 'post-gk-saves' },
-      update: {},
-      create: {
-        id: 'post-gk-saves', userId: gku.id, postType: 'spotlight',
-        content: 'Best Saves This Week — Top 10 goalkeeper saves from around Europe. Some of these are unreal!',
-        mediaUrls: JSON.stringify(['https://example.com/video/gk-saves.mp4']),
-        likeCount: 1800, commentCount: 98, shareCount: 234, viewCount: 43000,
-      },
-    }),
-    prisma.post.upsert({
-      where: { id: 'post-dribble-master' },
-      update: {},
-      create: {
-        id: 'post-dribble-master', userId: techKing.id, postType: 'spotlight',
-        content: 'Dribble Masterclass — Breaking down the technique behind the best dribblers in world football.',
-        mediaUrls: JSON.stringify(['https://example.com/video/dribble-master.mp4']),
-        likeCount: 1500, commentCount: 67, shareCount: 112, viewCount: 28000,
-      },
-    }),
-    prisma.post.upsert({
-      where: { id: 'post-clasico-hl' },
-      update: {},
-      create: {
-        id: 'post-clasico-hl', userId: laliga.id, postType: 'spotlight',
-        content: 'El Clasico Highlights — Real Madrid vs Barcelona. The biggest match in world football never disappoints.',
-        mediaUrls: JSON.stringify(['https://example.com/video/clasico-hl.mp4']),
-        likeCount: 9800, commentCount: 567, shareCount: 2340, viewCount: 890000,
-      },
-    }),
-  ]);
-  console.log(`✅ Created ${posts.length} posts`);
-
-  // ─── Polls ──────────────────────────────────────────────────
-  const pollPost = posts.find(p => p.id === 'post-poll-pl')!;
-  await prisma.poll.upsert({
-    where: { id: 'poll-pl-winner' },
+  await Promise.all(communityDefs.map(def => prisma.community.upsert({
+    where: { id: def.name.toLowerCase().replace(/\s/g, '-') },
     update: {},
-    create: {
-      id: 'poll-pl-winner', postId: pollPost.id,
-      question: 'Who wins the Premier League this season?',
-      options: JSON.stringify([
-        { label: 'Manchester City', pct: 42 },
-        { label: 'Arsenal', pct: 31 },
-        { label: 'Liverpool', pct: 18 },
-        { label: 'Chelsea', pct: 9 },
-      ]),
-      totalVotes: 12400,
-      endsAt: hrs(168),
-    },
+    create: { id: def.name.toLowerCase().replace(/\s/g, '-'), ...def },
+  })));
+  console.log(`✅ Created ${communityDefs.length} communities`);
+
+  // ─── NOTIFICATIONS (for davidmbaza) ────────────────────────
+  const david = userMap['@davidmbaza'];
+  await prisma.notification.deleteMany({ where: { userId: david.id } });
+  await prisma.notification.createMany({
+    data: [
+      { userId: david.id, type: 'follow', title: 'Sarah Chen started following you', actorId: userMap['@sarahchen'].id, isRead: false },
+      { userId: david.id, type: 'like', title: 'Marcus Johnson liked your post', actorId: userMap['@marcusj'].id, isRead: false },
+      { userId: david.id, type: 'match_goal', title: "GOAL! Rashford 78' — Man Utd 2-1 Arsenal", isRead: false },
+      { userId: david.id, type: 'follow', title: 'Fabrizio Romano started following you', actorId: userMap['@fabrizioromano'].id, isRead: false },
+      { userId: david.id, type: 'comment', title: 'GK Union commented on your post: "Great take!"', actorId: userMap['@gkunion'].id, isRead: true },
+      { userId: david.id, type: 'system', title: 'Welcome to SportSphere!', body: 'Start by following your favourite teams and players.', isRead: true },
+    ],
   });
-  console.log('✅ Created poll');
 
-  // ─── Comments ────────────────────────────────────────────────
-  const commentsData = [
-    { postId: 'post-mu-perf', userId: sarah.id, content: 'Absolutely class! 🔥', likeCount: 45 },
-    { postId: 'post-mu-perf', userId: marcus.id, content: 'Rashford is back to his best this season', likeCount: 23 },
-    { postId: 'post-mu-perf', userId: gku.id, content: 'What a performance 🔥', likeCount: 12 },
-    { postId: 'post-break-yoro', userId: marcus.id, content: 'Great signing for the future. £58.9M is a lot but he has potential.', likeCount: 34 },
-    { postId: 'post-break-yoro', userId: sarah.id, content: 'Excited to see him develop at United!', likeCount: 56 },
-    { postId: 'post-break-mbappe', userId: marcus.id, content: 'The biggest transfer of the decade. Madrid got a bargain.', likeCount: 234 },
-    { postId: 'post-marcus-haaland', userId: sarah.id, content: "I'd argue Henry in his prime was more efficient, but Haaland is insane.", likeCount: 89 },
-    { postId: 'post-marcus-haaland', userId: fd.id, content: 'Stats support this take. The xG numbers are ridiculous.', likeCount: 156 },
-    { postId: 'post-rashford-goals', userId: marcus.id, content: 'Vol 2 when? 🔥🔥🔥', likeCount: 78 },
-    { postId: 'post-rashford-goals', userId: sarah.id, content: 'The chip against Wolves is my favourite', likeCount: 45 },
-    { postId: 'post-sarah-emirates', userId: marcus.id, content: 'Looks amazing! What camera do you use?', likeCount: 12 },
-    { postId: 'post-sarah-emirates', userId: gku.id, content: 'The Emirates at night is special', likeCount: 8 },
-    { postId: 'post-tonali', userId: sarah.id, content: 'Would be a great signing for Chelsea. He fits their style perfectly.', likeCount: 67 },
-    { postId: 'post-gk-drill', userId: sarah.id, content: 'Tried this at training today, definitely improved my reaction time!', likeCount: 23 },
-    { postId: 'post-gk-drill', userId: david.id, content: 'My coach showed us this last week. Really effective.', likeCount: 11 },
-    { postId: 'post-poll-pl', userId: marcus.id, content: 'City have the squad depth to go all the way again.', likeCount: 45 },
-    { postId: 'post-poll-pl', userId: sarah.id, content: 'Arsenal if we stay injury free! 💪', likeCount: 89 },
-    { postId: 'post-poll-pl', userId: david.id, content: "Don't sleep on Liverpool. Slot is doing wonders.", likeCount: 34 },
-  ];
+  // ─── MESSAGES (for davidmbaza) ──────────────────────────────
+  await prisma.message.deleteMany({ where: { OR: [{ senderId: david.id }, { receiverId: david.id }] } });
+  await prisma.message.createMany({
+    data: [
+      { senderId: userMap['@sarahchen'].id, receiverId: david.id, content: 'Did you see that game?! Unbelievable result 🔥', isRead: false },
+      { senderId: david.id, receiverId: userMap['@marcusj'].id, content: 'Great prediction man! You called it exactly', isRead: true },
+      { senderId: userMap['@gkunion'].id, receiverId: david.id, content: 'Match day thread is live! Join us 🧤', isRead: false },
+    ],
+  });
+  console.log('✅ Created notifications and messages');
 
-  await prisma.$transaction(
-    commentsData.map(c =>
-      prisma.comment.upsert({
-        where: { id: `comment-${c.postId}-${c.userId}` },
-        update: {},
-        create: { id: `comment-${c.postId}-${c.userId}`, ...c },
-      })
-    )
-  );
-  console.log(`✅ Created ${commentsData.length} comments`);
-
-  // ─── Communities ─────────────────────────────────────────────
-  const communities = await Promise.all([
-    prisma.community.upsert({
-      where: { id: 'comm-gooners' },
-      update: {},
-      create: { id: 'comm-gooners', name: 'Gooners', description: 'The official Arsenal fan community on SportSphere', topic: 'Arsenal', memberCount: 125000, createdById: ss.id },
-    }),
-    prisma.community.upsert({
-      where: { id: 'comm-red-devils' },
-      update: {},
-      create: { id: 'comm-red-devils', name: 'Red Devils', description: 'Manchester United fans worldwide', topic: 'Manchester United', memberCount: 98000, createdById: ss.id },
-    }),
-    prisma.community.upsert({
-      where: { id: 'comm-culers' },
-      update: {},
-      create: { id: 'comm-culers', name: 'Culer Nation', description: 'FC Barcelona supporters', topic: 'FC Barcelona', memberCount: 87000, createdById: ss.id },
-    }),
-    prisma.community.upsert({
-      where: { id: 'comm-gku' },
-      update: {},
-      create: { id: 'comm-gku', name: 'GK Union', description: 'Goalkeeper community — saves, tips, drills', topic: 'Goalkeeping', memberCount: 67800, createdById: gku.id },
-    }),
-    prisma.community.upsert({
-      where: { id: 'comm-predictions' },
-      update: {},
-      create: { id: 'comm-predictions', name: 'Prediction Kings', description: 'The home of match predictions. Compete with fans worldwide.', topic: 'Predictions', memberCount: 45000, createdById: ss.id },
-    }),
-  ]);
-  console.log(`✅ Created ${communities.length} communities`);
-
-  // ─── Community Memberships ──────────────────────────────────
-  await prisma.$transaction([
-    prisma.communityMember.upsert({ where: { communityId_userId: { communityId: 'comm-gooners', userId: sarah.id } }, update: {}, create: { communityId: 'comm-gooners', userId: sarah.id, role: 'admin' } }),
-    prisma.communityMember.upsert({ where: { communityId_userId: { communityId: 'comm-gooners', userId: gooner.id } }, update: {}, create: { communityId: 'comm-gooners', userId: gooner.id, role: 'moderator' } }),
-    prisma.communityMember.upsert({ where: { communityId_userId: { communityId: 'comm-gooners', userId: david.id } }, update: {}, create: { communityId: 'comm-gooners', userId: david.id, role: 'member' } }),
-    prisma.communityMember.upsert({ where: { communityId_userId: { communityId: 'comm-red-devils', userId: david.id } }, update: {}, create: { communityId: 'comm-red-devils', userId: david.id, role: 'member' } }),
-    prisma.communityMember.upsert({ where: { communityId_userId: { communityId: 'comm-red-devils', userId: marcus.id } }, update: {}, create: { communityId: 'comm-red-devils', userId: marcus.id, role: 'member' } }),
-    prisma.communityMember.upsert({ where: { communityId_userId: { communityId: 'comm-gku', userId: gku.id } }, update: {}, create: { communityId: 'comm-gku', userId: gku.id, role: 'admin' } }),
-    prisma.communityMember.upsert({ where: { communityId_userId: { communityId: 'comm-gku', userId: david.id } }, update: {}, create: { communityId: 'comm-gku', userId: david.id, role: 'member' } }),
-    prisma.communityMember.upsert({ where: { communityId_userId: { communityId: 'comm-predictions', userId: david.id } }, update: {}, create: { communityId: 'comm-predictions', userId: david.id, role: 'member' } }),
-    prisma.communityMember.upsert({ where: { communityId_userId: { communityId: 'comm-predictions', userId: marcus.id } }, update: {}, create: { communityId: 'comm-predictions', userId: marcus.id, role: 'member' } }),
-  ]);
-  console.log('✅ Created community memberships');
-
-  // ─── Follows ────────────────────────────────────────────────
-  await prisma.$transaction([
-    prisma.follow.upsert({ where: { followerId_followingId: { followerId: sarah.id, followingId: david.id } }, update: {}, create: { followerId: sarah.id, followingId: david.id } }),
-    prisma.follow.upsert({ where: { followerId_followingId: { followerId: marcus.id, followingId: david.id } }, update: {}, create: { followerId: marcus.id, followingId: david.id } }),
-    prisma.follow.upsert({ where: { followerId_followingId: { followerId: goals.id, followingId: david.id } }, update: {}, create: { followerId: goals.id, followingId: david.id } }),
-    prisma.follow.upsert({ where: { followerId_followingId: { followerId: david.id, followingId: sarah.id } }, update: {}, create: { followerId: david.id, followingId: sarah.id } }),
-    prisma.follow.upsert({ where: { followerId_followingId: { followerId: david.id, followingId: marcus.id } }, update: {}, create: { followerId: david.id, followingId: marcus.id } }),
-    prisma.follow.upsert({ where: { followerId_followingId: { followerId: david.id, followingId: ss.id } }, update: {}, create: { followerId: david.id, followingId: ss.id } }),
-    prisma.follow.upsert({ where: { followerId_followingId: { followerId: david.id, followingId: fd.id } }, update: {}, create: { followerId: david.id, followingId: fd.id } }),
-    prisma.follow.upsert({ where: { followerId_followingId: { followerId: david.id, followingId: goals.id } }, update: {}, create: { followerId: david.id, followingId: goals.id } }),
-    prisma.follow.upsert({ where: { followerId_followingId: { followerId: david.id, followingId: manutd.id } }, update: {}, create: { followerId: david.id, followingId: manutd.id } }),
-  ]);
-  console.log('✅ Created follows');
-
-  // ─── Notifications ────────────────────────────────────────────
-  const notificationsData = [
-    { userId: david.id, type: 'follow', title: 'Sarah Chen followed you', actorId: sarah.id, isRead: false },
-    { userId: david.id, type: 'like', title: 'Marcus Johnson liked your post', actorId: marcus.id, isRead: false },
-    { userId: david.id, type: 'match_goal', title: "GOAL! Rashford 78' — Man Utd 2-1 Arsenal", referenceId: 'match-mu-ars', isRead: false },
-    { userId: david.id, type: 'system', title: 'Welcome to SportSphere!', body: 'Start by following your favourite teams and players.', isRead: true },
-    { userId: david.id, type: 'comment', title: 'Sarah Chen commented on your post', actorId: sarah.id, isRead: false },
-    { userId: david.id, type: 'follow', title: 'Goal Highlights HD started following you', actorId: goals.id, isRead: true },
-    { userId: david.id, type: 'prediction', title: 'Your prediction was correct! Arsenal won 2-1', isRead: false },
-    { userId: david.id, type: 'community', title: 'You were invited to join "Gooners" community', isRead: true },
-    { userId: david.id, type: 'result', title: 'Chelsea vs Manchester City ended 1-3', referenceId: 'match-che-mci-ft', isRead: true },
-    { userId: david.id, type: 'transfer', title: 'Transfer news: Arsenal signs new midfielder', actorId: fd.id, isRead: true },
-    { userId: david.id, type: 'poll_result', title: 'Poll results: 42% voted Manchester City to win', isRead: true },
-  ];
-
-  await prisma.$transaction(
-    notificationsData.map((n, i) =>
-      prisma.notification.upsert({
-        where: { id: `notif-${david.id}-${i}` },
-        update: {},
-        create: { id: `notif-${david.id}-${i}`, ...n },
-      })
-    )
-  );
-  console.log(`✅ Created ${notificationsData.length} notifications`);
-
-  // ─── Messages ─────────────────────────────────────────────────
-  const messagesData = [
-    { senderId: david.id, receiverId: sarah.id, content: 'Did you see that game?', isRead: true },
-    { senderId: sarah.id, receiverId: david.id, content: 'YES! What a comeback by United', isRead: true },
-    { senderId: david.id, receiverId: sarah.id, content: 'Rashford is back to his best', isRead: false },
-    { senderId: sarah.id, receiverId: david.id, content: "Let's go to the match together!", isRead: false },
-    { senderId: marcus.id, receiverId: david.id, content: 'Great prediction on the Arsenal game!', isRead: true },
-    { senderId: david.id, receiverId: marcus.id, content: 'Thanks! The form was strong', isRead: true },
-    { senderId: marcus.id, receiverId: david.id, content: 'Great prediction!', isRead: true },
-    { senderId: sarah.id, receiverId: gooner.id, content: 'Match day thread is up for Saturday', isRead: true },
-    { senderId: gooner.id, receiverId: sarah.id, content: 'Admin: Match day thread is up', isRead: false },
-  ];
-
-  await prisma.$transaction(
-    messagesData.map((m, i) =>
-      prisma.message.upsert({
-        where: { id: `msg-${i}` },
-        update: {},
-        create: { id: `msg-${i}`, ...m },
-      })
-    )
-  );
-  console.log(`✅ Created ${messagesData.length} messages`);
-
-  // ─── Predictions ──────────────────────────────────────────────
-  const predictionsData = [
-    { userId: david.id, matchId: 'match-mu-ars', homeTeam: 'Manchester United', awayTeam: 'Arsenal', predictedHome: 2, predictedAway: 1, result: 'correct', isCorrect: true, pointsEarned: 3 },
-    { userId: marcus.id, matchId: 'match-mu-ars', homeTeam: 'Manchester United', awayTeam: 'Arsenal', predictedHome: 1, predictedAway: 1, result: 'partial', isCorrect: false, pointsEarned: 1 },
-    { userId: sarah.id, matchId: 'match-mu-ars', homeTeam: 'Manchester United', awayTeam: 'Arsenal', predictedHome: 2, predictedAway: 1, result: 'correct', isCorrect: true, pointsEarned: 3 },
-    { userId: david.id, matchId: 'match-rm-barca', homeTeam: 'Real Madrid', awayTeam: 'Barcelona', predictedHome: 2, predictedAway: 1, result: 'pending', isCorrect: null, pointsEarned: 0 },
-  ];
-
-  await prisma.$transaction(
-    predictionsData.map((p, i) =>
-      prisma.prediction.upsert({
-        where: { id: `pred-${i}` },
-        update: {},
-        create: { id: `pred-${i}`, ...p },
-      })
-    )
-  );
-  console.log(`✅ Created ${predictionsData.length} predictions`);
-
-  console.log('🎉 Seed complete!');
+  console.log('\n🎉 Seed complete!');
+  console.log(`\n📋 Test accounts created:`);
+  userDefs.forEach(u => console.log(`   ${u.role.padEnd(14)} → ${u.handle}`));
 }
 
 main()

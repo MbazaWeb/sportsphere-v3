@@ -44,6 +44,7 @@ export default function UserProfileViewer() {
           setApiUser(data);
           // Update viewing user with fresh API data
           setViewingUser({
+            id: data.id,
             name: data.name,
             handle: data.handle,
             avatar: data.avatarInitials,
@@ -52,10 +53,10 @@ export default function UserProfileViewer() {
             bio: data.bio || '',
             role: data.role,
             location: data.location || '',
-            joined: new Date(data.registeredAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-            followers: data.followerCount,
-            following: data.followingCount,
-            posts: data.postCount,
+            joined: data.registeredAt ? new Date(data.registeredAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '',
+            followers: data.followerCount || 0,
+            following: data.followingCount || 0,
+            posts: data.postCount || 0,
             isFollowing: false,
           });
 
