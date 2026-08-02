@@ -405,7 +405,8 @@ function MediaUpload({ type, mediaUrls, onChange }: { type: string; mediaUrls: s
       createdUrls.current.push(u);
       return u;
     });
-    onChange([...mediaUrls, ...previews]);
+    const original = [...mediaUrls];
+    onChange([...original, ...previews]);
 
     // Upload files in background
     Array.from(files).forEach(async (file, i) => {
@@ -415,16 +416,13 @@ function MediaUpload({ type, mediaUrls, onChange }: { type: string; mediaUrls: s
         const res = await fetch('/api/uploads', { method: 'POST', body: form });
         const json = await res.json();
         if (res.ok && json.url) {
-          // Replace the preview url with the returned public URL
-          const previewIndex = mediaUrls.length + i; // original mediaUrls length + index in this batch
-          onChange((current) => {
-            const copy = [...current];
-            const localPreview = previews[i];
-            const idx = copy.indexOf(localPreview);
-            if (idx !== -1) copy[idx] = json.url;
-            else copy.push(json.url);
-            return copy;
-          });
+          // Replace the preview url with the returned public URL using the original snapshot
+          const combined = [...original, ...previews];
+          const localPreview = previews[i];
+          const idx = combined.indexOf(localPreview);
+          if (idx !== -1) combined[idx] = json.url;
+          else combined.push(json.url);
+          onChange(combined);
         }
       } catch (err) {
         // ignore upload failure; preview will remain
