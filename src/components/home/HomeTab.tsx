@@ -83,6 +83,7 @@ function ShareSheet({ onClose }: { onClose: () => void }) {
 // --- Comment Sheet ---------------------------------------------
 function CommentSheet({ itemId, onClose }: { itemId: string; onClose: () => void }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const userProfile = useAuthStore((s) => s.userProfile);
   const setLoginModalOpen = useUIStore((s) => s.setLoginModalOpen);
   const [text, setText] = useState('');
   const [comments, setComments] = useState<Array<{ id: string; user: { name: string; avatarInitials: string; isVerified: boolean }; content: string; likeCount: number; createdAt: string }>>([]);
@@ -192,7 +193,7 @@ function CommentSheet({ itemId, onClose }: { itemId: string; onClose: () => void
         </div>
 
         <div className="flex-shrink-0 border-t border-surface-border p-4 flex items-end gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold text-xs font-bold text-black flex-shrink-0">ME</div>
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold text-xs font-bold text-black flex-shrink-0">{userProfile?.avatar || 'ME'}</div>
           <div className="flex-1 flex items-end gap-2 rounded-2xl bg-surface border border-surface-border px-3 py-2 focus-within:ring-1 focus-within:ring-gold">
             <textarea
               value={text}
@@ -696,19 +697,30 @@ function FeedCard({ item, onShare, onComment, formatTime }: {
         )}
 
         {item.postType === 'photo' && (
-          <div className="mb-3 h-52 overflow-hidden rounded-xl bg-gradient-to-br from-gold via-orange-600 to-red-800 flex items-end p-3">
-            <span className="rounded-lg bg-black/50 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
-              {item.teamTag || 'Match Day'}
-            </span>
+          <div className="mb-3 overflow-hidden rounded-xl bg-surface-elevated">
+            {item.mediaUrls && item.mediaUrls.length > 0 ? (
+              <img src={item.mediaUrls[0]} alt={item.content || 'Post image'} className="h-52 w-full object-cover" loading="lazy" />
+            ) : (
+              <div className="h-52 bg-gradient-to-br from-gold via-orange-600 to-red-800 flex items-end p-3">
+                <span className="rounded-lg bg-black/50 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
+                  {item.teamTag || 'Photo'}
+                </span>
+              </div>
+            )}
           </div>
         )}
 
         {item.postType === 'video' && (
-          <div className="mb-3 relative h-52 overflow-hidden rounded-xl bg-gradient-to-br from-gold to-red-800 flex items-center justify-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-              <div className="ml-1 h-0 w-0 border-y-8 border-y-transparent border-l-[14px] border-l-white" />
-            </div>
-            <span className="absolute bottom-3 right-3 rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-bold text-white">2:34</span>
+          <div className="mb-3 relative h-52 overflow-hidden rounded-xl bg-surface-elevated">
+            {item.mediaUrls && item.mediaUrls.length > 0 ? (
+              <video src={item.mediaUrls[0]} className="h-full w-full object-cover" controls playsInline preload="metadata" />
+            ) : (
+              <div className="h-full bg-gradient-to-br from-gold to-red-800 flex items-center justify-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+                  <div className="ml-1 h-0 w-0 border-y-8 border-y-transparent border-l-[14px] border-l-white" />
+                </div>
+              </div>
+            )}
           </div>
         )}
 
