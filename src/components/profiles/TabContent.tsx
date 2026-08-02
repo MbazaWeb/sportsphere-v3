@@ -198,24 +198,12 @@ function InfoCard({ title, subtitle, detail, accent, icon: Icon }: {
 
 // ─── Recent Activity ──────────────────────────────────────────
 function RecentActivity() {
-  const items = [
-    { icon: Pen, color: 'text-blue-400', bg: 'bg-blue-500/10', text: 'Posted a new update', time: '2h ago' },
-    { icon: Trophy, color: 'text-gold', bg: 'bg-gold/10', text: 'Match result: Won 2-1', time: '5h ago' },
-    { icon: Users, color: 'text-purple-400', bg: 'bg-purple-500/10', text: 'New fan joined', time: '1d ago' },
-  ];
   return (
     <div className="glass-card rounded-2xl p-4 glass-card-hover">
       <h3 className="mb-3 text-sm font-bold text-white">Recent Activity</h3>
-      <div className="flex flex-col gap-3">
-        {items.map((item, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <div className={cn('flex h-8 w-8 items-center justify-center rounded-full flex-shrink-0', item.bg)}>
-              <item.icon className={cn('h-4 w-4', item.color)} />
-            </div>
-            <p className="flex-1 text-sm text-foreground/80">{item.text}</p>
-            <span className="text-xs text-muted-foreground">{item.time}</span>
-          </div>
-        ))}
+      <div className="flex flex-col items-center justify-center py-4">
+        <Activity className="h-7 w-7 text-muted-foreground/30 mb-2" />
+        <p className="text-sm text-muted-foreground">No recent activity</p>
       </div>
     </div>
   );
@@ -253,7 +241,7 @@ function OverviewContent({ config }: { config: ProfileTypeConfig }) {
 
 // ─── Team Overview ────────────────────────────────────────────
 function TeamOverview() {
-  const { data: team, loading } = useProfileData<ReturnType<typeof Object>>("team", "manchesterunited");
+  const { data: team, loading } = useProfileData<ReturnType<typeof Object>>("team", "default");
   const setViewingUser = useUIStore((s) => s.setViewingUser);
   if (loading) return <ProfileDataSkeleton />;
   if (!team) return <EmptyCard message="Team data unavailable" />;
@@ -1436,26 +1424,9 @@ function StandingsContent() {
         <Crown className="h-4 w-4 text-gold" />
         <span className="text-xs font-bold text-gold uppercase tracking-wider">Standings</span>
       </div>
-      <div className="mb-2 grid grid-cols-[2rem_1fr_3rem_3rem] items-center px-2 text-[10px] font-bold uppercase text-muted-foreground">
-        <span>#</span><span>Team</span><span className="text-right">GD</span><span className="text-right">Pts</span>
-      </div>
-      <div className="flex flex-col gap-1">
-        {table.map((row) => (
-          <div key={row.pos} className={cn(
-            'grid grid-cols-[2rem_1fr_3rem_3rem] items-center rounded-xl px-2 py-3 border transition-colors',
-            row.pos === 1 ? 'bg-gold/10 border-gold/30' : 'glass-card border-surface-border'
-          )}>
-            <span className={cn('text-sm font-black', row.pos === 1 ? 'text-gold' : row.pos <= 4 ? 'text-gold/70' : 'text-muted-foreground')}>
-              {row.pos}
-            </span>
-            <span className="text-sm font-bold text-white">
-              {row.team}
-              {row.pos === 1 && <Crown className="ml-1 inline h-3 w-3 text-gold" />}
-            </span>
-            <span className="text-right text-xs text-muted-foreground">{row.gd}</span>
-            <span className={cn('text-right text-sm font-black', row.pos === 1 ? 'text-gold' : 'text-white')}>{row.pts}</span>
-          </div>
-        ))}
+      <div className="flex flex-col items-center justify-center py-8">
+        <BarChart3 className="h-8 w-8 text-muted-foreground/30 mb-2" />
+        <p className="text-sm text-muted-foreground">No standings data</p>
       </div>
     </div>
   );
@@ -1463,14 +1434,15 @@ function StandingsContent() {
 
 // ─── Statistics Content ───────────────────────────────────────
 function StatisticsContent() {
-  const stats = [
-    { label: 'Goals Scored', value: 34, max: 50 },
-    { label: 'Goals Conceded', value: 14, max: 50 },
-    { label: 'Clean Sheets', value: 7, max: 20 },
-    { label: 'Possession Avg', value: 58, max: 100 },
-    { label: 'Pass Accuracy', value: 87, max: 100 },
-    { label: 'Win Rate', value: 73, max: 100 },
-  ];
+  const stats: Array<{ label: string; value: number; max: number }> = [];
+  if (stats.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <BarChart3 className="h-8 w-8 text-muted-foreground/30 mb-2" />
+        <p className="text-sm text-muted-foreground">No statistics available</p>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col gap-3">
       {stats.map((s) => (
@@ -1762,32 +1734,10 @@ function CareerContent() {
 
 // ─── Achievements Content ─────────────────────────────────────
 function AchievementsContent() {
-  const items = [
-    { title: 'Golden Boot 24/25', desc: 'Top scorer with 25 goals', Icon: Trophy, unlocked: true },
-    { title: '100 Caps', desc: '100 international appearances', Icon: Flag, unlocked: true },
-    { title: 'UCL Winner', desc: 'Champions League 2023/24', Icon: Crown, unlocked: false },
-    { title: 'Fan Favourite', desc: '10K+ followers', Icon: Heart, unlocked: true },
-    { title: 'Player of the Month', desc: 'December 2024', Icon: Award, unlocked: true },
-    { title: 'Team of the Year', desc: '2024 Selection', Icon: Medal, unlocked: false },
-  ];
   return (
-    <div className="grid grid-cols-2 gap-3">
-      {items.map((a, i) => (
-        <div key={i} className={cn('glass-card rounded-xl p-4 text-center glass-card-hover',
-          a.unlocked ? 'border-gold/20' : 'opacity-50')}>
-          <div className={cn('mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl',
-            a.unlocked ? 'bg-gold/10' : 'bg-surface')}>
-            <a.Icon className={cn('h-5 w-5', a.unlocked ? 'text-gold' : 'text-muted-foreground')} />
-          </div>
-          <p className="text-xs font-bold text-white">{a.title}</p>
-          <p className="text-[10px] text-muted-foreground">{a.desc}</p>
-          {a.unlocked ? (
-            <span className="mt-2 inline-block rounded-full bg-gold/10 px-2 py-0.5 text-[8px] font-bold text-gold">Unlocked</span>
-          ) : (
-            <span className="mt-2 inline-block rounded-full bg-surface px-2 py-0.5 text-[8px] font-bold text-muted-foreground">Locked</span>
-          )}
-        </div>
-      ))}
+    <div className="flex flex-col items-center justify-center py-12">
+      <Trophy className="h-10 w-10 text-muted-foreground/30 mb-3" />
+      <p className="text-sm text-muted-foreground">Achievements unavailable</p>
     </div>
   );
 }
@@ -1795,25 +1745,9 @@ function AchievementsContent() {
 // ─── Events Content ───────────────────────────────────────────
 function EventsContent() {
   return (
-    <div className="flex flex-col gap-2">
-      {[
-        { title: 'Match Day', date: 'Dec 14', location: 'Old Trafford', type: 'Match' },
-        { title: 'Fan Meet & Greet', date: 'Dec 20', location: 'City Centre', type: 'Event' },
-        { title: 'Academy Open Day', date: 'Jan 5', location: 'Training Ground', type: 'Open' },
-      ].map((e, i) => (
-        <div key={i} className="glass-card rounded-xl p-3 glass-card-hover">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10 flex-shrink-0">
-              <Calendar className="h-5 w-5 text-gold" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-white">{e.title}</p>
-              <p className="text-xs text-muted-foreground">{e.date} · {e.location}</p>
-            </div>
-            <span className="rounded-lg bg-gold/10 border border-gold/20 px-2 py-0.5 text-[10px] font-bold text-gold">{e.type}</span>
-          </div>
-        </div>
-      ))}
+    <div className="flex flex-col items-center justify-center py-12">
+      <Calendar className="h-10 w-10 text-muted-foreground/30 mb-3" />
+      <p className="text-sm text-muted-foreground">No upcoming events</p>
     </div>
   );
 }
@@ -1821,27 +1755,9 @@ function EventsContent() {
 // ─── Polls Content ────────────────────────────────────────────
 function PollsContent() {
   return (
-    <div className="flex flex-col gap-3">
-      {[
-        { question: 'Who will win the match?', options: [{ label: 'Man Utd', pct: 55 }, { label: 'Arsenal', pct: 30 }, { label: 'Draw', pct: 15 }], total: '12.4K' },
-        { question: 'Player of the Match?', options: [{ label: 'Rashford', pct: 72 }, { label: 'Saka', pct: 18 }, { label: 'Bruno', pct: 10 }], total: '8.9K' },
-      ].map((poll, i) => (
-        <div key={i} className="glass-card rounded-2xl p-4 glass-card-hover">
-          <p className="mb-3 text-sm font-bold text-white">{poll.question}</p>
-          <div className="flex flex-col gap-2">
-            {poll.options.map((opt, j) => (
-              <button key={j} className="relative overflow-hidden rounded-lg bg-surface p-2.5 text-left">
-                <div className="absolute inset-y-0 left-0 bg-gold/20" style={{ width: `${opt.pct}%` }} />
-                <div className="relative flex items-center justify-between">
-                  <span className="text-sm font-medium text-white">{opt.label}</span>
-                  <span className="text-xs font-bold text-gold">{opt.pct}%</span>
-                </div>
-              </button>
-            ))}
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground">{poll.total} votes</p>
-        </div>
-      ))}
+    <div className="flex flex-col items-center justify-center py-12">
+      <BarChart3 className="h-10 w-10 text-muted-foreground/30 mb-3" />
+      <p className="text-sm text-muted-foreground">No polls available</p>
     </div>
   );
 }
@@ -1884,13 +1800,28 @@ function AboutContent({ config }: { config: ProfileTypeConfig }) {
   );
 }
 
-// ─── Shop Content (Sponsor/Shop with full e-commerce flow) ────
+// ─── Shop Content ────────────────────────────────────────────
 function ShopContent() {
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
+  void selectedProduct;
 
-  const products = [
+  const products: Array<{
+    name: string; price: string; priceUsd: string; gradient: string; category: string;
+    available: boolean; stock: string; sizes: string[]; payment: string[]; delivery: string; sponsor: string;
+  }> = [];
+
+  if (products.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <ShoppingBag className="h-10 w-10 text-muted-foreground/30 mb-3" />
+        <p className="text-sm text-muted-foreground">No products available</p>
+      </div>
+    );
+  }
+
+  const _unused = [
     {
-      name: 'Simba SC Home Kit 2026/27',
+      name: 'Placeholder Kit',
       price: 'TSh 85,000',
       priceUsd: '$45',
       gradient: 'from-red-600 to-red-800',
