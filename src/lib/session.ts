@@ -34,6 +34,8 @@ export interface SessionPayload {
   email: string;
   handle: string;
   role: string;
+  roleId?: string;
+  roleTypeId?: string;
 }
 
 export async function signSession(payload: SessionPayload): Promise<string> {
@@ -56,6 +58,8 @@ export async function verifySession(token: string | undefined | null): Promise<S
       email: payload.email as string,
       handle: payload.handle as string,
       role: payload.role as string,
+      roleId: (payload.roleId as string) || undefined,
+      roleTypeId: (payload.roleTypeId as string) || undefined,
     };
   } catch {
     return null;

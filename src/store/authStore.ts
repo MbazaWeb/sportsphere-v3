@@ -8,7 +8,7 @@ export interface UserProfile {
   id: string; name: string; email: string; handle: string; avatar: string;
   role: ProfileTypeId; verificationStatus: "none"|"pending"|"verified"|"rejected";
   bio: string; sportsFollowing: string[]; registeredAt: string; roleData: Record<string,string>;
-  isVerified?: boolean;
+  isVerified?: boolean; emailVerified?: boolean;
   followerCount?: number;
   followingCount?: number;
   postCount?: number;

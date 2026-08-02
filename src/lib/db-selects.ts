@@ -15,6 +15,7 @@ export const USER_SELECT = {
   role: true,
   verificationStatus: true,
   isVerified: true,
+  emailVerified: true,
   bio: true,
   location: true,
   coverGradient: true,
@@ -24,6 +25,8 @@ export const USER_SELECT = {
   sportsFollowing: true,
   roleData: true,
   registeredAt: true,
+  roleId: true,
+  roleTypeId: true,
 } as const;
 
 /**

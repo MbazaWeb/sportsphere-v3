@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { AuthLogo } from '@/components/auth/AuthLogo';
 
 interface Props {
   open: boolean;
@@ -69,8 +70,9 @@ export default function ForgotPasswordModal({ open, onClose }: Props) {
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
-        className="w-full max-w-sm rounded-3xl bg-surface-elevated border border-surface-border p-6"
+        className="w-full max-w-sm rounded-3xl glass-card p-6"
       >
+        <AuthLogo />
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-white">
             {done ? 'Check Your Email' : 'Reset Password'}

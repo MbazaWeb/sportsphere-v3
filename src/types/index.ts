@@ -38,10 +38,13 @@ export interface UserProfile {
   avatar: string;
   role: ProfileTypeId;
   verificationStatus: VerificationStatus;
+  emailVerified?: boolean;
   bio: string;
   sportsFollowing: string[];
   registeredAt: string;
   roleData: Record<string, string>;
+  roleId?: string;
+  roleTypeId?: string;
 }
 
 export interface MockUserData {
@@ -68,6 +71,7 @@ export interface ApiUser {
   handle: string;
   avatarInitials: string | null;
   isVerified: boolean;
+  emailVerified?: boolean;
   coverGradient: string;
   bio: string | null;
   role: string;
@@ -77,6 +81,8 @@ export interface ApiUser {
   postCount: number;
   registeredAt: string;
   verificationStatus: string;
+  roleId?: string;
+  roleTypeId?: string;
 }
 
 // ViewingUser — used by uiStore when opening a profile overlay

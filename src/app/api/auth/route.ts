@@ -46,6 +46,8 @@ export async function POST(request: NextRequest) {
       email: user.email,
       handle: user.handle,
       role: user.role,
+      roleId: user.roleId,
+      roleTypeId: user.roleTypeId,
     });
 
     const response = NextResponse.json(serializePublicUser(user));
