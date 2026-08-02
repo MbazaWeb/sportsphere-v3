@@ -16,7 +16,7 @@ import {
   Video, Image, Camera, Tv, Radio, Newspaper, BookOpen,
   GraduationCap, Briefcase, Building, Home, Wifi, Coffee,
   Utensils, Car, Bus, Train, Plane, Globe, Compass, Info,
-  Database, ShoppingBag, CreditCard, Truck, MapPinned, Tag,
+  Database, ShoppingBag, CreditCard, Truck, MapPinned, Tag, Ticket,
 } from 'lucide-react';
 
 // ─── Fetch hook for profile data (replaces static imports) ──
@@ -289,6 +289,61 @@ function TeamOverview() {
             <div key={c.name} className="flex items-center gap-3 rounded-xl bg-surface p-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-elevated text-xs font-bold text-white">{c.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
               <div><p className="text-sm font-semibold text-white">{c.name}</p><p className="text-xs text-muted-foreground">{c.role} · {c.nat}</p></div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ─── Shop Preview ─── */}
+      <div className="glass-card rounded-2xl p-4 glass-card-hover">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
+            <ShoppingBag className="h-4 w-4" /> Official Shop
+          </h3>
+          <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-bold text-green-400">OPEN</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { name: 'Home Kit 24/25', price: 'TSh 85,000', gradient: 'from-red-600 to-red-800' },
+            { name: 'Away Kit 24/25', price: 'TSh 85,000', gradient: 'from-blue-600 to-blue-800' },
+            { name: 'Training Top', price: 'TSh 55,000', gradient: 'from-gray-600 to-gray-800' },
+            { name: 'Scarf', price: 'TSh 25,000', gradient: 'from-red-500 to-yellow-600' },
+          ].map((item, i) => (
+            <div key={i} className="rounded-xl overflow-hidden bg-surface border border-surface-border">
+              <div className={cn('aspect-square bg-gradient-to-b flex items-center justify-center', item.gradient)}>
+                <span className="text-2xl font-black text-white/20">SS</span>
+              </div>
+              <div className="p-2">
+                <p className="text-[11px] font-bold text-white leading-tight">{item.name}</p>
+                <p className="text-[11px] font-bold text-gold">{item.price}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ─── Upcoming Tickets ─── */}
+      <div className="glass-card rounded-2xl p-4 glass-card-hover">
+        <h3 className="mb-3 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
+          <Ticket className="h-4 w-4" /> Upcoming Match Tickets
+        </h3>
+        <div className="flex flex-col gap-2">
+          {[
+            { match: 'vs Arsenal', date: 'Dec 14', price: 'From TSh 45,000', available: true },
+            { match: 'vs Newcastle', date: 'Dec 26', price: 'From TSh 35,000', available: true },
+            { match: 'vs Liverpool', date: 'Jan 5', price: 'From TSh 55,000', available: false },
+          ].map((t, i) => (
+            <div key={i} className="flex items-center justify-between rounded-xl bg-surface p-3">
+              <div>
+                <p className="text-sm font-bold text-white">{t.match}</p>
+                <p className="text-[10px] text-muted-foreground">{t.date} · {t.price}</p>
+              </div>
+              <span className={cn(
+                'rounded-lg px-3 py-1 text-[10px] font-bold uppercase',
+                t.available ? 'bg-gold text-black' : 'bg-surface border border-surface-border text-muted-foreground'
+              )}>
+                {t.available ? 'Pre-book' : 'Sold Out'}
+              </span>
             </div>
           ))}
         </div>
@@ -798,7 +853,7 @@ function BusinessOverview() {
     <>
       <InfoCard title="Products" subtitle="Catalog" detail="450+ Products Available" accent="text-gold" icon={Briefcase} />
       <InfoCard title="Partners" subtitle="Official" detail="45+ Teams & Federations" accent="text-blue-400" icon={HandshakeIcon} />
-      
+
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 text-sm font-bold text-white">Business Stats</h3>
         <div className="grid grid-cols-2 gap-3">
@@ -811,6 +866,73 @@ function BusinessOverview() {
             <div key={stat.label} className="rounded-xl bg-surface p-3 text-center">
               <p className="text-sm font-bold text-gold">{stat.value}</p>
               <p className="text-[10px] text-muted-foreground">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ─── Featured Products (Shop preview) ─── */}
+      <div className="glass-card rounded-2xl p-4 glass-card-hover">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="flex items-center gap-1.5 text-sm font-bold text-white">
+            <ShoppingBag className="h-4 w-4 text-gold" /> Featured Products
+          </h3>
+          <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-bold text-green-400">SHOP OPEN</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { name: 'Mercurial Boots', price: 'TSh 180,000', gradient: 'from-purple-600 to-pink-700', stock: 'In stock' },
+            { name: 'Team Kit 24/25', price: 'TSh 85,000', gradient: 'from-blue-600 to-cyan-700', stock: 'In stock' },
+            { name: 'Training Ball', price: 'TSh 45,000', gradient: 'from-orange-600 to-red-700', stock: 'Low stock' },
+            { name: 'Supporter Scarf', price: 'TSh 25,000', gradient: 'from-red-500 to-yellow-600', stock: 'Sold out' },
+          ].map((item, i) => (
+            <div key={i} className="rounded-xl overflow-hidden bg-surface border border-surface-border">
+              <div className={cn('relative aspect-square bg-gradient-to-b flex items-center justify-center', item.gradient)}>
+                <span className="text-2xl font-black text-white/20">SS</span>
+                {item.stock === 'Sold out' && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                    <span className="rounded-full bg-red-500 px-2 py-0.5 text-[9px] font-bold text-white uppercase">Sold Out</span>
+                  </div>
+                )}
+              </div>
+              <div className="p-2">
+                <p className="text-[11px] font-bold text-white leading-tight">{item.name}</p>
+                <p className="text-[11px] font-bold text-gold">{item.price}</p>
+                <p className={cn('text-[9px] font-semibold', item.stock === 'Sold out' ? 'text-red-400' : item.stock === 'Low stock' ? 'text-yellow-400' : 'text-green-400')}>{item.stock}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex items-center justify-between rounded-xl bg-surface p-2">
+          <div className="flex items-center gap-1.5">
+            <CreditCard className="h-3 w-3 text-gold" />
+            <span className="text-[10px] text-muted-foreground">M-Pesa · Tigo · Airtel · Card</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Truck className="h-3 w-3 text-gold" />
+            <span className="text-[10px] text-muted-foreground">2-5 day delivery</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Sponsorships ─── */}
+      <div className="glass-card rounded-2xl p-4 glass-card-hover">
+        <h3 className="mb-3 flex items-center gap-1.5 text-sm font-bold text-white">
+          <Tag className="h-4 w-4 text-gold" /> Official Sponsorships
+        </h3>
+        <div className="flex flex-col gap-2">
+          {[
+            { team: 'Manchester United', type: 'Kit Sponsor', since: '2016' },
+            { team: 'Barcelona', type: 'Apparel', since: '2018' },
+            { team: 'Paris Saint-Germain', type: 'Kit Sponsor', since: '2019' },
+            { team: 'Brazil National Team', type: 'Apparel', since: '2020' },
+          ].map((s, i) => (
+            <div key={i} className="flex items-center justify-between rounded-xl bg-surface p-2.5">
+              <div>
+                <p className="text-xs font-bold text-white">{s.team}</p>
+                <p className="text-[10px] text-muted-foreground">{s.type} · Since {s.since}</p>
+              </div>
+              <span className="rounded-full bg-gold/10 px-2 py-0.5 text-[9px] font-bold text-gold uppercase">Active</span>
             </div>
           ))}
         </div>
@@ -1961,30 +2083,281 @@ function ProductOrderFlow({ product, onClose }: {
   );
 }
 
-// ─── Tickets Content ──────────────────────────────────────────
+// ─── Tickets Content (full pre-book flow) ─────────────────────
 function TicketsContent() {
+  const [selectedMatch, setSelectedMatch] = useState<number | null>(null);
+
+  const matches = [
+    {
+      match: 'Man Utd vs Arsenal',
+      competition: 'Premier League',
+      date: 'Saturday, Dec 14',
+      kickoff: '17:30',
+      venue: 'Old Trafford',
+      available: true,
+      tiers: [
+        { name: 'Family Stand', price: 'TSh 45,000', priceUsd: '$24', available: 120, color: 'bg-green-500' },
+        { name: 'Stretford End', price: 'TSh 65,000', priceUsd: '$34', available: 45, color: 'bg-yellow-500' },
+        { name: 'East Stand', price: 'TSh 85,000', priceUsd: '$45', available: 18, color: 'bg-orange-500' },
+        { name: 'VIP Hospitality', price: 'TSh 250,000', priceUsd: '$130', available: 5, color: 'bg-red-500' },
+      ],
+    },
+    {
+      match: 'Man Utd vs Newcastle',
+      competition: 'Premier League',
+      date: 'Thursday, Dec 26',
+      kickoff: '20:00',
+      venue: 'Old Trafford',
+      available: true,
+      tiers: [
+        { name: 'Family Stand', price: 'TSh 35,000', priceUsd: '$18', available: 200, color: 'bg-green-500' },
+        { name: 'Stretford End', price: 'TSh 55,000', priceUsd: '$29', available: 80, color: 'bg-yellow-500' },
+        { name: 'East Stand', price: 'TSh 75,000', priceUsd: '$39', available: 30, color: 'bg-orange-500' },
+        { name: 'VIP Hospitality', price: 'TSh 220,000', priceUsd: '$115', available: 8, color: 'bg-red-500' },
+      ],
+    },
+    {
+      match: 'Man Utd vs Liverpool',
+      competition: 'Premier League',
+      date: 'Sunday, Jan 5',
+      kickoff: '16:30',
+      venue: 'Old Trafford',
+      available: false,
+      tiers: [],
+    },
+  ];
+
   return (
-    <div className="flex flex-col gap-3">
-      {[
-        { match: 'Man Utd vs Arsenal', date: 'Dec 14', venue: 'Old Trafford', price: 'From £65', available: true },
-        { match: 'Man Utd vs Newcastle', date: 'Dec 26', venue: 'Old Trafford', price: 'From £50', available: true },
-        { match: 'Man Utd vs Liverpool', date: 'Jan 5', venue: 'Old Trafford', price: 'From £75', available: false },
-      ].map((t, i) => (
-        <div key={i} className="glass-card rounded-2xl p-4 glass-card-hover">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-bold text-white">{t.match}</p>
-              <p className="text-xs text-muted-foreground">{t.date} · {t.venue}</p>
-              <p className="mt-1 text-sm font-bold text-gold">{t.price}</p>
+    <div>
+      {/* Ticket info banner */}
+      <div className="mb-4 flex items-center justify-between rounded-2xl bg-gradient-to-r from-gold/10 to-gold/5 border border-gold/20 p-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/15">
+            <Ticket className="h-4 w-4 text-gold" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-white">Match Tickets</p>
+            <p className="text-[10px] text-muted-foreground">Pre-book · Mobile tickets · No queuing</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Match list */}
+      <div className="flex flex-col gap-3">
+        {matches.map((m, i) => (
+          <div key={i} className="glass-card rounded-2xl p-4 glass-card-hover">
+            <div className="flex items-start justify-between mb-2">
+              <div>
+                <p className="text-sm font-bold text-white">{m.match}</p>
+                <p className="text-[10px] text-muted-foreground">{m.competition}</p>
+              </div>
+              <span className={cn(
+                'rounded-full px-2 py-0.5 text-[9px] font-bold uppercase',
+                m.available ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'
+              )}>
+                {m.available ? 'Available' : 'Sold Out'}
+              </span>
             </div>
-            <button className={cn('rounded-lg px-3 py-1.5 text-xs font-bold transition-colors',
-              t.available ? 'bg-gold text-black hover:bg-gold/90' : 'bg-surface border border-surface-border text-muted-foreground')}>
-              {t.available ? 'Buy' : 'Sold Out'}
+            <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-3">
+              <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {m.date}</span>
+              <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {m.kickoff}</span>
+              <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {m.venue}</span>
+            </div>
+
+            {m.available && (
+              <>
+                {m.tiers.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    {m.tiers.map((tier, ti) => (
+                      <div key={ti} className="rounded-xl bg-surface p-2.5 border border-surface-border">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className={cn('h-2 w-2 rounded-full', tier.color)} />
+                          <p className="text-[11px] font-bold text-white">{tier.name}</p>
+                        </div>
+                        <p className="text-xs font-bold text-gold">{tier.price}</p>
+                        <p className="text-[9px] text-muted-foreground">{tier.priceUsd} · {tier.available} left</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={() => setSelectedMatch(selectedMatch === i ? null : i)}
+                  className="w-full rounded-xl bg-gold py-2.5 text-sm font-bold text-black hover:bg-gold/90"
+                >
+                  {selectedMatch === i ? 'Close' : 'Pre-Book Tickets'}
+                </button>
+                {selectedMatch === i && (
+                  <TicketBookingFlow match={m} onClose={() => setSelectedMatch(null)} />
+                )}
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Payment info */}
+      <div className="mt-4 glass-card rounded-2xl p-4">
+        <h3 className="mb-2 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
+          <CreditCard className="h-3.5 w-3.5" /> Payment & Delivery
+        </h3>
+        <div className="flex flex-wrap gap-1 mb-2">
+          {['M-Pesa', 'Tigo Pesa', 'Airtel Money', 'Visa', 'Mastercard'].map(p => (
+            <span key={p} className="rounded bg-surface px-1.5 py-0.5 text-[9px] text-white">{p}</span>
+          ))}
+        </div>
+        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+          <Truck className="h-3 w-3 text-gold" /> Mobile ticket · Instant delivery to your phone
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Ticket Booking Flow ──────────────────────────────────────
+function TicketBookingFlow({ match, onClose }: {
+  match: {
+    match: string; date: string; kickoff: string; venue: string;
+    tiers: Array<{ name: string; price: string; priceUsd: string; available: number; color: string }>;
+  };
+  onClose: () => void;
+}) {
+  const [step, setStep] = useState<'select' | 'details' | 'payment' | 'confirmation'>('select');
+  const [selectedTier, setSelectedTier] = useState<number | null>(null);
+  const [qty, setQty] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState('');
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 'auto' }}
+      className="mt-3 rounded-2xl border-2 border-gold/30 bg-surface-elevated p-4 overflow-hidden"
+    >
+      <div className="mb-3 flex items-center justify-between">
+        <h4 className="text-sm font-bold text-white">Book: {match.match}</h4>
+        <button onClick={onClose} className="text-muted-foreground hover:text-white">✕</button>
+      </div>
+
+      {/* Step indicator */}
+      <div className="mb-3 flex items-center gap-1">
+        {['select', 'details', 'payment', 'confirmation'].map((s, i) => (
+          <div key={s} className={cn(
+            'flex-1 h-1 rounded-full',
+            ['select', 'details', 'payment', 'confirmation'].indexOf(step) >= i ? 'bg-gold' : 'bg-surface-border'
+          )} />
+        ))}
+      </div>
+
+      {step === 'select' && (
+        <div className="flex flex-col gap-2">
+          <p className="text-[10px] font-bold text-gold uppercase mb-1">Choose Seating Tier</p>
+          {match.tiers.map((tier, i) => (
+            <button
+              key={i}
+              onClick={() => { setSelectedTier(i); setStep('details'); }}
+              disabled={tier.available === 0}
+              className={cn(
+                'flex items-center justify-between rounded-xl p-3 text-left border transition-colors',
+                selectedTier === i ? 'bg-gold/10 border-gold/30' : 'bg-surface border-surface-border hover:border-gold/20',
+                tier.available === 0 && 'opacity-40 cursor-not-allowed'
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <span className={cn('h-3 w-3 rounded-full', tier.color)} />
+                <div>
+                  <p className="text-xs font-bold text-white">{tier.name}</p>
+                  <p className="text-[10px] text-muted-foreground">{tier.available} seats available</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-bold text-gold">{tier.price}</p>
+                <p className="text-[9px] text-muted-foreground">{tier.priceUsd}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {step === 'details' && selectedTier !== null && (
+        <div className="flex flex-col gap-3">
+          <div className="rounded-xl bg-surface p-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-muted-foreground">Tier</span>
+              <span className="text-xs font-bold text-white">{match.tiers[selectedTier].name}</span>
+            </div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-muted-foreground">Price per ticket</span>
+              <span className="text-xs font-bold text-gold">{match.tiers[selectedTier].price}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Quantity</span>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setQty(Math.max(1, qty - 1))} className="h-7 w-7 rounded bg-surface border border-surface-border text-white">−</button>
+                <span className="text-sm font-bold text-white w-6 text-center">{qty}</span>
+                <button onClick={() => setQty(Math.min(match.tiers[selectedTier].available, qty + 1))} className="h-7 w-7 rounded bg-surface border border-surface-border text-white">+</button>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-xl bg-gold/5 border border-gold/20 p-3 flex justify-between">
+            <span className="text-sm font-bold text-gold">Total</span>
+            <span className="text-sm font-bold text-gold">{match.tiers[selectedTier].price}</span>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setStep('select')} className="flex-1 rounded-xl bg-surface border border-surface-border py-2.5 text-sm font-bold text-white">Back</button>
+            <button onClick={() => setStep('payment')} className="flex-1 rounded-xl bg-gold py-2.5 text-sm font-bold text-black">Continue</button>
+          </div>
+        </div>
+      )}
+
+      {step === 'payment' && (
+        <div className="flex flex-col gap-3">
+          <p className="text-[10px] font-bold text-gold uppercase">Payment Method</p>
+          {['M-Pesa', 'Tigo Pesa', 'Airtel Money', 'Card'].map(p => (
+            <button
+              key={p}
+              onClick={() => setPaymentMethod(p)}
+              className={cn(
+                'flex items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold border',
+                paymentMethod === p ? 'bg-gold/10 text-gold border-gold/30' : 'bg-surface text-white border-surface-border'
+              )}
+            >
+              <span>{p}</span>
+              {paymentMethod === p && <CheckCircle className="h-3.5 w-3.5 text-gold" />}
+            </button>
+          ))}
+          <div className="rounded-xl bg-surface p-2 text-[10px] text-muted-foreground">
+            <p className="flex items-center gap-1"><Truck className="h-3 w-3 text-gold" /> Mobile ticket · Instant delivery</p>
+            <p className="mt-1">{match.date} · {match.kickoff} · {match.venue}</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setStep('details')} className="flex-1 rounded-xl bg-surface border border-surface-border py-2.5 text-sm font-bold text-white">Back</button>
+            <button
+              onClick={() => setStep('confirmation')}
+              disabled={!paymentMethod}
+              className="flex-1 rounded-xl bg-gold py-2.5 text-sm font-bold text-black disabled:opacity-50"
+            >
+              Confirm & Pay
             </button>
           </div>
         </div>
-      ))}
-    </div>
+      )}
+
+      {step === 'confirmation' && selectedTier !== null && (
+        <div className="text-center py-4">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-green-500/15">
+            <CheckCircle className="h-7 w-7 text-green-400" />
+          </div>
+          <p className="text-sm font-bold text-white">Ticket Confirmed!</p>
+          <p className="text-xs text-muted-foreground mt-1">{match.match}</p>
+          <p className="text-xs text-white mt-2">{match.tiers[selectedTier].name} · ×{qty}</p>
+          <p className="text-xs text-gold mt-1">Paid via {paymentMethod}</p>
+          <div className="mt-3 rounded-xl bg-surface p-2 text-[10px] text-muted-foreground">
+            <p>📱 Mobile ticket sent to your phone</p>
+            <p className="mt-1">{match.date} · {match.kickoff}</p>
+          </div>
+          <button onClick={onClose} className="mt-4 w-full rounded-xl bg-surface border border-surface-border py-2.5 text-sm font-bold text-white">Done</button>
+        </div>
+      )}
+    </motion.div>
   );
 }
 
