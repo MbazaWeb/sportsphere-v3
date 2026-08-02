@@ -70,6 +70,7 @@ export default function EditProfileModal({ open, onClose }: { open: boolean; onC
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [completion, setCompletion] = useState(0);
+  const fileInputRef = (null as unknown) as React.RefObject<HTMLInputElement>;
 
   // Load profile data
   useEffect(() => {
@@ -392,6 +393,40 @@ function Toggle({ checked, onChange, label, description }: {
 
 // ─── Identity Section ─────────────────────────────────────────
 function IdentitySection({ data, update }: { data: Record<string, unknown>; update: (k: string, v: unknown) => void }) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    setPreview((data.avatarUrl as string) || null);
+  }, [data.avatarUrl]);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = String(reader.result || '');
+      setPreview(dataUrl);
+      setUploading(true);
+      try {
+        const res = await fetch('/api/profile/avatar', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ avatarBase64: dataUrl }),
+        });
+        const json = await res.json();
+        if (res.ok) {
+          update('avatarUrl', json.avatarUrl);
+        }
+      } catch (err) {
+        // ignore
+      }
+      setUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
   return (
     <div>
       <h3 className="mb-4 text-sm font-bold text-white">Identity</h3>
@@ -400,12 +435,20 @@ function IdentitySection({ data, update }: { data: Record<string, unknown>; upda
       <div className="mb-4 rounded-2xl bg-gradient-to-br from-emerald-700 to-green-900 p-4">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gold text-xl font-black text-black">
-              {(data.avatarInitials as string) || (data.name as string)?.slice(0, 2).toUpperCase() || 'ME'}
+            <div className="h-16 w-16 overflow-hidden rounded-full bg-gold">
+              {preview ? (
+                // show uploaded/preview image
+                <img src={preview} alt="avatar" className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-16 w-16 items-center justify-center text-xl font-black text-black">
+                  {(data.avatarInitials as string) || (data.name as string)?.slice(0, 2).toUpperCase() || 'ME'}
+                </div>
+              )}
             </div>
-            <button className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full bg-white">
+            <button onClick={() => fileInputRef.current?.click()} className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full bg-white">
               <Camera className="h-3 w-3 text-black" />
             </button>
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
           </div>
           <div className="flex-1">
             <p className="text-sm font-bold text-white">{data.name as string}</p>
