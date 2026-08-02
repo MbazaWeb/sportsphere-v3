@@ -6,7 +6,7 @@ import { useUIStore } from '@/store/uiStore';
 import { formatCount } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Bell, Heart, MessageCircle, Share2, Bookmark, TrendingUp, Zap, Shield, X, Send, ChevronDown, Trophy, Sparkles, Flame, Crown } from 'lucide-react';
+import { Search, Bell, Heart, MessageCircle, Share2, Bookmark, TrendingUp, Zap, Shield, X, Send, ChevronDown, Trophy, Sparkles, Flame, Crown, Check, Image as ImageIcon, Smile, Inbox } from 'lucide-react';
 import type { HomeSubTab } from '@/store/navigationStore';
 import { apiUserToViewing } from '@/types';
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -49,7 +49,7 @@ interface ApiPost {
   mediaUrls: string[]; teamTag: string | null; playerTag: string | null;
   isBreaking: boolean; likeCount: number; commentCount: number;
   shareCount: number; viewCount: number; createdAt: string;
-  poll?: { id: string; question: string; options: { label: string; pct: number }[]; totalVotes: number } | null;
+  poll?: { id: string; question: string; options: string[]; totalVotes: number } | null;
   user: ApiUser;
 }
 
@@ -123,11 +123,21 @@ function CommentSheet({ itemId, onClose }: { itemId: string; onClose: () => void
     loadComments();
   }, [itemId]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isAuthenticated) { onClose(); setLoginModalOpen(true); return; }
     if (!text.trim()) return;
-    setComments(prev => [{ id: `new-${Date.now()}`, user: { name: 'You', avatarInitials: 'ME', isVerified: false }, content: text, likeCount: 0, createdAt: new Date().toISOString() }, ...prev]);
-    setText('');
+    try {
+      const res = await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: itemId, content: text.trim() }),
+      });
+      if (res.ok) {
+        const newComment = await res.json();
+        setComments(prev => [newComment, ...prev]);
+        setText('');
+      }
+    } catch { /* ignore */ }
   };
 
   const handleReply = (commentId: string) => {
@@ -200,12 +210,30 @@ function CommentSheet({ itemId, onClose }: { itemId: string; onClose: () => void
           ))}
         </div>
 
-        <div className="flex-shrink-0 border-t border-surface-border p-4 flex items-center gap-3">
+        <div className="flex-shrink-0 border-t border-surface-border p-4 flex items-end gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold text-xs font-bold text-black flex-shrink-0">ME</div>
-          <input value={text} onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-            placeholder={isAuthenticated ? 'Add a comment...' : 'Sign in to comment...'}
-            className="flex-1 rounded-xl bg-surface border border-surface-border px-4 py-2.5 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold" />
+          <div className="flex-1 flex items-end gap-2 rounded-2xl bg-surface border border-surface-border px-3 py-2 focus-within:ring-1 focus-within:ring-gold">
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit();
+                }
+              }}
+              rows={1}
+              placeholder={isAuthenticated ? 'Add a comment...' : 'Sign in to comment...'}
+              className="flex-1 resize-none bg-transparent text-sm text-white placeholder:text-muted-foreground focus:outline-none max-h-24"
+              style={{ minHeight: '24px' }}
+            />
+            <button className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:text-gold transition-colors flex-shrink-0" title="Add photo">
+              <ImageIcon className="h-4 w-4" />
+            </button>
+            <button className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:text-gold transition-colors flex-shrink-0" title="Add GIF">
+              <Smile className="h-4 w-4" />
+            </button>
+          </div>
           <button onClick={handleSubmit} disabled={!text.trim()}
             className={cn('flex h-9 w-9 items-center justify-center rounded-full transition-colors flex-shrink-0',
               text.trim() ? 'bg-gold' : 'bg-surface border border-surface-border')}>
@@ -221,6 +249,7 @@ function CommentSheet({ itemId, onClose }: { itemId: string; onClose: () => void
 export default function HomeTab() {
   const homeSubTab    = useNavigationStore((s) => s.homeSubTab);
   const setHomeSubTab = useNavigationStore((s) => s.setHomeSubTab);
+  const setActiveTab  = useNavigationStore((s) => s.setActiveTab);
   const isAuthenticated   = useAuthStore((s) => s.isAuthenticated);
   const setLoginModalOpen = useUIStore((s) => s.setLoginModalOpen);
   const [shareId, setShareId] = useState<string | null>(null);
@@ -235,7 +264,12 @@ export default function HomeTab() {
             <button className="flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
               <Search className="h-4 w-4 text-muted-foreground" />
             </button>
-            <button onClick={() => { if (!isAuthenticated) setLoginModalOpen(true); }}
+            <button onClick={() => { if (!isAuthenticated) setLoginModalOpen(true); else setActiveTab('activity'); }}
+              className="relative flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
+              <Inbox className="h-4 w-4 text-muted-foreground" />
+              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-blue-400 animate-pulse" />
+            </button>
+            <button onClick={() => { if (!isAuthenticated) setLoginModalOpen(true); else setActiveTab('activity'); }}
               className="relative flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
               <Bell className="h-4 w-4 text-muted-foreground" />
               <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-gold animate-pulse" />
@@ -297,17 +331,25 @@ function CardSkeleton() {
 function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; onComment: (id: string) => void }) {
   const [liveMatches, setLiveMatches] = useState<ApiMatch[]>([]);
   const [posts, setPosts] = useState<ApiPost[]>([]);
+  const [teams, setTeams] = useState<Array<{ id: string; name: string; handle: string; avatarInitials: string | null; coverGradient: string }>>([]);
   const [loading, setLoading] = useState(true);
+  const setViewingUser = useUIStore((s) => s.setViewingUser);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [matchesRes, feedRes] = await Promise.all([
+        const [matchesRes, feedRes, usersRes] = await Promise.all([
           fetch('/api/matches?status=live'),
           fetch('/api/feed?type=for-you'),
+          fetch('/api/users'),
         ]);
         if (matchesRes.ok) setLiveMatches(await matchesRes.json());
         if (feedRes.ok) setPosts(await feedRes.json());
+        if (usersRes.ok) {
+          const allUsers = await usersRes.json();
+          // Filter to teams only for "Choose Your Teams"
+          setTeams(allUsers.filter((u: { role: string }) => u.role === 'team').slice(0, 10));
+        }
       } catch (e) {
         // empty state on error
       }
@@ -318,34 +360,62 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
 
   const featuredMatch = liveMatches[0];
 
+  const openTeamByHandle = async (handle: string) => {
+    try {
+      const res = await fetch(`/api/users?handle=${encodeURIComponent(handle)}`);
+      if (res.ok) {
+        const u = await res.json();
+        const { apiUserToViewing } = await import('@/types');
+        setViewingUser(apiUserToViewing(u, false));
+      }
+    } catch { /* ignore */ }
+  };
+
   return (
     <div className="flex flex-col gap-4 p-4">
-      {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-2xl p-6 bg-gradient-gold">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-10" />
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-black/20">
-              <Sparkles className="h-3 w-3 text-white" />
-            </span>
-            <span className="text-[10px] font-bold uppercase text-white/80 tracking-wider">Today&apos;s Match Intelligence</span>
+      {/* Hero Banner — Image of the Day (featured live match) */}
+      {featuredMatch && (
+        <button
+          onClick={() => openTeamByHandle(`@${featuredMatch.homeTeam.toLowerCase().replace(/\s+/g, '')}`)}
+          className="relative overflow-hidden rounded-2xl block w-full text-left group"
+        >
+          {/* Background image — using a sports-themed gradient + pattern as the "image of the day" */}
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 via-green-700 to-emerald-900" />
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0di0ySDI0djJoMTJ6TTM2IDI0djJIMjR2LTJoMTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+          {/* Live badge */}
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-red-500 px-2.5 py-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+            <span className="text-[10px] font-bold text-white uppercase tracking-wider">Live · {featuredMatch.minute}&apos;</span>
           </div>
-          <h2 className="text-2xl font-black text-white leading-tight">
-            Come hang out with <br />
-            <span className="text-black">Atlanta Sports</span>
-          </h2>
-          <div className="mt-4 flex items-center gap-2">
-            <div className="flex -space-x-1">
-              {['⚽', '🏆', '⚽', '🏆'].map((emoji, i) => (
-                <div key={i} className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white/20 bg-black/20 text-[8px]">
-                  {emoji}
+
+          {/* Match content */}
+          <div className="relative p-5 pt-16">
+            <p className="text-[10px] font-bold uppercase text-white/70 tracking-wider mb-3">{featuredMatch.league}</p>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col items-center gap-1 flex-1">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 border border-white/20 text-lg font-black text-white">
+                  {featuredMatch.homeTeam.slice(0, 2).toUpperCase()}
                 </div>
-              ))}
+                <p className="text-xs font-bold text-white text-center leading-tight">{featuredMatch.homeTeam}</p>
+              </div>
+              <div className="flex flex-col items-center">
+                <p className="text-3xl font-black text-white">
+                  {featuredMatch.homeScore} <span className="text-white/40 mx-1">-</span> {featuredMatch.awayScore}
+                </p>
+                <p className="text-[10px] text-white/60 mt-1">Tap for stats</p>
+              </div>
+              <div className="flex flex-col items-center gap-1 flex-1">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 border border-white/20 text-lg font-black text-white">
+                  {featuredMatch.awayTeam.slice(0, 2).toUpperCase()}
+                </div>
+                <p className="text-xs font-bold text-white text-center leading-tight">{featuredMatch.awayTeam}</p>
+              </div>
             </div>
-            <span className="text-[10px] font-semibold text-white/80">12.4K fans online</span>
           </div>
-        </div>
-      </div>
+        </button>
+      )}
 
       {/* Match Intelligence Card */}
       {featuredMatch && (
@@ -419,19 +489,30 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
         </div>
       </div>
 
-      {/* Choose Your Teams */}
+      {/* Choose Your Teams — real teams from API */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <div className="flex items-center gap-2 mb-3">
           <Flame className="h-4 w-4 text-gold" />
           <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Choose Your Teams</h3>
         </div>
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-          {['Alex', 'Sydney', 'Emma', 'Chris', 'Jordan', 'Taylor', 'Riley', 'Morgan'].map((name) => (
-            <button key={name} className="flex-shrink-0 rounded-xl bg-surface border border-surface-border px-4 py-2 text-sm font-medium text-white hover:border-gold/30 transition-colors">
-              {name}
-            </button>
-          ))}
-        </div>
+        {teams.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-2">No teams available.</p>
+        ) : (
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+            {teams.map((team) => (
+              <button
+                key={team.id}
+                onClick={() => openTeamByHandle(team.handle)}
+                className="flex-shrink-0 flex items-center gap-2 rounded-xl bg-surface border border-surface-border px-3 py-2 text-sm font-medium text-white hover:border-gold/30 transition-colors"
+              >
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gold/10 text-[10px] font-bold text-gold">
+                  {team.avatarInitials || team.name.slice(0, 2).toUpperCase()}
+                </div>
+                {team.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Feed Posts */}
@@ -465,6 +546,8 @@ function FeedCard({ item, onShare, onComment, formatTime }: {
   const setLoginModalOpen = useUIStore((s) => s.setLoginModalOpen);
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [votedOption, setVotedOption] = useState<number | null>(null);
+  const [pollVotes, setPollVotes] = useState(item.poll?.totalVotes ?? 0);
   const user = item.user;
 
   const handleViewUser = useCallback(() => {
@@ -542,25 +625,68 @@ function FeedCard({ item, onShare, onComment, formatTime }: {
           </div>
         )}
 
-        {/* Poll */}
+        {/* Poll — functional voting */}
         {item.poll && item.poll.options && item.poll.options.length > 0 && (
           <div className="mb-3 flex flex-col gap-2">
-            {item.poll.options.map((opt, i) => (
-              <button key={i} className="relative overflow-hidden rounded-lg bg-surface p-3 text-left">
-                <div className="absolute inset-y-0 left-0 bg-gold/20 rounded-lg" style={{ width: `${opt.pct}%` }} />
-                <div className="relative flex items-center justify-between">
-                  <span className="text-sm font-medium text-white">{opt.label}</span>
-                  <span className="text-xs font-bold text-muted-foreground">{opt.pct}%</span>
-                </div>
-              </button>
-            ))}
-            <p className="text-xs text-muted-foreground">{item.poll.totalVotes.toLocaleString()} votes</p>
+            <p className="text-sm font-bold text-white mb-1">{item.poll.question}</p>
+            {item.poll.options.map((opt: string, i: number) => {
+              // Calculate percentage based on even distribution + user's vote
+              const basePct = Math.round(100 / item.poll!.options.length);
+              const pct = votedOption !== null
+                ? (i === votedOption ? Math.round(100 / item.poll!.options.length) + 5 : Math.round((100 - Math.round(100 / item.poll!.options.length) - 5) / (item.poll!.options.length - 1 || 1)))
+                : basePct;
+              return (
+                <button
+                  key={i}
+                  onClick={async () => {
+                    if (!isAuthenticated) { setLoginModalOpen(true); return; }
+                    if (votedOption !== null) return; // Already voted
+                    setVotedOption(i);
+                    setPollVotes(v => v + 1);
+                    try {
+                      await fetch('/api/polls/vote', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pollId: item.poll!.id, optionIndex: i }),
+                      });
+                    } catch { /* ignore */ }
+                  }}
+                  disabled={votedOption !== null}
+                  className={cn(
+                    'relative overflow-hidden rounded-lg p-3 text-left transition-all',
+                    votedOption === i ? 'bg-gold/20 border border-gold/40' : 'bg-surface border border-surface-border',
+                    votedOption !== null && votedOption !== i && 'opacity-60'
+                  )}
+                >
+                  {votedOption !== null && (
+                    <div className="absolute inset-y-0 left-0 bg-gold/20 rounded-lg transition-all duration-500" style={{ width: `${pct}%` }} />
+                  )}
+                  <div className="relative flex items-center justify-between">
+                    <span className="text-sm font-medium text-white">{opt}</span>
+                    {votedOption === i && <Check className="h-3.5 w-3.5 text-gold" />}
+                    {votedOption !== null && <span className="text-xs font-bold text-muted-foreground">{pct}%</span>}
+                  </div>
+                </button>
+              );
+            })}
+            <p className="text-xs text-muted-foreground">{pollVotes.toLocaleString()} votes{votedOption !== null && ' · You voted'}</p>
           </div>
         )}
 
         {/* Actions */}
         <div className="flex items-center justify-between border-t border-surface-border pt-3 mt-1">
-          <button onClick={() => setLiked(!liked)}
+          <button
+            onClick={async () => {
+              if (!isAuthenticated) { setLoginModalOpen(true); return; }
+              setLiked(!liked);
+              try {
+                await fetch('/api/likes', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ postId: item.id }),
+                });
+              } catch { /* ignore */ }
+            }}
             className={cn('flex items-center gap-1.5 transition-colors', liked ? 'text-pink-400' : 'text-muted-foreground hover:text-pink-400')}>
             <Heart className={cn('h-4 w-4', liked && 'fill-current')} />
             <span className="text-xs">{formatCount(item.likeCount + (liked ? 1 : 0))}</span>

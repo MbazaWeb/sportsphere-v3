@@ -382,6 +382,26 @@ async function main() {
   });
   console.log('✅ Created notifications and messages');
 
+  // ─── FOLLOWS (so Followers/Following lists aren't empty) ────
+  await prisma.follow.deleteMany({ where: { OR: [{ followerId: david.id }, { followingId: david.id }] } });
+  const followDefs = [
+    // David follows these (so his "Following" list isn't empty)
+    { followerId: david.id, followingId: userMap['@manchesterunited'].id },
+    { followerId: david.id, followingId: userMap['@arsenal'].id },
+    { followerId: david.id, followingId: userMap['@rashford10'].id },
+    { followerId: david.id, followingId: userMap['@salah11'].id },
+    { followerId: david.id, followingId: userMap['@pepguardiola'].id },
+    { followerId: david.id, followingId: userMap['@fabrizioromano'].id },
+    { followerId: david.id, followingId: userMap['@sarahchen'].id },
+    // These follow David (so his "Followers" list isn't empty)
+    { followerId: userMap['@sarahchen'].id, followingId: david.id },
+    { followerId: userMap['@marcusj'].id, followingId: david.id },
+    { followerId: userMap['@goalsdaily'].id, followingId: david.id },
+    { followerId: userMap['@gkunion'].id, followingId: david.id },
+  ];
+  await prisma.follow.createMany({ data: followDefs });
+  console.log(`✅ Created ${followDefs.length} follows`);
+
   console.log('\n🎉 Seed complete!');
   console.log(`\n📋 Test accounts created:`);
   userDefs.forEach(u => console.log(`   ${u.role.padEnd(14)} → ${u.handle}`));

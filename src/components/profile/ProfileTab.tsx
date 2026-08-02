@@ -627,21 +627,42 @@ function GenericSection({ title, onBack }: { title: string; onBack: () => void }
   );
 }
 
-// ====== PEOPLE LIST ======
+// ====== PEOPLE LIST (Followers / Following) ======
 function PeopleList({ title, onBack }: { title: string; onBack: () => void }) {
-  const [people, setPeople] = useState<Array<{ name: string; handle: string; avatarInitials: string }>>([]);
+  const userProfile = useAppStore((s) => s.userProfile);
+  const setViewingUser = useAppStore((s) => s.setViewingUser);
+  const [people, setPeople] = useState<Array<{ id: string; name: string; handle: string; avatarInitials: string | null; isVerified: boolean; role: string; bio: string | null }>>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     async function loadData() {
+      if (!userProfile?.id) { setLoading(false); return; }
       try {
-        const res = await fetch('/api/users');
-        if (res.ok) setPeople(await res.json());
-      } catch (e) { /* empty */ }
+        const type = title === 'Following' ? 'following' : 'followers';
+        const res = await fetch(`/api/follows?userId=${userProfile.id}&type=${type}`);
+        if (res.ok) {
+          const data = await res.json();
+          setPeople(data);
+        } else {
+          setError('Failed to load.');
+        }
+      } catch { setError('Network error.'); }
       setLoading(false);
     }
     loadData();
-  }, []);
+  }, [userProfile?.id, title]);
+
+  const openProfile = async (person: typeof people[number]) => {
+    try {
+      const res = await fetch(`/api/users?handle=${encodeURIComponent(person.handle)}`);
+      if (res.ok) {
+        const u = await res.json();
+        const { apiUserToViewing } = await import('@/types');
+        setViewingUser(apiUserToViewing(u, false));
+      }
+    } catch { /* ignore */ }
+  };
 
   return (
     <div>
@@ -666,21 +687,43 @@ function PeopleList({ title, onBack }: { title: string; onBack: () => void }) {
               </div>
             ))}
           </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <p className="text-xs text-muted-foreground mt-2">Follow some users to see them here.</p>
+          </div>
+        ) : people.length === 0 ? (
+          <div className="flex flex-col items-center justify-center px-6 pt-20">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-elevated">
+              <Users className="h-7 w-7 text-muted-foreground" />
+            </div>
+            <p className="mt-4 text-sm text-muted-foreground">
+              {title === 'Following' ? 'You are not following anyone yet.' : 'No followers yet.'}
+            </p>
+          </div>
         ) : (
           <div className="flex flex-col gap-2">
             {people.map((person) => (
-              <div key={person.handle} className="flex items-center gap-3 rounded-xl bg-surface-elevated border border-surface-border p-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface font-bold text-sm text-gold">
-                  {person.avatarInitials}
+              <button
+                key={person.id}
+                onClick={() => openProfile(person)}
+                className="flex items-center gap-3 rounded-xl bg-surface-elevated border border-surface-border p-3 text-left hover:bg-surface transition-colors w-full"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/10 font-bold text-sm text-gold">
+                  {person.avatarInitials || person.name.slice(0, 2).toUpperCase()}
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-white">{person.name}</p>
-                  <p className="text-xs text-muted-foreground">{person.handle}</p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1">
+                    <p className="text-sm font-semibold text-white truncate">{person.name}</p>
+                    {person.isVerified && <ShieldCheck className="h-3.5 w-3.5 text-gold flex-shrink-0" />}
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">{person.handle}</p>
+                  {person.bio && <p className="text-[11px] text-muted-foreground/70 truncate mt-0.5">{person.bio}</p>}
                 </div>
-                <button className="rounded-lg bg-surface border border-surface-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-white transition-colors">
-                  {title === 'Following' ? 'Following' : 'Follow'}
-                </button>
-              </div>
+                <span className="rounded-lg bg-surface border border-surface-border px-3 py-1.5 text-[10px] font-semibold text-muted-foreground capitalize">
+                  {person.role}
+                </span>
+              </button>
             ))}
           </div>
         )}

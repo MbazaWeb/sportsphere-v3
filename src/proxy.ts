@@ -6,13 +6,14 @@ import { verifySession, SESSION_COOKIE } from '@/lib/session';
 // The function name also changed from `middleware` to `proxy`.
 // Docs: https://nextjs.org/docs/messages/middleware-to-proxy
 
-// Routes that DON'T require a session.
-// - /api/auth/* — login, register, forgot/reset password, logout, me
-// - Public content routes — guests can browse Home, Scores, and view
-//   public profiles without logging in (spec: "Guests can view all
-//   scores, fixtures, standings, statistics, lineups, match details").
-const PUBLIC_API_PREFIXES = [
-  '/api/auth',
+// Routes that are fully public (any method) — auth flows.
+const PUBLIC_AUTH_PREFIXES = ['/api/auth'];
+
+// Routes where GET is public (guests can browse) but POST/PATCH/DELETE
+// requires auth. This matches the spec: "Guests can view all scores,
+// fixtures, standings, statistics, lineups, match details" but actions
+// like posting, commenting, liking, voting require login.
+const PUBLIC_GET_PREFIXES = [
   '/api/feed',
   '/api/matches',
   '/api/standings',
@@ -21,21 +22,36 @@ const PUBLIC_API_PREFIXES = [
   '/api/users',
   '/api/profile-data',
   '/api/comments',
+  '/api/follows',   // GET (list followers/following) is public
 ];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const method = request.method;
 
   // Only guard API routes. Pages are public (the app handles auth in-UI).
   if (!pathname.startsWith('/api/')) {
     return NextResponse.next();
   }
 
-  const isPublic = PUBLIC_API_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
-  if (isPublic) {
+  // Auth routes are always public (login, register, etc.)
+  const isAuthRoute = PUBLIC_AUTH_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`)
+  );
+  if (isAuthRoute) {
     return NextResponse.next();
   }
 
+  // For public-GET routes, allow GET/HEAD without auth, but require auth
+  // for any write method (POST, PUT, PATCH, DELETE).
+  const isPublicGetRoute = PUBLIC_GET_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`)
+  );
+  if (isPublicGetRoute && (method === 'GET' || method === 'HEAD')) {
+    return NextResponse.next();
+  }
+
+  // Everything else (including POST to public-GET routes) requires a session.
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   const session = await verifySession(token);
 
