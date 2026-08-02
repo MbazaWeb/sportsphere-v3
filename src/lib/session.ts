@@ -78,9 +78,9 @@ export function buildSessionCookie(token: string): string {
     'HttpOnly',
     'SameSite=Lax',
   ];
-  // Secure flag only in production (HTTPS). In local dev over http,
-  // a Secure cookie would be rejected by the browser.
-  if (process.env.NODE_ENV === 'production') flags.push('Secure');
+  // Only add Secure flag when the app is served over HTTPS
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
+  if (appUrl.startsWith('https://')) flags.push('Secure');
   return flags.join('; ');
 }
 
