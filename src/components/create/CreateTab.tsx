@@ -387,6 +387,7 @@ function Composer({ type, onBack }: { type: string; onBack: () => void }) {
 function MediaUpload({ type, mediaUrls, onChange }: { type: string; mediaUrls: string[]; onChange: (urls: string[]) => void }) {
   const [urlInput, setUrlInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const createdUrls = useRef<string[]>([]);
 
   const addUrl = () => {
     if (!urlInput.trim()) return;
@@ -397,11 +398,21 @@ function MediaUpload({ type, mediaUrls, onChange }: { type: string; mediaUrls: s
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    const urls = Array.from(files).map(f => URL.createObjectURL(f));
+    const urls = Array.from(files).map(f => {
+      const u = URL.createObjectURL(f);
+      createdUrls.current.push(u);
+      return u;
+    });
     onChange([...mediaUrls, ...urls]);
-    // Cleanup: revoke object URLs when component unmounts
-    return () => urls.forEach(u => URL.revokeObjectURL(u));
   };
+
+  // Revoke any created object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      createdUrls.current.forEach(u => URL.revokeObjectURL(u));
+      createdUrls.current = [];
+    };
+  }, []);
 
   return (
     <div className="flex flex-col gap-3">
@@ -415,7 +426,14 @@ function MediaUpload({ type, mediaUrls, onChange }: { type: string; mediaUrls: s
                 <img src={url} alt="" className="h-full w-full object-cover" />
               )}
               <button
-                onClick={() => onChange(mediaUrls.filter((_, j) => j !== i))}
+                onClick={() => {
+                  const removed = mediaUrls[i];
+                  if (createdUrls.current.includes(removed)) {
+                    URL.revokeObjectURL(removed);
+                    createdUrls.current = createdUrls.current.filter(u => u !== removed);
+                  }
+                  onChange(mediaUrls.filter((_, j) => j !== i));
+                }}
                 className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white"
               >
                 <X className="h-3 w-3" />

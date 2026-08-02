@@ -12,6 +12,7 @@ import {
   Newspaper, Camera, Scale, Search, ShieldCheck, GraduationCap, Globe,
 } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { BadgeStack } from '@/components/ui/RoleBadge';
 
 // --- API types ---
@@ -151,6 +152,39 @@ export default function UserProfileViewer() {
     loadUser();
   }, [viewingHandle, setViewingUser]);
 
+  // Pull-to-refresh: reuse the same load logic
+  const refresh = async () => {
+    if (!viewingHandle) return;
+    try {
+      const res = await fetch(`/api/users?handle=${encodeURIComponent(viewingHandle as string)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setApiUser(data);
+        setViewingUser({
+          id: data.id,
+          name: data.name,
+          handle: data.handle,
+          avatar: data.avatarInitials,
+          verified: data.isVerified,
+          coverGradient: data.coverGradient,
+          bio: data.bio || '',
+          role: data.role,
+          location: data.location || '',
+          joined: data.registeredAt ? new Date(data.registeredAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '',
+          followers: data.followerCount || 0,
+          following: data.followingCount || 0,
+          posts: data.postCount || 0,
+          isFollowing: false,
+        });
+
+        const postsRes = await fetch(`/api/feed?userId=${data.id}`);
+        if (postsRes.ok) setUserPosts(await postsRes.json());
+      }
+    } catch (e) { /* ignore */ }
+  };
+
+  const { containerRef, isRefreshing, pullProgress } = usePullToRefresh({ onRefresh: refresh, threshold: 80 });
+
   const user = viewingUser;
   const role = apiUser?.role || user?.role || 'fan';
   const tabs = getTabsForRole(role);
@@ -181,7 +215,16 @@ export default function UserProfileViewer() {
             }
           }}
           className="fixed inset-0 z-40 bg-background overflow-y-auto touch-pan-y"
+          ref={containerRef}
         >
+          {/* Pull-to-refresh indicator */}
+          <div style={{ transform: `translateY(${pullProgress * 40}px)` }} className="absolute top-2 left-0 right-0 flex items-center justify-center pointer-events-none">
+            {isRefreshing ? (
+              <div className="h-8 w-8 rounded-full bg-gold flex items-center justify-center text-black text-xs font-bold">↻</div>
+            ) : pullProgress > 0 ? (
+              <div className="h-6 w-6 rounded-full bg-gold/25 flex items-center justify-center text-gold text-xs font-bold">{Math.round(pullProgress * 100)}%</div>
+            ) : null}
+          </div>
           <div className="mx-auto max-w-lg min-h-screen">
             {/* Cover */}
             <div className={cn('relative h-44 w-full bg-gradient-to-br', user.coverGradient)}>
@@ -342,13 +385,13 @@ export default function UserProfileViewer() {
                           <p className="mb-3 text-sm text-foreground/90">{post.content}</p>
                           <div className="flex items-center gap-4 border-t border-surface-border pt-2 text-xs text-muted-foreground">
                             <button onClick={() => setLikedPosts(prev => { const n = new Set(prev); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
-                              className={cn('flex items-center gap-1 transition-colors', likedPosts.has(post.id) ? 'text-pink-400' : 'hover:text-pink-400')}>
+                              className={cn('flex items-center gap-1 transition-colors p-2 min-h-[44px] min-w-[44px] rounded-md', likedPosts.has(post.id) ? 'text-pink-400' : 'hover:text-pink-400')}>
                               <Heart className={cn('h-3.5 w-3.5', likedPosts.has(post.id) && 'fill-current')} />
                               {post.likeCount + (likedPosts.has(post.id) ? 1 : 0)}
                             </button>
-                            <span className="flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" />{post.commentCount}</span>
-                            <button className="ml-auto hover:text-gold transition-colors"><Share2 className="h-3.5 w-3.5" /></button>
-                            <button className="hover:text-gold transition-colors"><Bookmark className="h-3.5 w-3.5" /></button>
+                            <span className="flex items-center gap-1 p-2 min-h-[44px] min-w-[44px] rounded-md"><MessageCircle className="h-3.5 w-3.5" />{post.commentCount}</span>
+                            <button className="ml-auto hover:text-gold transition-colors p-2 min-h-[44px] min-w-[44px] rounded-md"><Share2 className="h-3.5 w-3.5" /></button>
+                            <button className="hover:text-gold transition-colors p-2 min-h-[44px] min-w-[44px] rounded-md"><Bookmark className="h-3.5 w-3.5" /></button>
                           </div>
                         </article>
                       ))

@@ -783,22 +783,22 @@ function FeedCard({ item, onShare, onComment, formatTime }: {
                 });
               } catch { }
             }}
-            className={cn('flex items-center gap-1.5 transition-colors', liked ? 'text-pink-400' : 'text-muted-foreground hover:text-pink-400')}>
+            className={cn('flex items-center gap-1.5 transition-colors p-2 min-h-[44px] min-w-[44px] rounded-md', liked ? 'text-pink-400' : 'text-muted-foreground hover:text-pink-400')}>
             <Heart className={cn('h-4 w-4', liked && 'fill-current')} />
             <span className="text-xs">{formatCount(item.likeCount + (liked ? 1 : 0))}</span>
           </button>
           <button onClick={() => onComment(item.id)}
-            className="flex items-center gap-1.5 text-muted-foreground hover:text-gold transition-colors">
+            className="flex items-center gap-1.5 text-muted-foreground hover:text-gold transition-colors p-2 min-h-[44px] min-w-[44px] rounded-md">
             <MessageCircle className="h-4 w-4" />
             <span className="text-xs">{formatCount(item.commentCount)}</span>
           </button>
           <button onClick={() => onShare(item.id)}
-            className="flex items-center gap-1.5 text-muted-foreground hover:text-gold transition-colors">
+            className="flex items-center gap-1.5 text-muted-foreground hover:text-gold transition-colors p-2 min-h-[44px] min-w-[44px] rounded-md">
             <Share2 className="h-4 w-4" />
             <span className="text-xs">{formatCount(item.shareCount)}</span>
           </button>
           <button onClick={handleSave}
-            className={cn('transition-colors', saved ? 'text-gold' : 'text-muted-foreground hover:text-gold')}>
+            className={cn('transition-colors p-2 min-h-[44px] min-w-[44px] rounded-md', saved ? 'text-gold' : 'text-muted-foreground hover:text-gold')}>
             <Bookmark className={cn('h-4 w-4', saved && 'fill-current')} />
           </button>
         </div>

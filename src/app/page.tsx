@@ -1,6 +1,6 @@
 'use client';
 import SplashScreen from '@/components/SplashScreen';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 
 import { useNavigationStore } from '@/store/navigationStore';
 import { useAuthStore } from '@/store/authStore';
@@ -63,10 +63,29 @@ function ProfileTypeOverlay() {
 
 function TabContent() {
   const activeTab = useNavigationStore((s) => s.activeTab);
+  const setActiveTab = useNavigationStore((s) => s.setActiveTab);
+  const touchStartX = useRef<number | null>(null);
+  const touchCurrentX = useRef<number | null>(null);
+  const threshold = 60;
+
+  const tabs: Array<'home'|'scores'|'create'|'activity'|'profile'> = ['home','scores','create','activity','profile'];
+
+  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; touchCurrentX.current = e.touches[0].clientX; };
+  const handleTouchMove = (e: React.TouchEvent) => { touchCurrentX.current = e.touches[0].clientX; };
+  const handleTouchEnd = () => {
+    if (touchStartX.current == null || touchCurrentX.current == null) return;
+    const diff = touchCurrentX.current - touchStartX.current;
+    if (Math.abs(diff) < threshold) { touchStartX.current = null; touchCurrentX.current = null; return; }
+    const currentIndex = tabs.indexOf(activeTab as any);
+    if (diff < 0 && currentIndex < tabs.length - 1) setActiveTab(tabs[currentIndex + 1]);
+    if (diff > 0 && currentIndex > 0) setActiveTab(tabs[currentIndex - 1]);
+    touchStartX.current = null; touchCurrentX.current = null;
+  };
   return (
     <AnimatePresence mode="wait">
       <motion.div key={activeTab} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.15 }} className="mx-auto min-h-screen max-w-lg">
+        exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.15 }} className="mx-auto min-h-screen max-w-lg"
+        onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
         {activeTab === 'home'     && <HomeTab />}
         {activeTab === 'scores'   && <ScoresTab />}
         {activeTab === 'create'   && <CreateTab />}
