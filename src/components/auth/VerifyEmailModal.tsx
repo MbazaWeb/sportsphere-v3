@@ -134,7 +134,7 @@ export default function VerifyEmailModal({
               </div>
               <p className="text-sm text-muted-foreground text-center">
                 We sent a 6-digit verification code to{' '}
-                <span className="text-white font-medium">{userProfile?.email}</span>
+                <span className="text-white font-medium">{userProfile?.email || 'your registered email'}</span>
               </p>
             </div>
 

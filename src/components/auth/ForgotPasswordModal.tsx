@@ -95,11 +95,13 @@ export default function ForgotPasswordModal({ open, onClose }: Props) {
               If an account exists for <span className="text-gold font-medium">{email}</span>,
               a password reset link has been sent. The link expires in 30 minutes.
             </p>
-            <p className="mb-5 rounded-xl bg-gold/5 border border-gold/15 p-3 text-[11px] text-muted-foreground leading-relaxed text-left">
-              <strong className="text-gold">Dev note:</strong> In this environment the reset link is printed
-              in the server console (terminal running <code className="text-gold/80">npm run dev</code>).
-              Open it to set a new password.
-            </p>
+            {process.env.NODE_ENV === 'development' && (
+              <p className="mb-5 rounded-xl bg-gold/5 border border-gold/15 p-3 text-[11px] text-muted-foreground leading-relaxed text-left">
+                <strong className="text-gold">Dev note:</strong> In this environment the reset link is printed
+                in the server console (terminal running <code className="text-gold/80">npm run dev</code>).
+                Open it to set a new password.
+              </p>
+            )}
             <button
               onClick={close}
               className="w-full rounded-xl bg-gold py-3 text-sm font-bold text-black hover:bg-gold/90 transition-colors"
