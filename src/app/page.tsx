@@ -85,8 +85,6 @@ function LoginModal() {
               </button>
             </div>
           </div>
-            </button>
-          </div>
 
           {error && (
             <div className="mb-3 rounded-xl bg-red-500/10 border border-red-500/20 p-3">
