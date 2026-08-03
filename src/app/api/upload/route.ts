@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
+import { verifySession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,8 +20,20 @@ const ALLOWED_TYPES: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = request.headers.get('x-user-id');
-    if (!userId) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+    // Get user ID from session cookie
+    const cookieHeader = request.headers.get('cookie') || '';
+    const sessionCookie = cookieHeader
+      .split(';')
+      .map(c => c.trim())
+      .find(c => c.startsWith('ss_session='));
+    const token = sessionCookie?.split('=')[1];
+    const session = await verifySession(token);
+
+    if (!session?.sub) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const userId = session.sub;
 
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
