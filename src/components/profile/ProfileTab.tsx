@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useAppStore, type ProfileTypeId } from '@/store/useAppStore';
 import type { VerificationStatus } from '@/types';
@@ -9,7 +9,8 @@ import {
   Bookmark, Trophy, Users, BarChart3, X, Shield, Bell, Mail,
   Palette, Globe, HelpCircle, Info, Edit, Camera,
   Eye, ShieldCheck, Clock, CheckCircle2, AlertCircle, Sparkles,
-  BadgeCheck, Upload, ChevronDown, Zap, Video, Image as ImageIcon
+  BadgeCheck, Upload, ChevronDown, Zap, Video, Image as ImageIcon,
+  Share2
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import RegistrationModal from '@/components/registration/RegistrationModal';
@@ -104,7 +105,7 @@ function LoggedInProfile({ onNavigate, onLogout }: { onNavigate: (section: strin
     async function loadPosts() {
       try {
         const uid = userProfile?.id;
-        const url = uid ? /api/feed?type=for-you&userId= : '/api/feed?type=for-you';
+        const url = uid ? `/api/feed?type=for-you&userId=${uid}` : '/api/feed?type=for-you';
         const res = await fetch(url);
         if (res.ok) setRealPosts(await res.json());
       } catch { /* ignore */ }
@@ -116,10 +117,10 @@ function LoggedInProfile({ onNavigate, onLogout }: { onNavigate: (section: strin
   function timeAgo(dateStr: string) {
     const diff = Date.now() - new Date(dateStr).getTime();
     const m = Math.floor(diff / 60000);
-    if (m < 60) return ${m}m ago;
+    if (m < 60) return `${m}m ago`;
     const h = Math.floor(m / 60);
-    if (h < 24) return ${h}h ago;
-    return ${Math.floor(h / 24)}d ago;
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
   }
 
   return (
@@ -221,7 +222,7 @@ function LoggedInProfile({ onNavigate, onLogout }: { onNavigate: (section: strin
                   <button className="flex items-center gap-1.5 text-muted-foreground hover:text-gold transition-colors p-2 min-h-[44px] min-w-[44px] rounded-md">
                     <MessageCircle className="h-4 w-4" /><span className="text-xs">{post.commentCount}</span>
                   </button>
-                  <button className="flex items-center gap-1.5 text-muted-foreground hover:text-gold transition-colors p-2 min-h-[44px] min-w-[44px] rounded-md">
+                  <button onClick={() => {}} className="flex items-center gap-1.5 text-muted-foreground hover:text-gold transition-colors p-2 min-h-[44px] min-w-[44px] rounded-md">
                     <Share2 className="h-4 w-4" /><span className="text-xs">Share</span>
                   </button>
                   <button className="text-muted-foreground hover:text-gold transition-colors p-2 min-h-[44px] min-w-[44px] rounded-md"><Bookmark className="h-4 w-4" /></button>
@@ -291,7 +292,7 @@ function AdminVerificationPanel() {
           <p className="text-xs text-muted-foreground">{isPending && 'Your documents are being reviewed. This typically takes 1-3 business days.'}{isVerified && 'Your profile has been verified by our admin team. Your verified badge is now visible to all users.'}{isRejected && 'Your verification was not approved. Please review the requirements and resubmit.'}</p>
         </div>
         {userProfile?.roleData && Object.keys(userProfile.roleData).length > 0 && (
-          <div className="mb-4"><button onClick={() => setShowDocuments(!showDocuments)} className="flex w-full items-center justify-between text-xs font-semibold text-muted-foreground">Submitted Information<ChevronDown className={cn('h-3.5 w-3.5 transition-transform', showDocuments && 'rotate-180')} /></button><AnimatePresence>{showDocuments && (<motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-2 overflow-hidden"><div className="flex flex-col gap-1.5">{Object.entries(userProfile.roleData).filter(([, v]) => v).map(([key, value]) => (<div key={key} className="flex items-center justify-between rounded-lg bg-surface px-3 py-2"><span className="text-xs text-muted-foreground capitalize">{key.replace(/([A-Z])/g, ' ')}</span><span className="text-xs font-medium text-white">{value}</span></div>))}</div></motion.div>)}</AnimatePresence></div>
+          <div className="mb-4"><button onClick={() => setShowDocuments(!showDocuments)} className="flex w-full items-center justify-between text-xs font-semibold text-muted-foreground">Submitted Information<ChevronDown className={cn('h-3.5 w-3.5 transition-transform', showDocuments && 'rotate-180')} /></button><AnimatePresence>{showDocuments && (<motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-2 overflow-hidden"><div className="flex flex-col gap-1.5">{Object.entries(userProfile.roleData).filter(([, v]) => v).map(([key, value]) => (<div key={key} className="flex items-center justify-between rounded-lg bg-surface px-3 py-2"><span className="text-xs text-muted-foreground capitalize">{key.replace(/([A-Z])/g, ' $1')}</span><span className="text-xs font-medium text-white">{value}</span></div>))}</div></motion.div>)}</AnimatePresence></div>
         )}
         <div className="flex flex-col gap-2">
           {isPending && (<><div className="rounded-xl bg-yellow-500/5 border border-yellow-500/20 p-3"><p className="text-[10px] text-muted-foreground text-center">Demo: Tap below to simulate admin approval or rejection</p></div><div className="flex gap-2"><button onClick={simulateAdminApprove} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gold py-2.5 text-xs font-bold text-black hover:bg-gold/90 transition-colors"><CheckCircle2 className="h-3.5 w-3.5" /> Approve (Demo)</button><button onClick={simulateAdminReject} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/5 py-2.5 text-xs font-semibold text-red-400 hover:bg-red-500/10 transition-colors"><X className="h-3.5 w-3.5" /> Reject (Demo)</button></div></>)}
@@ -339,7 +340,7 @@ function PeopleList({ title, onBack }: { title: string; onBack: () => void }) {
       if (!userProfile?.id) { setLoading(false); return; }
       try {
         const type = title === 'Following' ? 'following' : 'followers';
-        const res = await fetch(/api/follows?userId=&type=);
+        const res = await fetch(`/api/follows?userId=${userProfile.id}&type=${type}`);
         if (res.ok) { const data = await res.json(); setPeople(data); } else { setError('Failed to load.'); }
       } catch { setError('Network error.'); }
       setLoading(false);
@@ -349,7 +350,7 @@ function PeopleList({ title, onBack }: { title: string; onBack: () => void }) {
 
   const openProfile = async (person: typeof people[number]) => {
     try {
-      const res = await fetch(/api/users?handle=);
+      const res = await fetch(`/api/users?handle=${encodeURIComponent(person.handle)}`);
       if (res.ok) {
         const u = await res.json();
         const { apiUserToViewing } = await import('@/types');

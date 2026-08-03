@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useRef } from 'react';
 import { Camera, X, Plus } from 'lucide-react';
@@ -81,7 +81,7 @@ export function VideoUpload({ mediaUrls, onChange, type }: VideoUploadProps) {
     <>
       <div className="flex flex-col gap-3">
         {mediaUrls.length > 0 && (
-          <div className={grid gap-2 }>
+          <div className={`grid gap-2 ${mediaUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
             {mediaUrls.map((url, i) => (
               <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-surface border border-surface-border">
                 <video src={url} className="h-full w-full object-cover" controls />
