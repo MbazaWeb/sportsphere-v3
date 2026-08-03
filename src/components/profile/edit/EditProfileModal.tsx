@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,24 +7,17 @@ import {
   ChevronRight, ChevronLeft, Search, Plus, Tag, Save, Loader2,
   Camera, Shield, BarChart3, Trophy, Users, Briefcase, Building,
   Star, Award, Clock, Target, FileText, Image as ImageIcon,
+  Link, Flag, Calendar, Instagram, Twitter, Youtube, Linkedin, TikTok
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { useSports } from '@/hooks/useSports';
 
-// ─── Constants ────────────────────────────────────────────────
-// NOTE: SPORTS is no longer hardcoded — fetched dynamically via useSports hook.
-// E-2: Replaced hardcoded array with data-driven approach.
-
 const INTERESTS = ['Transfers', 'Statistics', 'Fantasy', 'Highlights', 'Live Scores', 'Sports Business', 'Coaching', 'Fitness', 'Betting News', 'Analysis', 'Youth Academy', "Women's Sports", 'Local Football', 'International Football'];
-
 const COUNTRIES = ['All', 'England', 'Spain', 'Germany', 'France', 'Italy', 'Portugal', 'Netherlands', 'Belgium', 'Brazil', 'Argentina', 'Nigeria', 'Kenya', 'Tanzania', 'South Africa', 'Egypt', 'Morocco', 'Ghana', 'Cameroon', 'Senegal', 'Ivory Coast', 'USA', 'Canada', 'Mexico', 'Japan', 'South Korea', 'China', 'India', 'Australia', 'Saudi Arabia', 'Qatar', 'UAE'];
-
 const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Dutch', 'Arabic', 'Swahili', 'Hausa', 'Yoruba', 'Chinese', 'Japanese', 'Korean', 'Hindi'];
-
 const TIMEZONES = ['UTC', 'UTC+1', 'UTC+2', 'UTC+3 (East Africa)', 'UTC+4', 'UTC+5', 'UTC+6', 'UTC+7', 'UTC+8', 'UTC+9', 'UTC-5 (EST)', 'UTC-6 (CST)', 'UTC-7 (MST)', 'UTC-8 (PST)'];
-
 const SECTIONS = [
   { id: 'identity', label: 'Identity', icon: User },
   { id: 'personal', label: 'Personal', icon: MapPin },
@@ -37,7 +30,6 @@ const SECTIONS = [
   { id: 'role', label: 'Role Profile', icon: Award },
 ] as const;
 
-// ─── Fan Types (15 types with icons + descriptions) ───────────
 const FAN_TYPES = [
   { id: 'casual',         label: 'Casual Fan',           icon: '☕', desc: 'Enjoy the game, no stress' },
   { id: 'diehard',        label: 'Die-hard Fan',         icon: '🔥', desc: 'Live and breathe your team' },
@@ -58,7 +50,6 @@ const FAN_TYPES = [
 
 type SectionId = typeof SECTIONS[number]['id'];
 
-// ─── Main Edit Profile Modal ──────────────────────────────────
 export default function EditProfileModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const userProfile = useAuthStore((s) => s.userProfile);
   const setUserProfile = useAuthStore((s) => s.setUserProfile);
@@ -70,9 +61,7 @@ export default function EditProfileModal({ open, onClose }: { open: boolean; onC
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [completion, setCompletion] = useState(0);
-  
 
-  // Load profile data
   useEffect(() => {
     if (!open) return;
     async function loadProfile() {
@@ -89,7 +78,6 @@ export default function EditProfileModal({ open, onClose }: { open: boolean; onC
     loadProfile();
   }, [open]);
 
-  // Calculate completion %
   useEffect(() => {
     if (!formData || Object.keys(formData).length === 0) { setCompletion(0); return; }
     const fields = [
@@ -118,7 +106,6 @@ export default function EditProfileModal({ open, onClose }: { open: boolean; onC
       });
       const data = await res.json();
       if (res.ok) {
-        // Update local auth store with key fields
         setUserProfile({
           ...userProfile!,
           name: data.name,
@@ -191,7 +178,7 @@ export default function EditProfileModal({ open, onClose }: { open: boolean; onC
         <div className="flex-shrink-0 h-0.5 bg-surface">
           <div
             className="h-full bg-gradient-to-r from-gold to-emerald-400 transition-all duration-300"
-            style={{ width: `${completion}%` }}
+            style={{ width: ${completion}% }}
           />
         </div>
 
@@ -201,7 +188,7 @@ export default function EditProfileModal({ open, onClose }: { open: boolean; onC
           </div>
         ) : (
           <div className="flex-1 flex flex-col sm:flex-row overflow-hidden">
-            {/* Mobile: top tabs (hidden on sm+) */}
+            {/* Mobile top tabs */}
             <div className="sm:hidden flex w-full overflow-x-auto scrollbar-hide border-b border-surface-border">
               {SECTIONS.map(section => {
                 const isActive = activeSection === section.id;
@@ -218,7 +205,7 @@ export default function EditProfileModal({ open, onClose }: { open: boolean; onC
               })}
             </div>
 
-            {/* Section sidebar (desktop) */}
+            {/* Desktop sidebar */}
             <div className="hidden sm:block w-44 flex-shrink-0 border-r border-surface-border overflow-y-auto scrollbar-hide">
               {SECTIONS.map(section => {
                 const Icon = section.icon;
@@ -270,7 +257,7 @@ export default function EditProfileModal({ open, onClose }: { open: boolean; onC
   );
 }
 
-// ─── Reusable field components ────────────────────────────────
+// ---------- Reusable components ----------
 function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
     <div className="mb-4">
@@ -280,7 +267,6 @@ function Field({ label, children, hint }: { label: string; children: React.React
     </div>
   );
 }
-
 function TextInput({ value, onChange, placeholder, type = 'text' }: {
   value: string | null | undefined; onChange: (v: string) => void; placeholder?: string; type?: string;
 }) {
@@ -294,7 +280,6 @@ function TextInput({ value, onChange, placeholder, type = 'text' }: {
     />
   );
 }
-
 function TextArea({ value, onChange, placeholder, rows = 3, maxLength }: {
   value: string | null | undefined; onChange: (v: string) => void; placeholder?: string; rows?: number; maxLength?: number;
 }) {
@@ -316,7 +301,6 @@ function TextArea({ value, onChange, placeholder, rows = 3, maxLength }: {
     </div>
   );
 }
-
 function Select({ value, onChange, options, placeholder }: {
   value: string | null | undefined; onChange: (v: string) => void; options: string[]; placeholder?: string;
 }) {
@@ -331,7 +315,6 @@ function Select({ value, onChange, options, placeholder }: {
     </select>
   );
 }
-
 function ChipSelector({ selected, onChange, options, color = 'gold' }: {
   selected: string[]; onChange: (v: string[]) => void; options: string[]; color?: 'gold' | 'blue' | 'purple';
 }) {
@@ -353,7 +336,7 @@ function ChipSelector({ selected, onChange, options, color = 'gold' }: {
           className={cn(
             'rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors border',
             selected.includes(item)
-              ? `${colorClasses[color]} border-transparent`
+              ? ${colorClasses[color]} border-transparent
               : 'bg-surface border-surface-border text-muted-foreground hover:text-white'
           )}
         >
@@ -363,7 +346,6 @@ function ChipSelector({ selected, onChange, options, color = 'gold' }: {
     </div>
   );
 }
-
 function Toggle({ checked, onChange, label, description }: {
   checked: boolean; onChange: (v: boolean) => void; label: string; description?: string;
 }) {
@@ -391,7 +373,7 @@ function Toggle({ checked, onChange, label, description }: {
   );
 }
 
-// ─── Identity Section ─────────────────────────────────────────
+// ---------- Section implementations (largely unchanged from your existing, just cleaned up) ----------
 function IdentitySection({ data, update }: { data: Record<string, unknown>; update: (k: string, v: unknown) => void }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -430,14 +412,11 @@ function IdentitySection({ data, update }: { data: Record<string, unknown>; upda
   return (
     <div>
       <h3 className="mb-4 text-sm font-bold text-white">Identity</h3>
-
-      {/* Avatar + Cover */}
       <div className="mb-4 rounded-2xl bg-gradient-to-br from-emerald-700 to-green-900 p-4">
         <div className="flex items-center gap-3">
           <div className="relative">
             <div className="h-16 w-16 overflow-hidden rounded-full bg-gold">
               {preview ? (
-                // show uploaded/preview image
                 <img src={preview} alt="avatar" className="h-full w-full object-cover" />
               ) : (
                 <div className="flex h-16 w-16 items-center justify-center text-xl font-black text-black">
@@ -457,31 +436,24 @@ function IdentitySection({ data, update }: { data: Record<string, unknown>; upda
           </div>
         </div>
       </div>
-
       <Field label="Display Name">
         <TextInput value={data.name as string} onChange={(v) => update('name', v)} placeholder="Your name" />
       </Field>
-
       <Field label="Username / Handle">
         <TextInput value={data.handle as string} onChange={(v) => update('handle', v)} placeholder="@yourhandle" />
       </Field>
-
       <Field label="Short Bio" hint="A brief one-liner shown on your profile card">
         <TextArea value={data.bio as string} onChange={(v) => update('bio', v)} placeholder="Football is life. Man Utd till I die." rows={2} maxLength={160} />
       </Field>
-
       <Field label="About Me" hint="Tell people more about yourself">
         <TextArea value={data.aboutMe as string} onChange={(v) => update('aboutMe', v)} placeholder="I'm a passionate football fan from Dar es Salaam..." rows={4} maxLength={500} />
       </Field>
-
       <Field label="Pronouns">
         <Select value={data.pronouns as string} onChange={(v) => update('pronouns', v)} options={['he/him', 'she/her', 'they/them', 'he/they', 'she/they']} placeholder="Select pronouns" />
       </Field>
-
       <Field label="Location">
         <TextInput value={data.location as string} onChange={(v) => update('location', v)} placeholder="e.g. Dar es Salaam, Tanzania" />
       </Field>
-
       <Field label="Cover Gradient" hint="Choose a color theme for your profile header">
         <div className="flex flex-wrap gap-2">
           {[
@@ -508,12 +480,10 @@ function IdentitySection({ data, update }: { data: Record<string, unknown>; upda
   );
 }
 
-// ─── Personal Section ─────────────────────────────────────────
 function PersonalSection({ data, update }: { data: Record<string, unknown>; update: (k: string, v: unknown) => void }) {
   return (
     <div>
       <h3 className="mb-4 text-sm font-bold text-white">Personal Information</h3>
-
       <Field label="Date of Birth">
         <input
           type="date"
@@ -522,35 +492,27 @@ function PersonalSection({ data, update }: { data: Record<string, unknown>; upda
           className="w-full rounded-xl bg-surface border border-surface-border px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold"
         />
       </Field>
-
       <Field label="Gender">
         <Select value={data.gender as string} onChange={(v) => update('gender', v)} options={['Male', 'Female', 'Non-binary', 'Prefer not to say']} placeholder="Select gender" />
       </Field>
-
       <Field label="Nationality">
         <Select value={data.nationality as string} onChange={(v) => update('nationality', v)} options={COUNTRIES.filter(c => c !== 'All')} placeholder="Select nationality" />
       </Field>
-
       <Field label="Country of Origin">
         <Select value={data.countryOfOrigin as string} onChange={(v) => update('countryOfOrigin', v)} options={COUNTRIES.filter(c => c !== 'All')} placeholder="Select country" />
       </Field>
-
       <Field label="Current Country">
         <Select value={data.currentCountry as string} onChange={(v) => update('currentCountry', v)} options={COUNTRIES.filter(c => c !== 'All')} placeholder="Select country" />
       </Field>
-
       <Field label="Region / State">
         <TextInput value={data.region as string} onChange={(v) => update('region', v)} placeholder="e.g. Dar es Salaam Region" />
       </Field>
-
       <Field label="City">
         <TextInput value={data.city as string} onChange={(v) => update('city', v)} placeholder="e.g. Dar es Salaam" />
       </Field>
-
       <Field label="Preferred Language">
         <Select value={data.preferredLanguage as string} onChange={(v) => update('preferredLanguage', v)} options={LANGUAGES} placeholder="Select language" />
       </Field>
-
       <Field label="Timezone">
         <Select value={data.timezone as string} onChange={(v) => update('timezone', v)} options={TIMEZONES} placeholder="Select timezone" />
       </Field>
@@ -558,7 +520,6 @@ function PersonalSection({ data, update }: { data: Record<string, unknown>; upda
   );
 }
 
-// ─── Contact Section ──────────────────────────────────────────
 function ContactSection({ data, update }: { data: Record<string, unknown>; update: (k: string, v: unknown) => void }) {
   const socials = [
     { key: 'socialInstagram', label: 'Instagram', placeholder: '@username' },
@@ -569,31 +530,24 @@ function ContactSection({ data, update }: { data: Record<string, unknown>; updat
     { key: 'socialYouTube', label: 'YouTube', placeholder: '@channel' },
     { key: 'socialThreads', label: 'Threads', placeholder: '@username' },
   ];
-
   return (
     <div>
       <h3 className="mb-4 text-sm font-bold text-white">Contact & Social</h3>
-
       <Field label="Email">
         <TextInput value={data.email as string} onChange={() => {}} placeholder="email@example.com" type="email" />
       </Field>
-
       <Field label="Phone">
         <TextInput value={data.phone as string} onChange={(v) => update('phone', v)} placeholder="+255 7XX XXX XXX" type="tel" />
       </Field>
-
       <Field label="Website">
         <TextInput value={data.website as string} onChange={(v) => update('website', v)} placeholder="https://yoursite.com" type="url" />
       </Field>
-
       <Field label="WhatsApp">
         <TextInput value={data.whatsapp as string} onChange={(v) => update('whatsapp', v)} placeholder="+255 7XX XXX XXX" type="tel" />
       </Field>
-
       <div className="mt-6 mb-2">
         <p className="text-xs font-bold text-gold uppercase tracking-wider">Social Links</p>
       </div>
-
       {socials.map(s => (
         <Field key={s.key} label={s.label}>
           <TextInput value={data[s.key] as string} onChange={(v) => update(s.key, v)} placeholder={s.placeholder} />
@@ -603,18 +557,13 @@ function ContactSection({ data, update }: { data: Record<string, unknown>; updat
   );
 }
 
-// ─── Sports & Interests Section ───────────────────────────────
 function SportsInterestsSection({ data, update }: { data: Record<string, unknown>; update: (k: string, v: unknown) => void }) {
   const sports = (data.sportsFollowing as string[]) || [];
   const { sports: availableSports, loading } = useSports();
-
-  // Use dynamic sport names from DB, fallback to empty while loading
   const sportNames = loading ? sports : availableSports.map(s => s.name);
-
   return (
     <div>
       <h3 className="mb-4 text-sm font-bold text-white">Sports & Interests</h3>
-
       <Field label="Sports You Follow" hint="Select all that apply">
         <ChipSelector
           selected={sports}
@@ -623,7 +572,6 @@ function SportsInterestsSection({ data, update }: { data: Record<string, unknown
           color="gold"
         />
       </Field>
-
       <div className="mt-6">
         <Field label="Interests" hint="What topics interest you?">
           <ChipSelector
@@ -638,14 +586,12 @@ function SportsInterestsSection({ data, update }: { data: Record<string, unknown
   );
 }
 
-// ─── Favorites Section ────────────────────────────────────────
 function FavoritesSection({ data }: { data: Record<string, unknown> }) {
   const favorites = (data.favorites as Array<{ id: string; targetType: string; targetName: string; targetHandle: string | null }>) || [];
   const [adding, setAdding] = useState(false);
   const [newType, setNewType] = useState('team');
   const [newName, setNewName] = useState('');
   const showToast = useUIStore((s) => s.showToast);
-
   const types = [
     { id: 'team', label: 'Team', icon: Users },
     { id: 'player', label: 'Player', icon: User },
@@ -655,7 +601,6 @@ function FavoritesSection({ data }: { data: Record<string, unknown> }) {
     { id: 'national_team', label: 'National Team', icon: Globe },
     { id: 'competition', label: 'Competition', icon: Award },
   ];
-
   const addFavorite = async () => {
     if (!newName.trim()) return;
     try {
@@ -668,45 +613,33 @@ function FavoritesSection({ data }: { data: Record<string, unknown> }) {
         showToast('Favorite added');
         setNewName('');
         setAdding(false);
-        // Reload data
         window.location.reload();
       }
     } catch { showToast('Failed to add'); }
   };
-
   const removeFavorite = async (id: string) => {
     try {
-      await fetch(`/api/profile/favorites?id=${id}`, { method: 'DELETE' });
+      await fetch(/api/profile/favorites?id=, { method: 'DELETE' });
       showToast('Removed');
       window.location.reload();
     } catch { /* ignore */ }
   };
-
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-sm font-bold text-white">Favorites</h3>
-        <button
-          onClick={() => setAdding(!adding)}
-          className="flex items-center gap-1 rounded-lg bg-gold px-3 py-1.5 text-xs font-bold text-black"
-        >
+        <button onClick={() => setAdding(!adding)} className="flex items-center gap-1 rounded-lg bg-gold px-3 py-1.5 text-xs font-bold text-black">
           <Plus className="h-3 w-3" /> Add
         </button>
       </div>
-
       {adding && (
         <div className="mb-4 rounded-xl bg-surface border border-surface-border p-3">
           <Field label="Type">
             <div className="flex flex-wrap gap-2">
               {types.map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => setNewType(t.id)}
-                  className={cn(
-                    'flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold',
-                    newType === t.id ? 'bg-gold text-black' : 'bg-surface-elevated text-muted-foreground'
-                  )}
-                >
+                <button key={t.id} onClick={() => setNewType(t.id)}
+                  className={cn('flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold',
+                    newType === t.id ? 'bg-gold text-black' : 'bg-surface-elevated text-muted-foreground')}>
                   <t.icon className="h-3 w-3" /> {t.label}
                 </button>
               ))}
@@ -715,16 +648,11 @@ function FavoritesSection({ data }: { data: Record<string, unknown> }) {
           <Field label="Name">
             <TextInput value={newName} onChange={setNewName} placeholder="e.g. Manchester United" />
           </Field>
-          <button
-            onClick={addFavorite}
-            disabled={!newName.trim()}
-            className="w-full rounded-xl bg-gold py-2 text-xs font-bold text-black disabled:opacity-50"
-          >
+          <button onClick={addFavorite} disabled={!newName.trim()} className="w-full rounded-xl bg-gold py-2 text-xs font-bold text-black disabled:opacity-50">
             Add Favorite
           </button>
         </div>
       )}
-
       {favorites.length === 0 ? (
         <p className="text-center text-xs text-muted-foreground py-8">No favorites yet. Add teams, players, coaches and more!</p>
       ) : (
@@ -740,10 +668,7 @@ function FavoritesSection({ data }: { data: Record<string, unknown> }) {
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {items.map(item => (
-                    <span
-                      key={item.id}
-                      className="flex items-center gap-1 rounded-lg bg-surface-elevated px-2 py-1 text-xs text-white"
-                    >
+                    <span key={item.id} className="flex items-center gap-1 rounded-lg bg-surface-elevated px-2 py-1 text-xs text-white">
                       {item.targetName}
                       <button onClick={() => removeFavorite(item.id)} className="text-muted-foreground hover:text-red-400">
                         <X className="h-3 w-3" />
@@ -760,14 +685,11 @@ function FavoritesSection({ data }: { data: Record<string, unknown> }) {
   );
 }
 
-// ─── Privacy Section ──────────────────────────────────────────
 function PrivacySection({ data, update }: { data: Record<string, unknown>; update: (k: string, v: unknown) => void }) {
   const privacy = (data.privacySettings as Record<string, boolean>) || {};
-
   const setPrivacy = (key: string, value: boolean) => {
     update('privacySettings', { ...privacy, [key]: value });
   };
-
   const items = [
     { key: 'showProfile', label: 'Public Profile', desc: 'Anyone can view your profile' },
     { key: 'showPhone', label: 'Show Phone', desc: 'Display phone number on profile' },
@@ -780,7 +702,6 @@ function PrivacySection({ data, update }: { data: Record<string, unknown>; updat
     { key: 'showOnline', label: 'Show Online Status', desc: 'Display when you are online' },
     { key: 'showLocation', label: 'Location Visibility', desc: 'Show your city/region' },
   ];
-
   return (
     <div>
       <h3 className="mb-4 text-sm font-bold text-white">Privacy Settings</h3>
@@ -799,14 +720,11 @@ function PrivacySection({ data, update }: { data: Record<string, unknown>; updat
   );
 }
 
-// ─── Notifications Section ────────────────────────────────────
 function NotificationsSection({ data, update }: { data: Record<string, unknown>; update: (k: string, v: unknown) => void }) {
   const prefs = (data.notifPrefs as Record<string, boolean>) || {};
-
   const setPref = (key: string, value: boolean) => {
     update('notifPrefs', { ...prefs, [key]: value });
   };
-
   const groups = [
     { title: 'Channels', items: [
       { key: 'push', label: 'Push Notifications', desc: 'Browser/device push' },
@@ -824,7 +742,6 @@ function NotificationsSection({ data, update }: { data: Record<string, unknown>;
       { key: 'playerUpdates', label: 'Player Updates', desc: 'Posts from followed players' },
     ]},
   ];
-
   return (
     <div>
       <h3 className="mb-4 text-sm font-bold text-white">Notification Preferences</h3>
@@ -848,78 +765,46 @@ function NotificationsSection({ data, update }: { data: Record<string, unknown>;
   );
 }
 
-// ─── Appearance Section ───────────────────────────────────────
 function AppearanceSection({ data, update }: { data: Record<string, unknown>; update: (k: string, v: unknown) => void }) {
   return (
     <div>
       <h3 className="mb-4 text-sm font-bold text-white">Appearance</h3>
-
       <Field label="Theme">
         <div className="flex gap-2">
           {['dark', 'light', 'system'].map(t => (
-            <button
-              key={t}
-              onClick={() => update('theme', t)}
-              className={cn(
-                'flex-1 rounded-xl border px-4 py-3 text-sm font-semibold capitalize transition-colors',
-                (data.theme as string) === t
-                  ? 'bg-gold text-black border-gold'
-                  : 'bg-surface border-surface-border text-muted-foreground hover:text-white'
-              )}
-            >
+            <button key={t} onClick={() => update('theme', t)}
+              className={cn('flex-1 rounded-xl border px-4 py-3 text-sm font-semibold capitalize transition-colors',
+                (data.theme as string) === t ? 'bg-gold text-black border-gold' : 'bg-surface border-surface-border text-muted-foreground hover:text-white')}>
               {t}
             </button>
           ))}
         </div>
       </Field>
-
       <Field label="Font Size">
         <div className="flex gap-2">
           {['small', 'medium', 'large'].map(s => (
-            <button
-              key={s}
-              onClick={() => update('fontSize', s)}
-              className={cn(
-                'flex-1 rounded-xl border px-4 py-3 text-sm font-semibold capitalize transition-colors',
-                (data.fontSize as string) === s
-                  ? 'bg-gold text-black border-gold'
-                  : 'bg-surface border-surface-border text-muted-foreground hover:text-white'
-              )}
-            >
+            <button key={s} onClick={() => update('fontSize', s)}
+              className={cn('flex-1 rounded-xl border px-4 py-3 text-sm font-semibold capitalize transition-colors',
+                (data.fontSize as string) === s ? 'bg-gold text-black border-gold' : 'bg-surface border-surface-border text-muted-foreground hover:text-white')}>
               {s}
             </button>
           ))}
         </div>
       </Field>
-
       <div className="mt-6 divide-y divide-surface-border">
-        <Toggle
-          checked={data.reducedMotion as boolean}
-          onChange={(v) => update('reducedMotion', v)}
-          label="Reduced Motion"
-          description="Minimize animations and transitions"
-        />
-        <Toggle
-          checked={data.highContrast as boolean}
-          onChange={(v) => update('highContrast', v)}
-          label="High Contrast"
-          description="Increase text/background contrast for readability"
-        />
+        <Toggle checked={data.reducedMotion as boolean} onChange={(v) => update('reducedMotion', v)} label="Reduced Motion" description="Minimize animations and transitions" />
+        <Toggle checked={data.highContrast as boolean} onChange={(v) => update('highContrast', v)} label="High Contrast" description="Increase text/background contrast for readability" />
       </div>
     </div>
   );
 }
 
-// ─── Role Profile Section (role-specific) ─────────────────────
 function RoleProfileSection({ data, update }: { data: Record<string, unknown>; update: (k: string, v: unknown) => void }) {
   const role = (data.role as string) || 'fan';
   const roleProfile = (data.roleProfile as Record<string, unknown>) || {};
-
   const updateRole = (key: string, value: unknown) => {
     update('roleProfile', { ...roleProfile, [key]: value });
   };
-
-  // Role-specific fields
   const roleConfigs: Record<string, Array<{ key: string; label: string; type: 'text' | 'textarea' | 'select' | 'chips' | 'fanTypes'; options?: string[]; placeholder?: string }>> = {
     fan: [
       { key: 'fanTypes', label: 'Fan Types', type: 'fanTypes' as const },
@@ -1027,9 +912,7 @@ function RoleProfileSection({ data, update }: { data: Record<string, unknown>; u
       { key: 'events', label: 'Events Held', type: 'text', placeholder: 'FA Cup Finals, Concerts' },
     ],
   };
-
   const fields = roleConfigs[role] || [];
-
   if (fields.length === 0) {
     return (
       <div>
@@ -1038,42 +921,23 @@ function RoleProfileSection({ data, update }: { data: Record<string, unknown>; u
       </div>
     );
   }
-
   return (
     <div>
       <h3 className="mb-1 text-sm font-bold text-white capitalize">{role} Profile</h3>
       <p className="mb-4 text-[10px] text-muted-foreground">Fields specific to your role: {role}</p>
-
       {fields.map(field => (
         <Field key={field.key} label={field.label}>
           {field.type === 'text' && (
-            <TextInput
-              value={roleProfile[field.key] as string}
-              onChange={(v) => updateRole(field.key, v)}
-              placeholder={field.placeholder}
-            />
+            <TextInput value={roleProfile[field.key] as string} onChange={(v) => updateRole(field.key, v)} placeholder={field.placeholder} />
           )}
           {field.type === 'textarea' && (
-            <TextArea
-              value={roleProfile[field.key] as string}
-              onChange={(v) => updateRole(field.key, v)}
-              placeholder={field.placeholder}
-              rows={3}
-            />
+            <TextArea value={roleProfile[field.key] as string} onChange={(v) => updateRole(field.key, v)} placeholder={field.placeholder} rows={3} />
           )}
           {field.type === 'select' && (
-            <Select
-              value={roleProfile[field.key] as string}
-              onChange={(v) => updateRole(field.key, v)}
-              options={field.options || []}
-              placeholder="Select..."
-            />
+            <Select value={roleProfile[field.key] as string} onChange={(v) => updateRole(field.key, v)} options={field.options || []} placeholder="Select..." />
           )}
           {field.type === 'fanTypes' && (
-            <FanTypeSelector
-              value={roleProfile[field.key] as { primary?: string; secondary?: string[] } | undefined}
-              onChange={(v) => updateRole(field.key, v)}
-            />
+            <FanTypeSelector value={roleProfile[field.key] as { primary?: string; secondary?: string[] } | undefined} onChange={(v) => updateRole(field.key, v)} />
           )}
         </Field>
       ))}
@@ -1081,14 +945,12 @@ function RoleProfileSection({ data, update }: { data: Record<string, unknown>; u
   );
 }
 
-// ─── Fan Type Selector (1 primary + up to 3 secondary) ────────
 function FanTypeSelector({ value, onChange }: {
   value: { primary?: string; secondary?: string[] } | undefined;
   onChange: (v: { primary?: string; secondary?: string[] }) => void;
 }) {
   const primary = value?.primary;
   const secondary = value?.secondary || [];
-
   const togglePrimary = (id: string) => {
     if (primary === id) {
       onChange({ ...value, primary: undefined });
@@ -1096,7 +958,6 @@ function FanTypeSelector({ value, onChange }: {
       onChange({ ...value, primary: id });
     }
   };
-
   const toggleSecondary = (id: string) => {
     if (secondary.includes(id)) {
       onChange({ ...value, secondary: secondary.filter(s => s !== id) });
@@ -1104,7 +965,6 @@ function FanTypeSelector({ value, onChange }: {
       onChange({ ...value, secondary: [...secondary, id] });
     }
   };
-
   return (
     <div>
       <p className="mb-2 text-[10px] font-bold text-gold uppercase tracking-wider">Primary Fan Type (required)</p>
@@ -1112,16 +972,9 @@ function FanTypeSelector({ value, onChange }: {
         {FAN_TYPES.map(ft => {
           const isSelected = primary === ft.id;
           return (
-            <button
-              key={ft.id}
-              onClick={() => togglePrimary(ft.id)}
-              className={cn(
-                'flex flex-col items-center gap-1 rounded-xl border p-3 text-center transition-all',
-                isSelected
-                  ? 'border-gold bg-gold/10 scale-[1.02]'
-                  : 'border-surface-border bg-surface hover:border-gold/30'
-              )}
-            >
+            <button key={ft.id} onClick={() => togglePrimary(ft.id)}
+              className={cn('flex flex-col items-center gap-1 rounded-xl border p-3 text-center transition-all',
+                isSelected ? 'border-gold bg-gold/10 scale-[1.02]' : 'border-surface-border bg-surface hover:border-gold/30')}>
               <span className="text-xl">{ft.icon}</span>
               <span className={cn('text-[10px] font-bold leading-tight', isSelected ? 'text-gold' : 'text-white')}>{ft.label}</span>
               <span className="text-[9px] text-muted-foreground leading-tight">{ft.desc}</span>
@@ -1134,28 +987,15 @@ function FanTypeSelector({ value, onChange }: {
           );
         })}
       </div>
-
-      <p className="mb-2 text-[10px] font-bold text-gold uppercase tracking-wider">
-        Secondary Fan Types (optional, up to 3)
-      </p>
+      <p className="mb-2 text-[10px] font-bold text-gold uppercase tracking-wider">Secondary Fan Types (optional, up to 3)</p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {FAN_TYPES.filter(ft => ft.id !== primary).map(ft => {
           const isSelected = secondary.includes(ft.id);
           const isDisabled = !isSelected && secondary.length >= 3;
           return (
-            <button
-              key={ft.id}
-              onClick={() => toggleSecondary(ft.id)}
-              disabled={isDisabled}
-              className={cn(
-                'flex flex-col items-center gap-1 rounded-xl border p-3 text-center transition-all',
-                isSelected
-                  ? 'border-blue-400 bg-blue-500/10'
-                  : isDisabled
-                    ? 'border-surface-border bg-surface opacity-40 cursor-not-allowed'
-                    : 'border-surface-border bg-surface hover:border-blue-400/30'
-              )}
-            >
+            <button key={ft.id} onClick={() => toggleSecondary(ft.id)} disabled={isDisabled}
+              className={cn('flex flex-col items-center gap-1 rounded-xl border p-3 text-center transition-all',
+                isSelected ? 'border-blue-400 bg-blue-500/10' : isDisabled ? 'border-surface-border bg-surface opacity-40 cursor-not-allowed' : 'border-surface-border bg-surface hover:border-blue-400/30')}>
               <span className="text-xl">{ft.icon}</span>
               <span className={cn('text-[10px] font-bold leading-tight', isSelected ? 'text-blue-400' : 'text-white')}>{ft.label}</span>
               <span className="text-[9px] text-muted-foreground leading-tight">{ft.desc}</span>
@@ -1163,7 +1003,6 @@ function FanTypeSelector({ value, onChange }: {
           );
         })}
       </div>
-
       {primary && (
         <p className="mt-3 text-[10px] text-muted-foreground">
           Primary: <span className="text-gold font-semibold">{FAN_TYPES.find(f => f.id === primary)?.label}</span>

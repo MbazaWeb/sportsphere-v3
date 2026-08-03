@@ -1,15 +1,15 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Crown, Zap, Sparkles, Heart, MessageCircle, Flame, ChevronDown, Shield, Crown as CrownIcon, Info, BarChart3, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useUIStore } from '@/store/uiStore';
-import { formatCount } from '@/store/useAppStore';
+import { useUIStore, formatCount } from '@/store/uiStore';
 import { useAuthStore } from '@/store/authStore';
 import { useNavigationStore } from '@/store/navigationStore';
 import { apiUserToViewing } from '@/types';
 import { FeedCard } from './FeedCard';
+import { CommentSheet } from './CommentSheet';
 import { formatTime } from '@/lib/format';
 
 // Types
@@ -83,7 +83,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
   const openTeamByName = async (teamName: string) => {
     const handleGuess = '@' + teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
     try {
-      const res = await fetch(`/api/users?handle=${encodeURIComponent(handleGuess)}`);
+      const res = await fetch(/api/users?handle=);
       if (res.ok) {
         const u = await res.json();
         setViewingUser(apiUserToViewing(u, false));
@@ -120,7 +120,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
 
   const openTeamByHandle = async (handle: string) => {
     try {
-      const res = await fetch(`/api/users?handle=${encodeURIComponent(handle)}`);
+      const res = await fetch(/api/users?handle=);
       if (res.ok) {
         const u = await res.json();
         setViewingUser(apiUserToViewing(u, false));
@@ -133,7 +133,6 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      {/* Live Match Card */}
       {featuredMatch && (
         <div className="premium-glow-border">
           <div className="relative overflow-hidden rounded-[14px] bg-gradient-to-br from-emerald-700 via-green-800 to-emerald-900">
@@ -188,7 +187,6 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
           <Crown className="h-4 w-4 text-gold" />
           <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Top Accounts</h3>
         </div>
-
         {isAuthenticated ? (
           leaderboard.length === 0 ? (
             <p className="text-xs text-muted-foreground py-2">No leaderboard data.</p>
@@ -199,7 +197,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                   key={item.id}
                   onClick={async () => {
                     try {
-                      const res = await fetch(`/api/users?handle=${encodeURIComponent(item.handle)}`);
+                      const res = await fetch(/api/users?handle=);
                       if (res.ok) {
                         const u = await res.json();
                         setViewingUser(apiUserToViewing(u, false));
@@ -272,7 +270,6 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
         posts.map((item) => <FeedCard key={item.id} item={item} onShare={onShare} onComment={onComment} formatTime={formatTime} />)
       )}
 
-      {/* Spotlight Videos */}
       {spotlightItems.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-3 mt-2">
@@ -281,7 +278,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
           </div>
           <div className="flex flex-col gap-3">
             {spotlightItems.map((item) => (
-              <div key={item.id} className="video-card-container bg-[#1e2126] rounded-2xl p-4 mb-0 border border-surface-border">
+              <div key={item.id} className="bg-[#1e2126] rounded-2xl p-4 mb-3 border border-surface-border">
                 <div className="mb-3">
                   <p className="text-white text-sm font-medium">{item.content}</p>
                 </div>
@@ -310,6 +307,13 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
             ))}
           </div>
         </div>
+      )}
+
+      {onComment && (
+        <CommentSheet 
+          itemId={onComment as string} 
+          onClose={() => onComment(null as any)} 
+        />
       )}
     </div>
   );
@@ -374,7 +378,7 @@ function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }: {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-bold uppercase text-white/70 tracking-wider">{match.league}</span>
                 <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold uppercase', match.status === 'live' ? 'bg-red-500 text-white' : 'bg-surface text-muted-foreground')}>
-                  {match.status === 'live' ? `Live · ${match.minute}'` : match.status.toUpperCase()}
+                  {match.status === 'live' ? Live · ' : match.status.toUpperCase()}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3">
