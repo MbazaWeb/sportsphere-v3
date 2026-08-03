@@ -12,8 +12,8 @@ import {
   BadgeCheck, Upload, ChevronDown
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import RegistrationModal from '@/components/registration/RegistrationModal';
-import ProUpgradeModal from '@/components/registration/ProUpgradeModal';
+import RegistrationModal from '@/components/auth/RegistrationModal';
+import ProUpgradeModal from '@/components/auth/ProUpgradeModal';
 import EditProfileModal from '@/components/profile/edit/EditProfileModal';
 import ProfileExplorer from '@/components/profiles/ProfileExplorer';
 import { BadgeStack } from '@/components/ui/RoleBadge';

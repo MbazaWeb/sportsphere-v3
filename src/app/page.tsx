@@ -13,7 +13,7 @@ import CreateTab from '@/components/create/CreateTab';
 import ActivityTab from '@/components/activity/ActivityTab';
 import ProfileTab from '@/components/profile/ProfileTab';
 import LoginModal from '@/components/auth/LoginModal';
-import RegistrationModal from '@/components/registration/RegistrationModal';
+import RegistrationModal from '@/components/auth/RegistrationModal';
 import ResetPasswordPage from '@/components/auth/ResetPasswordPage';
 import VerifyEmailModal from '@/components/auth/VerifyEmailModal';
 import ProfilePage from '@/components/profiles/ProfilePage';
