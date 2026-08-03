@@ -22,7 +22,7 @@ export function PeopleListModal({ userId, type, onClose }: PeopleListModalProps)
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(/api/follows?userId=\&type=\);
+        const res = await fetch(/api/follows?userId=&type=);
         if (res.ok) setPeople(await res.json());
       } catch { /* ignore */ }
       setLoading(false);
@@ -32,7 +32,7 @@ export function PeopleListModal({ userId, type, onClose }: PeopleListModalProps)
 
   const openProfile = async (person: typeof people[number]) => {
     try {
-      const res = await fetch(/api/users?handle=\);
+      const res = await fetch(/api/users?handle=);
       if (res.ok) {
         const u = await res.json();
         setViewingUser({
