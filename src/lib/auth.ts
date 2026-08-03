@@ -62,6 +62,7 @@ export function serializePublicUser(u: {
     email: u.email,
     handle: u.handle,
     avatar: u.avatarInitials || u.name.slice(0, 2).toUpperCase(),
+    avatarUrl: u.avatarUrl || null,
     role: u.role,
     verificationStatus: u.verificationStatus,
     isVerified: u.isVerified,

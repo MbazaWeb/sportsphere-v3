@@ -430,7 +430,7 @@ function MediaUpload({ type, mediaUrls, onChange }: { type: string; mediaUrls: s
       try {
         const form = new FormData();
         form.append('file', file);
-        const res = await fetch('/api/uploads', { method: 'POST', body: form });
+        const res = await fetch('/api/upload', { method: 'POST', body: form });
         const json = await res.json();
         if (res.ok && json.url) {
           // Replace the preview url with the returned public URL using the original snapshot

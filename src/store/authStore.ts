@@ -5,7 +5,7 @@ import type { ProfileTypeId } from '@/types';
 export type { ProfileTypeId };
 
 export interface UserProfile {
-  id: string; name: string; email: string; handle: string; avatar: string;
+  id: string; name: string; email: string; handle: string; avatar: string; avatarUrl?: string | null;
   role: ProfileTypeId; verificationStatus: "none"|"pending"|"verified"|"rejected";
   bio: string; sportsFollowing: string[]; registeredAt: string; roleData: Record<string,string>;
   isVerified?: boolean; emailVerified?: boolean;
@@ -86,7 +86,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const meRes = await fetch('/api/auth/me');
       if (meRes.ok) {
         const meData = await meRes.json();
-        set({ userProfile: meData as UserProfile });
+        set({ userProfile: (meData.user || meData) as UserProfile });
       }
 
       return { ok: true };

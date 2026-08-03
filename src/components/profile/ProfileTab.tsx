@@ -253,14 +253,18 @@ function LoggedInProfile({
         <div className="mb-6 flex items-start gap-4">
           <div className="relative">
             <div className={cn(
-              'flex h-20 w-20 items-center justify-center rounded-full border-2 text-2xl font-bold',
+              'flex h-20 w-20 items-center justify-center rounded-full border-2 text-2xl font-bold overflow-hidden',
               isVerified
                 ? 'border-gold bg-gold text-black'
                 : isPending
                   ? 'border-yellow-400 bg-yellow-500/10 text-yellow-400'
                   : 'border-gold bg-surface-elevated text-gold'
             )}>
-              {userProfile?.avatar || '?'}
+              {userProfile?.avatarUrl ? (
+                <img src={userProfile.avatarUrl} alt={userProfile.name || ''} className="h-full w-full object-cover" />
+              ) : (
+                userProfile?.avatar || '?'
+              )}
             </div>
             <button className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-gold">
               <Camera className="h-3.5 w-3.5 text-black" />
