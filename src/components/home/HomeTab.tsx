@@ -1031,9 +1031,16 @@ function SpotlightContent() {
         const gradient = gradients[index % gradients.length];
         return (
           <div key={item.id} className="relative h-[calc(100vh-8rem)] w-full snap-start snap-always flex-shrink-0 overflow-hidden">
-            <div className={`absolute inset-0 bg-gradient-to-b ${gradient}`} />
+            {item.mediaUrls && item.mediaUrls.length > 0 ? (
+              (item.postType === 'video' || item.postType === 'spotlight') ? (
+                <video src={item.mediaUrls[0]} className="absolute inset-0 h-full w-full object-cover" autoPlay muted loop playsInline preload="metadata" />
+              ) : (
+                <img src={item.mediaUrls[0]} alt={item.content || ''} className="absolute inset-0 h-full w-full object-cover" />
+              )
+            ) : (
+              <div className={`absolute inset-0 bg-gradient-to-b ${gradient}`} />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/10" />
-
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm">
                 <div className="ml-1.5 h-0 w-0 border-y-[10px] border-y-transparent border-l-[18px] border-l-white" />
