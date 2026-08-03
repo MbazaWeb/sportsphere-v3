@@ -11,9 +11,9 @@ import {
   Eye, ShieldCheck, Clock, CheckCircle2, AlertCircle, Sparkles,
   BadgeCheck, Upload, ChevronDown, Zap, Video, Image as ImageIcon,
   Share2, MapPin, Calendar, Link, Briefcase, School, Award,
-  Target, Flame, Crown, Star, Plus, Flag, Phone, Instagram, Twitter, Youtube, Linkedin, TikTok
+  Target, Flame, Crown, Star, Plus, Flag, Phone, Instagram, Twitter, Youtube, Linkedin, Music2
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import RegistrationModal from '@/components/registration/RegistrationModal';
 import ProUpgradeModal from '@/components/registration/ProUpgradeModal';
 import EditProfileModal from '@/components/profile/edit/EditProfileModal';
@@ -93,7 +93,36 @@ function LoggedInProfile({ onNavigate, onLogout }: { onNavigate: (section: strin
   const [activeTab, setActiveTab] = useState<'posts' | 'media' | 'spotlight'>('posts');
   const [realPosts, setRealPosts] = useState<Array<{ id: string; content: string; createdAt: string; likeCount: number; commentCount: number; postType: string; mediaUrls: string[] }>>([]);
   const [postsLoading, setPostsLoading] = useState(true);
-  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const coverInputRef = useRef<HTMLInputElement>(null);
+const [coverUploading, setCoverUploading] = useState(false);
+
+const handleCoverFile = async (
+  e: React.ChangeEvent<HTMLInputElement>
+) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("type", "cover");
+
+  try {
+    setCoverUploading(true);
+
+    const res = await fetch("/api/profile/avatar", {
+      method: "POST",
+      body: fd,
+    });
+
+    if (!res.ok) throw new Error();
+
+    window.location.reload();
+  } finally {
+    setCoverUploading(false);
+  }
+};
+
+const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
 
   const isVerified = userProfile?.verificationStatus === 'verified';
   const isPending = userProfile?.verificationStatus === 'pending';
@@ -110,7 +139,7 @@ function LoggedInProfile({ onNavigate, onLogout }: { onNavigate: (section: strin
     async function loadPosts() {
       try {
         const uid = userProfile?.id;
-        const url = uid ? /api/feed?type=for-you&userId= : '/api/feed?type=for-you';
+        const url = uid ? `/api/feed?type=for-youconst url = uid ? /api/feed?type=for-you&userId= : 'userId=${uid}` : `/api/feed?type=for-you`;
         const res = await fetch(url);
         if (res.ok) setRealPosts(await res.json());
       } catch { /* ignore */ }
@@ -122,10 +151,10 @@ function LoggedInProfile({ onNavigate, onLogout }: { onNavigate: (section: strin
   function timeAgo(dateStr: string) {
     const diff = Date.now() - new Date(dateStr).getTime();
     const m = Math.floor(diff / 60000);
-    if (m < 60) return ${m}m ago;
+    if (m < 60) return `${m}m ago`;
     const h = Math.floor(m / 60);
-    if (h < 24) return ${h}h ago;
-    return ${Math.floor(h / 24)}d ago;
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
   }
 
   const StatCard = ({ label, value, onClick }: { label: string; value: number | string; onClick?: () => void }) => (
@@ -178,7 +207,14 @@ function LoggedInProfile({ onNavigate, onLogout }: { onNavigate: (section: strin
         {/* ---- HERO/BANNER SECTION ---- */}
         <div className="relative -mx-4 -mt-4">
           {/* Cover */}
-          <div className={cn('h-44 w-full bg-gradient-to-br', userProfile?.coverGradient || 'from-emerald-600 to-emerald-900')}>
+          <div className={cn('relative h-36 md:h-40 w-full overflow-hidden rounded-b-3xl bg-gradient-to-br', userProfile?.coverGradient || 'from-emerald-600 to-emerald-900')}>
+            {userProfile?.coverUrl && (
+              <img
+                src={userProfile.coverUrl}
+                alt="Cover"
+                className="absolute inset-0 h-full w-full object-cover object-center"
+              />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-20" />
             {/* Edit cover button */}
@@ -218,8 +254,18 @@ function LoggedInProfile({ onNavigate, onLogout }: { onNavigate: (section: strin
               <button onClick={() => setEditOpen(true)} className="rounded-lg bg-surface border border-surface-border px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-surface-elevated">
                 <Edit className="mr-1 inline h-3 w-3" /> Edit
               </button>
-            </div>
+            
+<input
+  ref={coverInputRef}
+  type="file"
+  accept="image/*"
+  onChange={handleCoverFile}
+  className="hidden"
+/>
+
+</div>
           </div>
+
         </div>
 
         {/* ---- IDENTITY CARD ---- */}
@@ -406,32 +452,32 @@ function LoggedInProfile({ onNavigate, onLogout }: { onNavigate: (section: strin
                 </a>
               )}
               {userProfile?.whatsapp && (
-                <a href={https://wa.me/} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gold hover:underline">
+                <a href={`https://wa.me/${userProfile?.whatsapp}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gold hover:underline">
                   <Phone className="h-4 w-4" /> {userProfile.whatsapp}
                 </a>
               )}
               {userProfile?.socialInstagram && (
-                <a href={https://instagram.com/} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gold hover:underline">
+                <a href={`https://instagram.com/${userProfile?.socialInstagram}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gold hover:underline">
                   <Instagram className="h-4 w-4" /> {userProfile.socialInstagram}
                 </a>
               )}
               {userProfile?.socialX && (
-                <a href={https://x.com/} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gold hover:underline">
+                <a href={`https://x.com/${userProfile.socialX.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gold hover:underline">
                   <Twitter className="h-4 w-4" /> {userProfile.socialX}
                 </a>
               )}
               {userProfile?.socialTikTok && (
-                <a href={https://tiktok.com/@} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gold hover:underline">
-                  <TikTok className="h-4 w-4" /> {userProfile.socialTikTok}
+                <a href={`https://tiktok.com/@${userProfile.socialTikTok.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gold hover:underline">
+                  <Music2 className="h-4 w-4" /> {userProfile.socialTikTok}
                 </a>
               )}
               {userProfile?.socialLinkedIn && (
-                <a href={https://linkedin.com/in/} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gold hover:underline">
+                <a href={`https://linkedin.com/in/${userProfile.socialLinkedIn.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gold hover:underline">
                   <Linkedin className="h-4 w-4" /> {userProfile.socialLinkedIn}
                 </a>
               )}
               {userProfile?.socialYouTube && (
-                <a href={https://youtube.com/} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gold hover:underline">
+                <a href={`https://youtube.com/@${userProfile.socialYouTube.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gold hover:underline">
                   <Youtube className="h-4 w-4" /> {userProfile.socialYouTube}
                 </a>
               )}
@@ -460,7 +506,7 @@ function LoggedInProfile({ onNavigate, onLogout }: { onNavigate: (section: strin
           <div className="mt-2 grid grid-cols-3 gap-2">{moreItems.map((item) => (<button key={item.id} onClick={() => onNavigate(item.id)} className="flex flex-col items-center gap-2 rounded-xl bg-surface-elevated border border-surface-border p-4 transition-colors hover:bg-surface"><item.icon className={cn('h-5 w-5', item.color)} /><span className="text-[11px] font-medium text-muted-foreground">{item.label}</span></button>))}</div>
         </div>
 
-        {isAdvanced && <AdminVerificationPanel />}
+        
 
         <button onClick={onLogout} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 py-3 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/10"><LogOut className="h-4 w-4" /> Logout</button>
       </div>
@@ -561,7 +607,7 @@ function PeopleList({ title, onBack }: { title: string; onBack: () => void }) {
       if (!userProfile?.id) { setLoading(false); return; }
       try {
         const type = title === 'Following' ? 'following' : 'followers';
-        const res = await fetch(/api/follows?userId=&type=);
+        const res = await fetch(`/api/follows?userId=${userProfile.id}&type=${type}`);
         if (res.ok) { const data = await res.json(); setPeople(data); } else { setError('Failed to load.'); }
       } catch { setError('Network error.'); }
       setLoading(false);
@@ -571,7 +617,7 @@ function PeopleList({ title, onBack }: { title: string; onBack: () => void }) {
 
   const openProfile = async (person: typeof people[number]) => {
     try {
-      const res = await fetch(/api/users?handle=);
+      const res = await fetch(`/api/users?handle=${person.handle}`);
       if (res.ok) {
         const u = await res.json();
         const { apiUserToViewing } = await import('@/types');

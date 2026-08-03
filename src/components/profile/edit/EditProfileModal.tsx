@@ -7,7 +7,7 @@ import {
   ChevronRight, ChevronLeft, Search, Plus, Tag, Save, Loader2,
   Camera, Shield, BarChart3, Trophy, Users, Briefcase, Building,
   Star, Award, Clock, Target, FileText, Image as ImageIcon,
-  Link, Flag, Calendar, Instagram, Twitter, Youtube, Linkedin, TikTok
+  Link, Flag, Calendar, Instagram, Twitter, Youtube, Linkedin, Music2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
@@ -178,7 +178,7 @@ export default function EditProfileModal({ open, onClose }: { open: boolean; onC
         <div className="flex-shrink-0 h-0.5 bg-surface">
           <div
             className="h-full bg-gradient-to-r from-gold to-emerald-400 transition-all duration-300"
-            style={{ width: ${completion}% }}
+            style={{ width: `${completion}%` }}
           />
         </div>
 
@@ -336,7 +336,7 @@ function ChipSelector({ selected, onChange, options, color = 'gold' }: {
           className={cn(
             'rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors border',
             selected.includes(item)
-              ? ${colorClasses[color]} border-transparent
+              ? `${colorClasses[color]} border-transparent`
               : 'bg-surface border-surface-border text-muted-foreground hover:text-white'
           )}
         >
@@ -619,7 +619,7 @@ function FavoritesSection({ data }: { data: Record<string, unknown> }) {
   };
   const removeFavorite = async (id: string) => {
     try {
-      await fetch(/api/profile/favorites?id=, { method: 'DELETE' });
+      await fetch(`/api/profile/favorites?id=${id}`, { method: 'DELETE' });
       showToast('Removed');
       window.location.reload();
     } catch { /* ignore */ }

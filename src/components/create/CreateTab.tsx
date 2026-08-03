@@ -11,8 +11,8 @@ import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { useNavigationStore } from '@/store/navigationStore';
 import { PostComposer } from './PostComposer';
-import { PhotoUpload } from './PhotoUpload';
-import { VideoUpload } from './VideoUpload';
+import { PhotoUpload } from '@/components/uploads/PhotoUpload';
+import { VideoUpload } from '@/components/uploads/VideoUpload';
 import { PollCreator } from './PollCreator';
 import { PredictionCreator } from './PredictionCreator';
 

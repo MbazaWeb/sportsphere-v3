@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       id: true, name: true, email: true, handle: true,
       avatarUrl: true, avatarInitials: true, role: true,
       verificationStatus: true, isVerified: true, emailVerified: true,
-      bio: true, location: true, coverGradient: true,
+      bio: true, location: true, coverGradient: true, coverUrl: true,
       followerCount: true, followingCount: true, postCount: true,
       sportsFollowing: true, roleData: true, registeredAt: true,
       roleId: true, roleTypeId: true,

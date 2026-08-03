@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useRef, useState, useEffect } from 'react';
 import { X, Scissors, Play, Pause, Check, Save, RotateCcw } from 'lucide-react';
@@ -163,7 +163,7 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60);
     const s = Math.floor(sec % 60);
-    return ${String(m).padStart(2, '0')}:;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
   const getTrimPercentage = (time: number) => (time / duration) * 100;
@@ -227,15 +227,15 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
                 {/* Played progress */}
                 <div 
                   className="absolute top-0 left-0 h-full bg-gold rounded-full transition-all"
-                  style={{ width: ${getTrimPercentage(currentTime)}% }}
+                  style={{ width: `${getTrimPercentage(currentTime)}%` }}
                 />
                 
                 {/* Trimmed selection area */}
                 <div 
                   className="absolute top-0 h-full bg-gold/20 rounded-full pointer-events-none"
                   style={{ 
-                    left: ${getTrimPercentage(startTime)}%, 
-                    width: ${getTrimPercentage(endTime - startTime)}% 
+                    left: `${getTrimPercentage(startTime)}%`, 
+                    width: `${getTrimPercentage(endTime - startTime)}%` 
                   }}
                 />
 
@@ -246,7 +246,7 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
                     "absolute top-1/2 -translate-y-1/2 h-4 w-2 bg-gold rounded-sm cursor-ew-resize z-10 hover:scale-125 transition-transform",
                     isDraggingStart && "scale-125 ring-2 ring-gold/50"
                   )}
-                  style={{ left: ${getTrimPercentage(startTime)}% }}
+                  style={{ left: `${getTrimPercentage(startTime)}%` }}
                 />
 
                 {/* End Handle */}
@@ -256,7 +256,7 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
                     "absolute top-1/2 -translate-y-1/2 h-4 w-2 bg-gold rounded-sm cursor-ew-resize z-10 hover:scale-125 transition-transform",
                     isDraggingEnd && "scale-125 ring-2 ring-gold/50"
                   )}
-                  style={{ left: ${getTrimPercentage(endTime)}% }}
+                  style={{ left: `${getTrimPercentage(endTime)}%` }}
                 />
               </div>
             </div>

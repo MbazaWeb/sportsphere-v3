@@ -19,6 +19,7 @@ export const USER_SELECT = {
   bio: true,
   location: true,
   coverGradient: true,
+  coverUrl: true,
   followerCount: true,
   followingCount: true,
   postCount: true,

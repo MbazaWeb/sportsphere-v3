@@ -47,6 +47,7 @@ export function serializePublicUser(u: {
   bio: string | null;
   location: string | null;
   coverGradient: string;
+  coverUrl: string | null;
   followerCount: number;
   followingCount: number;
   postCount: number;
@@ -70,6 +71,7 @@ export function serializePublicUser(u: {
     bio: u.bio || '',
     location: u.location || '',
     coverGradient: u.coverGradient,
+    coverUrl: u.coverUrl || null,
     followerCount: u.followerCount,
     followingCount: u.followingCount,
     postCount: u.postCount,

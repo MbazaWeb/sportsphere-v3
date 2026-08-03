@@ -13,50 +13,123 @@ cloudinary.config({
 export async function PUT(request: NextRequest) {
   try {
     const userId = request.headers.get('x-user-id');
-    if (!userId) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Authentication required.' },
+        { status: 401 }
+      );
+    }
 
     const body = await request.json();
-    const avatarBase64 = body.avatarBase64 as string | undefined;
-    if (!avatarBase64) return NextResponse.json({ error: 'No image provided.' }, { status: 400 });
 
-    const m = avatarBase64.match(/^data:(image\/\w+);base64,(.*)$/);
-    if (!m) return NextResponse.json({ error: 'Invalid image data.' }, { status: 400 });
+    const type = body.type === 'cover' ? 'cover' : 'avatar';
 
-    const mime = m[1];
-    const data = m[2];
-    const buffer = Buffer.from(data, 'base64');
+    const imageBase64 =
+      type === 'cover'
+        ? body.coverBase64
+        : body.avatarBase64;
 
-    // Upload to Cloudinary
-    const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          folder: 'sportsphere/avatars',
-          public_id: `${userId}-avatar`,
-          overwrite: true,
-          resource_type: 'image',
-          transformation: [
-            { width: 400, height: 400, crop: 'fill', gravity: 'face' },
-            { quality: 'auto', fetch_format: 'auto' },
-          ],
-        },
-        (error, result) => {
-          if (error || !result) reject(error);
-          else resolve(result as { secure_url: string });
-        }
+    if (!imageBase64) {
+      return NextResponse.json(
+        { error: 'No image provided.' },
+        { status: 400 }
       );
-      stream.end(buffer);
+    }
+
+    const m = imageBase64.match(/^data:(image\/\w+);base64,(.*)$/);
+
+    if (!m) {
+      return NextResponse.json(
+        { error: 'Invalid image.' },
+        { status: 400 }
+      );
+    }
+
+    const buffer = Buffer.from(m[2], 'base64');
+
+    const upload = await new Promise<any>((resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream(
+          {
+            folder:
+              type === 'cover'
+                ? 'sportsphere/covers'
+                : 'sportsphere/avatars',
+
+            public_id:
+              type === 'cover'
+                ? `${userId}-cover`
+                : `${userId}-avatar`,
+
+            overwrite: true,
+
+            resource_type: 'image',
+
+            transformation:
+              type === 'cover'
+                ? [
+                    {
+                      width: 1600,
+                      height: 600,
+                      crop: 'fill'
+                    },
+                    {
+                      quality: 'auto',
+                      fetch_format: 'auto'
+                    }
+                  ]
+                : [
+                    {
+                      width: 400,
+                      height: 400,
+                      crop: 'fill',
+                      gravity: 'face'
+                    },
+                    {
+                      quality: 'auto',
+                      fetch_format: 'auto'
+                    }
+                  ]
+          },
+          (err, result) => {
+            if (err) reject(err);
+            else resolve(result);
+          }
+        )
+        .end(buffer);
     });
 
-    const avatarUrl = result.secure_url;
+    if (type === 'cover') {
+      await db.user.update({
+        where: { id: userId },
+        data: {
+          coverUrl: upload.secure_url
+        }
+      });
+
+      return NextResponse.json({
+        coverUrl: upload.secure_url
+      });
+    }
 
     await db.user.update({
       where: { id: userId },
-      data: { avatarUrl },
+      data: {
+        avatarUrl: upload.secure_url
+      }
     });
 
-    return NextResponse.json({ avatarUrl });
-  } catch (error) {
-    console.error('Avatar upload error:', error);
-    return NextResponse.json({ error: 'Failed to upload avatar.' }, { status: 500 });
+    return NextResponse.json({
+      avatarUrl: upload.secure_url
+    });
+
+  } catch (e) {
+    console.error(e);
+
+    return NextResponse.json(
+      { error: 'Upload failed.' },
+      { status: 500 }
+    );
   }
 }

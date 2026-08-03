@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Crown, Zap, Sparkles, Heart, MessageCircle, Flame, ChevronDown, Shield, Crown as CrownIcon, Info, BarChart3, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useUIStore, formatCount } from '@/store/uiStore';
+import { useUIStore } from '@/store/uiStore';
+import { formatCount } from '@/store/useAppStore';
 import { useAuthStore } from '@/store/authStore';
 import { useNavigationStore } from '@/store/navigationStore';
 import { apiUserToViewing } from '@/types';
@@ -83,7 +84,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
   const openTeamByName = async (teamName: string) => {
     const handleGuess = '@' + teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
     try {
-      const res = await fetch(/api/users?handle=);
+      const res = await fetch(`/api/users?handle=${encodeURIComponent(handleGuess)}`);
       if (res.ok) {
         const u = await res.json();
         setViewingUser(apiUserToViewing(u, false));
@@ -120,7 +121,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
 
   const openTeamByHandle = async (handle: string) => {
     try {
-      const res = await fetch(/api/users?handle=);
+      const res = await fetch(`/api/users?handle=${encodeURIComponent(handle)}`);
       if (res.ok) {
         const u = await res.json();
         setViewingUser(apiUserToViewing(u, false));
@@ -197,7 +198,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                   key={item.id}
                   onClick={async () => {
                     try {
-                      const res = await fetch(/api/users?handle=);
+                      const res = await fetch(`/api/users?handle=${encodeURIComponent(item.handle)}`);
                       if (res.ok) {
                         const u = await res.json();
                         setViewingUser(apiUserToViewing(u, false));
@@ -309,12 +310,6 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
         </div>
       )}
 
-      {onComment && (
-        <CommentSheet 
-          itemId={onComment as string} 
-          onClose={() => onComment(null as any)} 
-        />
-      )}
     </div>
   );
 }
@@ -378,7 +373,6 @@ function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }: {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-bold uppercase text-white/70 tracking-wider">{match.league}</span>
                 <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold uppercase', match.status === 'live' ? 'bg-red-500 text-white' : 'bg-surface text-muted-foreground')}>
-                  {match.status === 'live' ? Live · ' : match.status.toUpperCase()}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3">
