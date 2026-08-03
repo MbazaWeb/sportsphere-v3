@@ -14,9 +14,8 @@ import { BadgeStack } from '@/components/ui/RoleBadge';
 import { useState, useRef, useEffect, useCallback } from 'react';
 
 const SUBTABS: { id: HomeSubTab; label: string }[] = [
-  { id: 'for-you',   label: 'For You'   },
-  { id: 'trending',  label: 'Trending'  },
-  { id: 'spotlight', label: 'Spotlight' },
+  { id: 'for-you',   label: 'Sportlights' },
+  { id: 'trending',  label: 'Trending'    },
 ];
 
 // --- Types from API ---
@@ -320,9 +319,8 @@ export default function HomeTab() {
       </header>
 
       <motion.div key={homeSubTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
-        {homeSubTab === 'for-you'   && <ForYouContent onShare={setShareId} onComment={setCommentId} />}
+        {homeSubTab === 'for-you'   && <SportlightsContent onShare={setShareId} onComment={setCommentId} />}
         {homeSubTab === 'trending'  && <TrendingContent />}
-        {homeSubTab === 'spotlight' && <SpotlightContent />}
       </motion.div>
 
       <AnimatePresence>
@@ -358,22 +356,24 @@ function CardSkeleton() {
   );
 }
 
-function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; onComment: (id: string) => void }) {
+function SportlightsContent({ onShare, onComment }: { onShare: (id: string) => void; onComment: (id: string) => void }) {
   const [liveMatches, setLiveMatches] = useState<ApiMatch[]>([]);
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [teams, setTeams] = useState<Array<{ id: string; name: string; handle: string; avatarInitials: string | null; coverGradient: string }>>([]);
   const [leaderboard, setLeaderboard] = useState<Array<{ id: string; rank: number; name: string; handle: string; avatarInitials: string | null; points: number; isVerified: boolean; role: string }>>([]);
+  const [spotlightItems, setSpotlightItems] = useState<ApiSpotlightItem[]>([]);
   const [loading, setLoading] = useState(true);
   const setViewingUser = useUIStore((s) => s.setViewingUser);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [matchesRes, feedRes, usersRes, leaderboardRes] = await Promise.all([
+        const [matchesRes, feedRes, usersRes, leaderboardRes, spotlightRes] = await Promise.all([
           fetch('/api/matches?status=live'),
           fetch('/api/feed?type=for-you'),
           fetch('/api/users'),
           fetch('/api/leaderboard'),
+          fetch('/api/spotlight'),
         ]);
         if (matchesRes.ok) setLiveMatches(await matchesRes.json());
         if (feedRes.ok) setPosts(await feedRes.json());
@@ -382,6 +382,7 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
           setTeams(allUsers.filter((u: { role: string }) => u.role === 'team').slice(0, 10));
         }
         if (leaderboardRes.ok) setLeaderboard(await leaderboardRes.json());
+        if (spotlightRes.ok) setSpotlightItems(await spotlightRes.json());
       } catch (e) { }
       setLoading(false);
     }
@@ -621,6 +622,40 @@ function ForYouContent({ onShare, onComment }: { onShare: (id: string) => void; 
         </div>
       ) : (
         posts.map((item) => <FeedCard key={item.id} item={item} onShare={onShare} onComment={onComment} formatTime={formatTime} />)
+      )}
+
+      {/* ── Spotlight Videos ── */}
+      {spotlightItems.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-3 mt-2">
+            <Zap className="h-4 w-4 text-gold" />
+            <p className="text-sm font-bold text-white">Spotlight Videos</p>
+          </div>
+          <div className="flex flex-col gap-3">
+            {spotlightItems.map((item) => (
+              <div key={item.id} className="relative overflow-hidden rounded-2xl bg-surface-elevated border border-surface-border">
+                {item.mediaUrls && item.mediaUrls.length > 0 ? (
+                  (item.postType === 'video' || item.postType === 'spotlight') ? (
+                    <video src={item.mediaUrls[0]} className="w-full max-h-72 object-cover rounded-t-2xl" controls playsInline preload="metadata" />
+                  ) : (
+                    <img src={item.mediaUrls[0]} alt={item.content || ''} className="w-full max-h-72 object-cover rounded-t-2xl" />
+                  )
+                ) : (
+                  <div className="h-48 bg-gradient-to-br from-emerald-700 to-green-900 flex items-center justify-center rounded-t-2xl">
+                    <Zap className="h-12 w-12 text-white/30" />
+                  </div>
+                )}
+                <div className="p-3">
+                  <p className="text-sm text-white">{item.content}</p>
+                  <div className="flex items-center gap-4 mt-2">
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground"><Heart className="h-3 w-3" />{formatCount(item.likeCount)}</span>
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground"><MessageCircle className="h-3 w-3" />{formatCount(item.commentCount)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
