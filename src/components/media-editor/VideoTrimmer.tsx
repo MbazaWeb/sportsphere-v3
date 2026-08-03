@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useRef, useState, useEffect } from 'react';
 import { X, Scissors, Play, Pause, Check, Save, RotateCcw } from 'lucide-react';
@@ -7,11 +7,12 @@ import { cn } from '@/lib/utils';
 interface VideoTrimmerProps {
   file: File;
   objectUrl: string;
+  type: 'video' | 'spotlight';
   onSave: (file: File) => void;
   onCancel: () => void;
 }
 
-export function VideoTrimmer({ file, objectUrl, onSave, onCancel }: VideoTrimmerProps) {
+export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoTrimmerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -32,17 +33,22 @@ export function VideoTrimmer({ file, objectUrl, onSave, onCancel }: VideoTrimmer
       videoRef.current.onloadedmetadata = () => {
         const dur = videoRef.current!.duration;
         setDuration(dur);
-        // Enforce 30s cap (if video is somehow longer, end at 30s)
-        setEndTime(Math.min(dur, 30));
+        
+        const MAX_DURATION = type === 'spotlight' ? 30 : 60;
+        if (dur > MAX_DURATION) {
+          setEndTime(MAX_DURATION);
+        } else {
+          setEndTime(dur);
+        }
       };
     }
-  }, [objectUrl]);
+  }, [objectUrl, file.type, type]);
 
   // Auto-pause when reaching the end trim point
   useEffect(() => {
     if (videoRef.current && isPlaying) {
       if (currentTime >= endTime) {
-             videoRef.current?.pause();
+        videoRef.current.pause();
         setIsPlaying(false);
         setCurrentTime(endTime);
       }
@@ -55,7 +61,6 @@ export function VideoTrimmer({ file, objectUrl, onSave, onCancel }: VideoTrimmer
       videoRef.current.pause();
       setIsPlaying(false);
     } else {
-      // If at the end, jump back to start
       if (currentTime >= endTime) {
         videoRef.current.currentTime = startTime;
         setCurrentTime(startTime);
@@ -98,15 +103,16 @@ export function VideoTrimmer({ file, objectUrl, onSave, onCancel }: VideoTrimmer
       const newTime = Math.max(0, Math.min(duration, x * duration));
 
       if (isDraggingStart) {
-        const clamped = Math.min(newTime, endTime - 0.5); // Keep min 0.5s gap
+        const clamped = Math.min(newTime, endTime - 0.5);
         setStartTime(clamped);
         if (videoRef.current && videoRef.current.currentTime < clamped) {
           videoRef.current.currentTime = clamped;
           setCurrentTime(clamped);
         }
       } else if (isDraggingEnd) {
-        const clamped = Math.max(newTime, startTime + 0.5); // Keep min 0.5s gap
-        setEndTime(Math.min(clamped, 30)); // Enforce 30s max
+        const MAX_DURATION = type === 'spotlight' ? 30 : 60;
+        const clamped = Math.max(newTime, startTime + 0.5);
+        setEndTime(Math.min(clamped, MAX_DURATION));
         if (videoRef.current && videoRef.current.currentTime > clamped) {
           videoRef.current.currentTime = clamped;
           setCurrentTime(clamped);
@@ -128,29 +134,21 @@ export function VideoTrimmer({ file, objectUrl, onSave, onCancel }: VideoTrimmer
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDraggingStart, isDraggingEnd, duration, startTime, endTime]);
+  }, [isDraggingStart, isDraggingEnd, duration, startTime, endTime, type]);
 
   // --- Apply Trim & Save ---
   const handleTrimAndSave = async () => {
     setIsProcessing(true);
     
-    // Determine if trimming actually happened
     const isTrimmed = startTime > 0.1 || endTime < duration - 0.1;
     
     if (!isTrimmed) {
-      // No trim needed, just pass the original file
       setIsProcessing(false);
       onSave(file);
       return;
     }
 
-    // In a production environment, we'd use FFmpeg.wasm or a backend API endpoint to cut the video.
-    // For this implementation, we mark it and send the trim metadata to the backend via the filename,
-    // OR we send the trim points along with the file if the API supports it.
-    // Here we pass the original file to the upload endpoint, and the backend will handle trimming.
-    
     try {
-      // Simulate processing for the UI (since actual trimming happens on backend)
       setTimeout(() => {
         setIsProcessing(false);
         onSave(file);
@@ -165,7 +163,7 @@ export function VideoTrimmer({ file, objectUrl, onSave, onCancel }: VideoTrimmer
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60);
     const s = Math.floor(sec % 60);
-    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    return ${String(m).padStart(2, '0')}:;
   };
 
   const getTrimPercentage = (time: number) => (time / duration) * 100;
@@ -220,7 +218,7 @@ export function VideoTrimmer({ file, objectUrl, onSave, onCancel }: VideoTrimmer
                 const rect = containerRef.current.getBoundingClientRect();
                 const x = (e.clientX - rect.left) / rect.width;
                 const time = Math.max(0, Math.min(duration, x * duration));
-                if (videoRef.current) { videoRef.current.currentTime = time; }
+                if (videoRef.current) videoRef.current.currentTime = time;
                 setCurrentTime(time);
               }}
             >
@@ -229,15 +227,15 @@ export function VideoTrimmer({ file, objectUrl, onSave, onCancel }: VideoTrimmer
                 {/* Played progress */}
                 <div 
                   className="absolute top-0 left-0 h-full bg-gold rounded-full transition-all"
-                  style={{ width: `${getTrimPercentage(currentTime)}%` }}
+                  style={{ width: ${getTrimPercentage(currentTime)}% }}
                 />
                 
                 {/* Trimmed selection area */}
                 <div 
                   className="absolute top-0 h-full bg-gold/20 rounded-full pointer-events-none"
                   style={{ 
-                    left: `${getTrimPercentage(startTime)}%`, 
-                    width: `${getTrimPercentage(endTime - startTime)}%` 
+                    left: ${getTrimPercentage(startTime)}%, 
+                    width: ${getTrimPercentage(endTime - startTime)}% 
                   }}
                 />
 
@@ -248,7 +246,7 @@ export function VideoTrimmer({ file, objectUrl, onSave, onCancel }: VideoTrimmer
                     "absolute top-1/2 -translate-y-1/2 h-4 w-2 bg-gold rounded-sm cursor-ew-resize z-10 hover:scale-125 transition-transform",
                     isDraggingStart && "scale-125 ring-2 ring-gold/50"
                   )}
-                  style={{ left: `${getTrimPercentage(startTime)}%` }}
+                  style={{ left: ${getTrimPercentage(startTime)}% }}
                 />
 
                 {/* End Handle */}
@@ -258,7 +256,7 @@ export function VideoTrimmer({ file, objectUrl, onSave, onCancel }: VideoTrimmer
                     "absolute top-1/2 -translate-y-1/2 h-4 w-2 bg-gold rounded-sm cursor-ew-resize z-10 hover:scale-125 transition-transform",
                     isDraggingEnd && "scale-125 ring-2 ring-gold/50"
                   )}
-                  style={{ left: `${getTrimPercentage(endTime)}%` }}
+                  style={{ left: ${getTrimPercentage(endTime)}% }}
                 />
               </div>
             </div>
@@ -277,7 +275,7 @@ export function VideoTrimmer({ file, objectUrl, onSave, onCancel }: VideoTrimmer
             </div>
             <div className="flex items-center gap-1 text-gold">
               <span className="h-1.5 w-1.5 rounded-full bg-gold animate-pulse" />
-              Max 30s
+              Max {type === 'spotlight' ? '30' : '60'}s
             </div>
           </div>
 
@@ -285,8 +283,9 @@ export function VideoTrimmer({ file, objectUrl, onSave, onCancel }: VideoTrimmer
           <div className="flex gap-3 mt-4">
             <button
               onClick={() => {
+                const MAX_DURATION = type === 'spotlight' ? 30 : 60;
                 setStartTime(0);
-                setEndTime(Math.min(duration, 30));
+                setEndTime(Math.min(duration, MAX_DURATION));
                 if (videoRef.current) {
                   videoRef.current.currentTime = 0;
                   setCurrentTime(0);

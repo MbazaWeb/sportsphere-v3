@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef } from 'react';
 import { Camera, X, Plus } from 'lucide-react';
@@ -24,23 +24,12 @@ export function VideoUpload({ mediaUrls, onChange, type }: VideoUploadProps) {
     
     const file = files[0];
     
-    // VALIDATION: Check video duration BEFORE opening editor
-    const video = document.createElement('video');
-    video.preload = 'metadata';
-    video.onloadedmetadata = () => {
-      window.URL.revokeObjectURL(video.src);
-      if (video.duration > 30) {
-        alert(`Video must be under 30 seconds. Current: ${Math.round(video.duration)}s`);
-        return;
-      }
-      
-      // If valid, open the editor
-      const url = URL.createObjectURL(file);
-      setSelectedFile(file);
-      setObjectUrl(url);
-      setShowEditor(true);
-    };
-    video.src = URL.createObjectURL(file);
+    // Always open the editor. The editor will handle the trimming.
+    const url = URL.createObjectURL(file);
+    setSelectedFile(file);
+    setObjectUrl(url);
+    setShowEditor(true);
+    
     e.target.value = '';
   };
 
@@ -92,7 +81,7 @@ export function VideoUpload({ mediaUrls, onChange, type }: VideoUploadProps) {
     <>
       <div className="flex flex-col gap-3">
         {mediaUrls.length > 0 && (
-          <div className={`grid gap-2 ${mediaUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+          <div className={grid gap-2 }>
             {mediaUrls.map((url, i) => (
               <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-surface border border-surface-border">
                 <video src={url} className="h-full w-full object-cover" controls />
@@ -123,7 +112,7 @@ export function VideoUpload({ mediaUrls, onChange, type }: VideoUploadProps) {
               <p className="text-sm font-semibold text-white">
                 Tap to select {type === 'video' ? 'video' : 'reel'}
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">Max 30 seconds</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Max {type === 'spotlight' ? '30' : '60'} seconds</p>
             </div>
             <input ref={fileInputRef} type="file" accept="video/*" onChange={handleFileSelect} className="hidden" />
           </label>
@@ -143,7 +132,6 @@ export function VideoUpload({ mediaUrls, onChange, type }: VideoUploadProps) {
         </div>
       </div>
 
-      {/* Editor Modal */}
       {showEditor && selectedFile && objectUrl && (
         <MediaEditor
           type={type}
