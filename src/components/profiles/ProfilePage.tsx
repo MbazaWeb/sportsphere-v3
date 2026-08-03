@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { type ProfileTypeConfig, type ProfileTypeId } from './profileConfig';
 import ProfileHeader from './ProfileHeader';
-import ProfileTabs from './ProfileTabs';
+import { ProfileTabs } from './ProfileTabs';
 import TabContent from './TabContent';
 import { motion } from 'framer-motion';
 

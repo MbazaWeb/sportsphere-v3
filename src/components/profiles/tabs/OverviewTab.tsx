@@ -1,12 +1,17 @@
-﻿'use client';
+'use client';
 
 import { BarChart3, Info } from 'lucide-react';
 import { formatCount } from '@/store/useAppStore';
-import type { ApiUser, ViewingUser } from '@/types';
+import type { ApiUser } from '../types';
 
 interface OverviewTabProps {
   apiUser: ApiUser | null;
-  user: ViewingUser;
+  user: {
+    followers: number;
+    following: number;
+    posts: number;
+    joined: string;
+  };
   role: string;
 }
 
@@ -37,5 +42,10 @@ export function OverviewTab({ apiUser, user }: OverviewTabProps) {
 }
 
 function StatCard({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-xl bg-surface p-3 text-center"><p className="text-sm font-bold text-gold">{value}</p><p className="text-[10px] text-muted-foreground">{label}</p></div>;
+  return (
+    <div className="rounded-xl bg-surface p-3 text-center">
+      <p className="text-sm font-bold text-gold">{value}</p>
+      <p className="text-[10px] text-muted-foreground">{label}</p>
+    </div>
+  );
 }

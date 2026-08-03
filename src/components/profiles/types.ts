@@ -1,4 +1,4 @@
-﻿export interface ApiUser {
+export interface ApiUser {
   id: string;
   name: string;
   handle: string;
@@ -16,6 +16,7 @@
   city?: string | null;
   aboutMe?: string | null;
   roleProfile?: Record<string, unknown>;
+  verificationStatus: string;
 }
 
 export interface ApiPost {

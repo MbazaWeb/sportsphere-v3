@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { cn } from '@/lib/utils';
-import { MapPin, Calendar } from 'lucide-react';
+import { MapPin, Calendar, ShieldCheck } from 'lucide-react';
 import { BadgeStack } from '@/components/ui/RoleBadge';
 import type { ViewingUser } from '@/types';
 

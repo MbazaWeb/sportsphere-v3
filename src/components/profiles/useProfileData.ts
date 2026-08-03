@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useUIStore } from '@/store/uiStore';
@@ -14,7 +14,7 @@ export function useProfileData(viewingHandle: string | undefined) {
     if (!viewingHandle) return;
     setLoading(true);
     try {
-      const res = await fetch(/api/users?handle=);
+      const res = await fetch(`/api/users?handle=${encodeURIComponent(viewingHandle)}`);
       if (res.ok) {
         const data = await res.json();
         setApiUser(data);
@@ -34,7 +34,7 @@ export function useProfileData(viewingHandle: string | undefined) {
           posts: data.postCount || 0,
           isFollowing: false,
         });
-        const postsRes = await fetch(/api/feed?userId=);
+        const postsRes = await fetch(`/api/feed?userId=${data.id}`);
         if (postsRes.ok) setUserPosts(await postsRes.json());
       }
     } catch (e) { /* ignore */ }

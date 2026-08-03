@@ -1,11 +1,13 @@
-﻿'use client';
+'use client';
 
 import { Info, Globe, MapPin, Award } from 'lucide-react';
-import type { ApiUser, ViewingUser } from '@/types';
+import type { ApiUser } from '../types';
 
 interface AboutTabProps {
   apiUser: ApiUser | null;
-  user: ViewingUser;
+  user: {
+    bio: string | null;
+  };
   role: string;
 }
 
@@ -26,7 +28,7 @@ export function AboutTab({ apiUser, user, role }: AboutTabProps) {
           <h3 className="mb-3 flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider"><Award className="h-4 w-4" /> {role} Info</h3>
           <div className="grid grid-cols-2 gap-3">
             {Object.entries(rp).slice(0, 6).map(([key, value]) => (
-              <div key={key} className="rounded-xl bg-surface p-3"><p className="text-[10px] text-muted-foreground uppercase">{key.replace(/([A-Z])/g, ' ').trim()}</p><p className="text-sm font-bold text-white">{String(value)}</p></div>
+              <div key={key} className="rounded-xl bg-surface p-3"><p className="text-[10px] text-muted-foreground uppercase">{key.replace(/([A-Z])/g, ' $1').trim()}</p><p className="text-sm font-bold text-white">{String(value)}</p></div>
             ))}
           </div>
         </div>
