@@ -383,19 +383,36 @@ function Composer({ type, onBack }: { type: string; onBack: () => void }) {
   );
 }
 
-// ─── Media Upload (functional — accepts URL or file selection placeholder) ──
+// ─── Media Upload with Preview + Editor ────────────────────────
 function MediaUpload({ type, mediaUrls, onChange }: { type: string; mediaUrls: string[]; onChange: (urls: string[]) => void }) {
-  const [urlInput, setUrlInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const createdUrls = useRef<string[]>([]);
-
-  const addUrl = () => {
-    if (!urlInput.trim()) return;
-    onChange([...mediaUrls, urlInput.trim()]);
-    setUrlInput('');
+  const [uploading, setUploading] = useState(false);
+  const [urlInput, setUrlInput] = useState('');
+  const [previewFile, setPreviewFile] = useState<{ file: File; objectUrl: string } | null>(null);
+  const [brightness, setBrightness] = useState(100);
+  const [contrast, setContrast] = useState(100);
+  const [saturation, setSaturation] = useState(100);
+  const [rotation, setRotation] = useState(0);
+  const [activeFilter, setActiveFilter] = useState('none');
+  const FILTERS: Record<string, string> = {
+    none: '', vivid: 'saturate(1.8) contrast(1.1)', muted: 'saturate(0.6) brightness(1.05)',
+    warm: 'sepia(0.3) saturate(1.4) brightness(1.05)', cool: 'hue-rotate(20deg) saturate(1.2)',
+    noir: 'grayscale(1) contrast(1.3)', fade: 'brightness(1.1) contrast(0.85) saturate(0.8)',
+    golden: 'sepia(0.5) saturate(1.6) brightness(1.1)', dramatic: 'contrast(1.4) saturate(1.3) brightness(0.9)',
   };
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const getFilterString = () => {
+    const base = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
+    const preset = FILTERS[activeFilter] || '';
+    return preset ? `${base} ${preset}` : base;
+  };
+
+  const resetEditor = () => { setBrightness(100); setContrast(100); setSaturation(100); setRotation(0); setActiveFilter('none'); };
+  const addUrl = () => { if (!urlInput.trim()) return; onChange([...mediaUrls, urlInput.trim()]); setUrlInput(''); };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
@@ -442,7 +459,7 @@ function MediaUpload({ type, mediaUrls, onChange }: { type: string; mediaUrls: s
   return (
     <div className="flex flex-col gap-3">
       {mediaUrls.length > 0 && (
-        <div className="grid grid-cols-2 gap-2">
+        <div className={`grid gap-2 ${mediaUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
           {mediaUrls.map((url, i) => (
             <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-surface border border-surface-border">
               {type === 'video' || type === 'spotlight' ? (
@@ -465,41 +482,32 @@ function MediaUpload({ type, mediaUrls, onChange }: { type: string; mediaUrls: s
               </button>
             </div>
           ))}
+          {mediaUrls.length < 4 && (
+            <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-surface-border hover:border-gold/40 transition-colors">
+              <Plus className="h-6 w-6 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Add more</span>
+              <input ref={fileInputRef} type="file" accept={type === 'photo' ? 'image/*' : 'video/*'} onChange={handleFileSelect} className="hidden" />
+            </label>
+          )}
         </div>
       )}
-
-      {/* File upload button */}
-      <label className="flex h-32 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-surface-border hover:border-gold/40 transition-colors">
-        <Camera className="h-8 w-8 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Tap to upload {type === 'photo' ? 'photos' : 'videos'}</p>
-        <p className="text-[10px] text-muted-foreground/70">or paste a URL below</p>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={type === 'photo' ? 'image/*' : 'video/*'}
-          multiple
-          onChange={handleFile}
-          className="hidden"
-        />
-      </label>
-
-      {/* URL input */}
+      {mediaUrls.length === 0 && (
+        <label className="flex h-48 w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-surface-border hover:border-gold/40 transition-colors bg-surface/30">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gold/10"><Camera className="h-7 w-7 text-gold" /></div>
+          <div className="text-center">
+            <p className="text-sm font-semibold text-white">Tap to select {type === 'photo' ? 'photo' : 'video'}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Edit before posting</p>
+          </div>
+          <input ref={fileInputRef} type="file" accept={type === 'photo' ? 'image/*' : 'video/*'} onChange={handleFileSelect} className="hidden" />
+        </label>
+      )}
       <div className="flex gap-2">
-        <input
-          value={urlInput}
-          onChange={(e) => setUrlInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && addUrl()}
-          placeholder="Paste image/video URL..."
-          className="flex-1 rounded-xl bg-surface border border-surface-border px-3 py-2.5 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold"
-        />
-        <button onClick={addUrl} className="rounded-xl bg-surface border border-surface-border px-4 text-sm font-semibold text-white hover:bg-surface-elevated">
-          Add
-        </button>
+        <input value={urlInput} onChange={e => setUrlInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addUrl()} placeholder="Or paste URL..." className="flex-1 rounded-xl bg-surface border border-surface-border px-3 py-2.5 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold" />
+        <button onClick={addUrl} className="rounded-xl bg-surface border border-surface-border px-4 text-sm font-semibold text-white hover:bg-surface-elevated">Add</button>
       </div>
     </div>
   );
 }
-
 // ─── Tag Picker (search teams/players) ─────────────────────────
 function TagPicker({ onClose, onPick }: { onClose: () => void; onPick: (team?: string, player?: string) => void }) {
   const [query, setQuery] = useState('');

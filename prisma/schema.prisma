@@ -440,3 +440,25 @@ model UserFavorite {
   @@unique([userId, targetType, targetName])
   @@index([userId])
 }
+
+// ─── AuditLog (Phase F — Admin Portal) ───────────────────────
+// Spec: Phase 19 — "Every action must be logged."
+// Records all admin actions with before/after state for compliance.
+model AuditLog {
+  id              String   @id @default(uuid())
+  actorId         String   // who performed the action
+  action          String   // e.g. "user.suspend", "sport.create", "verification.approve"
+  module          String   // e.g. "users", "sports", "verifications", "roles"
+  targetId        String?  // ID of the affected entity
+  targetType      String?  // e.g. "User", "Sport", "Role", "VerificationRequest"
+  oldValue        Json?    @default("{}")  // previous state
+  newValue        Json?    @default("{}")  // new state
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime @default(now())
+
+  @@index([actorId])
+  @@index([module])
+  @@index([action])
+  @@index([createdAt(sort: Desc)])
+}
