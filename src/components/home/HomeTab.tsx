@@ -1,3 +1,5 @@
+import { ShareSheet } from './ShareSheet';
+import { CommentSheet } from './CommentSheet';
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useNavigationStore } from '@/store/navigationStore';

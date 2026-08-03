@@ -1,4 +1,6 @@
 'use client';
+import type { HomeSubTab } from '@/store/navigationStore';
+
 
 import { Search, Bell, Inbox, ShoppingBag } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -74,7 +76,7 @@ export function HomeHeader({ isSearchOpen, setIsSearchOpen, isCartOpen, setIsCar
         </div>
         <div className="flex gap-1 px-4 pb-2">
           {SUBTABS.map((tab) => (
-            <button key={tab.id} onClick={() => setHomeSubTab(tab.id)}
+            <button key={tab.id} onClick={() => setHomeSubTab(tab.id as HomeSubTab)}
               className={cn('rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors',
                 homeSubTab === tab.id ? 'bg-gold text-black' : 'bg-surface text-muted-foreground hover:text-foreground')}>
               {tab.label}

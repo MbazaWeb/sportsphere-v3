@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { BadgeStack } from '@/components/ui/RoleBadge';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
+import { formatCount } from '@/store/useAppStore';
 import { useState, useCallback } from 'react';
 
 // Types
