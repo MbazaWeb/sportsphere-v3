@@ -1,6 +1,5 @@
-'use client';
-
-import { useState, AnimatePresence } from 'framer-motion'; // Adjust import based on your setup
+import { useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { useNavigationStore } from '@/store/navigationStore';
 import { motion } from 'framer-motion';
 import { HomeHeader } from './HomeHeader';

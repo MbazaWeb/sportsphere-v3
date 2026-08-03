@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { TrendingUp, Flame, Shield, Heart, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
-import { useUIStore } from '@/store/uiStore';
+import { useUIStore, formatCount } from '@/store/uiStore';
 import { apiUserToViewing } from '@/types';
 
 // Types from parent

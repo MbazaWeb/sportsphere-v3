@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Crown, Zap, Sparkles, Heart, MessageCircle, Flame, ChevronDown, Shield, Crown as CrownIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useUIStore } from '@/store/uiStore';
+import { useUIStore, formatCount } from '@/store/uiStore';
 import { apiUserToViewing } from '@/types';
 import { FeedCard } from './FeedCard';
 
