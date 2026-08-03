@@ -410,42 +410,51 @@ function MediaUpload({ type, mediaUrls, onChange }: { type: string; mediaUrls: s
   };
 
   const resetEditor = () => { setBrightness(100); setContrast(100); setSaturation(100); setRotation(0); setActiveFilter('none'); };
+  const applyAndUpload = async () => {
+    if (!previewFile) return;
+    setUploading(true);
+    try {
+      let fileToUpload = previewFile.file;
+      if (type === 'photo' && canvasRef.current) {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const img = new Image();
+          img.src = previewFile.objectUrl;
+          await new Promise(r => { img.onload = r; });
+          const rad = (rotation * Math.PI) / 180;
+          const sin = Math.abs(Math.sin(rad)), cos = Math.abs(Math.cos(rad));
+          canvas.width = img.width * cos + img.height * sin;
+          canvas.height = img.width * sin + img.height * cos;
+          ctx.filter = getFilterString();
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          ctx.rotate(rad);
+          ctx.drawImage(img, -img.width / 2, -img.height / 2);
+          const blob = await new Promise<Blob | null>(r => canvas.toBlob(r, 'image/jpeg', 0.92));
+          if (blob) fileToUpload = new File([blob], previewFile.file.name, { type: 'image/jpeg' });
+        }
+      }
+      const formData = new FormData();
+      formData.append('file', fileToUpload);
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.url) onChange([...mediaUrls, data.url]);
+    } catch { }
+    URL.revokeObjectURL(previewFile.objectUrl);
+    setPreviewFile(null);
+    setUploading(false);
+  };
   const addUrl = () => { if (!urlInput.trim()) return; onChange([...mediaUrls, urlInput.trim()]); setUrlInput(''); };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
-
-    // Add local previews immediately, then upload each file and replace preview with public URL
-    const previews = Array.from(files).map(f => {
-      const u = URL.createObjectURL(f);
-      createdUrls.current.push(u);
-      return u;
-    });
-    const original = [...mediaUrls];
-    onChange([...original, ...previews]);
-
-    // Upload files in background
-    Array.from(files).forEach(async (file, i) => {
-      try {
-        const form = new FormData();
-        form.append('file', file);
-        const res = await fetch('/api/upload', { method: 'POST', body: form });
-        const json = await res.json();
-        if (res.ok && json.url) {
-          // Replace the preview url with the returned public URL using the original snapshot
-          const combined = [...original, ...previews];
-          const localPreview = previews[i];
-          const idx = combined.indexOf(localPreview);
-          if (idx !== -1) combined[idx] = json.url;
-          else combined.push(json.url);
-          onChange(combined);
-        }
-      } catch (err) {
-        // ignore upload failure; preview will remain
-        console.error('Upload failed', err);
-      }
-    });
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    const objectUrl = URL.createObjectURL(file);
+    createdUrls.current.push(objectUrl);
+    setPreviewFile({ file, objectUrl });
+    resetEditor();
+    e.target.value = '';
   };
 
   // Revoke any created object URLs when component unmounts
