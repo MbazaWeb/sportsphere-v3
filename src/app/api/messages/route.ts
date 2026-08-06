@@ -94,3 +94,62 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 });
   }
 }
+
+export async function POST(request: NextRequest) {
+  try {
+    const senderId = request.headers.get('x-user-id');
+    if (!senderId) {
+      return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+    }
+
+    const { recipientId, content } = await request.json();
+    if (!recipientId || !content || !String(content).trim()) {
+      return NextResponse.json({ error: 'recipientId and content are required.' }, { status: 400 });
+    }
+
+    if (recipientId === senderId) {
+      return NextResponse.json({ error: 'Cannot send message to yourself.' }, { status: 400 });
+    }
+
+    const recipient = await db.user.findUnique({ where: { id: String(recipientId) } });
+    if (!recipient) {
+      return NextResponse.json({ error: 'Recipient not found.' }, { status: 404 });
+    }
+
+    const message = await db.message.create({
+      data: {
+        senderId,
+        receiverId: String(recipientId),
+        content: String(content).trim(),
+      },
+      select: {
+        id: true,
+        content: true,
+        isRead: true,
+        createdAt: true,
+        sender: { select: USER_SELECT },
+        receiver: { select: USER_SELECT },
+      },
+    });
+
+    return NextResponse.json({
+      id: message.id,
+      content: message.content,
+      isRead: message.isRead,
+      createdAt: message.createdAt,
+      sender: {
+        ...message.sender,
+        roleData: safeJsonParse(message.sender.roleData, {}),
+        sportsFollowing: safeJsonParse(message.sender.sportsFollowing, []),
+      },
+      receiver: {
+        ...message.receiver,
+        roleData: safeJsonParse(message.receiver.roleData, {}),
+        sportsFollowing: safeJsonParse(message.receiver.sportsFollowing, []),
+      },
+    }, { status: 201 });
+  } catch (error) {
+    console.error('Send message error:', error);
+    return NextResponse.json({ error: 'Failed to send message.' }, { status: 500 });
+  }
+}
