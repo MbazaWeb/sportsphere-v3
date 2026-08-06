@@ -1,0 +1,187 @@
+name: RBAC Security Test Suite
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+
+jobs:
+  rbac-security-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+          POSTGRES_DB: sportsphere_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: "postgresql://postgres:postgrespassword@localhost:5432/sportsphere_test?schema=public"
+      SESSION_SECRET: "ci-testing-secret-key-min-32-chars-long-12345"
+      NODE_ENV: "test"
+      PORT: 3001
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Prisma Database Migrations
+        run: npx prisma migrate reset --force --skip-seed
+
+      - name: Build Next.js Application
+        run: npm run build
+
+      - name: Start Production Server in Background
+        run: |
+          npm run start &
+          echo "Waiting for Next.js to start on port 3001..."
+          npx wait-on http://localhost:3001 -t 30000
+
+      - name: Execute RBAC Security Test Suite
+        run: |
+          npx tsx -e '
+          import { PrismaClient } from "@prisma/client";
+          import bcrypt from "bcryptjs";
+
+          async function seedAndTest() {
+            const prisma = new PrismaClient();
+            const baseUrl = "http://localhost:3001";
+
+            // 1. Seed Roles & RoleTypes (including required slug fields)
+            const role = await prisma.role.create({ 
+              data: { name: "FAN", slug: "fan" } 
+            });
+            const roleType = await prisma.roleType.create({ 
+              data: { name: "STANDARD", slug: "standard" } 
+            });
+
+            // 2. Seed Test Users
+            const passwordHash = await bcrypt.hash("Password123!", 10);
+            
+            const fanUser = await prisma.user.create({
+              data: {
+                email: "fan_test@sportsphere.com",
+                handle: "fan_tester",
+                name: "Test Fan User",
+                passwordHash,
+                role: "FAN",
+                roleId: role.id,
+                roleTypeId: roleType.id,
+              },
+            });
+
+            const adminUser = await prisma.user.create({
+              data: {
+                email: "mbazzacodes@sportsphere.com",
+                handle: "mbazzacodes",
+                name: "Admin User",
+                passwordHash,
+                role: "ADMINISTRATOR",
+                roleId: role.id,
+                roleTypeId: roleType.id,
+              },
+            });
+
+            // 3. Generate Signed JWT Session Tokens
+            const { signSession } = await import("./src/lib/session.js");
+
+            const fanToken = await signSession({
+              sub: fanUser.id,
+              email: fanUser.email,
+              handle: fanUser.handle,
+              role: fanUser.role,
+              roleId: fanUser.roleId ?? undefined,
+              roleTypeId: fanUser.roleTypeId ?? undefined,
+            });
+
+            const adminToken = await signSession({
+              sub: adminUser.id,
+              email: adminUser.email,
+              handle: adminUser.handle,
+              role: adminUser.role,
+              roleId: adminUser.roleId ?? undefined,
+              roleTypeId: adminUser.roleTypeId ?? undefined,
+            });
+
+            const endpoints = [
+              "/api/admin/stats",
+              "/api/admin/users",
+              "/api/admin/posts",
+            ];
+
+            let passed = 0;
+            let failed = 0;
+
+            console.log("--- TEST CASE 1: Unauthenticated Requests ---");
+            for (const ep of endpoints) {
+              const res = await fetch(baseUrl + ep);
+              if (res.status === 401 || res.status === 403) {
+                console.log(`✓ PASS [${res.status}]: Blocked unauthenticated access to ${ep}`);
+                passed++;
+              } else {
+                console.error(`❌ FAIL [${res.status}]: Unauthenticated access granted to ${ep}`);
+                failed++;
+              }
+            }
+
+            console.log("\n--- TEST CASE 2: Non-Admin User (FAN Role) ---");
+            for (const ep of endpoints) {
+              const res = await fetch(baseUrl + ep, {
+                headers: { Cookie: `ss_session=${fanToken}` },
+              });
+              if (res.status === 403) {
+                console.log(`✓ PASS [403]: Blocked non-admin user from ${ep}`);
+                passed++;
+              } else {
+                console.error(`❌ FAIL [${res.status}]: FAN user accessed ${ep}`);
+                failed++;
+              }
+            }
+
+            console.log("\n--- TEST CASE 3: Admin User (ADMINISTRATOR Role) ---");
+            for (const ep of endpoints) {
+              const res = await fetch(baseUrl + ep, {
+                headers: { Cookie: `ss_session=${adminToken}` },
+              });
+              if (res.status === 200) {
+                console.log(`✓ PASS [200]: Admin granted access to ${ep}`);
+                passed++;
+              } else {
+                console.error(`❌ FAIL [${res.status}]: Admin denied access to ${ep}`);
+                failed++;
+              }
+            }
+
+            console.log(`\n=========================================`);
+            console.log(`   TEST SUMMARY: ${passed} PASSED / ${failed} FAILED`);
+            console.log(`=========================================`);
+
+            await prisma.$disconnect();
+            if (failed > 0) process.exit(1);
+          }
+
+          seedAndTest().catch((err) => {
+            console.error("Fatal Test Execution Error:", err);
+            process.exit(1);
+          });
+          '
