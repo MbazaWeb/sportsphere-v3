@@ -1,7 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { verifyAdminSession } from "@/lib/adminGuard";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  const auth = await verifyAdminSession(request);
+  if (!auth.authorized) return auth.response;
+
   try {
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q")?.trim();

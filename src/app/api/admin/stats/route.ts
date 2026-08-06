@@ -1,7 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { verifyAdminSession } from "@/lib/adminGuard";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await verifyAdminSession(request);
+  if (!auth.authorized) return auth.response;
+
   try {
     const [usersCount, postsCount, sportsCount] = await Promise.all([
       db.user.count(),
