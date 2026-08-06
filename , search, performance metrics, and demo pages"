@@ -1,0 +1,20 @@
+* [33ma6b9cb0[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m chore: update production build and proxy setup
+* [33md97ea85[m ci: add GitHub Actions RBAC security test suite
+* [33m3d74644[m chore: add postgresql daily automated backup script and gitignore rules
+* [33m053b151[m feat: complete admin panel with user management, sports manager, content moderation, and proxy protection
+* [33m8819fe8[m feat: add POST handler for sending messages
+* [33m6d8b8af[m Improve profile UI and cover image support
+* [33mec104c8[m LinkedIn-style profile redesign: fixed video caption, redesigned ProfileTab, improved EditProfileModal
+* [33m76ad5a5[m Final fixes: VideoUpload grid syntax and Share2 import on ProfileTab
+* [33m67f18c2[m Merge Posts, Media, and Spotlight into a single unified Spotlight feed on Profile page
+* [33madc5b7b[m Final media tools: dynamic 30/60s trim limit with editor auto-open
+* [33m9c8ee92[m Add complete Media Editor Toolkit: 30s video limit, trimming, 8 photo filters, crop, rotation, and adjustments
+* [33m5bcb377[m Final fixes: formatCount import, BarChart3 import, and auth UI messages
+* [33m147c9f4[m Update page.tsx and ProfileTab.tsx import paths for new profiles folder
+* [33m9a76024[m Complete UserProfileViewer refactor into 18 modular components
+* [33md7f34b3[m Fix escaped string errors in PeopleListModal, ProfileCover, and useProfileData
+* [33m3b0ff95[m Split UserProfileViewer into 18 modular components
+* [33m166c5ab[m Split UserProfileViewer into modular components (18 new files)
+* [33md61951b[m Add out/ and .idea/ to .gitignore
+* [33m11cb9d1[m Cleanup: Remove local build outputs and IDE files from Git tracking
+* [33mb80b372[m Refactor registration and pro upgrade modals into modular components
