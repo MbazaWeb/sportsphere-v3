@@ -23,11 +23,6 @@ export default function ProfilePage({ config, onBack, initialTab }: ProfilePageP
     }
   };
 
-  // Hero stats from profile config data (seed-driven)
-  const heroStats = config.id === 'player'
-    ? config.mockData.stats
-    : null;
-
   return (
     <div className="mx-auto max-w-lg">
       <motion.div
@@ -37,7 +32,7 @@ export default function ProfilePage({ config, onBack, initialTab }: ProfilePageP
         transition={{ duration: 0.2 }}
         className="flex flex-col"
       >
-        {/* Header - shared across all profiles */}
+        {/* Header - shared across all profiles (includes 4-counter stats for players) */}
         <div className="pb-4">
           <ProfileHeader
             config={config}
@@ -46,22 +41,6 @@ export default function ProfilePage({ config, onBack, initialTab }: ProfilePageP
             isFollowing={isFollowing}
           />
         </div>
-
-        {/* 🏆 Hero Stats (Player-specific) */}
-        {heroStats && (
-          <div className="px-4 -mt-2 mb-2">
-            <div className="glass-card rounded-xl p-4 glass-card-hover">
-              <div className="grid grid-cols-5 gap-2">
-                {heroStats.map((stat) => (
-                  <div key={stat.label} className="text-center">
-                    <p className="text-sm font-black text-gold">{stat.value}</p>
-                    <p className="text-[10px] text-muted-foreground">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Tabs */}
         <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-xl">

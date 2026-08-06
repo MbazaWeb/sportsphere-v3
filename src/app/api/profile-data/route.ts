@@ -1,21 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// ⚠️ PLACEHOLDER: This route uses hardcoded seed data for development only.
-// In Phase B, this will be replaced with database-backed queries using
-// normalized profile tables (PlayerProfile, TeamProfile, CompetitionProfile, etc.).
-// The data below is kept for development/demo purposes and should NOT be
-// considered production data.
-
 export const dynamic = 'force-dynamic';
 
 const PLAYER_DATA = {
   rashford: {
     name: 'Marcus Rashford', position: 'Forward', number: 10,
     nationality: 'England', age: 26, height: '180 cm', weight: '70 kg',
+    dateOfBirth: '31 October 1997',
     currentTeam: 'Manchester United', teamHandle: '@manchesterunited',
-    marketValue: '€65M', worldRank: 28, nationalRank: 4,
-    foot: 'Right', contractUntil: '2028', agentName: 'CAA Stellar',
+    marketValue: '\u20ac65M', worldRank: 28, nationalRank: 4,
+    foot: 'Right', dominantSide: 'Right', contractUntil: '2028', agentName: 'CAA Stellar',
     injuryStatus: 'Fit' as 'Fit' | 'Injured' | 'Doubtful',
+    skills: ['Pace & Acceleration', 'Clinical Finishing', 'Dribbling', 'Left Wing Play', 'Counter-Attacking', 'Philanthropy & Leadership'],
     sponsors: [
       { name: 'Nike', role: 'Kit & Boots' },
       { name: 'EA Sports', role: 'Brand Ambassador' },

@@ -10,7 +10,7 @@ import { useUIStore } from '@/store/uiStore';
 import type { ViewingUser as FeedUser } from '@/types';
 import {
   Heart, MessageCircle, Share2, Bookmark, Star, TrendingUp, Lock, Shield, Activity, DollarSign, Shirt,
-  MapPin, Clock, Trophy, Users, ChevronRight, Zap, Play,
+  User, MapPin, Clock, Trophy, Users, ChevronRight, Zap, Play,
   BarChart3, Target, Flag, Calendar, ArrowUpRight, FileText,
   CheckCircle, AlertCircle, Pen, Crown, Sparkles, Flame,
   Award, Medal, Gift, Diamond, Gem, Music, Mic, Podcast,
@@ -551,6 +551,45 @@ function PlayerOverviewEnhanced() {
 
   return (
     <>
+      {/* Bio Attributes & Physical Specs */}
+      <div className="glass-card rounded-2xl p-4 glass-card-hover">
+        <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-2">
+          <User className="h-4 w-4" /> Player Info
+        </h3>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { label: 'Age',           value: String(p.age) + ' yrs' },
+            { label: 'Date of Birth',  value: p.dateOfBirth || '31 Oct 1997' },
+            { label: 'Nationality',   value: p.nationality },
+            { label: 'Height',        value: p.height },
+            { label: 'Weight',        value: p.weight || '70 kg' },
+            { label: 'Dominant Side', value: p.foot || p.dominantSide || 'Right' },
+          ].map(({ label, value }) => (
+            <div key={label} className="rounded-lg bg-surface p-2.5">
+              <p className="text-[10px] text-muted-foreground">{label}</p>
+              <p className="text-sm font-semibold text-white">{value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Key Skills & Badges */}
+      <div className="glass-card rounded-2xl p-4 glass-card-hover">
+        <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-2">
+          <Zap className="h-4 w-4" /> Key Skills & Attributes
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          {(p.skills || ['Pace & Acceleration', 'Clinical Finishing', 'Dribbling', 'Left Wing Play', 'Counter-Attacking', 'Philanthropy & Leadership']).map((skill: string) => (
+            <span
+              key={skill}
+              className="rounded-lg bg-gold/10 border border-gold/20 px-3 py-1.5 text-xs font-semibold text-gold hover:bg-gold/20 hover:border-gold/40 transition-all cursor-default"
+            >
+              {skill}
+            </span>
+          ))}
+        </div>
+      </div>
+
       {/* Ranks + Market Value */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <div className="grid grid-cols-3 gap-3">
@@ -572,29 +611,19 @@ function PlayerOverviewEnhanced() {
         </div>
       </div>
 
-      {/* Identity */}
-      <div className="glass-card rounded-2xl p-4 glass-card-hover">
-        <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider">Player Info</h3>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { label: 'Position',   value: p.position },
-            { label: 'Nationality',value: p.nationality },
-            { label: 'Age',        value: String(p.age) },
-            { label: 'Height',     value: p.height },
-            { label: 'Foot',       value: p.foot },
-            { label: 'Contract',   value: `Until ${p.contractUntil}` },
-          ].map(({ label, value }) => (
-            <div key={label} className="rounded-lg bg-surface p-2.5">
-              <p className="text-[10px] text-muted-foreground">{label}</p>
-              <p className="text-sm font-semibold text-white">{value}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Current Team — clickable */}
+      {/* Position & Team */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider">Current Team</h3>
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="rounded-lg bg-surface p-2.5">
+            <p className="text-[10px] text-muted-foreground">Position</p>
+            <p className="text-sm font-semibold text-white">{p.position}</p>
+          </div>
+          <div className="rounded-lg bg-surface p-2.5">
+            <p className="text-[10px] text-muted-foreground">Contract</p>
+            <p className="text-sm font-semibold text-white">Until {p.contractUntil}</p>
+          </div>
+        </div>
         <button
           onClick={async () => { try { const res = await fetch('/api/users?handle=@manchesterunited'); if (res.ok) { const u = await res.json(); const {apiUserToViewing} = await import('@/types'); setViewingUser(apiUserToViewing(u,false)); } } catch {} }}
           className="flex w-full items-center gap-3 rounded-xl bg-surface p-3 hover:bg-surface-elevated transition-colors">
@@ -636,11 +665,11 @@ function PlayerOverviewEnhanced() {
           ))}
         </div>
         {[
-          { label: 'xG',             value: p.seasonStats.xG,             max: 20  },
-          { label: 'xA',             value: p.seasonStats.xA,             max: 10  },
-          { label: 'Shot Accuracy',  value: p.seasonStats.shotAccuracy,   max: 100 },
-          { label: 'Pass Accuracy',  value: p.seasonStats.passAccuracy,   max: 100 },
-          { label: 'Dribble Success',value: p.seasonStats.dribbleSuccess, max: 100 },
+          { label: 'xG',              value: p.seasonStats.xG,             max: 20  },
+          { label: 'xA',              value: p.seasonStats.xA,             max: 10  },
+          { label: 'Shot Accuracy',   value: p.seasonStats.shotAccuracy,   max: 100 },
+          { label: 'Pass Accuracy',   value: p.seasonStats.passAccuracy,   max: 100 },
+          { label: 'Dribble Success', value: p.seasonStats.dribbleSuccess, max: 100 },
         ].map((s) => (
           <div key={s.label} className="mb-2.5 last:mb-0">
             <div className="mb-1 flex items-center justify-between">
@@ -699,7 +728,7 @@ function PlayerOverviewEnhanced() {
         </div>
       </div>
 
-      {/* Trophies */}
+      {/* Trophies / Honours */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <div className="flex items-center gap-2 mb-3">
           <Crown className="h-4 w-4 text-gold" />
@@ -720,7 +749,6 @@ function PlayerOverviewEnhanced() {
     </>
   );
 }
-
 // ─── Coach Overview ───────────────────────────────────────────
 function CoachOverview() {
   return (
@@ -1694,55 +1722,175 @@ function FansContent() {
 
 // ─── Career Content ───────────────────────────────────────────
 function CareerContent() {
-  const { data: p, loading } = useProfileData<{ careerTimeline: { season: string; team: string; apps: number; goals: number; assists: number; honours: string[] }[] }>("player", "rashford");
+  const { data: p, loading } = useProfileData<Record<string, unknown>>("player", "rashford");
   if (loading) return <ProfileDataSkeleton />;
   if (!p) return <EmptyCard message="Career data unavailable" />;
-  const timeline = [...p.careerTimeline].reverse();
+
+  // Build enriched timeline with date ranges and duration
+  const timelineData: Array<{
+    team: string; startDate: string; endDate: string; isCurrent: boolean;
+    apps: number; goals: number; assists: number; honours: string[];
+  }> = [
+    { team: 'Manchester United', startDate: 'Jul 2015', endDate: 'Present', isCurrent: true, apps: p.careerStats?.totalApps || 340, goals: p.careerStats?.totalGoals || 132, assists: p.careerStats?.totalAssists || 67, honours: ['FA Cup (2024)', 'EFL Cup (2023, 2017)', 'Europa League (2017)'] },
+  ];
+  if (p.careerTimeline && Array.isArray(p.careerTimeline)) {
+    const seasons = [...p.careerTimeline].reverse();
+    seasons.forEach((item) => {
+      const existing = timelineData.find(t => t.team === item.team);
+      if (existing) {
+        if (item.honours && item.honours.length > 0) {
+          item.honours.forEach((h: string) => {
+            if (!existing.honours.includes(h)) existing.honours.push(h);
+          });
+        }
+      } else {
+        const parts = String(item.season).split('\u2013');
+        const startYear = parts[0]?.trim() || '';
+        const endYear = parts[1]?.trim() || '';
+        timelineData.push({
+          team: item.team,
+          startDate: `Jul ${startYear}`,
+          endDate: `Jun ${endYear}`,
+          isCurrent: false,
+          apps: item.apps,
+          goals: item.goals,
+          assists: item.assists,
+          honours: item.honours || [],
+        });
+      }
+    });
+  }
+
+  // Calculate duration helper
+  function calcDuration(start: string, end: string, isCurrent: boolean): string {
+    if (isCurrent) {
+      const startParts = start.split(' ');
+      const startY = parseInt(startParts[1]) || 2015;
+      const now = new Date();
+      const years = now.getFullYear() - startY;
+      const months = now.getMonth() - 6;
+      const totalMonths = years * 12 + months;
+      if (totalMonths >= 12) {
+        const y = Math.floor(totalMonths / 12);
+        const m = totalMonths % 12;
+        return m > 0 ? `${y} yr ${m} mo` : `${y} yrs`;
+      }
+      return `${totalMonths} mo`;
+    }
+    const sParts = start.split(' ');
+    const eParts = end.split(' ');
+    const sMonth = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(sParts[0]);
+    const eMonth = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(eParts[0]);
+    const sYear = parseInt(sParts[1]) || 0;
+    const eYear = parseInt(eParts[1]) || 0;
+    const totalMonths = (eYear - sYear) * 12 + (eMonth - sMonth);
+    if (totalMonths >= 12) {
+      const y = Math.floor(totalMonths / 12);
+      const m = totalMonths % 12;
+      return m > 0 ? `${y} yr ${m} mo` : `${y} yrs`;
+    }
+    return `${Math.max(totalMonths, 1)} mo`;
+  }
+
   return (
     <div className="flex flex-col gap-0">
-      {timeline.map((item, i) => (
-        <div key={item.season} className="flex gap-3">
-          <div className="flex flex-col items-center">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-gold bg-gold/10 flex-shrink-0">
-              <span className="text-[9px] font-bold text-gold">{item.season.slice(0,4)}</span>
-            </div>
-            {i < timeline.length - 1 && <div className="w-px flex-1 bg-surface-border my-1" />}
-          </div>
-          <div className="flex-1 glass-card rounded-xl p-3 mb-2">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-sm font-semibold text-white">{item.team}</p>
-              <span className="text-xs text-muted-foreground">{item.season}</span>
-            </div>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <span>{item.apps} apps</span>
-              <span className="text-gold font-semibold">{item.goals} goals</span>
-              <span>{item.assists} assists</span>
-            </div>
-            {item.honours.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {item.honours.map((h) => (
-                  <span key={h} className="rounded-md bg-gold/10 border border-gold/20 px-2 py-0.5 text-[10px] font-medium text-gold">🏆 {h}</span>
-                ))}
+      <div className="glass-card rounded-2xl p-4 glass-card-hover mb-4">
+        <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-2">
+          <Building className="h-4 w-4" /> Teams Played
+        </h3>
+      </div>
+      {timelineData.map((item, i) => {
+        const duration = calcDuration(item.startDate, item.endDate, item.isCurrent);
+        return (
+          <div key={item.team + i} className="flex gap-3">
+            <div className="flex flex-col items-center">
+              <div className={cn(
+                'flex h-8 w-8 items-center justify-center rounded-full border-2 flex-shrink-0',
+                item.isCurrent ? 'border-gold bg-gold/20' : 'border-surface-border bg-surface'
+              )}>
+                <span className={cn('text-[9px] font-bold', item.isCurrent ? 'text-gold' : 'text-muted-foreground')}>
+                  {item.isCurrent ? 'NOW' : item.startDate.split(' ')[1]}
+                </span>
               </div>
-            )}
+              {i < timelineData.length - 1 && <div className="w-px flex-1 bg-surface-border my-1" />}
+            </div>
+            <div className="flex-1 glass-card rounded-xl p-3 mb-2">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-white">{item.team}</p>
+                  {item.isCurrent && <span className="rounded-md bg-green-500/20 border border-green-500/30 px-1.5 py-0.5 text-[9px] font-bold text-green-400">CURRENT</span>}
+                </div>
+                <span className="text-xs text-muted-foreground">{duration}</span>
+              </div>
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground mb-1.5">
+                <Clock className="h-3 w-3" />
+                <span>{item.startDate} - {item.endDate}</span>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <span>{item.apps} apps</span>
+                <span className="text-gold font-semibold">{item.goals} goals</span>
+                <span>{item.assists} assists</span>
+              </div>
+              {item.honours && item.honours.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {item.honours.map((h) => (
+                    <span key={h} className="rounded-md bg-gold/10 border border-gold/20 px-2 py-0.5 text-[10px] font-medium text-gold">{h}</span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
+        );
+      })}
+    </div>
+  );
+}
+// ─── Achievements Content ─────────────────────────────────────
+function AchievementsContent() {
+  const { data: p, loading } = useProfileData<Record<string, unknown>>("player", "rashford");
+
+  if (loading) return <ProfileDataSkeleton />;
+
+  const achievements: Array<{ title: string; detail: string }> = [];
+  if (p && p.honours) {
+    p.honours.forEach((h: { title: string; year: string; team: string }) => {
+      achievements.push({ title: h.title, detail: `${h.team} · ${h.year}` });
+    });
+  }
+  if (p && p.international && p.international.tournaments) {
+    p.international.tournaments.forEach((t: string) => {
+      if (!achievements.find(a => a.title.includes(t.split(' ')[0]))) {
+        achievements.push({ title: t, detail: 'England National Team' });
+      }
+    });
+  }
+
+  if (achievements.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Trophy className="h-10 w-10 text-muted-foreground/30 mb-3" />
+        <p className="text-sm text-muted-foreground">Achievements unavailable</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {achievements.map((achievement, i) => (
+        <div key={i} className="glass-card rounded-xl p-3 glass-card-hover flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold/10 flex-shrink-0">
+            <Trophy className="h-4 w-4 text-gold" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-white">{achievement.title}</p>
+            <p className="text-xs text-muted-foreground">{achievement.detail}</p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </div>
       ))}
     </div>
   );
-}
-
-// ─── Achievements Content ─────────────────────────────────────
-function AchievementsContent() {
-  return (
-    <div className="flex flex-col items-center justify-center py-12">
-      <Trophy className="h-10 w-10 text-muted-foreground/30 mb-3" />
-      <p className="text-sm text-muted-foreground">Achievements unavailable</p>
-    </div>
-  );
-}
-
-// ─── Events Content ───────────────────────────────────────────
+}// ─── Events Content ───────────────────────────────────────────
 function EventsContent() {
   return (
     <div className="flex flex-col items-center justify-center py-12">
@@ -1764,33 +1912,92 @@ function PollsContent() {
 
 // ─── About Content ────────────────────────────────────────────
 function AboutContent({ config }: { config: ProfileTypeConfig }) {
-  const { mockData, label } = config;
+  const { mockData, label, id } = config;
+  const isPlayer = id === 'player';
   return (
     <div className="flex flex-col gap-4">
+      {/* Biography (Player) */}
+      {isPlayer && mockData.biography && (
+        <div className="glass-card rounded-2xl p-4 glass-card-hover">
+          <h3 className="mb-2 text-xs font-bold text-gold uppercase tracking-wider">Biography</h3>
+          <p className="text-sm leading-relaxed text-foreground/80">{mockData.biography}</p>
+        </div>
+      )}
+
+      {/* Bio / About */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-2 text-sm font-bold text-white">About</h3>
         <p className="text-sm leading-relaxed text-foreground/80">{mockData.bio || `Official ${label.toLowerCase()} profile on SportSphere.`}</p>
       </div>
+
+      {/* Achievements List (Player) */}
+      {isPlayer && mockData.achievementsList && mockData.achievementsList.length > 0 && (
+        <div className="glass-card rounded-2xl p-4 glass-card-hover">
+          <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-2">
+            <Award className="h-4 w-4" /> Achievements
+          </h3>
+          <div className="flex flex-col gap-1.5">
+            {mockData.achievementsList.map((achievement, i) => (
+              <div key={i} className="flex items-center gap-2 rounded-lg bg-surface px-3 py-2">
+                <span className="text-gold text-xs font-bold">{i + 1}.</span>
+                <span className="text-sm text-white">{achievement}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Details */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 text-sm font-bold text-white">Details</h3>
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between py-1.5 border-b border-surface-border">
+        <div className="flex flex-col gap-0">
+          <div className="flex items-center justify-between py-2 border-b border-surface-border">
             <span className="text-sm text-muted-foreground">Type</span>
             <span className="text-sm font-bold text-gold">{label}</span>
           </div>
+          {isPlayer && mockData.position && (
+            <div className="flex items-center justify-between py-2 border-b border-surface-border">
+              <span className="text-sm text-muted-foreground">Position</span>
+              <span className="text-sm font-medium text-white">{mockData.position}</span>
+            </div>
+          )}
+          {isPlayer && mockData.nationality && (
+            <div className="flex items-center justify-between py-2 border-b border-surface-border">
+              <span className="text-sm text-muted-foreground">Nationality</span>
+              <span className="text-sm font-medium text-white">{mockData.nationality}</span>
+            </div>
+          )}
+          {isPlayer && mockData.dateOfBirth && (
+            <div className="flex items-center justify-between py-2 border-b border-surface-border">
+              <span className="text-sm text-muted-foreground">Date of Birth</span>
+              <span className="text-sm font-medium text-white">{mockData.dateOfBirth}</span>
+            </div>
+          )}
+          {isPlayer && mockData.height && (
+            <div className="flex items-center justify-between py-2 border-b border-surface-border">
+              <span className="text-sm text-muted-foreground">Height / Weight</span>
+              <span className="text-sm font-medium text-white">{mockData.height} / {mockData.weight}</span>
+            </div>
+          )}
+          {isPlayer && mockData.dominantSide && (
+            <div className="flex items-center justify-between py-2 border-b border-surface-border">
+              <span className="text-sm text-muted-foreground">Dominant Side</span>
+              <span className="text-sm font-medium text-white">{mockData.dominantSide}</span>
+            </div>
+          )}
           {mockData.location && (
-            <div className="flex items-center justify-between py-1.5 border-b border-surface-border">
+            <div className="flex items-center justify-between py-2 border-b border-surface-border">
               <span className="text-sm text-muted-foreground">Location</span>
               <span className="text-sm font-medium text-white">{mockData.location}</span>
             </div>
           )}
           {mockData.handle && (
-            <div className="flex items-center justify-between py-1.5 border-b border-surface-border">
+            <div className="flex items-center justify-between py-2 border-b border-surface-border">
               <span className="text-sm text-muted-foreground">Handle</span>
               <span className="text-sm font-bold text-gold">{mockData.handle}</span>
             </div>
           )}
-          <div className="flex items-center justify-between py-1.5">
+          <div className="flex items-center justify-between py-2">
             <span className="text-sm text-muted-foreground">On SportSphere since</span>
             <span className="text-sm font-medium text-white">{mockData.joined || '2023'}</span>
           </div>
@@ -1798,9 +2005,7 @@ function AboutContent({ config }: { config: ProfileTypeConfig }) {
       </div>
     </div>
   );
-}
-
-// ─── Shop Content ────────────────────────────────────────────
+}// ─── Shop Content ────────────────────────────────────────────
 function ShopContent() {
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
   void selectedProduct;

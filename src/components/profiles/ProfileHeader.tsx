@@ -2,7 +2,7 @@
 
 import { type ProfileTypeConfig } from './profileConfig';
 import { cn } from '@/lib/utils';
-import { MapPin, Calendar, ShieldCheck, ArrowLeft, MoreHorizontal, Trophy, Star } from 'lucide-react';
+import { MapPin, Calendar, ShieldCheck, ArrowLeft, MoreHorizontal, User } from 'lucide-react';
 
 interface ProfileHeaderProps {
   config: ProfileTypeConfig;
@@ -12,7 +12,8 @@ interface ProfileHeaderProps {
 }
 
 export default function ProfileHeader({ config, onBack, onAction, isFollowing }: ProfileHeaderProps) {
-  const { mockData, primaryActions, label } = config;
+  const { mockData, primaryActions, label, id } = config;
+  const isPlayer = id === 'player';
 
   return (
     <div className="relative">
@@ -28,21 +29,23 @@ export default function ProfileHeader({ config, onBack, onAction, isFollowing }:
         </div>
       )}
 
+      {/* Dark navy cover */}
       <div className={cn('relative h-48 w-full bg-gradient-to-b', mockData.coverGradient)}>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
-        {/* Pattern overlay */}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        {/* Gold accent line at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
       </div>
 
       <div className="relative -mt-12 px-4">
         <div className="flex items-end gap-4">
+          {/* Avatar with gold border */}
           <div className={cn(
-            'relative flex h-24 w-24 flex-shrink-0 items-center justify-center rounded-full border-4 border-background text-2xl font-bold',
+            'relative flex h-24 w-24 flex-shrink-0 items-center justify-center rounded-full border-4 border-gold text-2xl font-bold',
             mockData.verified ? 'bg-gold text-black' : 'bg-surface-elevated text-white'
           )}>
             {mockData.avatar}
             {mockData.verified && (
-              <span className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-background">
+              <span className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-background border-2 border-gold">
                 <ShieldCheck className="h-5 w-5 text-gold" />
               </span>
             )}
@@ -50,11 +53,29 @@ export default function ProfileHeader({ config, onBack, onAction, isFollowing }:
           <div className="mb-1 flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="truncate text-xl font-black text-white">{mockData.name}</h1>
+              {/* Jersey Number Badge (Player) */}
+              {isPlayer && mockData.jerseyNumber && (
+                <span className="flex-shrink-0 rounded-md bg-gold text-black px-2 py-0.5 text-xs font-black">
+                  #{mockData.jerseyNumber}
+                </span>
+              )}
               <span className="flex-shrink-0 rounded-md bg-gold/10 border border-gold/20 px-2 py-0.5 text-[10px] font-bold text-gold uppercase">
                 {label}
               </span>
             </div>
-            {mockData.role && <p className="truncate text-sm text-muted-foreground">{mockData.role}</p>}
+            {/* Position + Team for player */}
+            {isPlayer && mockData.position && (
+              <p className="truncate text-sm text-muted-foreground">
+                {mockData.position}
+              </p>
+            )}
+            {!isPlayer && mockData.role && <p className="truncate text-sm text-muted-foreground">{mockData.role}</p>}
+            {/* Coach Name (Player) */}
+            {isPlayer && mockData.coach && (
+              <p className="truncate text-xs text-gold/70 mt-0.5">
+                Coach: {mockData.coach}
+              </p>
+            )}
           </div>
         </div>
 
@@ -69,20 +90,39 @@ export default function ProfileHeader({ config, onBack, onAction, isFollowing }:
           )}
           {mockData.joined && (
             <span className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Calendar className="h-3 w-3 text-gold" />Joined {mockData.joined}
+              <Calendar className="h-3 w-3 text-gold" />{mockData.joined}
             </span>
           )}
         </div>
 
-        <div className="mt-4 grid grid-cols-4 gap-2">
-          {mockData.stats.map((stat, i) => (
-            <div key={i} className="glass-card rounded-xl p-3 text-center glass-card-hover">
-              <p className="text-sm font-black text-gold">{stat.value}</p>
-              <p className="text-[10px] font-medium text-muted-foreground uppercase leading-tight">{stat.label}</p>
-            </div>
-          ))}
-        </div>
+        {/* 4-Counter Primary Performance Metrics (Player) */}
+        {isPlayer && mockData.stats.length >= 4 && (
+          <div className="mt-4 grid grid-cols-4 gap-2">
+            {mockData.stats.slice(0, 4).map((stat, i) => (
+              <div key={i} className="glass-card rounded-xl p-3 text-center glass-card-hover">
+                <p className="text-sm font-black text-gold">{stat.value}</p>
+                <p className="text-[10px] font-medium text-muted-foreground uppercase leading-tight">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
+        {/* Generic stats grid for non-player profiles */}
+        {!isPlayer && mockData.stats.length > 0 && (
+          <div className={cn(
+            'mt-4 grid gap-2',
+            mockData.stats.length === 4 ? 'grid-cols-4' : mockData.stats.length === 3 ? 'grid-cols-3' : 'grid-cols-2'
+          )}>
+            {mockData.stats.map((stat, i) => (
+              <div key={i} className="glass-card rounded-xl p-3 text-center glass-card-hover">
+                <p className="text-sm font-black text-gold">{stat.value}</p>
+                <p className="text-[10px] font-medium text-muted-foreground uppercase leading-tight">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Action Buttons */}
         <div className="mt-4 flex gap-2">
           {primaryActions.map((action) => (
             <button key={action.id} onClick={() => onAction?.(action.id)}
@@ -100,23 +140,6 @@ export default function ProfileHeader({ config, onBack, onAction, isFollowing }:
             </button>
           ))}
         </div>
-
-        {/* Trophy display for profiles with achievements in their data */}
-        {config.id === 'player' && (
-          <div className="mt-4 glass-card rounded-xl p-4 glass-card-hover">
-            <div className="flex items-center gap-2 mb-2">
-              <Trophy className="h-4 w-4 text-gold" />
-              <h4 className="text-xs font-bold text-gold uppercase tracking-wider">Career Highlights</h4>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {mockData.stats.slice(0, 3).map((stat) => (
-                <span key={stat.label} className="rounded-lg bg-gold/10 border border-gold/20 px-3 py-1 text-xs font-semibold text-gold">
-                  {stat.value} {stat.label}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
