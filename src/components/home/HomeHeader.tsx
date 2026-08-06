@@ -1,12 +1,11 @@
 'use client';
 import type { HomeSubTab } from '@/store/navigationStore';
-
-
 import { Search, Bell, Inbox, ShoppingBag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigationStore } from '@/store/navigationStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
+import { SearchModal } from './SearchModal';
 
 const SUBTABS = [
   { id: 'for-you', label: 'Sportlights' },
@@ -29,16 +28,10 @@ export function HomeHeader({ isSearchOpen, setIsSearchOpen, isCartOpen, setIsCar
 
   return (
     <>
-      {isSearchOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={() => setIsSearchOpen(false)}>
-          <div className="w-full max-w-md rounded-xl bg-surface-elevated p-6 border border-gold/30 shadow-2xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mb-4 text-xl font-bold text-gold">Search</h2>
-            <input type="text" placeholder="Type to search..." className="w-full rounded-lg border border-surface-border bg-background p-3 text-white mb-4" autoFocus />
-            <button onClick={() => setIsSearchOpen(false)} className="w-full rounded-lg bg-surface py-2 hover:bg-surface-elevated transition-colors">Close</button>
-          </div>
-        </div>
-      )}
+      {/* Upgraded Search Modal */}
+      <SearchModal open={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 
+      {/* Cart Modal (unchanged) */}
       {isCartOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={() => setIsCartOpen(false)}>
           <div className="w-full max-w-md rounded-xl bg-surface-elevated p-6 border border-gold/30 shadow-2xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -57,7 +50,10 @@ export function HomeHeader({ isSearchOpen, setIsSearchOpen, isCartOpen, setIsCar
             <img src="/logo-wordmark.svg" alt="SportSphere" style={{ height: '28px', width: 'auto' }} />
           </button>
           <div className="flex items-center gap-2">
-            <button onClick={() => setIsSearchOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors"
+            >
               <Search className="h-4 w-4 text-muted-foreground" />
             </button>
             <button onClick={() => setIsCartOpen(true)} className="relative flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">

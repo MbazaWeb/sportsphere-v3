@@ -14,6 +14,11 @@ export async function GET(request: NextRequest) {
 
     const where: Record<string, unknown> = {};
 
+    const q = searchParams.get("q")?.trim();
+    if (q) {
+      where.content = { contains: q, mode: "insensitive" };
+    }
+
     if (userId) {
       where.userId = userId;
     }

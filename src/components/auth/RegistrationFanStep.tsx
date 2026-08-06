@@ -1,4 +1,5 @@
 'use client';
+const FALLBACK_SPORTS = ["Football", "Basketball", "Tennis", "Cricket", "Rugby", "Athletics", "Swimming", "Boxing", "Volleyball", "Formula 1"];
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -27,9 +28,15 @@ export function RegistrationFanStep({ onBack, onComplete }: RegistrationFanStepP
         const res = await fetch('/api/sports');
         if (!res.ok) return;
         const data = await res.json();
-        if (cancelled || !Array.isArray(data) || data.length === 0) return;
-        setAvailableSports(data.map((s: { name: string }) => s.name));
-      } catch { /* empty fallback stays */ }
+        if (cancelled) return;
+        if (Array.isArray(data) && data.length > 0) {
+          setAvailableSports(data.map((s: { name: string }) => s.name));
+        } else {
+          setAvailableSports(FALLBACK_SPORTS);
+        }
+      } catch {
+        if (!cancelled) setAvailableSports(FALLBACK_SPORTS);
+      }
     })();
     return () => { cancelled = true; };
   }, []);

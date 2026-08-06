@@ -10,7 +10,7 @@ import { useState, useCallback } from 'react';
 
 // Types
 interface ApiUser {
-  id: string; name: string; handle: string; avatarInitials: string;
+  id: string; name: string; handle: string; avatarUrl?: string | null; avatarInitials: string;
   isVerified: boolean; coverGradient: string; bio: string; role: string;
   location: string; followerCount: number; followingCount: number;
   postCount: number; registeredAt: string; verificationStatus: string;
@@ -44,7 +44,7 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
 
   const handleViewUser = useCallback(() => {
     setViewingUser({
-      id: user.id, name: user.name, handle: user.handle, avatar: user.avatarInitials,
+      id: user.id, name: user.name, handle: user.handle, avatar: user.avatarUrl || user.avatarInitials,
       verified: user.isVerified, coverGradient: user.coverGradient, bio: user.bio || '',
       role: user.role, location: user.location || '',
       joined: user.registeredAt ? new Date(user.registeredAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '',
@@ -67,9 +67,19 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
       )}
       <div className="p-4">
         <button onClick={handleViewUser} className="mb-3 flex items-center gap-3 text-left w-full">
-          <div className={cn('flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold',
-            user.isVerified ? 'bg-gold text-black' : 'bg-surface text-white')}>
-            {user.avatarInitials}
+          <div className={cn(
+            'flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold',
+            user.isVerified ? 'bg-gold text-black' : 'bg-surface text-white'
+          )}>
+            {user.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              user.avatarInitials
+            )}
           </div>
           <div>
             <div className="flex items-center gap-1.5 flex-wrap">

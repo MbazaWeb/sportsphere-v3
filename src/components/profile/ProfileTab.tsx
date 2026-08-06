@@ -90,7 +90,7 @@ function LoggedInProfile({ onNavigate, onLogout }: { onNavigate: (section: strin
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [verifyEmailOpen, setVerifyEmailOpen] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'posts' | 'media' | 'spotlight'>('posts');
+  const [activeTab] = useState<'spotlight'>('spotlight');
   const [realPosts, setRealPosts] = useState<Array<{ id: string; content: string; createdAt: string; likeCount: number; commentCount: number; postType: string; mediaUrls: string[] }>>([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -102,24 +102,32 @@ const handleCoverFile = async (
   const file = e.target.files?.[0];
   if (!file) return;
 
-  const fd = new FormData();
-  fd.append("file", file);
-  fd.append("type", "cover");
+  const reader = new FileReader();
 
-  try {
-    setCoverUploading(true);
+  reader.onload = async () => {
+    try {
+      setCoverUploading(true);
 
-    const res = await fetch("/api/profile/avatar", {
-      method: "POST",
-      body: fd,
-    });
+      const res = await fetch("/api/profile/avatar", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "cover",
+          coverBase64: reader.result,
+        }),
+      });
 
-    if (!res.ok) throw new Error();
+      if (!res.ok) throw new Error();
 
-    window.location.reload();
-  } finally {
-    setCoverUploading(false);
-  }
+      window.location.reload();
+    } finally {
+      setCoverUploading(false);
+    }
+  };
+
+  reader.readAsDataURL(file);
 };
 
 const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
@@ -139,7 +147,7 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
     async function loadPosts() {
       try {
         const uid = userProfile?.id;
-        const url = uid ? `/api/feed?type=for-youconst url = uid ? /api/feed?type=for-you&userId= : 'userId=${uid}` : `/api/feed?type=for-you`;
+        const url = uid ? `/api/feed?type=for-you&userId=${uid}` : `/api/feed?type=for-you`;
         const res = await fetch(url);
         if (res.ok) setRealPosts(await res.json());
       } catch { /* ignore */ }
@@ -205,7 +213,7 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
         )}
 
         {/* ---- HERO/BANNER SECTION ---- */}
-        <div className="relative -mx-4 -mt-4">
+        <div className="relative -mx-4">
           {/* Cover */}
           <div className={cn('relative h-36 md:h-40 w-full overflow-hidden rounded-b-3xl bg-gradient-to-br', userProfile?.coverGradient || 'from-emerald-600 to-emerald-900')}>
             {userProfile?.coverUrl && (
@@ -218,13 +226,18 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-20" />
             {/* Edit cover button */}
-            <button className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors">
+            <button
+              type="button"
+              onClick={() => coverInputRef.current?.click()}
+              disabled={coverUploading}
+              className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors disabled:opacity-50"
+            >
               <Camera className="h-4 w-4 text-white" />
             </button>
           </div>
 
           {/* Avatar overlapping */}
-          <div className="relative -mt-16 px-4 flex items-end justify-between">
+          <div className="relative -mt-10 px-4 flex items-end justify-between">
             <div className="flex items-end gap-4">
               <div className="relative">
                 <div className={cn('flex h-24 w-24 items-center justify-center rounded-full border-4 border-background text-2xl font-bold overflow-hidden', isVerified ? 'bg-gold text-black' : 'bg-surface-elevated text-white')}>
@@ -364,16 +377,15 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
         {/* ---- POSTS / MEDIA / SPOTLIGHT TABS ---- */}
         <div className="mt-4">
           <div className="mb-4 flex gap-1">
-            {['posts', 'media', 'spotlight'].map((tab) => (
+            {['spotlight'].map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab as any)}
                 className={cn(
                   'flex-1 rounded-lg py-2 text-sm font-semibold transition-colors',
                   activeTab === tab ? 'bg-gold text-black' : 'bg-surface text-muted-foreground hover:text-foreground'
                 )}
               >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                My Spotlight
               </button>
             ))}
           </div>
@@ -383,7 +395,7 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
               [1,2,3].map(i => (<div key={i} className="rounded-xl bg-surface-elevated border border-surface-border p-4 animate-pulse"><div className="h-3 bg-surface-border rounded w-3/4 mb-2" /><div className="h-3 bg-surface-border rounded w-1/2" /></div>))
             ) : realPosts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10"><Zap className="h-8 w-8 text-muted-foreground/30 mb-2" /><p className="text-sm text-muted-foreground">No content yet</p></div>
-            ) : activeTab === 'posts' ? (
+            ) : (
               realPosts.map((post) => (
                 <article key={post.id} className="rounded-2xl bg-surface-elevated border border-surface-border overflow-hidden glass-card-hover">
                   <div className="p-4 border-b border-surface-border/30 flex items-center gap-3">
@@ -421,19 +433,6 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
                   </div>
                 </article>
               ))
-            ) : activeTab === 'media' ? (
-              <div className="grid grid-cols-3 gap-1">
-                {realPosts.filter(p => p.mediaUrls && p.mediaUrls.length > 0).slice(0, 9).map((post) => (
-                  <div key={post.id} className="aspect-square bg-surface-elevated rounded-xl border border-surface-border overflow-hidden">
-                    <img src={post.mediaUrls[0]} alt="" className="h-full w-full object-cover" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-10">
-                <Video className="h-8 w-8 text-muted-foreground/30 mb-2" />
-                <p className="text-sm text-muted-foreground">No spotlight videos yet</p>
-              </div>
             )}
           </div>
         </div>
