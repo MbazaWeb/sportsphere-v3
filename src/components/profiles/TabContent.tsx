@@ -242,7 +242,7 @@ function OverviewContent({ config }: { config: ProfileTypeConfig }) {
 
 // ─── Team Overview ────────────────────────────────────────────
 function TeamOverview() {
-  const { data: team, loading } = useProfileData<ReturnType<typeof Object>>("team", "default");
+  const { data: team, loading } = useProfileData<any>("team", "default");
   const setViewingUser = useUIStore((s) => s.setViewingUser);
   if (loading) return <ProfileDataSkeleton />;
   if (!team) return <EmptyCard message="Team data unavailable" />;
@@ -386,7 +386,7 @@ function TeamOverview() {
 
 // ─── Competition Overview ─────────────────────────────────────
 function CompetitionOverview() {
-  const { data: comp, loading } = useProfileData<ReturnType<typeof Object>>("competition", "premierLeague");
+  const { data: comp, loading } = useProfileData<any>("competition", "premierLeague");
   const [activeTab, setActiveTab] = useState<'table'|'scorers'|'assists'|'cs'>('table');
   if (loading) return <ProfileDataSkeleton />;
   if (!comp) return <EmptyCard message="Competition data unavailable" />;
@@ -545,7 +545,7 @@ function MatchOverview() {
 
 // ─── Player Overview Enhanced ────────────────────────────────
 function PlayerOverviewEnhanced() {
-  const { data: p, loading } = useProfileData<Record<string, unknown>>("player", "rashford");
+  const { data: p, loading } = useProfileData<any>("player", "rashford");
   const setViewingUser = useUIStore((s) => s.setViewingUser);
   if (loading) return <ProfileDataSkeleton />;
   if (!p) return <EmptyCard message="Player data unavailable" />;
@@ -1724,7 +1724,7 @@ function FansContent() {
 
 // ─── Career Content ───────────────────────────────────────────
 function CareerContent() {
-  const { data: p, loading } = useProfileData<Record<string, unknown>>("player", "rashford");
+  const { data: p, loading } = useProfileData<any>("player", "rashford");
   if (loading) return <ProfileDataSkeleton />;
   if (!p) return <EmptyCard message="Career data unavailable" />;
 
@@ -1849,7 +1849,7 @@ function CareerContent() {
 }
 // ─── Achievements Content ─────────────────────────────────────
 function AchievementsContent() {
-  const { data: p, loading } = useProfileData<Record<string, unknown>>("player", "rashford");
+  const { data: p, loading } = useProfileData<any>("player", "rashford");
 
   if (loading) return <ProfileDataSkeleton />;
 
