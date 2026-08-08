@@ -4,7 +4,9 @@ module.exports = {
     './app/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
   ],
-  presets: [require('@sportsphere/design-system/tailwind-preset')],
+  // NativeWind v4 requires its preset to be declared first so the metro
+  // transformer can detect the NativeWind/Tailwind integration.
+  presets: [require('nativewind/preset'), require('@sportsphere/design-system/tailwind-preset')],
   theme: {
     extend: {
       // Brand-specific extras not covered by the shared preset

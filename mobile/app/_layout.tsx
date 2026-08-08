@@ -17,13 +17,13 @@ import {
   Inter_500Medium,
   Inter_600SemiBold,
   Inter_700Bold,
-} from 'expo-google-fonts/inter';
+} from '@expo-google-fonts/inter';
 import {
   Outfit_400Regular,
   Outfit_500Medium,
   Outfit_600SemiBold,
   Outfit_700Bold,
-} from 'expo-google-fonts/outfit';
+} from '@expo-google-fonts/outfit';
 
 import { colors } from '@sportsphere/design-system/tokens';
 

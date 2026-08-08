@@ -13,6 +13,7 @@
 
 import { Pressable, View, Text, Platform, StyleSheet } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import type { LucideIcon } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
@@ -21,7 +22,7 @@ import { colors, typography } from '@sportsphere/design-system/tokens';
 type TabConfig = {
   name: string;
   title: string;
-  Icon: React.ComponentType<{ color: string; size: number }>;
+  Icon: LucideIcon;
 };
 
 interface Props extends BottomTabBarProps {

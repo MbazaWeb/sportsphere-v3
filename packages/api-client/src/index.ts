@@ -118,3 +118,13 @@ export function createAuthApi(client: ReturnType<typeof createApiClient>) {
 }
 
 export type AuthApi = ReturnType<typeof createAuthApi>;
+
+// ─── Re-export domain APIs ────────────────────────────────────────
+export { createFeedApi } from './feed.js';
+export type FeedApi = ReturnType<typeof import('./feed.js').createFeedApi>;
+
+export { createPerformanceApi } from './performance.js';
+export type PerformanceApi = ReturnType<typeof import('./performance.js').createPerformanceApi>;
+
+export { createLeaderboardApi } from './leaderboard.js';
+export type LeaderboardApi = ReturnType<typeof import('./leaderboard.js').createLeaderboardApi>;
