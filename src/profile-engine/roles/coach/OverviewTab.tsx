@@ -7,10 +7,10 @@
 
 import { Megaphone, Building2, Award, TrendingUp, Trophy, Clock, Flag } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, ProgressBar, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, ProgressBar, rpString, rpNumber } from '../../shared/ui';
 
 export function CoachOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'coach');
   const coachingRole = rpString(rp, 'coachingRole');
   const currentTeam = rpString(rp, 'currentTeam');
   const license = rpString(rp, 'license');

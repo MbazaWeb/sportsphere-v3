@@ -8,10 +8,10 @@
 
 import { Users, Building2, MapPin, Calendar, Trophy, Crown, User, Activity, TrendingUp } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber } from '../../shared/ui';
 
 export function TeamOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'team');
 
   const nickname = rpString(rp, 'nickname');
   const foundedYear = rpString(rp, 'foundedYear');

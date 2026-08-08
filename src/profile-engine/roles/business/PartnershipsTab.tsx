@@ -9,7 +9,7 @@ import {
   Briefcase, Users, Trophy, Calendar, TrendingUp, ExternalLink,
 } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, rpString } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, rpString } from '../../shared/ui';
 
 interface Partner { name: string; since: string; value: string; }
 interface Sponsorship { event: string; year: string; value: string; }
@@ -26,7 +26,7 @@ function parseList<T>(raw: string, mapper: (p: string[]) => T, filter: (item: T)
 }
 
 export function BusinessPartnershipsTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'business');
 
   const teams = parseList<Partner>(
     rpString(rp, 'partnerTeams'),

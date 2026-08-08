@@ -11,7 +11,7 @@
 
 import { Trophy, MapPin, Calendar, Flag, ArrowRight, Building2, GraduationCap } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, TimelineItem, KeyValueRow, Badge, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, TimelineItem, KeyValueRow, Badge, rpString, rpNumber } from '../../shared/ui';
 
 interface TransferEntry {
   year: string;
@@ -48,7 +48,7 @@ function parseTransfers(raw: string): TransferEntry[] {
 }
 
 export function PlayerCareerTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'player');
   const currentClub = rpString(rp, 'currentClub');
   const contractUntil = rpString(rp, 'contractUntil');
   const contractStatus = rpString(rp, 'contractStatus');

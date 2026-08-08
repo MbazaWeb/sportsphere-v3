@@ -7,10 +7,10 @@
 
 import { Trophy, Activity, TrendingUp, Shield, Target, Percent } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, EmptyState, ProgressBar, Badge, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, EmptyState, ProgressBar, Badge, rpString, rpNumber } from '../../shared/ui';
 
 export function CoachRecordTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'coach');
   const matches = rpNumber(rp, 'matchesManaged');
   const wins = rpNumber(rp, 'wins');
   const draws = rpNumber(rp, 'draws');

@@ -3,6 +3,7 @@ import { getUserIdFromRequest } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { safeJsonParse } from '@/lib/json';
 import { USER_SELECT_FULL } from '@/lib/db-selects';
+import { isTypedProfileRole, saveTypedProfile, fetchTypedProfileRecord } from '@/lib/typed-profiles';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,13 @@ export async function GET(request: NextRequest) {
       const privacy = safeJsonParse(user.privacySettings || '{}', {});
       const isOwnProfile = currentUserId === user.id;
 
+      // Phase 4: For custom roles, fetch the typed profile row and
+      // expose it as `typedProfile` on the response. Renderers will
+      // pick it up via `getRoleProfile(apiUser, role)`.
+      const typedProfile = isTypedProfileRole(user.role)
+        ? await fetchTypedProfileRecord(user.role, user.id)
+        : null;
+
       const publicUser: Record<string, unknown> = {
         ...user,
         roleName: user.userRole?.name || 'Fan',
@@ -51,7 +59,13 @@ export async function GET(request: NextRequest) {
         sports: user.userSports.map(us => us.sport),
         sportsFollowing: safeJsonParse(user.sportsFollowing, []),
         roleData: safeJsonParse(user.roleData, {}),
-        roleProfile: safeJsonParse(user.roleProfile, {}),
+        // For custom roles: prefer typed profile data, fall back to JSON
+        // (which may have stale data from before Phase 4 backfill).
+        // For generic roles: use the JSON column as before.
+        roleProfile: isTypedProfileRole(user.role) && typedProfile && Object.keys(typedProfile).length > 0
+          ? typedProfile
+          : safeJsonParse(user.roleProfile, {}),
+        typedProfile,  // expose typed profile separately for renderers
         interests: safeJsonParse(user.interests, []),
         privacySettings: safeJsonParse(user.privacySettings, {}),
         notifPrefs: safeJsonParse(user.notifPrefs, {}),
@@ -92,6 +106,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Phase 4: attach typed profile for custom roles
+    const typedProfile = isTypedProfileRole(user.role)
+      ? await fetchTypedProfileRecord(user.role, user.id)
+      : null;
+
     return NextResponse.json({
       ...user,
       roleName: user.userRole?.name || 'Fan',
@@ -105,7 +124,10 @@ export async function GET(request: NextRequest) {
       sports: user.userSports.map(us => us.sport),
       sportsFollowing: safeJsonParse(user.sportsFollowing, []),
       roleData: safeJsonParse(user.roleData, {}),
-      roleProfile: safeJsonParse(user.roleProfile, {}),
+      roleProfile: isTypedProfileRole(user.role) && typedProfile && Object.keys(typedProfile).length > 0
+        ? typedProfile
+        : safeJsonParse(user.roleProfile, {}),
+      typedProfile,
       interests: safeJsonParse(user.interests, []),
       privacySettings: safeJsonParse(user.privacySettings, {}),
       notifPrefs: safeJsonParse(user.notifPrefs, {}),
@@ -182,7 +204,28 @@ export async function PUT(request: NextRequest) {
     if (body.notifPrefs !== undefined) update.notifPrefs = JSON.stringify(body.notifPrefs);
     if (body.interests !== undefined) update.interests = JSON.stringify(body.interests);
     if (body.sportsFollowing !== undefined) update.sportsFollowing = JSON.stringify(body.sportsFollowing);
-    if (body.roleProfile !== undefined) update.roleProfile = JSON.stringify(body.roleProfile);
+
+    // ─── Phase 4: route roleProfile to the typed table for custom roles ──
+    // For custom roles: write to the typed table (PlayerProfile, etc.)
+    //   AND keep the JSON column in sync as a backup.
+    // For generic roles: only update the JSON column.
+    const currentUser = await db.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    const userRole = currentUser?.role || 'fan';
+    if (body.roleProfile !== undefined) {
+      const rpData = body.roleProfile as Record<string, unknown>;
+      if (isTypedProfileRole(userRole)) {
+        // Write to typed table
+        await saveTypedProfile(userRole, userId, rpData);
+        // Also mirror to JSON column as a fallback
+        update.roleProfile = JSON.stringify(rpData);
+      } else {
+        // Generic role — JSON column only
+        update.roleProfile = JSON.stringify(rpData);
+      }
+    }
 
     // ─── Sync UserSport junction table when sportsFollowing changes ──
     // E-1: This was a critical bug — only the JSON field was updated, not
@@ -245,11 +288,19 @@ export async function PUT(request: NextRequest) {
       select: USER_SELECT_FULL,
     });
 
+    // Phase 4: fetch the typed profile (if custom role) to include in response
+    const typedProfileResp = isTypedProfileRole(updated.role)
+      ? await fetchTypedProfileRecord(updated.role, userId)
+      : null;
+
     return NextResponse.json({
       ...updated,
       sportsFollowing: safeJsonParse(updated.sportsFollowing, []),
       roleData: safeJsonParse(updated.roleData, {}),
-      roleProfile: safeJsonParse(updated.roleProfile, {}),
+      roleProfile: isTypedProfileRole(updated.role) && typedProfileResp && Object.keys(typedProfileResp).length > 0
+        ? typedProfileResp
+        : safeJsonParse(updated.roleProfile, {}),
+      typedProfile: typedProfileResp,
       interests: safeJsonParse(updated.interests, []),
       privacySettings: safeJsonParse(updated.privacySettings, {}),
       notifPrefs: safeJsonParse(updated.notifPrefs, {}),

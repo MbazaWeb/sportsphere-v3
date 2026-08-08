@@ -11,6 +11,7 @@
 
 import type { ReactNode, ElementType } from 'react';
 import { cn } from '@/lib/utils';
+import { TYPED_PROFILE_ROLES } from '@/lib/typed-profiles';
 
 // ─── Card ──────────────────────────────────────────────────────
 export function Card({
@@ -194,6 +195,34 @@ export function ProgressBar({ value, max = 100, color = 'gold' }: { value: numbe
 }
 
 // ─── Helpers for reading roleProfile safely ────────────────────
+//
+// Phase 4: custom roles now store data in typed tables (PlayerProfile,
+// CoachProfile, … CommunityProfile). The API layer fetches the matching
+// row and attaches it as `apiUser.typedProfile` (a plain Record).
+// Generic roles (fan, official, etc.) still use the legacy
+// `apiUser.roleProfile` JSON column.
+//
+// `getRoleProfile(apiUser, role)` returns the right Record for any
+// role — renderers should use it instead of reading `apiUser.roleProfile`
+// directly so the storage layer is abstracted.
+
+export function isTypedRole(role: string | null | undefined): boolean {
+  return !!role && TYPED_PROFILE_ROLES.has(role);
+}
+
+export function getRoleProfile(
+  apiUser: { role?: string; roleProfile?: Record<string, unknown> | null; typedProfile?: Record<string, unknown> | null } | null,
+  role: string
+): Record<string, unknown> {
+  if (!apiUser) return {};
+  // Custom role: prefer typed profile row (from typed table)
+  if (isTypedRole(role) && apiUser.typedProfile) {
+    return apiUser.typedProfile;
+  }
+  // Fallback: legacy JSON blob (also used by generic roles)
+  return (apiUser.roleProfile || {}) as Record<string, unknown>;
+}
+
 export function rpString(rp: Record<string, unknown> | null | undefined, key: string): string {
   if (!rp) return '';
   const v = rp[key];

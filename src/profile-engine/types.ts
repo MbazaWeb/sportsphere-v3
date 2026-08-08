@@ -151,6 +151,14 @@ export interface ApiUserLike {
   postCount?: number;
   registeredAt?: string;
   roleProfile?: Record<string, unknown> | null;
+  // ─── Phase 4: typed profile row (attached by API layer) ────
+  // When the user has a custom role, the API layer fetches the
+  // matching typed table row (PlayerProfile, CoachProfile, etc.)
+  // and attaches it here as a plain Record. Renderers should call
+  // `getRoleProfile(apiUser, role)` which prefers `typedProfile`
+  // for custom roles and falls back to `roleProfile` JSON for
+  // generic roles.
+  typedProfile?: Record<string, unknown> | null;
   // social links
   website?: string | null;
   socialInstagram?: string | null;

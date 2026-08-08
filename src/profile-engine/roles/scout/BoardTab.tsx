@@ -14,7 +14,7 @@
 
 import { Eye, Star, CheckCircle2, Trophy, ClipboardList, Search } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, ProgressBar, rpString } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, ProgressBar, rpString } from '../../shared/ui';
 
 export interface ScoutPlayer {
   name: string;
@@ -105,7 +105,7 @@ function Column({ status, players }: { status: ScoutPlayer['status']; players: S
 }
 
 export function ScoutBoardTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'scout');
   const players = parseScoutingBoard(rpString(rp, 'scoutingBoard'));
 
   if (players.length === 0) {

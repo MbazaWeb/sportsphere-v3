@@ -7,7 +7,7 @@
 
 import { Handshake, MapPin, ExternalLink, Trophy, Users, Medal, Calendar } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString } from '../../shared/ui';
 
 function countLines(raw: string): number {
   if (!raw) return 0;
@@ -15,7 +15,7 @@ function countLines(raw: string): number {
 }
 
 export function CommercialPartnerOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'commercial-partner');
   const partnerType = rpString(rp, 'partnerType');
   const brand = rpString(rp, 'brand');
   const sportsCategory = rpString(rp, 'sportsCategory');

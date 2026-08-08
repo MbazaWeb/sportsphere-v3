@@ -7,7 +7,7 @@
 
 import { Trophy, Building2, Flag, GraduationCap, Footprints } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, KeyValueRow, Badge, TimelineItem, rpString } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, KeyValueRow, Badge, TimelineItem, rpString } from '../../shared/ui';
 
 interface ClubStint {
   years: string;
@@ -33,7 +33,7 @@ function parseStints(raw: string, defaultRole = 'Coach'): ClubStint[] {
 }
 
 export function CoachCareerTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'coach');
   const currentTeam = rpString(rp, 'currentTeam');
   const coachingRole = rpString(rp, 'coachingRole');
   const previousClubs = parseStints(rpString(rp, 'previousClubs'));

@@ -7,10 +7,10 @@
 
 import { Trophy, MapPin, Building2, Calendar, Users, Target, Zap } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber } from '../../shared/ui';
 
 export function CompetitionOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'competition');
   const name = rpString(rp, 'competitionName');
   const season = rpString(rp, 'season');
   const organizer = rpString(rp, 'organizer');

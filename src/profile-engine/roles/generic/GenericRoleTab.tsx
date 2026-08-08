@@ -18,7 +18,7 @@
 import { useState, useMemo } from 'react';
 import { Search, X } from 'lucide-react';
 import type { ApiUserLike, RoleConfig, FieldDef } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, EmptyState, Badge, rpString, rpArray } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, EmptyState, Badge, rpString, rpArray } from '../../shared/ui';
 
 function fieldIcon(field: FieldDef): typeof Search {
   // Pick icon by field type / key heuristics
@@ -59,7 +59,7 @@ interface GenericTabProps {
 }
 
 export function GenericRoleTab({ apiUser, roleConfig, groupFilter, title }: GenericTabProps) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, roleConfig.role);
   const [query, setQuery] = useState('');
 
   // Get fields, optionally filtered by group

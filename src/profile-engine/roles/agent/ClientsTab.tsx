@@ -20,7 +20,7 @@
 
 import { Handshake, Users, User, UserCheck, DollarSign, ArrowRightLeft, Briefcase, TrendingUp, Calendar } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, StatGrid, StatTile, KeyValueRow, ProgressBar, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, StatGrid, StatTile, KeyValueRow, ProgressBar, rpString, rpNumber } from '../../shared/ui';
 
 interface Client {
   name: string;
@@ -101,7 +101,7 @@ function ClientCard({ client }: { client: Client }) {
 }
 
 export function AgentClientsTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'agent');
   const clients = parseClients(rpString(rp, 'clientRoster'));
 
   // Aggregate metrics (use declared values if roster is empty, otherwise compute)

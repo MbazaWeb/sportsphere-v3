@@ -367,9 +367,13 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
         </div>
 
         {/* ---- PROFILE COMPLETENESS BANNER (from Profile Engine) ---- */}
+        {/* Phase 4: prefer typed profile (from typed table) for custom roles,
+            fall back to roleProfile JSON for generic roles. */}
         <ProfileCompletenessBanner
           role={userProfile?.role || 'fan'}
-          roleProfile={(userProfile?.roleProfile as Record<string, unknown> | undefined) || {}}
+          roleProfile={(userProfile?.typedProfile as Record<string, unknown> | undefined)
+            || (userProfile?.roleProfile as Record<string, unknown> | undefined)
+            || {}}
           onEdit={() => setEditOpen(true)}
         />
 

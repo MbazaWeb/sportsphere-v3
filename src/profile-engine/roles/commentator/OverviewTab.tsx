@@ -8,11 +8,11 @@
 
 import { Mic, Building2, Calendar, Trophy, Radio, Tv, Headphones, Globe2, Clock } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber, rpArray } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber, rpArray } from '../../shared/ui';
 import { parseBroadcasts } from './BroadcastsTab';
 
 export function CommentatorOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'commentator');
   const commentatorType = rpString(rp, 'commentatorType');
   const broadcaster = rpString(rp, 'broadcaster');
   const languages = rpArray(rp, 'languages').map(String);

@@ -7,12 +7,12 @@
 
 import { Crown, Medal } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, TimelineItem, rpString } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, TimelineItem, rpString } from '../../shared/ui';
 
 interface Champion { year: string; champion: string; runnerUp: string; }
 
 export function LeagueChampionsTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'league');
   const reigningChampion = rpString(rp, 'champions');
   const raw = rpString(rp, 'previousChampions');
 

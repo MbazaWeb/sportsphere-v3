@@ -9,13 +9,13 @@
 
 import { Trophy, Award, Medal } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, TimelineItem, rpString } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, TimelineItem, rpString } from '../../shared/ui';
 
 interface Winner { year: string; winner: string; runnerUp: string; score: string; }
 interface CompetitionRecord { record: string; holder: string; year: string; }
 
 export function CompetitionHistoryTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'competition');
   const rawWinners = rpString(rp, 'previousWinners');
   const rawRecords = rpString(rp, 'records');
 

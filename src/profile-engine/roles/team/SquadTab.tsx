@@ -7,7 +7,7 @@
 
 import { Users, Goal, Shield, Zap, Footprints } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, rpString } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, rpString } from '../../shared/ui';
 
 interface Player {
   name: string;
@@ -52,7 +52,7 @@ const GROUP_META: Record<string, { label: string; icon: typeof Users; color: 'go
 };
 
 export function TeamSquadTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'team');
   const squad = parseSquad(rpString(rp, 'squad'));
 
   // Group by position

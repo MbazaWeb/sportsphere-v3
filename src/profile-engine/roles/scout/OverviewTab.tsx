@@ -8,11 +8,11 @@
 
 import { Search, MapPin, Building2, Globe2, Eye, Star, CheckCircle2, Trophy, TrendingUp } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, ProgressBar, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, ProgressBar, rpString, rpNumber } from '../../shared/ui';
 import { parseScoutingBoard, STATUS_META } from './BoardTab';
 
 export function ScoutOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'scout');
   const scoutType = rpString(rp, 'scoutType');
   const organization = rpString(rp, 'organization');
   const geo = rpString(rp, 'geographicCoverage');

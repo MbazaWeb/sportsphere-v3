@@ -6,10 +6,10 @@
 
 import { Activity, TrendingUp, Target, Shield, Trophy, BarChart3 } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, EmptyState, ProgressBar, Badge, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, EmptyState, ProgressBar, Badge, rpString, rpNumber } from '../../shared/ui';
 
 export function TeamPerformanceTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'team');
   const matches = rpNumber(rp, 'matchesPlayed');
   const wins = rpNumber(rp, 'wins');
   const draws = rpNumber(rp, 'draws');

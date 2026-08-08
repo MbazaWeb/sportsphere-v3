@@ -7,11 +7,11 @@
 
 import { BarChart3, Building2, Brain, Target, FileText, Boxes, Users, TrendingUp } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber, rpArray } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber, rpArray } from '../../shared/ui';
 import { parsePredictions } from './PredictionsTab';
 
 export function AnalystOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'analyst');
   const analystType = rpString(rp, 'analystType');
   const organization = rpString(rp, 'organization');
   const expertise = rpArray(rp, 'expertise').map(String);

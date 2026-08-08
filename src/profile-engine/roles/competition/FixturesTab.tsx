@@ -9,7 +9,7 @@
 
 import { Calendar, Trophy } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, rpString } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, rpString } from '../../shared/ui';
 
 interface Fixture {
   date: string;
@@ -49,7 +49,7 @@ function parseFixtures(raw: string): Fixture[] {
 }
 
 export function CompetitionFixturesTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'competition');
   const fixtures = parseFixtures(rpString(rp, 'fixtures'));
 
   if (fixtures.length === 0) {

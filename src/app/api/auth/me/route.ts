@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { verifySession, serializePublicUser, SESSION_COOKIE } from '@/lib/auth';
-import { safeJsonParse } from '@/lib/json';
+import { isTypedProfileRole, fetchTypedProfileRecord } from '@/lib/typed-profiles';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
       id: true, name: true, email: true, handle: true,
       avatarUrl: true, avatarInitials: true, role: true,
       verificationStatus: true, isVerified: true, emailVerified: true,
+      isPro: true, proSince: true, proTier: true,
       bio: true, location: true, coverGradient: true, coverUrl: true,
       followerCount: true, followingCount: true, postCount: true,
       sportsFollowing: true, roleData: true, registeredAt: true,
@@ -36,6 +37,12 @@ export async function GET(request: NextRequest) {
     return res;
   }
 
+  // Phase 4: attach typed profile for custom roles so the renderer's
+  // `getRoleProfile(apiUser, role)` picks up the typed-table data.
+  const typedProfile = isTypedProfileRole(user.role)
+    ? await fetchTypedProfileRecord(user.role, user.id)
+    : null;
+
   const publicUser = serializePublicUser(user);
   return NextResponse.json({
     user: {
@@ -47,6 +54,12 @@ export async function GET(request: NextRequest) {
       typeName: user.userRoleType?.name || 'Casual Fan',
       typeSlug: user.userRoleType?.slug || 'casual',
       sports: user.userSports.map(us => us.sport),
+      // Phase 4: expose typed profile for custom roles
+      typedProfile,
+      // For custom roles: prefer typed profile, fall back to legacy JSON
+      // (auth/me doesn't fetch the JSON column on the regular select, so
+      // for custom roles the typed profile is the only source).
+      roleProfile: typedProfile && Object.keys(typedProfile).length > 0 ? typedProfile : {},
     },
   }, { status: 200 });
 }

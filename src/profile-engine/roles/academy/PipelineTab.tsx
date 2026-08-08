@@ -20,7 +20,7 @@
 
 import { GraduationCap, Trophy, Users, ArrowRight, XCircle } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, rpString, rpNumber, rpArray } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, rpString, rpNumber, rpArray } from '../../shared/ui';
 
 interface Graduate {
   name: string;
@@ -82,7 +82,7 @@ function StageCard({ graduate }: { graduate: Graduate }) {
 }
 
 export function AcademyPipelineTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'academy');
   const graduates = parseGraduates(rpString(rp, 'graduates'));
   const proGraduates = rpNumber(rp, 'proGraduates');
   const playersPromoted = rpNumber(rp, 'playersPromoted');

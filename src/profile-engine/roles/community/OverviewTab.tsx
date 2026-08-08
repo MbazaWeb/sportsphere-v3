@@ -7,10 +7,10 @@
 
 import { Users, MapPin, Calendar, Heart, BookOpen } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber } from '../../shared/ui';
 
 export function CommunityOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'community');
   const name = rpString(rp, 'communityName');
   const communityType = rpString(rp, 'communityType');
   const foundedYear = rpString(rp, 'foundedYear');

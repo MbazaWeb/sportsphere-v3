@@ -7,10 +7,10 @@
 
 import { Footprints, Activity, TrendingUp, DollarSign, Building2, Flag, Ruler, Weight } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber } from '../../shared/ui';
 
 export function PlayerOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'player');
   const position = rpString(rp, 'position');
   const preferredFoot = rpString(rp, 'preferredFoot');
   const height = rpNumber(rp, 'height');

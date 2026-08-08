@@ -15,7 +15,7 @@
 
 import { Newspaper, Eye, Heart, MessageCircle, ExternalLink, FileText, Sparkles, Zap } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, StatGrid, StatTile, ProgressBar, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, StatGrid, StatTile, ProgressBar, rpString, rpNumber } from '../../shared/ui';
 
 export interface ArticleEntry {
   title: string;
@@ -120,7 +120,7 @@ function ArticleCard({ article }: { article: ArticleEntry }) {
 }
 
 export function JournalistArticlesTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'journalist');
   const articles = parseArticles(rpString(rp, 'articles'));
 
   // Aggregate metrics from the article list (fallback to declared aggregates if list is empty)

@@ -7,11 +7,11 @@
 
 import { Handshake, Building2, BadgeCheck, Globe2, Users, ArrowRightLeft, DollarSign, TrendingUp, ShieldCheck } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber, rpArray } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber, rpArray } from '../../shared/ui';
 import { parseClients } from './ClientsTab';
 
 export function AgentOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'agent');
   const agentType = rpString(rp, 'agentType');
   const agency = rpString(rp, 'agency');
   const license = rpString(rp, 'license');

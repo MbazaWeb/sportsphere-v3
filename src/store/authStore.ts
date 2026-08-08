@@ -29,6 +29,8 @@ export interface UserProfile {
   coverGradient?: string;
   coverUrl?: string | null;
   roleProfile?: Record<string, unknown> | null;
+  // Phase 4: typed profile row (from typed table for custom roles)
+  typedProfile?: Record<string, unknown> | null;
   roleId?: string;
   roleTypeId?: string;
   roleName?: string;

@@ -17,7 +17,7 @@ import {
   Footprints, Timer, Square, Star,
 } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, EmptyState, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, EmptyState, rpString, rpNumber } from '../../shared/ui';
 
 function positionGroup(position: string): 'GK' | 'DEF' | 'MID' | 'FWD' | 'OTHER' {
   const p = position.toUpperCase();
@@ -29,7 +29,7 @@ function positionGroup(position: string): 'GK' | 'DEF' | 'MID' | 'FWD' | 'OTHER'
 }
 
 export function PlayerStatsTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'player');
   const position = rpString(rp, 'position');
 
   // General stats — shown for everyone

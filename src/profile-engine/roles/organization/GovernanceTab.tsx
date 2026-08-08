@@ -14,7 +14,7 @@ import {
   MapPin, Calendar, Briefcase,
 } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, rpString } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, rpString } from '../../shared/ui';
 
 interface Leader { name: string; role: string; since: string; }
 interface Department { name: string; head: string; desc: string; }
@@ -33,7 +33,7 @@ function parseList<T>(raw: string, mapper: (parts: string[]) => T, filter: (item
 }
 
 export function OrganizationGovernanceTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'organization');
 
   const leaders = parseList<Leader>(
     rpString(rp, 'leadership'),

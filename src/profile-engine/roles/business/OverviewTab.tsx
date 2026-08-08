@@ -8,7 +8,7 @@
 
 import { Briefcase, MapPin, Calendar, Users, Package, ExternalLink } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber } from '../../shared/ui';
 
 function countLines(raw: string): number {
   if (!raw) return 0;
@@ -16,7 +16,7 @@ function countLines(raw: string): number {
 }
 
 export function BusinessOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'business');
   const name = rpString(rp, 'companyName');
   const industry = rpString(rp, 'industry');
   const foundedYear = rpString(rp, 'foundedYear');

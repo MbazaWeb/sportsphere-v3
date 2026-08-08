@@ -8,7 +8,7 @@
 
 import { Layout, Target, Shield, Zap, Layers, BookOpen } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, KeyValueRow, rpString, rpArray } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, KeyValueRow, rpString, rpArray } from '../../shared/ui';
 
 // Render a simple formation pitch (4-3-3 etc.) using CSS.
 // The formation string like "4-3-3" maps to rows of player dots.
@@ -46,7 +46,7 @@ function FormationPitch({ formation }: { formation: string }) {
 }
 
 export function CoachTacticalTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'coach');
   const formation = rpString(rp, 'preferredFormation');
   const alternates = rpArray(rp, 'alternateFormations').map(String);
   const philosophy = rpString(rp, 'playingPhilosophy');

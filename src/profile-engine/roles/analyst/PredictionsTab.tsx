@@ -12,7 +12,7 @@
 
 import { BarChart3, Target, CheckCircle2, XCircle, Clock, TrendingUp, Brain, FileText } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, StatGrid, StatTile, ProgressBar, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, StatGrid, StatTile, ProgressBar, rpString, rpNumber } from '../../shared/ui';
 
 interface Prediction {
   match: string;
@@ -93,7 +93,7 @@ function PredictionRow({ p }: { p: Prediction }) {
 }
 
 export function AnalystPredictionsTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'analyst');
   const predictions = parsePredictions(rpString(rp, 'predictions'));
 
   if (predictions.length === 0) {

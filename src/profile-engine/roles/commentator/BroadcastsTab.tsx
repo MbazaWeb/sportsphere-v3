@@ -10,7 +10,7 @@
 
 import { Mic, Calendar, Building2, Trophy, Users, Radio, Tv, Headphones } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, StatGrid, StatTile, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, StatGrid, StatTile, rpString, rpNumber } from '../../shared/ui';
 
 interface Broadcast {
   date: string;
@@ -60,7 +60,7 @@ function BroadcasterIcon({ name }: { name: string }) {
 }
 
 export function CommentatorBroadcastsTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'commentator');
   const broadcasts = parseBroadcasts(rpString(rp, 'matchLog'));
 
   if (broadcasts.length === 0) {

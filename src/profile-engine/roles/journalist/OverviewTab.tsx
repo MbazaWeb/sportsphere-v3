@@ -8,11 +8,11 @@
 
 import { Newspaper, MapPin, Building2, Eye, Sparkles, Zap, FileText, Mic, Languages } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber, rpArray } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber, rpArray } from '../../shared/ui';
 import { parseArticles, formatCount } from './ArticlesTab';
 
 export function JournalistOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'journalist');
   const publication = rpString(rp, 'publication');
   const beat = rpString(rp, 'beat');
   const location = rpString(rp, 'location');

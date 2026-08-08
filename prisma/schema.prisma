@@ -188,6 +188,29 @@ model User {
   userRoleType        RoleType   @relation("UserRoleType", fields: [roleTypeId], references: [id])
   userSports          UserSport[]
 
+  // ─── Phase 4: Typed role-specific profile tables ────────────
+  // Each custom role has its own typed table with real columns (no JSON
+  // blob). The `roleProfile` JSON column above is kept ONLY for the
+  // remaining generic roles (fan, official, support-staff, moderator,
+  // administrator + 4 legacy aliases).
+  playerProfile            PlayerProfile?
+  coachProfile             CoachProfile?
+  teamProfile              TeamProfile?
+  scoutProfile             ScoutProfile?
+  journalistProfile        JournalistProfile?
+  creatorProfile           CreatorProfile?
+  analystProfile           AnalystProfile?
+  commentatorProfile       CommentatorProfile?
+  agentProfile             AgentProfile?
+  organizationProfile      OrganizationProfile?
+  competitionProfile       CompetitionProfile?
+  leagueProfile            LeagueProfile?
+  academyProfile           AcademyProfile?
+  venueProfile             VenueProfile?
+  businessProfile          BusinessProfile?
+  commercialPartnerProfile CommercialPartnerProfile?
+  communityProfile         CommunityProfile?
+
   @@index([handle])
   @@index([email])
   @@index([role])
@@ -515,4 +538,510 @@ model AuditLog {
   @@index([module])
   @@index([action])
   @@index([createdAt(sort: Desc)])
+}
+
+// ───────────────────────────────────────────────────────────────────
+// Phase 4 — Typed Role-Specific Profile Tables
+// ───────────────────────────────────────────────────────────────────
+//
+// One table per custom role. Each table is 1:1 with User via `userId`
+// (which is also the primary key). Columns match the FieldDef keys in
+// that role's config.ts exactly, so the data shape stays the same as
+// the old roleProfile JSON — only the storage changes from JSON blob
+// to typed, queryable columns.
+//
+// Conventions:
+//   - String?  for text, textarea, select, url, date (ISO string in JSON)
+//   - Float?   for all number fields (Int semantics preserved)
+//   - String[] for chips (PostgreSQL native array)
+//   - DateTime? for dateOfBirth-style fields (real DateTime)
+//
+// The legacy `roleProfile` JSON column on User is KEPT for the 5 generic
+// roles (fan, official, support-staff, moderator, administrator) and the
+// 4 legacy aliases (referee, stadium, medical, developer). All 17 custom
+// roles below take precedence when present.
+
+// ─── PlayerProfile ─────────────────────────────────────────────
+model PlayerProfile {
+  userId              String    @id
+  // Identity
+  position            String?
+  secondaryPosition   String?
+  preferredFoot       String?
+  jerseyNumber        String?
+  height              Float?
+  weight              Float?
+  dateOfBirth         DateTime?
+  nationality         String?
+  playerType          String?
+  careerStatus        String?
+  // Performance
+  appearances         Float?
+  starts              Float?
+  minutes             Float?
+  goals               Float?
+  assists             Float?
+  yellowCards         Float?
+  redCards            Float?
+  rating              Float?
+  motm                Float?
+  // Outfield
+  passAccuracy        Float?
+  chancesCreated      Float?
+  shots               Float?
+  shotsOnTarget       Float?
+  tackles             Float?
+  interceptions       Float?
+  duelsWon            Float?
+  aerialDuels         Float?
+  // Goalkeeper
+  cleanSheets         Float?
+  saves               Float?
+  savePct             Float?
+  goalsConceded       Float?
+  penaltiesSaved      Float?
+  // Career
+  currentClub         String?
+  contractUntil       String?
+  contractStatus      String?
+  academy             String?
+  debutYear           String?
+  nationalTeam        String?
+  internationalCaps   Float?
+  internationalGoals  Float?
+  transferHistory     String?  // textarea — pipe-delimited
+  // Scouting
+  marketValue         String?
+  playingStyle        String?  // textarea
+  strengths           String[]
+  weaknesses          String[]
+  injuryHistory       String?  // textarea
+  form                String?
+  ranking             String?
+  // Meta
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── CoachProfile ──────────────────────────────────────────────
+model CoachProfile {
+  userId                String    @id
+  // Identity
+  coachingRole          String?
+  currentTeam           String?
+  license               String?
+  licenseFederation     String?
+  nationality           String?
+  dateOfBirth           DateTime?
+  yearsCoaching         Float?
+  // Record
+  matchesManaged        Float?
+  wins                  Float?
+  draws                 Float?
+  losses                Float?
+  goalsFor              Float?
+  goalsAgainst          Float?
+  cleanSheets           Float?
+  pointsPerGame         Float?
+  trophiesWon           Float?
+  // Tactical Identity
+  preferredFormation    String?
+  alternateFormations   String[]
+  playingPhilosophy     String?  // textarea
+  pressingStyle         String?
+  possessionStyle       String?
+  defensiveApproach     String?
+  buildUpStyle          String?
+  // Career
+  previousClubs         String?  // textarea
+  nationalTeams         String?  // textarea
+  academyExperience     String?  // textarea
+  playingCareer         String?  // textarea
+  // Meta
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── TeamProfile ───────────────────────────────────────────────
+model TeamProfile {
+  userId              String    @id
+  // Identity
+  nickname            String?
+  foundedYear         String?
+  country             String?
+  city                String?
+  stadium             String?
+  capacity            Float?
+  league              String?
+  division            String?
+  coach               String?
+  owner               String?
+  colors              String?
+  // Performance
+  matchesPlayed       Float?
+  wins                Float?
+  draws               Float?
+  losses              Float?
+  goalsFor            Float?
+  goalsAgainst        Float?
+  points              Float?
+  position            String?
+  form                String?
+  // Squad + History
+  squad               String?  // textarea
+  achievements        String?  // textarea
+  historicPlayers     String?  // textarea
+  historicCoaches     String?  // textarea
+  // Meta
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── ScoutProfile ──────────────────────────────────────────────
+model ScoutProfile {
+  userId                  String    @id
+  // Identity
+  scoutType               String?
+  organization            String?
+  geographicCoverage      String?
+  sportsCovered           String[]
+  yearsExperience         Float?
+  specialization          String?
+  // Activity
+  playersDiscovered       Float?
+  playersRecommended      Float?
+  successfulSignings      Float?
+  countriesCovered        Float?
+  competitionsMonitored   Float?
+  // Scouting board (signature)
+  scoutingBoard           String?  // textarea
+  // Meta
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── JournalistProfile ─────────────────────────────────────────
+model JournalistProfile {
+  userId              String    @id
+  // Identity
+  publication         String?
+  beat                String?
+  location            String?
+  yearsActive         Float?
+  languages           String[]
+  // Coverage
+  coverage            String[]
+  // Metrics
+  articleCount        Float?
+  exclusives          Float?
+  interviews          Float?
+  breakingNews        Float?
+  totalViews          String?
+  // Credibility
+  pressCredentials    String?  // textarea
+  // Articles (signature)
+  articles            String?  // textarea
+  // Meta
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── CreatorProfile ────────────────────────────────────────────
+model CreatorProfile {
+  userId              String    @id
+  // Identity
+  creatorType         String?
+  platforms           String[]
+  niche               String?
+  audienceLocation    String?
+  audienceAgeRange    String?
+  audienceGender      String?
+  languages           String[]
+  // Analytics
+  followers           String?
+  engagementRate      Float?
+  avgViews            String?
+  reach               String?
+  postsPerWeek        Float?
+  // Portfolio
+  topContent          String?  // textarea
+  // Monetization
+  brandCollabs        String?  // textarea
+  bookingEmail        String?
+  // Meta
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── AnalystProfile ────────────────────────────────────────────
+model AnalystProfile {
+  userId              String    @id
+  // Identity
+  analystType         String?
+  organization        String?
+  expertise           String[]
+  // Analytics
+  reportsPublished    Float?
+  modelsCreated       Float?
+  teamsAnalyzed       Float?
+  playersAnalyzed     Float?
+  topModels           String?  // textarea
+  // Predictions (signature)
+  predictions         String?  // textarea
+  // Meta
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── CommentatorProfile ────────────────────────────────────────
+model CommentatorProfile {
+  userId              String    @id
+  // Identity
+  commentatorType     String?
+  broadcaster         String?
+  languages           String[]
+  sports              String[]
+  yearsActive         Float?
+  // Career stats
+  matchesCovered      Float?
+  competitions        Float?
+  countries           Float?
+  // Major events
+  majorEvents         String?  // textarea
+  // Broadcast log (signature)
+  matchLog            String?  // textarea
+  // Meta
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── AgentProfile ──────────────────────────────────────────────
+model AgentProfile {
+  userId                  String    @id
+  // Identity
+  agentType               String?
+  agency                  String?
+  license                 String?
+  federation              String?
+  countries               String[]
+  // Business
+  playersRepresented      Float?
+  coachesRepresented      Float?
+  transfersCompleted      Float?
+  totalTransferValue      String?
+  activeNegotiations      Float?
+  contractsManaged        Float?
+  // Client roster (signature)
+  clientRoster            String?  // textarea
+  // Meta
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── OrganizationProfile ───────────────────────────────────────
+model OrganizationProfile {
+  userId              String    @id
+  // Identity
+  orgType             String?
+  country             String?
+  headquarters        String?
+  foundedYear         String?
+  // Governance (signature)
+  leadership          String?  // textarea
+  departments         String?  // textarea
+  affiliates          String?  // textarea
+  competitions        String?  // textarea
+  programs            String?  // textarea
+  // Meta
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── CompetitionProfile ────────────────────────────────────────
+model CompetitionProfile {
+  userId              String    @id
+  // Identity
+  competitionName     String?
+  season              String?
+  organizer           String?
+  country             String?
+  level               String?
+  format              String?
+  // Season
+  participants        Float?
+  topScorer           String?
+  topAssists          String?
+  // Standings + fixtures (signature)
+  standings           String?  // textarea
+  fixtures            String?  // textarea
+  // History
+  previousWinners     String?  // textarea
+  records             String?  // textarea
+  bracket             String?  // textarea
+  // Meta
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── LeagueProfile ─────────────────────────────────────────────
+model LeagueProfile {
+  userId                    String    @id
+  // Identity
+  leagueName                String?
+  country                   String?
+  division                  String?
+  organizer                 String?
+  foundedYear               String?
+  currentSeason             String?
+  // Current season
+  teams                     Float?
+  matchdays                 Float?
+  topScorer                 String?
+  topAssists                String?
+  // League intelligence
+  avgGoals                  Float?
+  avgAttendance             Float?
+  allTimeTopScorer          String?
+  allTimeTopAppearances     String?
+  // Standings + fixtures (shared with Competition)
+  standings                 String?  // textarea
+  fixtures                  String?  // textarea
+  // Champions history
+  champions                 String?
+  previousChampions         String?  // textarea
+  // Meta
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── AcademyProfile ────────────────────────────────────────────
+model AcademyProfile {
+  userId              String    @id
+  // Identity
+  academyName         String?
+  parentOrg           String?
+  location            String?
+  foundedYear         String?
+  director            String?
+  // Programs
+  programs            String[]
+  curriculum          String?  // textarea
+  // Outcomes
+  playersDeveloped    Float?
+  playersPromoted     Float?
+  proGraduates        Float?
+  scholarships        Float?
+  // Pipeline (signature)
+  graduates           String?  // textarea
+  // Meta
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── VenueProfile ──────────────────────────────────────────────
+model VenueProfile {
+  userId              String    @id
+  // Identity
+  venueName           String?
+  venueType           String?
+  location            String?
+  capacity            Float?
+  surface             String?
+  opened              String?
+  owner               String?
+  operator            String?
+  // Facilities
+  facilities          String[]
+  tenants             String?  // textarea
+  // Events calendar (signature)
+  upcomingEvents      String?  // textarea
+  // Meta
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── BusinessProfile ───────────────────────────────────────────
+model BusinessProfile {
+  userId              String    @id
+  // Identity
+  companyName         String?
+  industry            String?
+  foundedYear         String?
+  headquarters        String?
+  website             String?
+  employees           Float?
+  // Products
+  products            String?  // textarea
+  // Partnership portfolio (signature)
+  partnerTeams        String?  // textarea
+  partnerAthletes     String?  // textarea
+  sponsorships        String?  // textarea
+  // Marketing
+  campaigns           String?  // textarea
+  // Meta
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── CommercialPartnerProfile ──────────────────────────────────
+model CommercialPartnerProfile {
+  userId                      String    @id
+  // Identity
+  partnerType                 String?
+  brand                       String?
+  sportsCategory              String?
+  partnershipStatus           String?
+  foundedYear                 String?
+  headquarters                String?
+  website                     String?
+  // Sponsorship portfolio (signature)
+  sponsoredTeams              String?  // textarea
+  sponsoredPlayers            String?  // textarea
+  sponsoredCompetitions       String?  // textarea
+  sponsoredEvents             String?  // textarea
+  // Marketing
+  activeCampaigns             String?  // textarea
+  // Meta
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+  user                        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── CommunityProfile ──────────────────────────────────────────
+model CommunityProfile {
+  userId              String    @id
+  // Identity
+  communityName       String?
+  communityType       String?
+  foundedYear         String?
+  location            String?
+  supportedTeam       String?
+  description         String?  // textarea
+  // Stats
+  memberCount         Float?
+  activeMembers       Float?
+  eventCount          Float?
+  postCount           Float?
+  // Hub (signature)
+  events              String?  // textarea
+  rules               String?  // textarea
+  // Meta
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

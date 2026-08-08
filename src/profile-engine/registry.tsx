@@ -155,6 +155,10 @@ export function computeCompleteness(
   const cfg = getRoleConfig(role);
   if (!cfg) return { pct: 0, missing: [], filled: [] };
 
+  // Phase 4: `roleProfile` here may be the legacy JSON blob OR the
+  // typed-table Record (passed by API layer via getRoleProfile). Both
+  // have the same shape (FieldDef keys → values), so the logic below
+  // works for either source.
   const rp = roleProfile || {};
   const required = cfg.fields.filter(f => f.required);
   const optional = cfg.fields.filter(f => !f.required);

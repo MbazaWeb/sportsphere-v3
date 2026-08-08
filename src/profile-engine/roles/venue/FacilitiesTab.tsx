@@ -7,12 +7,12 @@
 
 import { Building2, Calendar, Home } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, KeyValueRow, rpString, rpArray } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, KeyValueRow, rpString, rpArray } from '../../shared/ui';
 
 interface Tenant { team: string; since: string; sport: string; }
 
 export function VenueFacilitiesTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'venue');
   const facilities = rpArray(rp, 'facilities').map(String);
   const surface = rpString(rp, 'surface');
   const owner = rpString(rp, 'owner');

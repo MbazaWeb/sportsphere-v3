@@ -14,7 +14,7 @@ import {
   Youtube, Instagram, Play, Heart, ExternalLink, Sparkles,
 } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, StatGrid, StatTile, KeyValueRow, ProgressBar, rpString, rpNumber, rpArray } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, StatGrid, StatTile, KeyValueRow, ProgressBar, rpString, rpNumber, rpArray } from '../../shared/ui';
 
 interface TopContent {
   title: string;
@@ -96,7 +96,7 @@ function PlatformIcon({ name }: { name: string }) {
 }
 
 export function CreatorMediaKitTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'creator');
   const creatorType = rpString(rp, 'creatorType');
   const platforms = rpArray(rp, 'platforms').map(String);
   const niche = rpString(rp, 'niche');

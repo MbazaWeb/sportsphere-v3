@@ -7,7 +7,7 @@
 
 import { Crown, Award, Medal, Star, Trophy, TrendingUp } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, rpString, rpNumber } from '../../shared/ui';
 
 interface Achievement {
   year: string;
@@ -50,7 +50,7 @@ function categoryColor(category: string): 'gold' | 'green' | 'blue' | 'muted' | 
 }
 
 export function CoachTrophiesTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'coach');
   const achievements = parseAchievements(rpString(rp, 'achievements'));
   const totalTrophies = rpNumber(rp, 'trophiesWon');
 

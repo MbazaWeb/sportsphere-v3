@@ -9,7 +9,7 @@ import {
   Handshake, Trophy, Users, Medal, Calendar, TrendingUp, ExternalLink,
 } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, StatGrid, StatTile, rpString } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, StatGrid, StatTile, rpString } from '../../shared/ui';
 
 interface Sponsorship { name: string; sinceOrYear: string; value: string; status: string; }
 interface Campaign { name: string; reach: string; status: string; }
@@ -68,7 +68,7 @@ function SponsorshipRow({ s, icon }: { s: Sponsorship; icon: typeof Trophy }) {
 }
 
 export function CommercialPartnerPortfolioTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'commercial-partner');
   const teams = parseSponsorships(rpString(rp, 'sponsoredTeams'));
   const players = parseSponsorships(rpString(rp, 'sponsoredPlayers'));
   const competitions = parseSponsorships(rpString(rp, 'sponsoredCompetitions'));

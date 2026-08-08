@@ -16,10 +16,10 @@
 
 import { TrendingUp, Target, Zap, AlertCircle, Heart, Activity, DollarSign, ShieldAlert } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, StatTile, StatGrid, rpString, rpArray } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, StatTile, StatGrid, rpString, rpArray } from '../../shared/ui';
 
 export function PlayerScoutingTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'player');
   const marketValue = rpString(rp, 'marketValue');
   const playingStyle = rpString(rp, 'playingStyle');
   const strengths = rpArray(rp, 'strengths').map(String);

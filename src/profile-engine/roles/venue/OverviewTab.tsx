@@ -7,7 +7,7 @@
 
 import { Building2, MapPin, Calendar, Users, Clock, Ticket, Home } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber, rpArray } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber, rpArray } from '../../shared/ui';
 
 interface VenueEvent { date: string; event: string; type: string; sold: string; status: string; }
 
@@ -25,7 +25,7 @@ function parseEvents(raw: string): VenueEvent[] {
 }
 
 export function VenueOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'venue');
   const name = rpString(rp, 'venueName');
   const venueType = rpString(rp, 'venueType');
   const location = rpString(rp, 'location');

@@ -10,7 +10,7 @@
 
 import { Trophy } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, rpString, rpNumber } from '../../shared/ui';
 
 interface StandingRow {
   pos: number;
@@ -55,7 +55,7 @@ function parseStandings(raw: string): StandingRow[] {
 }
 
 export function CompetitionStandingsTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'competition');
   const standings = parseStandings(rpString(rp, 'standings'));
   const participants = rpNumber(rp, 'participants');
 

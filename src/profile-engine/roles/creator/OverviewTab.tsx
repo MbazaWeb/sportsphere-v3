@@ -7,11 +7,11 @@
 
 import { Camera, Users, Eye, TrendingUp, MapPin, Mail, Sparkles } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber, rpArray } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber, rpArray } from '../../shared/ui';
 import { formatCount } from './MediaKitTab';
 
 export function CreatorOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'creator');
   const creatorType = rpString(rp, 'creatorType');
   const platforms = rpArray(rp, 'platforms').map(String);
   const niche = rpString(rp, 'niche');

@@ -8,10 +8,10 @@
 
 import { Medal, MapPin, Calendar, Users, Target, Activity, TrendingUp, Crown } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber } from '../../shared/ui';
 
 export function LeagueOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'league');
   const name = rpString(rp, 'leagueName');
   const country = rpString(rp, 'country');
   const division = rpString(rp, 'division');

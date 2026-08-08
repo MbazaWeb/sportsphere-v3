@@ -7,12 +7,12 @@
 
 import { ShoppingBag, Package } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, rpString } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, rpString } from '../../shared/ui';
 
 interface Product { name: string; category: string; price: string; }
 
 export function BusinessProductsTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'business');
   const raw = rpString(rp, 'products');
   const website = rpString(rp, 'website');
 

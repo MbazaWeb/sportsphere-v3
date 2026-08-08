@@ -9,7 +9,7 @@
 
 import { Users, Calendar, BookOpen, Shield } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import { Card, SectionTitle, EmptyState, Badge, StatGrid, StatTile, ProgressBar, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, StatGrid, StatTile, ProgressBar, rpString, rpNumber } from '../../shared/ui';
 
 interface CommunityEvent { date: string; event: string; type: string; attendees: number; }
 
@@ -27,7 +27,7 @@ function parseEvents(raw: string): CommunityEvent[] {
 }
 
 export function CommunityHubTab({ apiUser }: { apiUser: ApiUserLike | null }) {
-  const rp = (apiUser?.roleProfile || {}) as Record<string, unknown>;
+  const rp = getRoleProfile(apiUser, 'community');
   const memberCount = rpNumber(rp, 'memberCount');
   const activeMembers = rpNumber(rp, 'activeMembers');
   const eventCount = rpNumber(rp, 'eventCount');
