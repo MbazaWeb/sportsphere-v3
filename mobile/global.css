@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* The body of the RN app — radial navy gradient like the web */
+  /* Note: RN doesn't support radial-gradient via CSS; we set a solid bg here
+     and apply a <LinearGradient> in the root layout for the actual effect. */
+}
+
+@layer components {
+  /* ── Glass Card ───────────────────────────────────────────────── */
+  .glass-card {
+    @apply bg-white/5 border border-white/10 rounded-xl;
+    /* shadow converted to RN-compatible shadowColor/shadowOffset via style */
+  }
+
+  /* ── Gold gradient text ───────────────────────────────────────── */
+  .text-gold {
+    @apply text-primary;
+  }
+
+  /* ── Premium gold glow (approximation on RN) ──────────────────── */
+  .glow-gold {
+    /* RN doesn't support box-shadow blur via Tailwind; we add elevation in style */
+    @apply shadow-lg;
+  }
+}

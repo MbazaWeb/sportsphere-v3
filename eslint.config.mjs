@@ -40,7 +40,9 @@ const eslintConfig = [
       "build/**",
       "next-env.d.ts",
       "examples/**",
-      "skills"
+      "skills",
+      "mobile/**",
+      "packages/**"
     ],
   },
 ];
