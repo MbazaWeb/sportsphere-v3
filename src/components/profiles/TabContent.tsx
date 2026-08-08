@@ -549,6 +549,7 @@ function PlayerOverviewEnhanced() {
   const setViewingUser = useUIStore((s) => s.setViewingUser);
   if (loading) return <ProfileDataSkeleton />;
   if (!p) return <EmptyCard message="Player data unavailable" />;
+  const player = p as any;
 
   return (
     <>
@@ -559,12 +560,12 @@ function PlayerOverviewEnhanced() {
         </h3>
         <div className="grid grid-cols-2 gap-2">
           {[
-            { label: 'Age',           value: String(p.age) + ' yrs' },
-            { label: 'Date of Birth',  value: p.dateOfBirth || '31 Oct 1997' },
-            { label: 'Nationality',   value: p.nationality },
-            { label: 'Height',        value: p.height },
-            { label: 'Weight',        value: p.weight || '70 kg' },
-            { label: 'Dominant Side', value: p.foot || p.dominantSide || 'Right' },
+            { label: 'Age',           value: String(player.age) + ' yrs' },
+            { label: 'Date of Birth',  value: player.dateOfBirth || '31 Oct 1997' },
+            { label: 'Nationality',   value: player.nationality },
+            { label: 'Height',        value: player.height },
+            { label: 'Weight',        value: player.weight || '70 kg' },
+            { label: 'Dominant Side', value: player.foot || player.dominantSide || 'Right' },
           ].map(({ label, value }: { label: string; value: any }) => (
             <div key={label} className="rounded-lg bg-surface p-2.5">
               <p className="text-[10px] text-muted-foreground">{label}</p>
@@ -580,7 +581,7 @@ function PlayerOverviewEnhanced() {
           <Zap className="h-4 w-4" /> Key Skills & Attributes
         </h3>
         <div className="flex flex-wrap gap-2">
-          {((p.skills as string[]) || ['Pace & Acceleration', 'Clinical Finishing', 'Dribbling', 'Left Wing Play', 'Counter-Attacking', 'Philanthropy & Leadership']).map((skill: string) => (
+          {((player.skills as string[]) || ['Pace & Acceleration', 'Clinical Finishing', 'Dribbling', 'Left Wing Play', 'Counter-Attacking', 'Philanthropy & Leadership']).map((skill: string) => (
             <span
               key={skill}
               className="rounded-lg bg-gold/10 border border-gold/20 px-3 py-1.5 text-xs font-semibold text-gold hover:bg-gold/20 hover:border-gold/40 transition-all cursor-default"
@@ -596,17 +597,17 @@ function PlayerOverviewEnhanced() {
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-xl bg-gold/10 border border-gold/20 p-3 text-center">
             <Globe className="mx-auto mb-1 h-4 w-4 text-gold" />
-            <p className="text-lg font-black text-gold">#{p.worldRank}</p>
+            <p className="text-lg font-black text-gold">#{player.worldRank}</p>
             <p className="text-[10px] text-muted-foreground">World Rank</p>
           </div>
           <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-3 text-center">
             <Flag className="mx-auto mb-1 h-4 w-4 text-blue-400" />
-            <p className="text-lg font-black text-blue-400">#{p.nationalRank}</p>
+            <p className="text-lg font-black text-blue-400">#{player.nationalRank}</p>
             <p className="text-[10px] text-muted-foreground">National Rank</p>
           </div>
           <div className="rounded-xl bg-green-500/10 border border-green-500/20 p-3 text-center">
             <DollarSign className="mx-auto mb-1 h-4 w-4 text-green-400" />
-            <p className="text-lg font-black text-green-400">{p.marketValue}</p>
+            <p className="text-lg font-black text-green-400">{player.marketValue}</p>
             <p className="text-[10px] text-muted-foreground">Market Value</p>
           </div>
         </div>
@@ -618,11 +619,11 @@ function PlayerOverviewEnhanced() {
         <div className="grid grid-cols-2 gap-2 mb-3">
           <div className="rounded-lg bg-surface p-2.5">
             <p className="text-[10px] text-muted-foreground">Position</p>
-            <p className="text-sm font-semibold text-white">{p.position}</p>
+            <p className="text-sm font-semibold text-white">{player.position}</p>
           </div>
           <div className="rounded-lg bg-surface p-2.5">
             <p className="text-[10px] text-muted-foreground">Contract</p>
-            <p className="text-sm font-semibold text-white">Until {p.contractUntil}</p>
+            <p className="text-sm font-semibold text-white">Until {player.contractUntil}</p>
           </div>
         </div>
         <button
@@ -630,7 +631,7 @@ function PlayerOverviewEnhanced() {
           className="flex w-full items-center gap-3 rounded-xl bg-surface p-3 hover:bg-surface-elevated transition-colors">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-red-700 text-sm font-black text-white">MU</div>
           <div className="flex-1 text-left">
-            <p className="text-sm font-bold text-white">{p.currentTeam}</p>
+            <p className="text-sm font-bold text-white">{player.currentTeam}</p>
             <p className="text-xs text-muted-foreground">Premier League · England</p>
           </div>
           <ChevronRight className="h-4 w-4 text-gold" />
@@ -639,10 +640,10 @@ function PlayerOverviewEnhanced() {
 
       {/* Injury status */}
       <div className={cn('glass-card rounded-2xl border p-3 flex items-center gap-3',
-        p.injuryStatus === 'Fit' ? 'border-green-500/30 bg-green-500/5' : 'border-red-500/30 bg-red-500/5')}>
-        <Activity className={cn('h-5 w-5', p.injuryStatus === 'Fit' ? 'text-green-400' : 'text-red-400')} />
+        player.injuryStatus === 'Fit' ? 'border-green-500/30 bg-green-500/5' : 'border-red-500/30 bg-red-500/5')}>
+        <Activity className={cn('h-5 w-5', player.injuryStatus === 'Fit' ? 'text-green-400' : 'text-red-400')} />
         <div>
-          <p className={cn('text-sm font-semibold', p.injuryStatus === 'Fit' ? 'text-green-400' : 'text-red-400')}>{p.injuryStatus}</p>
+          <p className={cn('text-sm font-semibold', player.injuryStatus === 'Fit' ? 'text-green-400' : 'text-red-400')}>{player.injuryStatus}</p>
           <p className="text-xs text-muted-foreground">Fitness status · Updated today</p>
         </div>
       </div>
@@ -650,14 +651,14 @@ function PlayerOverviewEnhanced() {
       {/* Season stats */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-2">
-          <Trophy className="h-4 w-4" /> Season {p.seasonStats.season}
+          <Trophy className="h-4 w-4" /> Season {player.seasonStats.season}
         </h3>
         <div className="grid grid-cols-4 gap-2 mb-4">
           {[
-            { label: 'Goals',   value: p.seasonStats.goals },
-            { label: 'Assists', value: p.seasonStats.assists },
-            { label: 'Apps',    value: p.seasonStats.appearances },
-            { label: 'Rating',  value: p.seasonStats.rating },
+            { label: 'Goals',   value: player.seasonStats.goals },
+            { label: 'Assists', value: player.seasonStats.assists },
+            { label: 'Apps',    value: player.seasonStats.appearances },
+            { label: 'Rating',  value: player.seasonStats.rating },
           ].map(({ label, value }: { label: string; value: any }) => (
             <div key={label} className="rounded-xl bg-surface p-2.5 text-center">
               <p className="text-xl font-black text-gold">{value}</p>
@@ -666,11 +667,11 @@ function PlayerOverviewEnhanced() {
           ))}
         </div>
         {[
-          { label: 'xG',              value: p.seasonStats.xG,             max: 20  },
-          { label: 'xA',              value: p.seasonStats.xA,             max: 10  },
-          { label: 'Shot Accuracy',   value: p.seasonStats.shotAccuracy,   max: 100 },
-          { label: 'Pass Accuracy',   value: p.seasonStats.passAccuracy,   max: 100 },
-          { label: 'Dribble Success', value: p.seasonStats.dribbleSuccess, max: 100 },
+          { label: 'xG',              value: player.seasonStats.xG,             max: 20  },
+          { label: 'xA',              value: player.seasonStats.xA,             max: 10  },
+          { label: 'Shot Accuracy',   value: player.seasonStats.shotAccuracy,   max: 100 },
+          { label: 'Pass Accuracy',   value: player.seasonStats.passAccuracy,   max: 100 },
+          { label: 'Dribble Success', value: player.seasonStats.dribbleSuccess, max: 100 },
         ].map((s: any) => (
           <div key={s.label} className="mb-2.5 last:mb-0">
             <div className="mb-1 flex items-center justify-between">
@@ -687,13 +688,13 @@ function PlayerOverviewEnhanced() {
       {/* International */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-2">
-          <Flag className="h-4 w-4" /> International · {p.international.team}
+          <Flag className="h-4 w-4" /> International · {player.international.team}
         </h3>
         <div className="grid grid-cols-3 gap-2 mb-3">
           {[
-            { label: 'Caps',    value: p.international.caps },
-            { label: 'Goals',   value: p.international.goals },
-            { label: 'Assists', value: p.international.assists },
+            { label: 'Caps',    value: player.international.caps },
+            { label: 'Goals',   value: player.international.goals },
+            { label: 'Assists', value: player.international.assists },
           ].map(({ label, value }: { label: string; value: any }) => (
             <div key={label} className="rounded-xl bg-surface p-2.5 text-center">
               <p className="text-xl font-black text-white">{value}</p>
@@ -702,7 +703,7 @@ function PlayerOverviewEnhanced() {
           ))}
         </div>
         <div className="flex flex-col gap-1">
-          {p.international.tournaments.map((t: any) => (
+          {player.international.tournaments.map((t: any) => (
             <div key={t} className="flex items-center gap-2 rounded-lg bg-surface px-3 py-2">
               <Star className="h-3.5 w-3.5 text-gold flex-shrink-0" />
               <span className="text-xs font-medium text-white">{t}</span>
@@ -715,7 +716,7 @@ function PlayerOverviewEnhanced() {
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider">Sponsors</h3>
         <div className="flex flex-col gap-2">
-          {p.sponsors.map((s: any) => (
+          {player.sponsors.map((s: any) => (
             <div key={s.name} className="flex items-center justify-between rounded-xl bg-surface p-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10">
@@ -736,7 +737,7 @@ function PlayerOverviewEnhanced() {
           <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Honours</h3>
         </div>
         <div className="flex flex-col gap-2">
-          {p.honours.map((h: any) => (
+          {player.honours.map((h: any) => (
             <div key={h.title} className="flex items-center gap-3 rounded-xl bg-gold/5 border border-gold/10 p-3">
               <Trophy className="h-5 w-5 text-gold flex-shrink-0" />
               <div>
