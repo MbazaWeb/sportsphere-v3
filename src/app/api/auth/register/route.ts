@@ -62,14 +62,38 @@ export async function POST(request: NextRequest) {
     }
 
     // ─── Resolve Fan role and Casual Fan type from DB ────────
-    const fanRole = await db.role.findUnique({ where: { slug: 'fan' } });
-    const casualType = fanRole
-      ? await db.roleType.findFirst({ where: { roleId: fanRole.id, slug: 'casual' } })
-      : null;
+    // Self-healing: if the Role/RoleType tables haven't been seeded yet,
+    // create the Fan role + Casual Fan type on the fly so registration
+    // always succeeds. (Previously this fell back to the literal string
+    // 'fan-default-role' which violated the foreign key constraint → P2003.)
+    const fanRole = await db.role.upsert({
+      where: { slug: 'fan' },
+      update: {},
+      create: {
+        slug: 'fan',
+        name: 'Fan',
+        icon: '👤',
+        category: 'individual',
+        description: 'Sports enthusiast who follows teams, players, and communities',
+        displayOrder: 1,
+        isActive: true,
+      },
+    });
+    const casualType = await db.roleType.upsert({
+      where: { roleId_slug: { roleId: fanRole.id, slug: 'casual' } },
+      update: {},
+      create: {
+        roleId: fanRole.id,
+        slug: 'casual',
+        name: 'Casual Fan',
+        description: 'Follows sports casually for entertainment',
+        displayOrder: 1,
+        isActive: true,
+      },
+    });
 
-    // Fallback IDs if seed hasn't run yet
-    const roleId = fanRole?.id ?? 'fan-default-role';
-    const roleTypeId = casualType?.id ?? 'fan-casual-type';
+    const roleId = fanRole.id;
+    const roleTypeId = casualType.id;
 
     // ─── Resolve sports from DB ──────────────────────────────
     let sportIds: string[] = [];
