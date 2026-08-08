@@ -81,20 +81,20 @@ export default function RegistrationModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-0 sm:px-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-0 sm:px-4 overflow-hidden">
       <motion.div
         initial={{ opacity: 0, y: 60 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 60 }}
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-        className="w-full max-w-lg rounded-t-3xl sm:rounded-3xl glass-card flex flex-col"
+        className="w-full max-w-lg rounded-t-3xl sm:rounded-3xl glass-card flex flex-col overflow-hidden"
         style={{
           // dvh = dynamic viewport height — accounts for mobile browser chrome
           // and on-screen keyboard. Falls back to vh on older browsers.
           maxHeight: isKeyboardOpen ? '85dvh' : '90dvh',
         }}
       >
-        <div className="flex-1 overflow-y-auto scrollbar-hide p-4 sm:p-6 pb-[env(safe-area-inset-bottom)]">
+        <div className="flex-1 overflow-y-auto scrollbar-hide touch-scroll p-4 sm:p-6 pb-[env(safe-area-inset-bottom)]">
           <AuthLogo />
           {submitError && (
             <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/20 p-3">

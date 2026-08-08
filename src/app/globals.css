@@ -151,6 +151,14 @@
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 
+/* Invisible-but-touchable scroll container — used for mobile form modals
+   so users can scroll up/down to fill long forms without a visible bar. */
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;        /* iOS momentum scroll  */
+  overscroll-behavior: contain;             /* stop scroll chaining */
+  touch-action: pan-y;                      /* allow vertical pan   */
+}
+
 /* Gold Shimmer Animation */
 @keyframes shimmer {
   0% {
