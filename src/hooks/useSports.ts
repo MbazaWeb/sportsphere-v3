@@ -1,11 +1,10 @@
-import { apiFetch } from '@/lib/api';
+'use client';
 // ─── SportSphere — useSports Hook ─────────────────────────────
 // Shared hook that fetches sports from /api/sports.
 // Replaces all hardcoded SPORTS arrays across the codebase.
 // Spec: Phase 17 — "No hardcoded sports. Everything should be data-driven."
 
-'use client';
-
+import { apiFetch } from '@/lib/api';
 import { useState, useEffect } from 'react';
 
 export interface SportOption {

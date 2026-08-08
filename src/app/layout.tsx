@@ -14,7 +14,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "SportSphere - The World's Biggest Sports Community",
   description: "Connect with fans, players, teams, leagues and communities through one sports-first social platform.",
-  manifest: "/manifest.json",
+  manifest: "/sportsphere/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -34,6 +34,16 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
+        {/* crypto.randomUUID polyfill — required on plain-HTTP deployments */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          if (typeof crypto !== 'undefined' && typeof crypto.randomUUID !== 'function') {
+            crypto.randomUUID = function() {
+              return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, function(c) {
+                return (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16);
+              });
+            };
+          }
+        `}} />
         {/* Google Fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

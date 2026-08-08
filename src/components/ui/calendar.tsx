@@ -1,5 +1,5 @@
-// @ts-nocheck — Pre-existing component with react-day-picker v8/v9 type mismatch; will be properly typed in Phase B
 "use client"
+// @ts-nocheck — Pre-existing component with react-day-picker v8/v9 type mismatch; will be properly typed in Phase B
 
 import * as React from "react"
 import {
