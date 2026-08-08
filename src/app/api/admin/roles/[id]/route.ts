@@ -5,10 +5,12 @@ import { verifyAdminSession } from "@/lib/adminGuard";
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = await verifyAdminSession(request);
   if (!auth.authorized) return auth.response;
+
+  const { id } = await params;
 
   try {
     const { action } = await request.json(); // 'approve' | 'reject'
@@ -17,7 +19,7 @@ export async function PATCH(
     }
 
     const verReq = await db.verificationRequest.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
     if (!verReq) {
       return NextResponse.json({ error: "Verification request not found" }, { status: 404 });
@@ -30,7 +32,7 @@ export async function PATCH(
 
     // Update the verification request
     await db.verificationRequest.update({
-      where: { id: params.id },
+      where: { id },
       data: { status: newStatus },
     });
 
