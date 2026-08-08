@@ -211,6 +211,14 @@ model User {
   commercialPartnerProfile CommercialPartnerProfile?
   communityProfile         CommunityProfile?
 
+  // ─── Phase 5: Performance Engine relations ───────────────────
+  performanceProfile       PerformanceProfile?
+  performanceEvents        PerformanceEvent[]
+  pointTransactions        PerformancePointTransaction[]
+  performanceSnapshots     PerformanceSnapshot[]
+  rankingHistory           RankingHistory[]
+  performanceVerifications PerformanceVerification[]
+
   @@index([handle])
   @@index([email])
   @@index([role])
@@ -1044,4 +1052,323 @@ model CommunityProfile {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ═════════════════════════════════════════════════════════════════
+// PHASE 5 — PERFORMANCE POINTS & RANKING ENGINE
+// ═════════════════════════════════════════════════════════════════
+//
+// Architecture:
+//   Typed Profile (PlayerProfile etc.)  ←  source-of-truth KPI columns
+//                  ↓ (read-only)
+//   PerformanceEvent[]                  ←  verified match-level events
+//                  ↓
+//   PerformancePointTransaction[]       ←  auditable +/- point ledger
+//                  ↓ (aggregated)
+//   PerformanceProfile                  ←  cached current state (1:1 with User)
+//                  ↓ (snapshot)
+//   PerformanceSnapshot[]               ←  periodic points/score/trend history
+//                  ↓ (rank computation)
+//   RankingSnapshot[] + RankingHistory  ←  multi-dimensional ranking
+//
+// KPI weights are configurable via KPIConfiguration + KPIWeight tables
+// (admin-editable, no code redeploy needed).
+//
+// All point changes MUST be traceable to a PerformanceEvent with a
+// verification status. Self-reported stats DO NOT generate points
+// until verified by an approved source.
+//
+// ═════════════════════════════════════════════════════════════════
+
+// ─── PerformanceProfile (1:1 with User) ──────────────────────
+// Cached "current state" of a user's performance. Recomputed by the
+// calculation engine whenever new events land or decay runs.
+model PerformanceProfile {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+
+  // ── Headline numbers (shown on profile card) ──
+  performanceScore    Float    @default(0)   // 0–100 normalized
+  totalPoints         Int      @default(0)   // running balance
+  tier                String   @default("D") // S+|S|A+|A|B+|B|C|D|Unranked
+
+  // ── Form & consistency (sub-scores) ──
+  formScore           Float    @default(0)   // 0–100, last 5 matches
+  consistencyScore    Float    @default(0)   // 0–100, std-dev inverse
+  trendDirection      String   @default("stable") // up|down|stable
+  trendDelta          Float    @default(0)   // signed % change vs 30 days ago
+  improvementScore    Float    @default(0)   // 0–100, vs own historical baseline
+
+  // ── Multi-dimensional ranks (cached; recompute via cron) ──
+  rankGlobal          Int      @default(0)
+  rankCountry         Int      @default(0)
+  rankRegion          Int      @default(0)
+  rankCategory        Int      @default(0)   // within player-type+position
+  rankPosition        Int      @default(0)
+  rankCompetition     Int      @default(0)
+  rankForm            Int      @default(0)   // current-form leaderboard
+  rankSeason          Int      @default(0)
+  rankCareer          Int      @default(0)
+  rankImprovement     Int      @default(0)
+  rankConsistency     Int      @default(0)
+  rankMovement        Int      @default(0)   // signed delta vs last month
+
+  // ── Category bucket the user falls into (for rank segmentation) ──
+  categoryBucket      String   @default("")  // e.g. "amateur-GK-tanzania"
+  position            String?                  // denormalized from PlayerProfile
+  playerType          String?                  // Professional|Semi-Pro|Amateur|Youth
+  competitionTier     String?                  // league difficulty band
+  ageGroup            String?
+
+  // ── Next milestone (computed from peer ahead) ──
+  nextMilestonePoints Int      @default(0)
+  nextMilestoneRank   Int      @default(0)
+  pointsAheadOfNext   Int      @default(0)    // gap to user directly behind
+  pointsBehindNext    Int      @default(0)    // gap to user directly ahead
+
+  // ── Data confidence & decay ──
+  dataConfidence      Float    @default(0)    // 0–1, sample-size based
+  decayStatus         String   @default("active") // active|decaying|paused-injury|paused-suspension|retired
+  decayPauseReason    String?
+  decayPausedUntil    DateTime?
+  lastEventAt         DateTime?                // last verified event timestamp
+  lastCalculatedAt    DateTime?
+  lastRankComputedAt  DateTime?
+
+  // ── Improvement opportunities (computed by engine) ──
+  improvementOpportunities Json @default("[]") // [{ kpi, current, potential, pointsGain }]
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tier])
+  @@index([totalPoints])
+  @@index([performanceScore])
+  @@index([categoryBucket])
+  @@index([position, playerType])
+}
+
+// ─── KPIConfiguration (global KPI catalogue) ─────────────────
+// One row per KPI (goals, assists, saves, …). Defines positive and
+// negative point values, max contribution per match/season, and which
+// roles/positions it applies to.
+model KPIConfiguration {
+  id                  String   @id @default(uuid())
+  kpiKey              String   @unique          // 'goals' | 'assists' | 'saves' | ...
+  label               String                    // 'Goals'
+  category            String   @default("attacking") // attacking|defensive|gk|discipline|fitness|teamwork|form
+  appliesToRoles      String[] @default([])     // ['player','coach','team']
+  appliesToPositions  String[] @default([])     // ['GK','DEF','MID','FWD'] (empty = all)
+  positivePointsPerUnit Float  @default(0)      // points added per unit
+  negativePointsPerUnit Float  @default(0)      // points subtracted per unit (e.g. yellow card)
+  maxContributionPerMatch Float @default(0)     // cap to prevent single-match inflation
+  maxContributionPerSeason Float @default(0)
+  minValue            Float    @default(0)
+  maxValue            Float    @default(0)      // normalization ceiling
+  isActive            Boolean  @default(true)
+  description         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  weights             KPIWeight[]
+  events              PerformanceEvent[]
+
+  @@index([category])
+  @@index([appliesToRoles])
+}
+
+// ─── KPIWeight (per-position / per-role / per-competition override) ──
+// Default weight lives in KPIConfiguration.positivePointsPerUnit.
+// This table OVERRIDES that for specific positions or competition tiers.
+// E.g. 'saves' weight=3.0 for GK in pro league, weight=1.5 for amateur.
+model KPIWeight {
+  id                  String   @id @default(uuid())
+  kpiConfigId         String
+  scope               String   @default("position") // position|role|competition|ageGroup
+  scopeValue          String                     // 'GK' | 'player' | 'pro' | 'U17'
+  weightMultiplier    Float    @default(1.0)     // multiplies KPIConfiguration.positivePointsPerUnit
+  difficultyMultiplier Float   @default(1.0)     // multiplies final points (opponent strength)
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  kpiConfig           KPIConfiguration @relation(fields: [kpiConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([kpiConfigId, scope, scopeValue])
+  @@index([scope, scopeValue])
+}
+
+// ─── PerformanceEvent (verified match-level event) ───────────
+// Every point change must be traceable to one or more events.
+// An event is immutable once verified.
+model PerformanceEvent {
+  id                  String   @id @default(uuid())
+  userId              String
+  kpiConfigId         String?                       // null for composite events (e.g. 'match-win')
+  eventType           String                        // 'goal'|'assist'|'save'|'clean-sheet'|'yellow-card'|'red-card'|'match-appearance'|'match-win'|'match-loss'|'motm'|...
+  value               Float    @default(1)          // count of the event (usually 1; could be minutes played)
+  matchId             String?                       // FK to Match (nullable for non-match events)
+  matchExternalRef    String?                       // external match ID (provider)
+  competition         String?                       // 'Tanzania Premier League'
+  competitionTier     String?                       // 'pro'|'semi-pro'|'amateur'|'youth' (drives difficulty multiplier)
+  season              String?                       // '2025/2026'
+  opponentName        String?
+  opponentStrength    Float?                        // 0–1 normalized ranking of opponent
+  teamStrength        Float?                        // 0–1 normalized ranking of user's team
+  matchDate           DateTime
+  source              String   @default("manual")   // 'manual'|'official'|'admin'|'api-provider'|'coach'|'referee'|'statistician'
+  sourceUserId        String?                       // who submitted
+  verificationStatus  String   @default("pending")  // pending|verified|rejected|disputed
+  verifiedBy          String?
+  verifiedAt          DateTime?
+  rejectionReason     String?
+  pointsCalculated    Float    @default(0)          // computed points (cached for audit)
+  notes               String?
+  createdAt           DateTime @default(now())
+
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kpiConfig           KPIConfiguration? @relation(fields: [kpiConfigId], references: [id], onDelete: SetNull)
+  pointTransactions   PerformancePointTransaction[]
+  verification        PerformanceVerification?
+
+  @@index([userId, matchDate])
+  @@index([verificationStatus])
+  @@index([eventType])
+  @@index([competition, season])
+}
+
+// ─── PerformancePointTransaction (auditable ledger) ──────────
+// Every +/- point change is a row here. Immutable.
+// balanceAfter is cached so we can reconstruct the timeline without re-aggregating.
+model PerformancePointTransaction {
+  id                  String   @id @default(uuid())
+  userId              String
+  eventId             String?                       // null for system adjustments (decay, recalibration)
+  transactionType     String                         // 'event'|'decay'|'recalibration'|'bonus'|'penalty'|'rollback'
+  amount              Float                          // signed: +35 or -12
+  balanceBefore       Int
+  balanceAfter        Int
+  reason              String                         // human-readable: 'Goal vs Simba SC (Pro)'
+  reasonCode          String                         // machine-readable: 'goal'|'clean-sheet'|'decay-inactivity'|'red-card'
+  verified            Boolean  @default(false)
+  createdAt           DateTime @default(now())
+
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event               PerformanceEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([transactionType])
+  @@index([reasonCode])
+}
+
+// ─── PerformanceSnapshot (periodic score/points history) ─────
+// Captured daily/weekly by cron — feeds the trend chart.
+model PerformanceSnapshot {
+  id                  String   @id @default(uuid())
+  userId              String
+  capturedAt          DateTime @default(now())
+  period              String   @default("daily")    // daily|weekly|monthly|season-end
+  performanceScore    Float
+  totalPoints         Int
+  formScore           Float
+  consistencyScore    Float
+  rankGlobal          Int      @default(0)
+  rankCategory        Int      @default(0)
+  tier                String
+
+  user                User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, capturedAt])
+  @@index([period])
+}
+
+// ─── RankingCategory (segment definition) ────────────────────
+// Defines a ranking leaderboard segment.
+// E.g. slug='amateur-GK-tanzania' with filters {playerType:'Amateur', position:'GK', country:'Tanzania'}
+model RankingCategory {
+  id                  String   @id @default(uuid())
+  slug                String   @unique             // 'amateur-GK-tanzania'
+  label               String                      // 'Amateur Goalkeepers — Tanzania'
+  dimension           String   @default("overall") // overall|form|season|career|improvement|consistency
+  role                String   @default("player")  // player|coach|team
+  filters             Json     @default("{}")      // {playerType, position, country, region, competition, ageGroup}
+  isActive            Boolean  @default(true)
+  participantCount    Int      @default(0)
+  lastComputedAt      DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  history             RankingHistory[]
+
+  @@index([dimension])
+  @@index([role])
+}
+
+// ─── RankingHistory (per-user per-category per-period rank) ──
+// Allows users to see their rank progression over time.
+model RankingHistory {
+  id                  String   @id @default(uuid())
+  userId              String
+  categoryId          String
+  period              String                       // '2026-08'|'2026'|'2025/2026-season'|'career'
+  rank                Int
+  totalParticipants   Int
+  points              Int
+  performanceScore    Float
+  capturedAt          DateTime @default(now())
+
+  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category            RankingCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId, period])
+  @@index([categoryId, rank])
+  @@index([userId, capturedAt])
+}
+
+// ─── PerformanceVerification (verification audit trail) ──────
+// A verification request/log for an event. Supports multi-source
+// verification (e.g. coach + statistician both must approve).
+model PerformanceVerification {
+  id                  String   @id @default(uuid())
+  eventId             String   @unique
+  userId              String                         // the player/coach/team being verified
+  verifierRole        String                         // 'coach'|'admin'|'referee'|'statistician'|'competition-admin'|'api-provider'
+  verifierUserId      String?                        // User ID of the verifier (if internal)
+  verifierExternalId  String?                        // External ID (e.g. referee license #)
+  status              String   @default("pending")   // pending|approved|rejected|disputed
+  verificationMethod  String   @default("manual")    // manual|api|document|witness
+  evidence            Json     @default("{}")        // {documentUrl, witnessIds, apiResponse, ...}
+  notes               String?
+  reviewedAt          DateTime?
+  createdAt           DateTime @default(now())
+
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event               PerformanceEvent  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([verifierRole])
+}
+
+// ─── PerformanceAnomaly (anti-gaming flags) ──────────────────
+// Auto-detected suspicious patterns. Triggers review.
+model PerformanceAnomaly {
+  id                  String   @id @default(uuid())
+  userId              String?
+  eventType           String?
+  matchId             String?
+  anomalyType         String                         // 'duplicate-event'|'statistical-outlier'|'fake-match'|'inflation-pattern'|'coordinated-manipulation'|'duplicate-profile'
+  severity            String   @default("medium")    // low|medium|high|critical
+  description         String
+  evidence            Json     @default("{}")
+  status              String   @default("open")       // open|reviewing|resolved|false-positive
+  resolvedBy          String?
+  resolvedAt          DateTime?
+  resolutionNotes     String?
+  createdAt           DateTime @default(now())
+
+  @@index([status])
+  @@index([anomalyType])
+  @@index([userId])
 }
