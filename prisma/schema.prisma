@@ -171,6 +171,7 @@ model User {
   posts               Post[]
   comments            Comment[]
   likes               PostLike[]
+  commentLikes        CommentLike[]
   sentFollows         Follow[]        @relation("Follower")
   receivedFollows     Follow[]        @relation("Following")
   notifications       Notification[]  @relation("NotifUser")
@@ -253,17 +254,37 @@ model PostLike {
 
 // ─── Comment ─────────────────────────────────────────────────
 model Comment {
-  id        String   @id @default(uuid())
-  postId    String
-  userId    String
-  content   String
-  likeCount Int      @default(0)
-  createdAt DateTime @default(now())
+  id                String   @id @default(uuid())
+  postId            String
+  userId            String
+  parentId          String?  // null = top-level comment; non-null = reply
+  content           String
+  likeCount         Int      @default(0)
+  mentionedUserIds  Json     @default("[]")  // string[] of user IDs tagged in the comment
+  createdAt         DateTime @default(now())
 
-  post      Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent    Comment?  @relation("CommentReply", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReply")
+  likes     CommentLike[]
 
   @@index([postId])
+  @@index([parentId])
+  @@index([userId])
+}
+
+// ─── CommentLike ──────────────────────────────────────────────
+model CommentLike {
+  commentId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([commentId, userId])
+  @@index([userId])
 }
 
 // ─── Poll ─────────────────────────────────────────────────────
