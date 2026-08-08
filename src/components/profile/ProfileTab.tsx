@@ -18,6 +18,7 @@ import { useState, useRef, useEffect } from 'react';
 import RegistrationModal from '@/components/registration/RegistrationModal';
 import ProUpgradeModal from '@/components/registration/ProUpgradeModal';
 import EditProfileModal from '@/components/profile/edit/EditProfileModal';
+import { ProfileCompletenessBanner } from '@/profile-engine/ProfileCompletenessBanner';
 import ProfileExplorer from '@/components/profiles/ProfileExplorer';
 import { BadgeStack } from '@/components/ui/RoleBadge';
 import VerifyEmailModal from '@/components/auth/VerifyEmailModal';
@@ -364,6 +365,13 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
             </div>
           </div>
         </div>
+
+        {/* ---- PROFILE COMPLETENESS BANNER (from Profile Engine) ---- */}
+        <ProfileCompletenessBanner
+          role={userProfile?.role || 'fan'}
+          roleProfile={(userProfile?.roleProfile as Record<string, unknown> | undefined) || {}}
+          onEdit={() => setEditOpen(true)}
+        />
 
         {/* ---- ABOUT SECTION (collapsible) ---- */}
         <div className="mt-4 glass-card rounded-2xl p-4 glass-card-hover">

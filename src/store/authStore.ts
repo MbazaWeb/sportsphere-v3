@@ -28,6 +28,7 @@ export interface UserProfile {
   socialYouTube?: string | null;
   coverGradient?: string;
   coverUrl?: string | null;
+  roleProfile?: Record<string, unknown> | null;
   roleId?: string;
   roleTypeId?: string;
   roleName?: string;

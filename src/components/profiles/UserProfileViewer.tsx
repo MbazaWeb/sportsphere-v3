@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,19 +15,16 @@ import { OverviewTab } from './tabs/OverviewTab';
 import { FeedsTab } from './tabs/FeedsTab';
 import { ShopTab } from './tabs/ShopTab';
 import { AboutTab } from './tabs/AboutTab';
-import { StatsTab } from './tabs/StatsTab';
-import {
-  CareerTab, SquadTab, AnalystToolsTab, FacilitiesTab, ArticlesTab, SpotlightTab,
-  TrophiesTab, PortfolioTab, ServicesTab, ProgramsTab, ClientsTab, MembersTab,
-  ReportsTab, StandingsTab, FixturesTab,
-} from './tabs/RoleContentTab';
+// Engine replaces the 16 RoleContentTab wrappers + StatsTab dispatch
+import { RoleTabRenderer } from '@/profile-engine/RoleTabRenderer';
+import type { TabId } from '@/profile-engine/types';
 
 export default function UserProfileViewer() {
   const viewingHandle = useUIStore((s) => s.viewingUser?.handle);
   const viewingUser = useUIStore((s) => s.viewingUser);
   const setViewingUser = useUIStore((s) => s.setViewingUser);
   const [following, setFollowing] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [peopleListOpen, setPeopleListOpen] = useState<'followers' | 'following' | null>(null);
 
   const { apiUser, userPosts, loading, refresh } = useProfileData(viewingHandle);
@@ -47,6 +44,46 @@ export default function UserProfileViewer() {
     return `${Math.floor(diff / 86400000)}d ago`;
   };
 
+  // Helper: render the active tab. The engine handles per-role tabs.
+  // For shared tabs (overview/feeds/about/shop) we keep the existing
+  // generic tab components — they're already good enough.
+  const renderActiveTab = () => {
+    // Shared tabs (engine returns null for these — let the existing
+    // generic tab components render them)
+    if (activeTab === 'overview') {
+      return <OverviewTab apiUser={apiUser} user={viewingUser} role={role} />;
+    }
+    if (activeTab === 'feeds') {
+      return (
+        <FeedsTab
+          posts={userPosts}
+          loading={loading}
+          avatar={viewingUser.avatar}
+          avatarUrl={viewingUser.avatarUrl}
+          name={viewingUser.name}
+          verified={viewingUser.verified}
+          formatTime={formatTime}
+        />
+      );
+    }
+    if (activeTab === 'shop') {
+      return <ShopTab />;
+    }
+    if (activeTab === 'about') {
+      return <AboutTab apiUser={apiUser} user={viewingUser} role={role} />;
+    }
+
+    // Per-role tabs — dispatch via the Profile Engine
+    return (
+      <RoleTabRenderer
+        role={role}
+        tabId={activeTab}
+        apiUser={apiUser as any}
+        viewerHandle={viewingUser.handle}
+      />
+    );
+  };
+
   return (
     <AnimatePresence>
       <motion.div
@@ -64,28 +101,9 @@ export default function UserProfileViewer() {
           <ProfileInfo user={viewingUser} role={role} />
           <ProfileStats followers={viewingUser.followers} following={viewingUser.following} posts={viewingUser.posts} onOpenList={setPeopleListOpen} />
           <ProfileActions role={role} following={following} setFollowing={setFollowing} />
-          <ProfileTabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+          <ProfileTabs tabs={tabs} activeTab={activeTab} onTabChange={(t) => setActiveTab(t as TabId)} />
           <div className="p-4 flex flex-col gap-3 pb-20">
-            {activeTab === 'overview' && <OverviewTab apiUser={apiUser} user={viewingUser} role={role} />}
-            {activeTab === 'feeds' && <FeedsTab posts={userPosts} loading={loading} avatar={viewingUser.avatar} avatarUrl={viewingUser.avatarUrl} name={viewingUser.name} verified={viewingUser.verified} formatTime={formatTime} />}
-            {activeTab === 'shop' && <ShopTab />}
-            {activeTab === 'about' && <AboutTab apiUser={apiUser} user={viewingUser} role={role} />}
-            {activeTab === 'stats' && <StatsTab role={role} apiUser={apiUser} />}
-            {activeTab === 'career' && <CareerTab apiUser={apiUser} role={role} />}
-            {activeTab === 'squad' && <SquadTab apiUser={apiUser} role={role} />}
-            {activeTab === 'tools' && <AnalystToolsTab apiUser={apiUser} role={role} />}
-            {activeTab === 'facilities' && <FacilitiesTab apiUser={apiUser} role={role} />}
-            {activeTab === 'articles' && <ArticlesTab apiUser={apiUser} role={role} />}
-            {activeTab === 'spotlight' && <SpotlightTab apiUser={apiUser} role={role} />}
-            {activeTab === 'trophies' && <TrophiesTab apiUser={apiUser} role={role} />}
-            {activeTab === 'portfolio' && <PortfolioTab apiUser={apiUser} role={role} />}
-            {activeTab === 'services' && <ServicesTab apiUser={apiUser} role={role} />}
-            {activeTab === 'programs' && <ProgramsTab apiUser={apiUser} role={role} />}
-            {activeTab === 'clients' && <ClientsTab apiUser={apiUser} role={role} />}
-            {activeTab === 'members' && <MembersTab apiUser={apiUser} role={role} />}
-            {activeTab === 'reports' && <ReportsTab apiUser={apiUser} role={role} />}
-            {activeTab === 'standings' && <StandingsTab apiUser={apiUser} role={role} />}
-            {activeTab === 'fixtures' && <FixturesTab apiUser={apiUser} role={role} />}
+            {renderActiveTab()}
           </div>
         </div>
         {peopleListOpen && apiUser && <PeopleListModal userId={apiUser.id} type={peopleListOpen} onClose={() => setPeopleListOpen(null)} />}

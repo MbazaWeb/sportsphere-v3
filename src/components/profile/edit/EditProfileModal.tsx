@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
+import { getRoleConfig } from '@/profile-engine/registry';
 import { useSports } from '@/hooks/useSports';
 
 const INTERESTS = ['Transfers', 'Statistics', 'Fantasy', 'Highlights', 'Live Scores', 'Sports Business', 'Coaching', 'Fitness', 'Betting News', 'Analysis', 'Youth Academy', "Women's Sports", 'Local Football', 'International Football'];
@@ -281,10 +282,13 @@ export default function EditProfileModal({ open, onClose, initialSection }: Edit
 }
 
 // ---------- Reusable components ----------
-function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+function Field({ label, children, hint, required }: { label: string; children: React.ReactNode; hint?: string; required?: boolean }) {
   return (
     <div className="mb-4">
-      <label className="mb-1.5 block text-xs font-medium text-muted-foreground">{label}</label>
+      <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+        {label}
+        {required && <span className="ml-1 text-gold">*</span>}
+      </label>
       {children}
       {hint && <p className="mt-1 text-[10px] text-muted-foreground/70">{hint}</p>}
     </div>
@@ -828,193 +832,12 @@ function RoleProfileSection({ data, update }: { data: Record<string, unknown>; u
   const updateRole = (key: string, value: unknown) => {
     update('roleProfile', { ...roleProfile, [key]: value });
   };
-  const roleConfigs: Record<string, Array<{ key: string; label: string; type: 'text' | 'textarea' | 'select' | 'chips' | 'fanTypes'; options?: string[]; placeholder?: string }>> = {
-    fan: [
-      { key: 'fanTypes', label: 'Fan Types', type: 'fanTypes' as const },
-      { key: 'supporterSince', label: 'Supporter Since (Year)', type: 'text', placeholder: '2005' },
-      { key: 'dreamStadium', label: 'Dream Stadium', type: 'text', placeholder: 'Old Trafford' },
-      { key: 'favoriteMatch', label: 'Favorite Match Attended', type: 'text', placeholder: 'Man Utd vs Arsenal 2008' },
-      { key: 'matchesAttended', label: 'Matches Attended', type: 'text', placeholder: '50+' },
-      { key: 'favoriteJersey', label: 'Favorite Jersey', type: 'text', placeholder: 'Home 23/24' },
-      { key: 'collectionCount', label: 'Jersey Collection Count', type: 'text', placeholder: '12' },
-      { key: 'favoriteBrand', label: 'Favorite Brand', type: 'text', placeholder: 'Nike' },
-      { key: 'fantasyPlatform', label: 'Fantasy Platform', type: 'text', placeholder: 'FPL' },
-    ],
-    player: [
-      { key: 'position', label: 'Playing Position', type: 'select', options: ['GK', 'RB', 'CB', 'LB', 'CDM', 'CM', 'CAM', 'RW', 'LW', 'ST', 'CF'] },
-      { key: 'secondaryPosition', label: 'Secondary Position', type: 'select', options: ['GK', 'RB', 'CB', 'LB', 'CDM', 'CM', 'CAM', 'RW', 'LW', 'ST', 'CF'] },
-      { key: 'height', label: 'Height (cm)', type: 'text', placeholder: '180' },
-      { key: 'weight', label: 'Weight (kg)', type: 'text', placeholder: '75' },
-      { key: 'preferredFoot', label: 'Preferred Foot', type: 'select', options: ['Left', 'Right', 'Both'] },
-      { key: 'currentClub', label: 'Current Club', type: 'text', placeholder: 'Manchester United' },
-      { key: 'contractUntil', label: 'Contract Until', type: 'text', placeholder: '2027' },
-      { key: 'agent', label: 'Agent', type: 'text', placeholder: 'Agency name' },
-      { key: 'transferValue', label: 'Transfer Value', type: 'text', placeholder: '£80M' },
-      { key: 'nationalTeam', label: 'National Team', type: 'text', placeholder: 'England' },
-      { key: 'goals', label: 'Career Goals', type: 'text', placeholder: '150' },
-      { key: 'assists', label: 'Career Assists', type: 'text', placeholder: '80' },
-      { key: 'appearances', label: 'Career Appearances', type: 'text', placeholder: '400' },
-    ],
-    coach: [
-      { key: 'license', label: 'License', type: 'text', placeholder: 'UEFA Pro License' },
-      { key: 'experience', label: 'Experience (years)', type: 'text', placeholder: '15' },
-      { key: 'formation', label: 'Preferred Formation', type: 'select', options: ['4-3-3', '4-4-2', '3-5-2', '4-2-3-1', '3-4-3', '5-3-2'] },
-      { key: 'currentTeam', label: 'Current Team', type: 'text', placeholder: 'Manchester City' },
-      { key: 'winRate', label: 'Win Rate', type: 'text', placeholder: '72%' },
-      { key: 'trophies', label: 'Total Trophies', type: 'text', placeholder: '22' },
-    ],
-    team: [
-      { key: 'foundedYear', label: 'Foundation Year', type: 'text', placeholder: '1878' },
-      { key: 'president', label: 'President', type: 'text', placeholder: 'Name' },
-      { key: 'owner', label: 'Owner', type: 'text', placeholder: 'Name' },
-      { key: 'coach', label: 'Head Coach', type: 'text', placeholder: 'Pep Guardiola' },
-      { key: 'captain', label: 'Captain', type: 'text', placeholder: 'Bruno Fernandes' },
-      { key: 'league', label: 'League', type: 'text', placeholder: 'Premier League' },
-      { key: 'division', label: 'Division', type: 'text', placeholder: '1st' },
-      { key: 'stadium', label: 'Stadium', type: 'text', placeholder: 'Old Trafford' },
-      { key: 'capacity', label: 'Stadium Capacity', type: 'text', placeholder: '74310' },
-      { key: 'clubColors', label: 'Club Colors', type: 'text', placeholder: 'Red, White, Black' },
-      { key: 'website', label: 'Official Website', type: 'text', placeholder: 'https://...' },
-      { key: 'trophies', label: 'Total Trophies', type: 'text', placeholder: '66' },
-    ],
-    scout: [
-      { key: 'coverageCountries', label: 'Coverage Countries', type: 'text', placeholder: 'Kenya, Tanzania, Nigeria' },
-      { key: 'specialization', label: 'Specialization', type: 'select', options: ['Youth', 'Professional', 'Women', 'Goalkeepers'] },
-      { key: 'reports', label: 'Reports Filed', type: 'text', placeholder: '230+' },
-      { key: 'currentClub', label: 'Current Club', type: 'text', placeholder: 'Manchester United' },
-      { key: 'experience', label: 'Experience (years)', type: 'text', placeholder: '8' },
-    ],
-    official: [
-      { key: 'level', label: 'Level', type: 'text', placeholder: 'FIFA Elite' },
-      { key: 'association', label: 'Association', type: 'text', placeholder: 'PGMOL' },
-      { key: 'years', label: 'Years Officiating', type: 'text', placeholder: '15' },
-      { key: 'matchesOfficiated', label: 'Matches Officiated', type: 'text', placeholder: '520+' },
-      { key: 'specialization', label: 'Specialization', type: 'select', options: ['Referee', 'Assistant Referee', 'VAR', 'Fourth Official'] },
-    ],
-    'support-staff': [
-      { key: 'specialization', label: 'Specialization', type: 'select', options: ['Physiotherapist', 'Athletic Trainer', 'Strength Coach', 'Nutritionist', 'Psychologist', 'Performance Analyst', 'Team Doctor'] },
-      { key: 'currentTeam', label: 'Current Team', type: 'text', placeholder: 'Manchester United' },
-      { key: 'experience', label: 'Experience (years)', type: 'text', placeholder: '10' },
-      { key: 'certifications', label: 'Certifications', type: 'text', placeholder: 'MSc Sports Science' },
-    ],
-    journalist: [
-      { key: 'mediaHouse', label: 'Media House', type: 'text', placeholder: 'Guardian' },
-      { key: 'topicsCovered', label: 'Topics Covered', type: 'text', placeholder: 'Transfers, Tactics' },
-      { key: 'articles', label: 'Articles Published', type: 'text', placeholder: '1200+' },
-      { key: 'experience', label: 'Experience (years)', type: 'text', placeholder: '8' },
-    ],
-    creator: [
-      { key: 'contentCategories', label: 'Content Categories', type: 'text', placeholder: 'Highlights, Vlogs' },
-      { key: 'followers', label: 'Total Followers', type: 'text', placeholder: '2.1M' },
-      { key: 'platforms', label: 'Platforms', type: 'text', placeholder: 'YouTube, TikTok, IG' },
-      { key: 'equipment', label: 'Equipment', type: 'text', placeholder: 'Sony A7IV' },
-    ],
-    analyst: [
-      { key: 'specialization', label: 'Specialization', type: 'text', placeholder: 'Tactical Analysis' },
-      { key: 'dataModels', label: 'Data Models', type: 'text', placeholder: 'xG, PPDA' },
-      { key: 'reports', label: 'Reports Published', type: 'text', placeholder: '450+' },
-      { key: 'currentTeam', label: 'Current Team', type: 'text', placeholder: 'Liverpool FC' },
-    ],
-    commentator: [
-      { key: 'specialization', label: 'Specialization', type: 'select', options: ['TV Commentary', 'Radio Commentary', 'TV Presenting', 'Radio Presenting'] },
-      { key: 'mediaHouse', label: 'Media House', type: 'text', placeholder: 'Sky Sports' },
-      { key: 'experience', label: 'Experience (years)', type: 'text', placeholder: '12' },
-      { key: 'matches', label: 'Matches Covered', type: 'text', placeholder: '800+' },
-    ],
-    agent: [
-      { key: 'specialization', label: 'Specialization', type: 'select', options: ['Player Agent', 'Coach Agent', 'Licensed Agent'] },
-      { key: 'agency', label: 'Agency', type: 'text', placeholder: 'Stellar Group' },
-      { key: 'clients', label: 'Notable Clients', type: 'text', placeholder: 'Player names' },
-      { key: 'licenseNumber', label: 'License Number', type: 'text', placeholder: 'FIFA-XXXX' },
-      { key: 'deals', label: 'Deals Closed', type: 'text', placeholder: '50+' },
-    ],
-    academy: [
-      { key: 'programs', label: 'Programs', type: 'text', placeholder: 'U9-U18' },
-      { key: 'graduates', label: 'Notable Graduates', type: 'text', placeholder: 'Messi, Xavi, Iniesta' },
-      { key: 'affiliatedClub', label: 'Affiliated Club', type: 'text', placeholder: 'FC Barcelona' },
-      { key: 'ageRange', label: 'Age Range', type: 'text', placeholder: '9-18' },
-      { key: 'facilities', label: 'Facilities', type: 'textarea', placeholder: 'La Masia training complex...' },
-    ],
-    organization: [
-      { key: 'orgType', label: 'Organization Type', type: 'select', options: ['Federation', 'Olympic Committee', 'National Association', 'Regional Association', 'NGO', 'Government Org'] },
-      { key: 'mission', label: 'Mission', type: 'textarea', placeholder: 'Develop football worldwide' },
-      { key: 'programs', label: 'Programs', type: 'text', placeholder: 'World Cup, Club WC' },
-      { key: 'foundedYear', label: 'Founded Year', type: 'text', placeholder: '1904' },
-      { key: 'memberCount', label: 'Member Count', type: 'text', placeholder: '211 associations' },
-    ],
-    competition: [
-      { key: 'competitionType', label: 'Competition Type', type: 'select', options: ['Domestic Cup', 'Domestic League', 'Continental', 'International Cup', 'Youth', 'Women', 'Tournament'] },
-      { key: 'sport', label: 'Sport', type: 'text', placeholder: 'Football' },
-      { key: 'foundedYear', label: 'Founded Year', type: 'text', placeholder: '1955' },
-      { key: 'participants', label: 'Number of Participants', type: 'text', placeholder: '32 teams' },
-      { key: 'currentChampion', label: 'Current Champion', type: 'text', placeholder: 'Manchester City' },
-      { key: 'trophies', label: 'Total Seasons Held', type: 'text', placeholder: '69' },
-      { key: 'format', label: 'Format', type: 'textarea', placeholder: 'Group stage + knockout...' },
-    ],
-    league: [
-      { key: 'leagueType', label: 'League Type', type: 'select', options: ['Top-Flight', 'Second Tier', 'Lower Division', 'Semi-Pro', 'Amateur', 'Youth'] },
-      { key: 'country', label: 'Country', type: 'text', placeholder: 'England' },
-      { key: 'sport', label: 'Sport', type: 'text', placeholder: 'Football' },
-      { key: 'teams', label: 'Number of Teams', type: 'text', placeholder: '20' },
-      { key: 'foundedYear', label: 'Founded Year', type: 'text', placeholder: '1992' },
-      { key: 'currentChampion', label: 'Current Champion', type: 'text', placeholder: 'Manchester City' },
-      { key: 'season', label: 'Current Season', type: 'text', placeholder: '2024/25' },
-    ],
-    venue: [
-      { key: 'venueType', label: 'Venue Type', type: 'select', options: ['Stadium', 'Arena', 'Training Ground', 'Sports Complex'] },
-      { key: 'capacity', label: 'Capacity', type: 'text', placeholder: '90000' },
-      { key: 'events', label: 'Events Held', type: 'text', placeholder: 'FA Cup Finals, Concerts' },
-      { key: 'surface', label: 'Surface', type: 'text', placeholder: 'Grass' },
-      { key: 'address', label: 'Address', type: 'text', placeholder: 'Sir Matt Busb Way, Manchester' },
-      { key: 'parking', label: 'Parking', type: 'text', placeholder: 'Yes - 3000 spaces' },
-    ],
-    business: [
-      { key: 'industry', label: 'Industry', type: 'select', options: ['Sportswear', 'Sports Media', 'Sports Agency', 'Sports Tech', 'Sports Nutrition', 'Sports Retailer'] },
-      { key: 'products', label: 'Products', type: 'text', placeholder: 'Boots, Kits, Balls' },
-      { key: 'branches', label: 'Branches', type: 'text', placeholder: 'Worldwide' },
-      { key: 'businessHours', label: 'Business Hours', type: 'text', placeholder: '9-5' },
-      { key: 'foundedYear', label: 'Founded Year', type: 'text', placeholder: '1964' },
-      { key: 'website', label: 'Website', type: 'text', placeholder: 'https://...' },
-    ],
-    'commercial-partner': [
-      { key: 'partnerType', label: 'Partner Type', type: 'select', options: ['Sponsor', 'Title Sponsor', 'Broadcaster', 'Streaming Platform', 'Ticketing Provider', 'Travel Partner', 'Data Provider', 'Event Organizer'] },
-      { key: 'industry', label: 'Industry', type: 'text', placeholder: 'Airlines, Banking, Telecom...' },
-      { key: 'partnerships', label: 'Active Partnerships', type: 'text', placeholder: 'Manchester United, Premier League' },
-      { key: 'dealValue', label: 'Total Deal Value', type: 'text', placeholder: '£500M+' },
-      { key: 'since', label: 'Active Since', type: 'text', placeholder: '2010' },
-    ],
-    community: [
-      { key: 'topic', label: 'Community Topic', type: 'text', placeholder: 'Arsenal' },
-      { key: 'memberCount', label: 'Member Count', type: 'text', placeholder: '125000' },
-      { key: 'rules', label: 'Community Rules', type: 'textarea', placeholder: 'Be respectful...' },
-      { key: 'foundedYear', label: 'Founded Year', type: 'text', placeholder: '2015' },
-      { key: 'admin', label: 'Community Admin', type: 'text', placeholder: 'Name' },
-    ],
-    moderator: [
-      { key: 'specialization', label: 'Specialization', type: 'select', options: ['Content Moderator', 'Community Moderator'] },
-      { key: 'experience', label: 'Experience (years)', type: 'text', placeholder: '3' },
-      { key: 'reports', label: 'Reports Reviewed', type: 'text', placeholder: '5000+' },
-    ],
-    administrator: [
-      { key: 'adminType', label: 'Admin Type', type: 'select', options: ['Super Admin', 'Platform Admin', 'Sports Admin', 'Verification Admin', 'User Admin', 'Media Admin', 'Developer Admin', 'Read-Only Auditor'] },
-      { key: 'experience', label: 'Experience (years)', type: 'text', placeholder: '5' },
-      { key: 'department', label: 'Department', type: 'text', placeholder: 'Trust & Safety' },
-    ],
-    // ── Legacy slug aliases (route to the new config) ────────────
-    referee: [
-      { key: 'level', label: 'Level', type: 'text', placeholder: 'FIFA Elite' },
-      { key: 'association', label: 'Association', type: 'text', placeholder: 'PGMOL' },
-      { key: 'years', label: 'Years Officiating', type: 'text', placeholder: '15' },
-      { key: 'matchesOfficiated', label: 'Matches Officiated', type: 'text', placeholder: '520+' },
-    ],
-    stadium: [
-      { key: 'capacity', label: 'Capacity', type: 'text', placeholder: '74310' },
-      { key: 'surface', label: 'Surface', type: 'text', placeholder: 'Grass' },
-      { key: 'address', label: 'Address', type: 'text', placeholder: 'Sir Matt Busby Way, Manchester' },
-      { key: 'parking', label: 'Parking', type: 'text', placeholder: 'Yes - 3000 spaces' },
-    ],
-  };
-  const fields = roleConfigs[role] || [];
+
+  // Pull the field schema from the Profile Engine — single source of truth.
+  // The engine has typed FieldDef[] for every role (22 roles + legacy aliases).
+  const roleConfig = getRoleConfig(role);
+  const fields = roleConfig?.fields || [];
+
   if (fields.length === 0) {
     return (
       <div>
@@ -1023,26 +846,165 @@ function RoleProfileSection({ data, update }: { data: Record<string, unknown>; u
       </div>
     );
   }
+
+  // Group fields by their `group` property for visual sections
+  const grouped = new Map<string, typeof fields>();
+  for (const f of fields) {
+    const g = f.group || 'Info';
+    if (!grouped.has(g)) grouped.set(g, []);
+    grouped.get(g)!.push(f);
+  }
+
   return (
     <div>
-      <h3 className="mb-1 text-sm font-bold text-white capitalize">{role} Profile</h3>
-      <p className="mb-4 text-[10px] text-muted-foreground">Fields specific to your role: {role}</p>
-      {fields.map(field => (
-        <Field key={field.key} label={field.label}>
-          {field.type === 'text' && (
-            <TextInput value={roleProfile[field.key] as string} onChange={(v) => updateRole(field.key, v)} placeholder={field.placeholder} />
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-bold text-white capitalize">
+            {roleConfig?.label || role} Profile
+          </h3>
+          {roleConfig?.tagline && (
+            <p className="text-[10px] text-muted-foreground mt-0.5">{roleConfig.tagline}</p>
           )}
-          {field.type === 'textarea' && (
-            <TextArea value={roleProfile[field.key] as string} onChange={(v) => updateRole(field.key, v)} placeholder={field.placeholder} rows={3} />
-          )}
-          {field.type === 'select' && (
-            <Select value={roleProfile[field.key] as string} onChange={(v) => updateRole(field.key, v)} options={field.options || []} placeholder="Select..." />
-          )}
-          {field.type === 'fanTypes' && (
-            <FanTypeSelector value={roleProfile[field.key] as { primary?: string; secondary?: string[] } | undefined} onChange={(v) => updateRole(field.key, v)} />
-          )}
-        </Field>
+        </div>
+      </div>
+
+      {/* Render each group as a labeled sub-section */}
+      {Array.from(grouped.entries()).map(([groupName, groupFields]) => (
+        <div key={groupName} className="mb-5">
+          <p className="mb-2 text-[10px] font-bold text-gold uppercase tracking-wider">{groupName}</p>
+          <div className="flex flex-col gap-3">
+            {groupFields.map(field => {
+              // Special case: fan/fanTypes nested selector (legacy)
+              if (field.key === 'fanTypes' && role === 'fan') {
+                return (
+                  <Field key={field.key} label={field.label}>
+                    <FanTypeSelector
+                      value={roleProfile[field.key] as { primary?: string; secondary?: string[] } | undefined}
+                      onChange={(v) => updateRole(field.key, v)}
+                    />
+                  </Field>
+                );
+              }
+              return (
+                <Field key={field.key} label={field.label} required={field.required} hint={field.hint}>
+                  {field.type === 'text' && (
+                    <TextInput
+                      value={(roleProfile[field.key] as string) || ''}
+                      onChange={(v) => updateRole(field.key, v)}
+                      placeholder={field.placeholder}
+                    />
+                  )}
+                  {field.type === 'textarea' && (
+                    <TextArea
+                      value={(roleProfile[field.key] as string) || ''}
+                      onChange={(v) => updateRole(field.key, v)}
+                      placeholder={field.placeholder}
+                      rows={3}
+                    />
+                  )}
+                  {field.type === 'number' && (
+                    <TextInput
+                      type="number"
+                      value={(roleProfile[field.key] as string) || ''}
+                      onChange={(v) => updateRole(field.key, v)}
+                      placeholder={field.placeholder}
+                    />
+                  )}
+                  {field.type === 'date' && (
+                    <TextInput
+                      type="date"
+                      value={(roleProfile[field.key] as string) || ''}
+                      onChange={(v) => updateRole(field.key, v)}
+                      placeholder={field.placeholder}
+                    />
+                  )}
+                  {field.type === 'url' && (
+                    <TextInput
+                      type="url"
+                      value={(roleProfile[field.key] as string) || ''}
+                      onChange={(v) => updateRole(field.key, v)}
+                      placeholder={field.placeholder || 'https://...'}
+                    />
+                  )}
+                  {field.type === 'select' && (
+                    <Select
+                      value={(roleProfile[field.key] as string) || ''}
+                      onChange={(v) => updateRole(field.key, v)}
+                      options={field.options || []}
+                      placeholder="Select..."
+                    />
+                  )}
+                  {field.type === 'chips' && (
+                    <ChipsInput
+                      value={Array.isArray(roleProfile[field.key]) ? (roleProfile[field.key] as string[]) : []}
+                      onChange={(v) => updateRole(field.key, v)}
+                      placeholder={field.placeholder || 'Add and press Enter...'}
+                    />
+                  )}
+                </Field>
+              );
+            })}
+          </div>
+        </div>
       ))}
+    </div>
+  );
+}
+
+// ─── ChipsInput (for multi-value fields like strengths, languages, platforms) ──
+function ChipsInput({ value, onChange, placeholder }: {
+  value: string[];
+  onChange: (v: string[]) => void;
+  placeholder?: string;
+}) {
+  const [input, setInput] = useState('');
+  const add = () => {
+    const v = input.trim();
+    if (v && !value.includes(v)) {
+      onChange([...value, v]);
+      setInput('');
+    }
+  };
+  return (
+    <div>
+      <div className="flex gap-2 mb-2">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ',') {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder={placeholder}
+          className="flex-1 rounded-lg bg-surface border border-surface-border px-3 py-2 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-gold/40"
+        />
+        <button
+          type="button"
+          onClick={add}
+          className="rounded-lg bg-gold px-3 py-2 text-xs font-bold text-black"
+        >
+          Add
+        </button>
+      </div>
+      {value.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {value.map((chip, i) => (
+            <span key={i} className="inline-flex items-center gap-1 rounded-full bg-surface border border-surface-border px-2 py-0.5 text-xs text-white">
+              {chip}
+              <button
+                type="button"
+                onClick={() => onChange(value.filter((_, idx) => idx !== i))}
+                className="text-muted-foreground hover:text-red-400"
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
