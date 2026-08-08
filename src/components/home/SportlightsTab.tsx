@@ -12,6 +12,7 @@ import { apiUserToViewing } from '@/types';
 import { FeedCard } from './FeedCard';
 import { CommentSheet } from './CommentSheet';
 import { formatTime } from '@/lib/format';
+import PullToRefresh from '@/components/layout/PullToRefresh';
 
 // Types
 interface ApiUser {
@@ -57,29 +58,30 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
   const [loading, setLoading] = useState(true);
   const setViewingUser = useUIStore((s) => s.setViewingUser);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [matchesRes, feedRes, usersRes, leaderboardRes, spotlightRes] = await Promise.all([
-          fetch('/api/matches?status=live'),
-          fetch('/api/feed?type=for-you'),
-          fetch('/api/users'),
-          fetch('/api/leaderboard'),
-          fetch('/api/spotlight'),
-        ]);
-        if (matchesRes.ok) setLiveMatches(await matchesRes.json());
-        if (feedRes.ok) setPosts(await feedRes.json());
-        if (usersRes.ok) {
-          const allUsers = await usersRes.json();
-          setTeams(allUsers.filter((u: { role: string }) => u.role === 'team').slice(0, 10));
-        }
-        if (leaderboardRes.ok) setLeaderboard(await leaderboardRes.json());
-        if (spotlightRes.ok) setSpotlightItems(await spotlightRes.json());
-      } catch (e) { }
-      setLoading(false);
-    }
-    loadData();
+  const loadData = useCallback(async () => {
+    try {
+      const [matchesRes, feedRes, usersRes, leaderboardRes, spotlightRes] = await Promise.all([
+        fetch('/api/matches?status=live'),
+        fetch('/api/feed?type=for-you'),
+        fetch('/api/users'),
+        fetch('/api/leaderboard'),
+        fetch('/api/spotlight'),
+      ]);
+      if (matchesRes.ok) setLiveMatches(await matchesRes.json());
+      if (feedRes.ok) setPosts(await feedRes.json());
+      if (usersRes.ok) {
+        const allUsers = await usersRes.json();
+        setTeams(allUsers.filter((u: { role: string }) => u.role === 'team').slice(0, 10));
+      }
+      if (leaderboardRes.ok) setLeaderboard(await leaderboardRes.json());
+      if (spotlightRes.ok) setSpotlightItems(await spotlightRes.json());
+    } catch (e) { }
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const openTeamByName = async (teamName: string) => {
     const handleGuess = '@' + teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -133,6 +135,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
   const [matchDetailOpen, setMatchDetailOpen] = useState(false);
 
   return (
+    <PullToRefresh onRefresh={loadData} className="min-h-screen">
     <div className="flex flex-col gap-4 p-4">
       {featuredMatch && (
         <div className="premium-glow-border">
@@ -311,6 +314,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
       )}
 
     </div>
+    </PullToRefresh>
   );
 }
 

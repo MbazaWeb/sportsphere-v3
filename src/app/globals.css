@@ -288,3 +288,30 @@
 .animate-scale-in {
   animation: scaleIn 0.3s ease-out forwards;
 }
+/* ── Invisible scrollbars globally (2026 clean UI) ─────────── */
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Pull-to-refresh indicator ──────────────────────────────── */
+.ptr-indicator {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100%);
+  z-index: 9999;
+  transition: transform 0.2s ease;
+  pointer-events: none;
+}
+.ptr-indicator.ptr-visible {
+  transform: translateX(-50%) translateY(0%);
+}
+
+/* ── Swipe back gesture — touch action ──────────────────────── */
+.swipe-back-container {
+  touch-action: pan-y;
+}

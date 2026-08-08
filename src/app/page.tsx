@@ -6,6 +6,7 @@ import { useNavigationStore } from '@/store/navigationStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { useAuthSession } from '@/hooks/useAuthSession';
+import { useSwipeBack } from '@/hooks/useSwipeBack';
 import BottomNav from '@/components/layout/BottomNav';
 import HomeTab from '@/components/home/HomeTab';
 import ScoresTab from '@/components/scores/ScoresTab';
@@ -37,6 +38,7 @@ function Toast() {
 function ProfileTypeOverlay() {
   const viewingProfile    = useUIStore((s) => s.viewingProfile);
   const setViewingProfile = useUIStore((s) => s.setViewingProfile);
+  useSwipeBack({ onBack: () => setViewingProfile(null), enabled: !!viewingProfile });
   if (!viewingProfile) return null;
   const config = PROFILE_TYPES[viewingProfile as ProfileTypeId];
   if (!config) return null;
