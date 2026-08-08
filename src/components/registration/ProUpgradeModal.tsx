@@ -160,7 +160,7 @@ function ChooseRoleStep({
       </div>
 
       {/* Scrollable list */}
-      <div className="flex-1 overflow-y-auto touch-scroll scrollbar-hide -mx-1 px-1 pb-6">
+      <div className="flex-1 overflow-y-auto touch-scroll scrollbar-hide -mx-1 px-1 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
         {loading ? (
           <div className="flex flex-col gap-3">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Loading roles…</p>
@@ -283,7 +283,7 @@ function ChooseTypeStep({
       {/* Scrollable list */}
       <div
         ref={scrollRef}
-        className="relative flex-1 overflow-y-auto touch-scroll scrollbar-hide -mx-1 px-1 pb-6"
+        className="relative flex-1 overflow-y-auto touch-scroll scrollbar-hide -mx-1 px-1 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
       >
         <div className="flex flex-col gap-2">
           {role.types.map(type => {
@@ -367,7 +367,7 @@ function SubmitStep({
       </div>
 
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto touch-scroll scrollbar-hide -mx-1 px-1 pb-4">
+      <div className="flex-1 overflow-y-auto touch-scroll scrollbar-hide -mx-1 px-1 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
         {/* Selection summary */}
         <div className="mb-4 rounded-xl bg-gold/10 border border-gold/20 p-4">
           <div className="flex items-center gap-3 mb-2">
@@ -592,18 +592,23 @@ export default function ProUpgradeModal({ open, onClose }: { open: boolean; onCl
         onClick={(e) => e.stopPropagation()}
         className="pro-modal-root w-full max-w-lg rounded-t-3xl sm:rounded-3xl glass-card flex flex-col overflow-hidden"
         style={{
-          // 90dvh = dynamic viewport height (mobile URL bar aware)
-          // @supports fallback handled by CSS below
-          maxHeight: '90dvh',
-          height: '90dvh',
           // Safe-area inset padding (bottom-sheet style on mobile, centered on desktop)
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       >
-        {/* @supports fallback for browsers without dvh */}
+        {/* @supports fallback for browsers without dvh (pre-2022). Tailwind's
+            h-[90dvh] / max-h-[90dvh] become height: 90dvh which older browsers
+            ignore (height stays auto = unbounded). This rule sets vh fallback. */}
         <style>{`
+          .pro-modal-root {
+            max-height: 90dvh;
+            height: 90dvh;
+          }
           @supports not (height: 100dvh) {
-            .pro-modal-root { max-height: 90vh !important; height: 90vh !important; }
+            .pro-modal-root {
+              max-height: 90vh !important;
+              height: 90vh !important;
+            }
           }
         `}</style>
 
