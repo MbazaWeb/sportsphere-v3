@@ -157,6 +157,13 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
         }}>
           LIVE. <span style={{ color: '#ffc400' }}>PLAY.</span> CONNECT.
         </div>
+        <div style={{
+          color: 'rgba(255,255,255,0.3)',
+          fontSize: '0.65rem', letterSpacing: '1px',
+          marginTop: 8,
+        }}>
+          © {new Date().getFullYear()} MbazzaCodes Inc.
+        </div>
       </div>
     </div>
   );
