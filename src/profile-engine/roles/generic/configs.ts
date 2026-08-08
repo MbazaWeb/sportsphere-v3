@@ -473,14 +473,16 @@ export const medicalConfig: RoleConfig = { ...supportStaffConfig, role: 'medical
 export const developerConfig: RoleConfig = { ...administratorConfig, role: 'developer' };
 
 // ─── Exports list ──────────────────────────────────────────────
+//
+// NOTE: scout / journalist / creator / analyst / commentator / agent
+// had generic configs here in Phase 1, but Phase 2 promoted them to
+// full custom renderers under roles/<name>/. Their old generic config
+// definitions remain above for reference, but are intentionally NOT
+// included in this array — the registry's custom modules take over.
+// (The `if (!REGISTRY.has(cfg.role))` guard in registry.tsx would
+//  silently skip them anyway, but excluding them here is cleaner.)
 export const genericConfigs: RoleConfig[] = [
   fanConfig,
-  scoutConfig,
-  journalistConfig,
-  creatorConfig,
-  analystConfig,
-  commentatorConfig,
-  agentConfig,
   academyConfig,
   organizationConfig,
   competitionConfig,

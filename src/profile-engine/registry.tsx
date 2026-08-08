@@ -16,6 +16,12 @@ import type { RoleConfig, TabId, TabDef, FieldDef, TabRenderProps, CompletenessR
 import { playerRole } from './roles/player';
 import { coachRole } from './roles/coach';
 import { teamRole } from './roles/team';
+import { scoutRole } from './roles/scout';
+import { journalistRole } from './roles/journalist';
+import { creatorRole } from './roles/creator';
+import { analystRole } from './roles/analyst';
+import { commentatorRole } from './roles/commentator';
+import { agentRole } from './roles/agent';
 
 // Generic role configs (typed schema, shared renderer)
 import { genericConfigs } from './roles/generic/configs';
@@ -24,8 +30,8 @@ import { GenericRoleTab } from './roles/generic/GenericRoleTab';
 // ─── Build the registry ────────────────────────────────────────
 const REGISTRY = new Map<string, RoleConfig>();
 
-// Custom roles
-for (const cfg of [playerRole, coachRole, teamRole]) {
+// Custom roles (Phase 1: player, coach, team · Phase 2: scout, journalist, creator, analyst, commentator, agent)
+for (const cfg of [playerRole, coachRole, teamRole, scoutRole, journalistRole, creatorRole, analystRole, commentatorRole, agentRole]) {
   REGISTRY.set(cfg.role, cfg);
 }
 
