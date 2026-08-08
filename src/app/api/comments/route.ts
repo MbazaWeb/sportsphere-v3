@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getUserIdFromRequest } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { USER_SELECT } from '@/lib/db-selects';
 import { safeJsonParse } from '@/lib/json';
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
 // POST — create a comment (requires auth, enforced by proxy)
 export async function POST(request: NextRequest) {
   try {
-    const userId = request.headers.get('x-user-id');
+    const userId = (request.headers.get('x-user-id') ?? await getUserIdFromRequest(request));
     if (!userId) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }

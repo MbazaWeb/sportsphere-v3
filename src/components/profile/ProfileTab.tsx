@@ -109,7 +109,7 @@ const handleCoverFile = async (
     try {
       setCoverUploading(true);
 
-      const res = await fetch("/api/profile/avatar", {
+      const res = await apiFetch("/api/profile/avatar", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -149,7 +149,7 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
       try {
         const uid = userProfile?.id;
         const url = uid ? `/api/feed?type=for-you&userId=${uid}` : `/api/feed?type=for-you`;
-        const res = await fetch(url);
+        const res = await apiFetch(url);
         if (res.ok) setRealPosts(await res.json());
       } catch { /* ignore */ }
       setPostsLoading(false);

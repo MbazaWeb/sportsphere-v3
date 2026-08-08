@@ -82,3 +82,14 @@ export function serializePublicUser(u: {
     roleTypeId: u.roleTypeId,
   };
 }
+
+// ─── Convenience: extract user ID from request session cookie ─
+// Use this in API routes that previously relied on the proxy x-user-id header.
+// Reads the JWT directly from the cookie, no proxy middleware required.
+import type { NextRequest } from 'next/server';
+
+export async function getUserIdFromRequest(request: NextRequest): Promise<string | null> {
+  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  const payload = await verifySession(token);
+  return payload?.sub ?? null;
+}

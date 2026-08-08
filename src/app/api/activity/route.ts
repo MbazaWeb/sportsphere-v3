@@ -2,23 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { safeJsonParse } from '@/lib/json';
 import { db } from '@/lib/db';
 import { USER_SELECT } from '@/lib/db-selects';
+import { verifySession, SESSION_COOKIE } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-
 export async function GET(request: NextRequest) {
   try {
-    // Read the authenticated user from the proxy-set header.
-    // This route is NOT in PUBLIC_API_PREFIXES, so the proxy guarantees
-    // x-user-id is present (returns 401 otherwise).
-    const targetUserId = request.headers.get('x-user-id');
-
-    if (!targetUserId) {
-      return NextResponse.json(
-        { error: 'Authentication required.' },
-        { status: 401 }
-      );
+    // Resolve user from session cookie (no proxy required)
+    const token = request.cookies.get(SESSION_COOKIE)?.value;
+    const payload = await verifySession(token);
+    if (!payload) {
+      return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }
+    const targetUserId = payload.sub;
 
     // Fetch notifications
     const notifications = await db.notification.findMany({
@@ -41,10 +37,7 @@ export async function GET(request: NextRequest) {
     const sentMessages = await db.message.findMany({
       where: { senderId: targetUserId },
       select: {
-        id: true,
-        content: true,
-        isRead: true,
-        createdAt: true,
+        id: true, content: true, isRead: true, createdAt: true,
         receiver: { select: USER_SELECT },
         sender: { select: USER_SELECT },
       },
@@ -53,10 +46,7 @@ export async function GET(request: NextRequest) {
     const receivedMessages = await db.message.findMany({
       where: { receiverId: targetUserId },
       select: {
-        id: true,
-        content: true,
-        isRead: true,
-        createdAt: true,
+        id: true, content: true, isRead: true, createdAt: true,
         sender: { select: USER_SELECT },
         receiver: { select: USER_SELECT },
       },
@@ -64,14 +54,9 @@ export async function GET(request: NextRequest) {
     });
 
     const conversations = new Map<string, {
-      partnerId: string;
-      partnerName: string;
-      partnerHandle: string;
-      partnerAvatar: string;
-      lastMessage: string;
-      lastTime: string;
-      unread: number;
-      isVerified: boolean;
+      partnerId: string; partnerName: string; partnerHandle: string;
+      partnerAvatar: string; lastMessage: string; lastTime: string;
+      unread: number; isVerified: boolean;
     }>();
 
     const processMessage = (msg: typeof sentMessages[number], isSender: boolean) => {
@@ -99,16 +84,13 @@ export async function GET(request: NextRequest) {
       (a, b) => new Date(b.lastTime).getTime() - new Date(a.lastTime).getTime()
     );
 
-    // Serialize notifications — parse JSON fields on actor
     const safeNotifications = notifications.map((n) => ({
       ...n,
-      actor: n.actor
-        ? {
-            ...n.actor,
-            sportsFollowing: safeJsonParse(n.actor.sportsFollowing, []),
-            roleData: safeJsonParse(n.actor.roleData, {}),
-          }
-        : null,
+      actor: n.actor ? {
+        ...n.actor,
+        sportsFollowing: safeJsonParse(n.actor.sportsFollowing, []),
+        roleData: safeJsonParse(n.actor.roleData, {}),
+      } : null,
     }));
 
     return NextResponse.json({ notifications: safeNotifications, messages });
@@ -117,4 +99,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to fetch activity' }, { status: 500 });
   }
 }
-

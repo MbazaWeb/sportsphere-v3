@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getUserIdFromRequest } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { safeJsonParse } from '@/lib/json';
 import { USER_SELECT_FULL } from '@/lib/db-selects';
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
     const handle = searchParams.get('handle');
-    const currentUserId = request.headers.get('x-user-id');
+    const currentUserId = (request.headers.get('x-user-id') ?? await getUserIdFromRequest(request));
 
     // Common select with role/type/sport joins
     const selectWithRelations = {
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
 // PUT /api/profile — update own profile (requires auth)
 export async function PUT(request: NextRequest) {
   try {
-    const userId = request.headers.get('x-user-id');
+    const userId = (request.headers.get('x-user-id') ?? await getUserIdFromRequest(request));
     if (!userId) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }

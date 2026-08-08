@@ -2,6 +2,7 @@
 // DELETE /api/sports/follow — Unfollow a sport (remove from user's sports)
 // Both endpoints update UserSport junction table AND sportsFollowing JSON
 import { NextRequest, NextResponse } from 'next/server';
+import { getUserIdFromRequest } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { safeJsonParse } from '@/lib/json';
 
@@ -10,7 +11,7 @@ export const dynamic = 'force-dynamic';
 // ─── POST /api/sports/follow ─────────────────────────────────
 export async function POST(request: NextRequest) {
   try {
-    const userId = request.headers.get('x-user-id');
+    const userId = (request.headers.get('x-user-id') ?? await getUserIdFromRequest(request));
     if (!userId) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
 // ─── DELETE /api/sports/follow ────────────────────────────────
 export async function DELETE(request: NextRequest) {
   try {
-    const userId = request.headers.get('x-user-id');
+    const userId = (request.headers.get('x-user-id') ?? await getUserIdFromRequest(request));
     if (!userId) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }

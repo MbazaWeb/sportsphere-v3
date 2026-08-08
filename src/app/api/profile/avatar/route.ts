@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getUserIdFromRequest } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { v2 as cloudinary } from 'cloudinary';
 
@@ -12,7 +13,7 @@ cloudinary.config({
 
 export async function PUT(request: NextRequest) {
   try {
-    const userId = request.headers.get('x-user-id');
+    const userId = (request.headers.get('x-user-id') ?? await getUserIdFromRequest(request));
 
     if (!userId) {
       return NextResponse.json(

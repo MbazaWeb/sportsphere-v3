@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getUserIdFromRequest } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { safeJsonParse } from '@/lib/json';
 import { USER_SELECT } from '@/lib/db-selects';
@@ -8,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const targetUserId = request.headers.get('x-user-id');
+    const targetUserId = (request.headers.get('x-user-id') ?? await getUserIdFromRequest(request));
 
     if (!targetUserId) {
       return NextResponse.json(
