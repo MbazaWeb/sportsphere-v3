@@ -1,12 +1,12 @@
 #!/bin/bash
 # ============================================================
 #  Sportsphere — Full Production Deploy
-#  Targets VPS at 104.152.50.173, app at /var/www/sportsphere
+#  Targets VPS at 104.152.50.173, app at /var/www/sportsphere-nextjs
 #  Runs on the VPS itself (SSH in first, then run this script)
 # ============================================================
 set -euo pipefail
 
-APP_DIR="/var/www/sportsphere"
+APP_DIR="/var/www/sportsphere-nextjs"
 REPO="https://github.com/MbazaWeb/sportsphere-v3.git"
 PORT=3002
 DB_NAME="sportsphere"
@@ -36,8 +36,14 @@ echo "======================================"
 if [ -d "$APP_DIR/.git" ]; then
   echo "[1/9] Pulling latest..."
   cd "$APP_DIR"
+  # Remove stray junk files from old shell redirects (0-byte artifacts
+  # that block Windows checkouts and clutter the working tree).
+  rm -f -- '-' ipconfig next sudo sportsphere@2.0.0 tsc-errors.txt tsconfig.tsbuildinfo 72 seed.sql 2>/dev/null || true
   git fetch origin main
   git reset --hard origin/main
+  # Also remove untracked junk that may have come back via stray shell redirects.
+  # `-` and `72` and `ipconfig` etc. are never legitimate source files.
+  git clean -fd -- '-' ipconfig next sudo sportsphere@2.0.0 tsc-errors.txt tsconfig.tsbuildinfo 72 seed.sql 2>/dev/null || true
 else
   echo "[1/9] Cloning..."
   sudo mkdir -p "$APP_DIR"
