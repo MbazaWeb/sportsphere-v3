@@ -1,6 +1,6 @@
 'use client';
 import SplashScreen from '@/components/SplashScreen';
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 
 import { useNavigationStore } from '@/store/navigationStore';
 import { useAuthStore } from '@/store/authStore';
@@ -101,11 +101,6 @@ export default function Home() {
   const [verifyEmailOpen, setVerifyEmailOpen] = React.useState(false);
   const viewingProfile = useUIStore((s) => s.viewingProfile);
   const viewingUser    = useUIStore((s) => s.viewingUser);
-  
-  // --- NEW STATES FOR SEARCH AND CART ---
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  // ---------------------------------------
 
   useServiceWorker();
   useAuthSession();

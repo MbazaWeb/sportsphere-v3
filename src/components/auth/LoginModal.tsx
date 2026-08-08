@@ -69,7 +69,13 @@ export default function LoginModal() {
       setLoginModalOpen(false);
       setEmail('');
       setPassword('');
-      setActiveTab('profile');
+      // Admins go straight to admin panel
+      const role = (data.role || '').toLowerCase();
+      if (role === 'admin' || role === 'administrator') {
+        window.location.href = '/admin';
+      } else {
+        setActiveTab('profile');
+      }
     } catch {
       setError('Network error. Please try again.');
     }
