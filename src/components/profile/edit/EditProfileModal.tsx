@@ -150,8 +150,21 @@ export default function EditProfileModal({ open, onClose, initialSection }: Edit
         initial={{ y: '100%', opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: '100%', opacity: 0 }}
-        className="w-full max-w-2xl h-[92vh] sm:h-[88vh] bg-surface-elevated border border-surface-border rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden"
+        className="edit-profile-modal-root w-full max-w-2xl h-[92dvh] sm:h-[88dvh] bg-surface-elevated border border-surface-border rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden"
+        style={{
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
       >
+        {/* @supports fallback for browsers without dvh (pre-2022). Tailwind's
+            h-[92dvh] becomes height: 92dvh which older browsers ignore (height stays auto). */}
+        <style>{`
+          @supports not (height: 100dvh) {
+            .edit-profile-modal-root { height: 92vh !important; }
+            @media (min-width: 640px) {
+              .edit-profile-modal-root { height: 88vh !important; }
+            }
+          }
+        `}</style>
         {/* Header */}
         <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-surface-border bg-surface-elevated">
           <div className="flex items-center gap-3">
