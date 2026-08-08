@@ -1,3 +1,4 @@
+import { apiFetch } from '@/lib/api';
 import { create } from 'zustand';
 import { useUIStore } from './uiStore';
 import type { ProfileTypeId } from '@/types';
@@ -60,7 +61,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // Phase 5: Registration ONLY creates Fan accounts
   completeRegistration: async (d) => {
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await apiFetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -86,7 +87,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // Phase 8: Pro Upgrade — submit role change for verification
   submitRoleUpgrade: async (d) => {
     try {
-      const res = await fetch('/api/roles/upgrade', {
+      const res = await apiFetch('/api/roles/upgrade', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(d),
@@ -95,7 +96,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (!res.ok) return { ok: false, error: data.error || 'Upgrade request failed.' };
 
       // Refresh user profile to reflect new role/verification status
-      const meRes = await fetch('/api/auth/me');
+      const meRes = await apiFetch('/api/auth/me');
       if (meRes.ok) {
         const meData = await meRes.json();
         set({ userProfile: (meData.user || meData) as UserProfile });
@@ -108,7 +109,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
-    try { await fetch('/api/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
+    try { await apiFetch('/api/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
     // Clear any open profile overlays so they don't linger over the guest UI
     useUIStore.getState().setViewingProfile(null);
     useUIStore.getState().setViewingUser(null);

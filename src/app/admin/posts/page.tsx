@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from '@/lib/api';
 import React, { useEffect, useState } from "react";
 
 interface PostItem {
@@ -25,7 +26,7 @@ export default function AdminPostsPage() {
     const params = new URLSearchParams();
     if (query) params.set("q", query);
 
-    fetch(`/api/admin/posts?${params.toString()}`)
+    apiFetch(`/api/admin/posts?${params.toString()}`)
       .then((res) => res.json())
       .then((data) => {
         setPosts(Array.isArray(data) ? data : []);
@@ -45,7 +46,7 @@ export default function AdminPostsPage() {
     if (!confirm("Are you sure you want to delete this post?")) return;
 
     try {
-      const res = await fetch(`/api/admin/posts/${id}`, { method: "DELETE" });
+      const res = await apiFetch(`/api/admin/posts/${id}`, { method: "DELETE" });
       if (res.ok) fetchPosts();
     } catch (err) {
       console.error("Failed to delete post:", err);

@@ -1,4 +1,5 @@
 ﻿'use client';
+import { apiFetch } from '@/lib/api';
 
 import { useAppStore, type ProfileTypeId } from '@/store/useAppStore';
 import type { VerificationStatus } from '@/types';
@@ -606,7 +607,7 @@ function PeopleList({ title, onBack }: { title: string; onBack: () => void }) {
       if (!userProfile?.id) { setLoading(false); return; }
       try {
         const type = title === 'Following' ? 'following' : 'followers';
-        const res = await fetch(`/api/follows?userId=${userProfile.id}&type=${type}`);
+        const res = await apiFetch(`/api/follows?userId=${userProfile.id}&type=${type}`);
         if (res.ok) { const data = await res.json(); setPeople(data); } else { setError('Failed to load.'); }
       } catch { setError('Network error.'); }
       setLoading(false);
@@ -616,7 +617,7 @@ function PeopleList({ title, onBack }: { title: string; onBack: () => void }) {
 
   const openProfile = async (person: typeof people[number]) => {
     try {
-      const res = await fetch(`/api/users?handle=${person.handle}`);
+      const res = await apiFetch(`/api/users?handle=${person.handle}`);
       if (res.ok) {
         const u = await res.json();
         const { apiUserToViewing } = await import('@/types');

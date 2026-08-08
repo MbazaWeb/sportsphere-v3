@@ -1,3 +1,4 @@
+import { apiFetch } from '@/lib/api';
 // ─── SportSphere — useSports Hook ─────────────────────────────
 // Shared hook that fetches sports from /api/sports.
 // Replaces all hardcoded SPORTS arrays across the codebase.
@@ -50,7 +51,7 @@ export function useSports(options: UseSportsOptions = {}) {
         if (options.sportType) params.set('sportType', options.sportType);
         if (options.format) params.set('format', options.format);
 
-        const res = await fetch(`/api/sports?${params.toString()}`);
+        const res = await apiFetch(`/api/sports?${params.toString()}`);
         if (!res.ok) throw new Error('Failed to fetch sports');
 
         const data = await res.json();

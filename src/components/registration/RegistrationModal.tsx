@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 
 import { useAuthStore } from '@/store/authStore';
 import { useNavigationStore } from '@/store/navigationStore';
@@ -33,7 +34,7 @@ function FanStep({ onBack, onComplete }: { onBack: () => void; onComplete: (data
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/sports');
+        const res = await apiFetch('/api/sports');
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled || !Array.isArray(data) || data.length === 0) return;

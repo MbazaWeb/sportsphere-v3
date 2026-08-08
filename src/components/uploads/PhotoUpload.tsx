@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 
 import { useState, useRef } from 'react';
 import { Camera, X, Plus } from 'lucide-react';
@@ -34,7 +35,7 @@ export function PhotoUpload({ mediaUrls, onChange }: PhotoUploadProps) {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch('/api/upload', {
+      const res = await apiFetch('/api/upload', {
         method: 'POST',
         body: formData,
       });

@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 
 import { useState, useEffect } from 'react';
 import { useUIStore } from '@/store/uiStore';
@@ -14,7 +15,7 @@ export function useProfileData(viewingHandle: string | undefined) {
     if (!viewingHandle) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/users?handle=${encodeURIComponent(viewingHandle)}`);
+      const res = await apiFetch(`/api/users?handle=${encodeURIComponent(viewingHandle)}`);
       if (res.ok) {
         const data = await res.json();
         setApiUser(data);
@@ -34,7 +35,7 @@ export function useProfileData(viewingHandle: string | undefined) {
           posts: data.postCount || 0,
           isFollowing: false,
         });
-        const postsRes = await fetch(`/api/feed?userId=${data.id}`);
+        const postsRes = await apiFetch(`/api/feed?userId=${data.id}`);
         if (postsRes.ok) setUserPosts(await postsRes.json());
       }
     } catch (e) { /* ignore */ }

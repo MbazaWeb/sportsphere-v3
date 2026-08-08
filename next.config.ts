@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   basePath: '/sportsphere',
   assetPrefix: '/sportsphere',
   reactStrictMode: true,
+  env: {
+    NEXT_PUBLIC_BASE_PATH: '/sportsphere',
+  },
   images: {
     unoptimized: true,
     remotePatterns: [

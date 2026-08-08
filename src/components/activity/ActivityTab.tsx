@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 
 import { useAppStore, type ActivitySubTab } from '@/store/useAppStore';
 import { useUIStore } from '@/store/uiStore';
@@ -124,7 +125,7 @@ function ActivityList({ filter }: { filter: 'all' | 'social' | 'sports' }) {
   useEffect(() => {
     async function loadData() {
       try {
-        const res = await fetch('/api/activity');
+        const res = await apiFetch('/api/activity');
         if (res.ok) {
           const data = await res.json();
           const notifs: ActivityItem[] = (data.notifications || []).map((n: ApiNotification) => ({
@@ -154,7 +155,7 @@ function ActivityList({ filter }: { filter: 'all' | 'social' | 'sports' }) {
   const handleUserClick = useCallback(async (item: ActivityItem) => {
     if (!item.handle) return;
     try {
-      const res = await fetch(`/api/users?handle=${encodeURIComponent(item.handle)}`);
+      const res = await apiFetch(`/api/users?handle=${encodeURIComponent(item.handle)}`);
       if (res.ok) {
         const u = await res.json();
         const { apiUserToViewing } = await import('@/types');
@@ -246,7 +247,7 @@ function MessagesList() {
   useEffect(() => {
     async function loadData() {
       try {
-        const res = await fetch('/api/messages');
+        const res = await apiFetch('/api/messages');
         if (res.ok) {
           const data = await res.json();
           setConversations(data);
@@ -259,7 +260,7 @@ function MessagesList() {
 
   const handleChatClick = async (chat: ApiMessageConversation) => {
     try {
-      const res = await fetch(`/api/users?handle=${encodeURIComponent(chat.partnerHandle)}`);
+      const res = await apiFetch(`/api/users?handle=${encodeURIComponent(chat.partnerHandle)}`);
       if (res.ok) {
         const u = await res.json();
         const { apiUserToViewing } = await import('@/types');

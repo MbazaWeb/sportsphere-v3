@@ -1,3 +1,4 @@
+import { apiFetch } from '@/lib/api';
 // @ts-nocheck — Pre-existing component with 44 strict-mode type issues; will be properly typed in Phase B
 'use client';
 import React, { useState, useEffect } from 'react';
@@ -28,7 +29,7 @@ function useProfileData<T>(type: string, key: string): { data: T | null; loading
     let cancelled = false;
     async function load() {
       try {
-        const res = await fetch(`/api/profile-data?type=${type}&key=${key}`);
+        const res = await apiFetch(`/api/profile-data?type=${type}&key=${key}`);
         if (res.ok && !cancelled) setData(await res.json());
       } catch { /* empty */ }
       if (!cancelled) setLoading(false);
@@ -47,7 +48,7 @@ function useRealFeedData(type: string = 'for-you') {
     let cancelled = false;
     async function load() {
       try {
-        const res = await fetch(`/api/feed?type=${type}`);
+        const res = await apiFetch(`/api/feed?type=${type}`);
         if (res.ok && !cancelled) setPosts(await res.json());
       } catch { /* empty */ }
       if (!cancelled) setLoading(false);
@@ -66,7 +67,7 @@ function useRealMatchesData() {
     let cancelled = false;
     async function load() {
       try {
-        const res = await fetch('/api/matches');
+        const res = await apiFetch('/api/matches');
         if (res.ok && !cancelled) setMatches(await res.json());
       } catch { /* empty */ }
       if (!cancelled) setLoading(false);
@@ -85,7 +86,7 @@ function useRealLeaderboardData() {
     let cancelled = false;
     async function load() {
       try {
-        const res = await fetch('/api/leaderboard');
+        const res = await apiFetch('/api/leaderboard');
         if (res.ok && !cancelled) setLeaderboard(await res.json());
       } catch { /* empty */ }
       if (!cancelled) setLoading(false);
@@ -625,7 +626,7 @@ function PlayerOverviewEnhanced() {
           </div>
         </div>
         <button
-          onClick={async () => { try { const res = await fetch('/api/users?handle=@manchesterunited'); if (res.ok) { const u = await res.json(); const {apiUserToViewing} = await import('@/types'); setViewingUser(apiUserToViewing(u,false)); } } catch {} }}
+          onClick={async () => { try { const res = await apiFetch('/api/users?handle=@manchesterunited'); if (res.ok) { const u = await res.json(); const {apiUserToViewing} = await import('@/types'); setViewingUser(apiUserToViewing(u,false)); } } catch {} }}
           className="flex w-full items-center gap-3 rounded-xl bg-surface p-3 hover:bg-surface-elevated transition-colors">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-red-700 text-sm font-black text-white">MU</div>
           <div className="flex-1 text-left">
@@ -1334,7 +1335,7 @@ function SquadContent() {
     async function load() {
       try {
         // Try to fetch squad data from API - adjust endpoint as needed
-        const res = await fetch('/api/users?role=player');
+        const res = await apiFetch('/api/users?role=player');
         if (res.ok && !cancelled) {
           const players = await res.json();
           setSquad(Array.isArray(players) ? players.slice(0, 15) : []);
@@ -1567,7 +1568,7 @@ function TransfersContent() {
     async function load() {
       try {
         // Try to fetch transfers from API - adjust as needed
-        const res = await fetch('/api/users?role=player');
+        const res = await apiFetch('/api/users?role=player');
         if (res.ok && !cancelled) {
           const players = await res.json();
           // Mock transfer data based on players
@@ -2560,7 +2561,7 @@ function TeamsContent() {
     <div className="flex flex-col gap-2">
       {teams.map((team, i) => {
         return (
-          <div key={i} onClick={async () => { if(!team.handle) return; try { const res = await fetch(`/api/users?handle=${encodeURIComponent(team.handle)}`); if(res.ok){const u=await res.json(); const {apiUserToViewing}=await import('@/types'); setViewingUser(apiUserToViewing(u,false));} } catch {} }}
+          <div key={i} onClick={async () => { if(!team.handle) return; try { const res = await apiFetch(`/api/users?handle=${encodeURIComponent(team.handle)}`); if(res.ok){const u=await res.json(); const {apiUserToViewing}=await import('@/types'); setViewingUser(apiUserToViewing(u,false));} } catch {} }}
             className={cn('glass-card rounded-xl p-3 glass-card-hover', team.handle && 'cursor-pointer')}>
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold/10 text-xs font-bold text-gold">{i + 1}</div>

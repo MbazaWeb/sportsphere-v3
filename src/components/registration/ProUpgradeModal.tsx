@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -242,7 +243,7 @@ export default function ProUpgradeModal({ open, onClose }: { open: boolean; onCl
   // Fetch roles from API
   useEffect(() => {
     if (open) {
-      fetch('/api/roles')
+      apiFetch('/api/roles')
         .then(r => r.json())
         .then(data => setRoles(data))
         .catch(() => {});

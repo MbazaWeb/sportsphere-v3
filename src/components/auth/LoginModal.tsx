@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 
 import React, { useState } from 'react';
 import { useUIStore } from '@/store/uiStore';
@@ -33,7 +34,7 @@ export default function LoginModal() {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch('/api/auth', {
+      const res = await apiFetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

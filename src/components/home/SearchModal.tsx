@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, User, FileText, TrendingUp, Loader2, ChevronRight } from 'lucide-react';
@@ -57,8 +58,8 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
     setLoading(true);
     try {
       const [usersRes, postsRes] = await Promise.all([
-        fetch(`/api/users?q=${encodeURIComponent(q)}&limit=6`),
-        fetch(`/api/feed?q=${encodeURIComponent(q)}&limit=5`),
+        apiFetch(`/api/users?q=${encodeURIComponent(q)}&limit=6`),
+        apiFetch(`/api/feed?q=${encodeURIComponent(q)}&limit=5`),
       ]);
       setResults({
         users: usersRes.ok ? await usersRes.json() : [],

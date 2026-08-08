@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 
@@ -18,7 +19,7 @@ export function useAuthSession() {
 
     (async () => {
       try {
-        const res = await fetch('/api/auth/me', { cache: 'no-store' });
+        const res = await apiFetch('/api/auth/me', { cache: 'no-store' });
         if (!res.ok) return;
         const data = (await res.json()) as {
           user: ReturnType<typeof useAuthStore.getState>['userProfile'];

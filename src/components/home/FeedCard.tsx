@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 
 import { Heart, MessageCircle, Share2, Bookmark, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -143,7 +144,7 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
                     setVotedOption(i);
                     setPollVotes(v => v + 1);
                     try {
-                      await fetch('/api/polls/vote', {
+                      await apiFetch('/api/polls/vote', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ pollId: item.poll!.id, optionIndex: i }),
@@ -178,7 +179,7 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
               if (!isAuthenticated) { setLoginModalOpen(true); return; }
               setLiked(!liked);
               try {
-                await fetch('/api/likes', {
+                await apiFetch('/api/likes', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ postId: item.id }),

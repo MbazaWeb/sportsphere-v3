@@ -1,3 +1,4 @@
+import { apiFetch } from '@/lib/api';
 ﻿'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -67,7 +68,7 @@ export default function EditProfileModal({ open, onClose }: { open: boolean; onC
     async function loadProfile() {
       setLoading(true);
       try {
-        const res = await fetch('/api/profile', { cache: 'no-store' });
+        const res = await apiFetch('/api/profile', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           setFormData(data);
@@ -99,7 +100,7 @@ export default function EditProfileModal({ open, onClose }: { open: boolean; onC
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch('/api/profile', {
+      const res = await apiFetch('/api/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -393,7 +394,7 @@ function IdentitySection({ data, update }: { data: Record<string, unknown>; upda
       setPreview(dataUrl);
       setUploading(true);
       try {
-        const res = await fetch('/api/profile/avatar', {
+        const res = await apiFetch('/api/profile/avatar', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ avatarBase64: dataUrl }),
@@ -604,7 +605,7 @@ function FavoritesSection({ data }: { data: Record<string, unknown> }) {
   const addFavorite = async () => {
     if (!newName.trim()) return;
     try {
-      const res = await fetch('/api/profile/favorites', {
+      const res = await apiFetch('/api/profile/favorites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetType: newType, targetName: newName.trim() }),
@@ -619,7 +620,7 @@ function FavoritesSection({ data }: { data: Record<string, unknown> }) {
   };
   const removeFavorite = async (id: string) => {
     try {
-      await fetch(`/api/profile/favorites?id=${id}`, { method: 'DELETE' });
+      await apiFetch(`/api/profile/favorites?id=${id}`, { method: 'DELETE' });
       showToast('Removed');
       window.location.reload();
     } catch { /* ignore */ }

@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
@@ -62,7 +63,7 @@ export default function ScoresTab() {
         if (country !== 'All') params.append('country', country);
         if (tournament !== 'All') params.append('tournament', tournament);
 
-        const res = await fetch(`/api/matches?${params.toString()}`);
+        const res = await apiFetch(`/api/matches?${params.toString()}`);
         if (res.ok) {
           const data = await res.json();
           setMatches(Array.isArray(data) ? data : data.matches || []);
@@ -92,7 +93,7 @@ export default function ScoresTab() {
         const params = new URLSearchParams();
         if (tournament !== 'All') params.append('tournament', tournament);
 
-        const res = await fetch(`/api/standings?${params.toString()}`);
+        const res = await apiFetch(`/api/standings?${params.toString()}`);
         if (res.ok) {
           const data = await res.json();
           setStandings(Array.isArray(data) ? data : data.standings || []);

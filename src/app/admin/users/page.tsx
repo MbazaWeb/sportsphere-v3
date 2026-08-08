@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from '@/lib/api';
 import React, { useEffect, useState } from "react";
 
 interface UserItem {
@@ -21,7 +22,7 @@ export default function AdminUsersPage() {
     if (query) params.set("q", query);
     if (roleFilter !== "ALL") params.set("role", roleFilter);
 
-    fetch(`/api/admin/users?${params.toString()}`)
+    apiFetch(`/api/admin/users?${params.toString()}`)
       .then((res) => res.json())
       .then((data) => {
         setUsers(Array.isArray(data) ? data : []);
@@ -39,7 +40,7 @@ export default function AdminUsersPage() {
 
   const toggleBan = async (id: string, currentBannedStatus: boolean) => {
     try {
-      const res = await fetch(`/api/admin/users/${id}`, {
+      const res = await apiFetch(`/api/admin/users/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isBanned: !currentBannedStatus }),

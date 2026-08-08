@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
@@ -33,7 +34,7 @@ export default function VerifyEmailModal({
     setRequesting(true);
     setError('');
     try {
-      const res = await fetch('/api/auth/verify-email/request', { method: 'POST' });
+      const res = await apiFetch('/api/auth/verify-email/request', { method: 'POST' });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || 'Failed to send verification code.');
@@ -67,7 +68,7 @@ export default function VerifyEmailModal({
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/auth/verify-email/confirm', {
+      const res = await apiFetch('/api/auth/verify-email/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),

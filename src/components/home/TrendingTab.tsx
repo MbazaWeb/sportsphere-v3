@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 
 import { useEffect, useState, useCallback } from 'react';
 import { TrendingUp, Flame, Shield, Heart, MessageCircle } from 'lucide-react';
@@ -45,9 +46,9 @@ export function TrendingTab() {
     async function loadData() {
       try {
         const [matchesRes, feedRes, commRes] = await Promise.all([
-          fetch('/api/matches?status=live'),
-          fetch('/api/feed?type=trending'),
-          fetch('/api/communities'),
+          apiFetch('/api/matches?status=live'),
+          apiFetch('/api/feed?type=trending'),
+          apiFetch('/api/communities'),
         ]);
         if (matchesRes.ok) setLiveMatches(await matchesRes.json());
         if (feedRes.ok) setTrendingPosts(await feedRes.json());

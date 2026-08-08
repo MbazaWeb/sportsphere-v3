@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 const FALLBACK_SPORTS = ["Football", "Basketball", "Tennis", "Cricket", "Rugby", "Athletics", "Swimming", "Boxing", "Volleyball", "Formula 1"];
 
 import { useState, useEffect } from 'react';
@@ -25,7 +26,7 @@ export function RegistrationFanStep({ onBack, onComplete }: RegistrationFanStepP
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/sports');
+        const res = await apiFetch('/api/sports');
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;

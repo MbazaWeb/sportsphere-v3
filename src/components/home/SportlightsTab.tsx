@@ -1,3 +1,4 @@
+import { apiFetch } from '@/lib/api';
 ﻿'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -61,11 +62,11 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
   const loadData = useCallback(async () => {
     try {
       const [matchesRes, feedRes, usersRes, leaderboardRes, spotlightRes] = await Promise.all([
-        fetch('/api/matches?status=live'),
-        fetch('/api/feed?type=for-you'),
-        fetch('/api/users'),
-        fetch('/api/leaderboard'),
-        fetch('/api/spotlight'),
+        apiFetch('/api/matches?status=live'),
+        apiFetch('/api/feed?type=for-you'),
+        apiFetch('/api/users'),
+        apiFetch('/api/leaderboard'),
+        apiFetch('/api/spotlight'),
       ]);
       if (matchesRes.ok) setLiveMatches(await matchesRes.json());
       if (feedRes.ok) setPosts(await feedRes.json());
@@ -86,7 +87,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
   const openTeamByName = async (teamName: string) => {
     const handleGuess = '@' + teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
     try {
-      const res = await fetch(`/api/users?handle=${encodeURIComponent(handleGuess)}`);
+      const res = await apiFetch(`/api/users?handle=${encodeURIComponent(handleGuess)}`);
       if (res.ok) {
         const u = await res.json();
         setViewingUser(apiUserToViewing(u, false));
@@ -94,7 +95,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
       }
     } catch { }
     try {
-      const res = await fetch('/api/users');
+      const res = await apiFetch('/api/users');
       if (res.ok) {
         const all = await res.json();
         const match = all.find((u: { name: string; role: string }) =>
@@ -107,7 +108,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
 
   const openPlayerByName = async (playerName: string) => {
     try {
-      const res = await fetch('/api/users');
+      const res = await apiFetch('/api/users');
       if (res.ok) {
         const all = await res.json();
         const match = all.find((u: { name: string; role: string }) =>
@@ -123,7 +124,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
 
   const openTeamByHandle = async (handle: string) => {
     try {
-      const res = await fetch(`/api/users?handle=${encodeURIComponent(handle)}`);
+      const res = await apiFetch(`/api/users?handle=${encodeURIComponent(handle)}`);
       if (res.ok) {
         const u = await res.json();
         setViewingUser(apiUserToViewing(u, false));
@@ -201,7 +202,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                   key={item.id}
                   onClick={async () => {
                     try {
-                      const res = await fetch(`/api/users?handle=${encodeURIComponent(item.handle)}`);
+                      const res = await apiFetch(`/api/users?handle=${encodeURIComponent(item.handle)}`);
                       if (res.ok) {
                         const u = await res.json();
                         setViewingUser(apiUserToViewing(u, false));

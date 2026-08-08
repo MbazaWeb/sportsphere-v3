@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -88,7 +89,7 @@ export default function ProfileExplorer({ onSelectProfile: _onSelectProfile }: P
   useEffect(() => {
     async function loadUsers() {
       try {
-        const res = await fetch('/api/users');
+        const res = await apiFetch('/api/users');
         if (res.ok) setUsers(await res.json());
       } catch { /* ignore */ }
       setLoading(false);

@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from '@/lib/api';
 import React, { useEffect, useState, useCallback } from "react";
 
 interface VerificationRequest {
@@ -35,7 +36,7 @@ export default function AdminRolesPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/roles?status=${filter}`);
+      const res = await apiFetch(`/api/admin/roles?status=${filter}`);
       const data = await res.json();
       setRequests(Array.isArray(data) ? data : []);
     } catch {
@@ -55,7 +56,7 @@ export default function AdminRolesPage() {
   const handleAction = async (id: string, action: "approve" | "reject") => {
     setProcessing(id);
     try {
-      const res = await fetch(`/api/admin/roles/${id}`, {
+      const res = await apiFetch(`/api/admin/roles/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),

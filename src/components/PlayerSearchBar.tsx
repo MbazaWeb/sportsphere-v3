@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -26,7 +27,7 @@ export default function PlayerSearchBar() {
     const fetchPlayers = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/players/search?q=${encodeURIComponent(query)}`);
+        const res = await apiFetch(`/api/players/search?q=${encodeURIComponent(query)}`);
         const data = await res.json();
         setResults(data.players || []);
       } catch (err) {

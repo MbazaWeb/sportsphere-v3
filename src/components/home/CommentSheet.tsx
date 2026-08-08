@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -21,7 +22,7 @@ export function CommentSheet({ itemId, onClose }: { itemId: string; onClose: () 
   useEffect(() => {
     async function loadComments() {
       try {
-        const res = await fetch(`/api/comments?postId=${itemId}`);
+        const res = await apiFetch(`/api/comments?postId=${itemId}`);
         if (res.ok) {
           const data = await res.json();
           setComments(data);
@@ -36,7 +37,7 @@ export function CommentSheet({ itemId, onClose }: { itemId: string; onClose: () 
     if (!isAuthenticated) { onClose(); setLoginModalOpen(true); return; }
     if (!text.trim()) return;
     try {
-      const res = await fetch('/api/comments', {
+      const res = await apiFetch('/api/comments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ postId: itemId, content: text.trim() }),

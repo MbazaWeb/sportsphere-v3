@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
@@ -36,7 +37,7 @@ export default function ForgotPasswordModal({ open, onClose }: Props) {
     }
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/forgot-password', {
+      const res = await apiFetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

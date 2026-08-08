@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -22,7 +23,7 @@ export function PeopleListModal({ userId, type, onClose }: PeopleListModalProps)
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`/api/follows?userId=${userId}&type=${type}`);
+        const res = await apiFetch(`/api/follows?userId=${userId}&type=${type}`);
         if (res.ok) setPeople(await res.json());
       } catch { /* ignore */ }
       setLoading(false);
@@ -32,7 +33,7 @@ export function PeopleListModal({ userId, type, onClose }: PeopleListModalProps)
 
   const openProfile = async (person: typeof people[number]) => {
     try {
-      const res = await fetch(`/api/users?handle=${encodeURIComponent(person.handle)}`);
+      const res = await apiFetch(`/api/users?handle=${encodeURIComponent(person.handle)}`);
       if (res.ok) {
         const u = await res.json();
         setViewingUser({

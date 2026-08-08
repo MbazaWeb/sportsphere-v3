@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
@@ -139,7 +140,7 @@ function Composer({ type, onBack }: { type: string; onBack: () => void }) {
         body.prediction = predictionData;
       }
 
-      const res = await fetch('/api/posts', {
+      const res = await apiFetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
