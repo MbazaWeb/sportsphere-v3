@@ -192,18 +192,36 @@ function SubmitStep({
 }
 
 // ─── Step 4: Success ──────────────────────────────────────────
-function SuccessStep({ onClose }: { onClose: () => void }) {
+function SuccessStep({ onClose, autoApproved }: { onClose: () => void; autoApproved: boolean }) {
   return (
     <div className="flex flex-col items-center py-4 text-center">
-      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gold shadow-[0_4px_30px_rgba(245,197,24,0.3)]">
-        <ShieldCheck className="h-10 w-10 text-black" strokeWidth={3} />
+      <div className={cn(
+        'mb-6 flex h-20 w-20 items-center justify-center rounded-full shadow-[0_4px_30px_rgba(245,197,24,0.3)]',
+        autoApproved ? 'bg-gold' : 'bg-surface border-2 border-gold'
+      )}>
+        <ShieldCheck className={cn('h-10 w-10', autoApproved ? 'text-black' : 'text-gold')} strokeWidth={3} />
       </div>
-      <h2 className="mb-2 text-2xl font-black text-gold-gradient">Upgrade Submitted!</h2>
-      <p className="mb-6 text-sm text-muted-foreground max-w-xs">
-        Your role upgrade is under admin review. You&apos;ll receive a notification once it&apos;s approved.
-      </p>
+      {autoApproved ? (
+        <>
+          <h2 className="mb-2 text-2xl font-black text-gold-gradient">You&apos;re Verified!</h2>
+          <p className="mb-2 text-sm text-muted-foreground max-w-xs">
+            Your PRO role is active. Your verified badge is now live on your profile.
+          </p>
+          <div className="mb-6 flex items-center gap-2 rounded-xl bg-gold/10 border border-gold/20 px-4 py-2">
+            <ShieldCheck className="h-4 w-4 text-gold" />
+            <span className="text-xs font-semibold text-gold">Verified Badge Active</span>
+          </div>
+        </>
+      ) : (
+        <>
+          <h2 className="mb-2 text-2xl font-black text-gold-gradient">Request Submitted!</h2>
+          <p className="mb-6 text-sm text-muted-foreground max-w-xs">
+            Your role upgrade is under admin review. You&apos;ll be notified once approved and your verified badge will go live.
+          </p>
+        </>
+      )}
       <button onClick={onClose} className="w-full rounded-xl bg-gold py-3 text-sm font-bold text-black hover:bg-gold/90 transition-colors shadow-[0_4px_20px_rgba(245,197,24,0.2)]">
-        Continue
+        {autoApproved ? 'View My Profile' : 'Continue'}
       </button>
     </div>
   );
@@ -219,6 +237,7 @@ export default function ProUpgradeModal({ open, onClose }: { open: boolean; onCl
   const [selectedType, setSelectedType] = useState<RoleType | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [autoApproved, setAutoApproved] = useState(false);
 
   // Fetch roles from API
   useEffect(() => {
@@ -254,6 +273,7 @@ export default function ProUpgradeModal({ open, onClose }: { open: boolean; onCl
     });
     setSubmitting(false);
     if (result.ok) {
+      setAutoApproved(result.autoApproved ?? false);
       setStep('success');
     } else {
       setError(result.error || 'Upgrade failed.');
@@ -299,7 +319,7 @@ export default function ProUpgradeModal({ open, onClose }: { open: boolean; onCl
                 submitting={submitting}
               />
             )}
-            {step === 'success' && <SuccessStep onClose={handleClose} />}
+            {step === 'success' && <SuccessStep onClose={handleClose} autoApproved={autoApproved} />}
           </motion.div>
         </AnimatePresence>
       </motion.div>

@@ -1,12 +1,15 @@
 // POST /api/roles/upgrade — Submit a role upgrade request (Pro Upgrade)
-// Only allowed when verificationStatus is none, pending, or rejected
+// Individual category roles (player, coach, scout, etc.) → auto-approved instantly
+// All other categories (team_entity, organization, official, admin, etc.) → pending review
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { verifySession } from '@/lib/session';
 
+// Roles that auto-approve instantly when a fan goes Pro
+const AUTO_APPROVE_CATEGORIES = ['individual', 'support'];
+
 export async function POST(request: NextRequest) {
   try {
-    // Get session from cookie
     const cookieHeader = request.headers.get('cookie') || '';
     const sessionCookie = cookieHeader
       .split(';')
@@ -29,7 +32,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify role and type exist and are active
     const role = await db.role.findUnique({
       where: { id: roleId, isActive: true },
     });
@@ -47,16 +49,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user is allowed to upgrade
     const user = await db.user.findUnique({
       where: { id: session.sub },
     });
-
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Verified roles are locked — cannot change
+    // Verified roles are locked
     if (user.verificationStatus === 'verified') {
       return NextResponse.json(
         { error: 'Verified roles are locked. Contact support to change.' },
@@ -64,7 +64,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create verification request
+    // Determine if this role auto-approves
+    const autoApprove = AUTO_APPROVE_CATEGORIES.includes(role.category);
+    const newStatus = autoApprove ? 'verified' : 'pending';
+
+    // Create verification request record
     const verificationRequest = await db.verificationRequest.create({
       data: {
         userId: user.id,
@@ -72,26 +76,31 @@ export async function POST(request: NextRequest) {
         roleId: role.id,
         roleTypeId: roleType.id,
         roleData: roleData || {},
-        status: 'pending',
+        status: newStatus,
       },
     });
 
-    // Update user's role and verification status
+    // Update user role and verification status
     await db.user.update({
       where: { id: user.id },
       data: {
         roleId: role.id,
         roleTypeId: roleType.id,
-        role: role.slug, // keep legacy slug in sync
-        verificationStatus: 'pending',
+        role: role.slug,
+        verificationStatus: newStatus,
+        isVerified: autoApprove,
         roleData: roleData || {},
       },
     });
 
     return NextResponse.json({
       ok: true,
+      autoApproved: autoApprove,
+      status: newStatus,
       verificationRequest,
-      message: 'Role upgrade submitted for verification',
+      message: autoApprove
+        ? 'Role activated! Your verified badge is live.'
+        : 'Role upgrade submitted for admin review.',
     });
   } catch (error) {
     console.error('Role upgrade failed:', error);

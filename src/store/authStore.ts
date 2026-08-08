@@ -44,7 +44,7 @@ interface AuthState {
   setRegistrationOpen: (o: boolean) => void; setRegistrationStep: (s: AuthState["registrationStep"]) => void;
   setHydrated: (v: boolean) => void;
   completeRegistration: (d: {name:string;email:string;handle:string;password:string;sports:string[]}) => Promise<{ ok: boolean; error?: string }>;
-  submitRoleUpgrade: (d: {roleId:string;roleTypeId:string;roleData?:Record<string,string>}) => Promise<{ ok: boolean; error?: string }>;
+  submitRoleUpgrade: (d: {roleId:string;roleTypeId:string;roleData?:Record<string,string>}) => Promise<{ ok: boolean; error?: string; autoApproved?: boolean }>;
   logout: () => Promise<void>;
 }
 
@@ -101,7 +101,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ userProfile: (meData.user || meData) as UserProfile });
       }
 
-      return { ok: true };
+      return { ok: true, autoApproved: data.autoApproved ?? false };
     } catch {
       return { ok: false, error: 'Network error. Please try again.' };
     }

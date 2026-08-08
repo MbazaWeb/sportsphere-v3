@@ -7,17 +7,18 @@ export async function GET(request: NextRequest) {
   if (!auth.authorized) return auth.response;
 
   try {
-    const [usersCount, postsCount, sportsCount] = await Promise.all([
+    const [usersCount, postsCount, sportsCount, pendingRoles] = await Promise.all([
       db.user.count(),
       db.post.count(),
       db.sport.count({ where: { isActive: true } }),
+      db.verificationRequest.count({ where: { status: 'pending' } }),
     ]);
 
     return NextResponse.json({
       users: usersCount,
       posts: postsCount,
       sports: sportsCount,
-      pendingRoles: 0,
+      pendingRoles,
     });
   } catch (error) {
     console.error("Failed to fetch admin stats:", error);

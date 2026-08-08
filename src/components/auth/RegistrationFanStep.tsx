@@ -43,7 +43,7 @@ export function RegistrationFanStep({ onBack, onComplete }: RegistrationFanStepP
 
   const toggleSport = (s: string) => setSports(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
   const passwordsMatch = password && confirm && password === confirm;
-  const valid = name.trim() && email.trim() && handle.trim() && password.length >= 8 && passwordsMatch && sports.length > 0;
+  const valid = name.trim() && email.trim() && handle.trim() && password.length >= 8 && passwordsMatch;
 
   return (
     <div>
@@ -92,7 +92,7 @@ export function RegistrationFanStep({ onBack, onComplete }: RegistrationFanStepP
         </div>
       </div>
       <div className="mb-6">
-        <label className="mb-2 block text-xs font-medium text-muted-foreground">Sports you follow <span className="text-gold">*</span></label>
+        <label className="mb-2 block text-xs font-medium text-muted-foreground">Sports you follow <span className="text-muted-foreground/50">(optional)</span></label>
         <div className="flex flex-wrap gap-2">
           {availableSports.map(sport => (
             <button key={sport} onClick={() => toggleSport(sport)}

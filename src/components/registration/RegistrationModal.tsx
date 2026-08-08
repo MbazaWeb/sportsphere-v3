@@ -45,7 +45,7 @@ function FanStep({ onBack, onComplete }: { onBack: () => void; onComplete: (data
 
   const toggleSport = (s: string) => setSports(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
   const passwordsMatch = password && confirm && password === confirm;
-  const valid = name.trim() && email.trim() && handle.trim() && password.length >= 8 && passwordsMatch && sports.length > 0;
+  const valid = name.trim() && email.trim() && handle.trim() && password.length >= 8 && passwordsMatch;
 
   return (
     <div>
