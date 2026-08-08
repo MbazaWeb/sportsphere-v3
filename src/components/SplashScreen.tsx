@@ -37,9 +37,18 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
       ref={splashRef}
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
-        width: '100vw', height: '100vh',
+        // 100dvh = dynamic viewport height (adjusts to mobile URL bar show/hide).
+        // 100vh fallback for older browsers (pre-2022).
+        // 100svh = small viewport (always URL-bar-visible) — most conservative fallback.
+        width: '100vw',
+        height: '100dvh',
         display: 'flex', flexDirection: 'column',
         justifyContent: 'center', alignItems: 'center',
+        // respect the notch / home-indicator safe areas (viewport-fit=cover is set in layout.tsx)
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
         background: 'radial-gradient(circle at center, #0b1426 0%, #030812 100%)',
         transition: 'opacity 0.8s ease-out',
         overflow: 'hidden',
@@ -85,12 +94,16 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.6; }
         }
+        /* Older browsers that don't support dvh — fall back to vh via @supports */
+        @supports not (height: 100dvh) {
+          .splash-root { height: 100vh !important; }
+        }
       `}</style>
 
       {/* Logo */}
       <div style={{
         zIndex: 10, width: '60%', maxWidth: 350,
-        textAlign: 'center', marginBottom: '8vh',
+        textAlign: 'center', marginBottom: '6vh',
         animation: 'logoFloat 3s ease-in-out infinite',
       }}>
         <img src="/sportsphere/logo.svg" alt="SportSphere Logo" style={{ width: '100%', height: 'auto', display: 'block' }} />
@@ -98,13 +111,13 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
 
       {/* Loading state */}
       <div style={{
-        zIndex: 10, width: '80%', maxWidth: 280,
+        zIndex: 10, width: '82%', maxWidth: 320,
         display: 'flex', flexDirection: 'column',
-        alignItems: 'center', gap: 12,
+        alignItems: 'center', gap: 14,
       }}>
         {/* Spinner */}
         <div style={{
-          width: 30, height: 30,
+          width: 32, height: 32,
           border: '3px solid rgba(255,255,255,0.1)',
           borderTop: '3px solid #ffc400',
           borderRadius: '50%',
@@ -113,43 +126,51 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
 
         {/* Progress bar */}
         <div style={{
-          width: '100%', height: 4,
+          width: '100%', height: 5,
           backgroundColor: 'rgba(255,255,255,0.1)',
-          borderRadius: 2, overflow: 'hidden',
+          borderRadius: 3, overflow: 'hidden',
         }}>
           <div style={{
             height: '100%',
             width: `${progress}%`,
             background: 'linear-gradient(90deg, #ffc400 0%, #ffffff 100%)',
-            borderRadius: 2,
+            borderRadius: 3,
             transition: 'width 0.04s linear',
+            boxShadow: '0 0 8px rgba(255, 196, 0, 0.5)',
           }} />
         </div>
 
-        {/* Percentage + label */}
+        {/* Percentage + label — made larger and clearer for mobile legibility */}
         <div style={{
           display: 'flex', alignItems: 'center',
           justifyContent: 'space-between', width: '100%',
         }}>
           <div style={{
-            color: 'rgba(255,255,255,0.5)',
-            fontSize: '0.7rem', letterSpacing: '2px',
-            textTransform: 'uppercase',
-          }}>Loading...</div>
+            color: 'rgba(255,255,255,0.55)',
+            fontSize: '0.75rem', letterSpacing: '2px',
+            textTransform: 'uppercase', fontWeight: 500,
+          }}>Loading</div>
           <div style={{
             color: '#ffc400',
-            fontSize: '0.85rem', fontWeight: 700,
+            fontSize: '1.05rem', fontWeight: 800,
             letterSpacing: '1px',
+            fontVariantNumeric: 'tabular-nums',
             animation: progress < 100 ? 'pctPulse 1s ease-in-out infinite' : 'none',
-            minWidth: 36, textAlign: 'right',
+            minWidth: 48, textAlign: 'right',
+            textShadow: '0 0 12px rgba(255, 196, 0, 0.45)',
           }}>{progress}%</div>
         </div>
       </div>
 
-      {/* Footer — LIVE. PLAY. CONNECT. — no line below */}
+      {/* Footer — LIVE. PLAY. CONNECT. + copyright
+          Positioned with safe-area-inset so it never sits behind the iOS home indicator
+          or Android nav bar. Uses dvh-aware bottom so the URL bar can't cover it. */}
       <div style={{
-        position: 'absolute', bottom: '8vh',
+        position: 'absolute',
+        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 3vh)',
+        left: 0, right: 0,
         zIndex: 10, textAlign: 'center', width: '100%',
+        pointerEvents: 'none',
       }}>
         <div style={{
           color: 'white', fontSize: '1.2rem',
@@ -158,9 +179,9 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
           LIVE. <span style={{ color: '#ffc400' }}>PLAY.</span> CONNECT.
         </div>
         <div style={{
-          color: 'rgba(255,255,255,0.3)',
-          fontSize: '0.65rem', letterSpacing: '1px',
-          marginTop: 8,
+          color: 'rgba(255,255,255,0.45)',
+          fontSize: '0.7rem', letterSpacing: '1px',
+          marginTop: 10, fontWeight: 500,
         }}>
           © {new Date().getFullYear()} MbazzaCodes Inc.
         </div>
