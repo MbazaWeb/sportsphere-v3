@@ -8,6 +8,7 @@
 import { Trophy, Activity, TrendingUp, Shield, Target, Percent } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
 import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, EmptyState, ProgressBar, Badge, rpString, rpNumber } from '../../shared/ui';
+import { PerformanceCard } from '@/components/performance/PerformanceCard';
 
 export function CoachRecordTab({ apiUser }: { apiUser: ApiUserLike | null }) {
   const rp = getRoleProfile(apiUser, 'coach');
@@ -26,16 +27,22 @@ export function CoachRecordTab({ apiUser }: { apiUser: ApiUserLike | null }) {
 
   if (!hasAny) {
     return (
-      <EmptyState
-        icon={Activity}
-        title="No coaching record yet"
-        message="Add your matches managed, wins, draws, losses, and trophies from Edit Profile."
-      />
+      <div className="flex flex-col gap-3">
+        {apiUser?.id && <PerformanceCard userId={apiUser.id} />}
+        <EmptyState
+          icon={Activity}
+          title="No coaching record yet"
+          message="Add your matches managed, wins, draws, losses, and trophies from Edit Profile. Your performance score above is computed from verified events."
+        />
+      </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-3">
+      {/* ── Computed Performance Engine card (score, tier, rank, KPI breakdown) ── */}
+      {apiUser?.id && <PerformanceCard userId={apiUser.id} />}
+
       {/* Win rate hero */}
       <Card hover>
         <SectionTitle icon={Percent}>Win Rate</SectionTitle>

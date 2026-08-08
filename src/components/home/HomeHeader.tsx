@@ -1,6 +1,7 @@
 'use client';
 import type { HomeSubTab } from '@/store/navigationStore';
-import { Search, Bell, Inbox, ShoppingBag } from 'lucide-react';
+import { Search, Bell, Inbox, ShoppingBag, Trophy } from 'lucide-react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useNavigationStore } from '@/store/navigationStore';
 import { useAuthStore } from '@/store/authStore';
@@ -50,6 +51,14 @@ export function HomeHeader({ isSearchOpen, setIsSearchOpen, isCartOpen, setIsCar
             <img src="/sportsphere/logo-wordmark.svg" alt="SportSphere" style={{ height: '28px', width: 'auto' }} />
           </button>
           <div className="flex items-center gap-2">
+            <Link
+              href="/leaderboard"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors"
+              aria-label="Performance Rankings"
+              title="Performance Rankings"
+            >
+              <Trophy className="h-4 w-4 text-amber-400" />
+            </Link>
             <button
               onClick={() => setIsSearchOpen(true)}
               className="flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors"

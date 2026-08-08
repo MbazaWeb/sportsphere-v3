@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
 import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, EmptyState, rpString, rpNumber } from '../../shared/ui';
+import { PerformanceCard } from '@/components/performance/PerformanceCard';
 
 function positionGroup(position: string): 'GK' | 'DEF' | 'MID' | 'FWD' | 'OTHER' {
   const p = position.toUpperCase();
@@ -91,16 +92,22 @@ export function PlayerStatsTab({ apiUser }: { apiUser: ApiUserLike | null }) {
 
   if (!hasAnyStat) {
     return (
-      <EmptyState
-        icon={Activity}
-        title="No performance data yet"
-        message="Add your stats from the Edit Profile screen to see your position-specific dashboard."
-      />
+      <div className="flex flex-col gap-3">
+        {apiUser?.id && <PerformanceCard userId={apiUser.id} />}
+        <EmptyState
+          icon={Activity}
+          title="No manual stats entered yet"
+          message="Add your stats from the Edit Profile screen to see your position-specific dashboard. Your performance score above is computed from verified events."
+        />
+      </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-3">
+      {/* ── Computed Performance Engine card (score, tier, rank, KPI breakdown) ── */}
+      {apiUser?.id && <PerformanceCard userId={apiUser.id} />}
+
       {/* Position hero */}
       {position && (
         <Card>

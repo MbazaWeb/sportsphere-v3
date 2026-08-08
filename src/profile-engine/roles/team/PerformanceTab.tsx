@@ -7,6 +7,7 @@
 import { Activity, TrendingUp, Target, Shield, Trophy, BarChart3 } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
 import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, EmptyState, ProgressBar, Badge, rpString, rpNumber } from '../../shared/ui';
+import { PerformanceCard } from '@/components/performance/PerformanceCard';
 
 export function TeamPerformanceTab({ apiUser }: { apiUser: ApiUserLike | null }) {
   const rp = getRoleProfile(apiUser, 'team');
@@ -26,11 +27,14 @@ export function TeamPerformanceTab({ apiUser }: { apiUser: ApiUserLike | null })
 
   if (!hasAny) {
     return (
-      <EmptyState
-        icon={BarChart3}
-        title="No performance data yet"
-        message="Add your current season stats from Edit Profile → Performance."
-      />
+      <div className="flex flex-col gap-3">
+        {apiUser?.id && <PerformanceCard userId={apiUser.id} />}
+        <EmptyState
+          icon={BarChart3}
+          title="No season stats yet"
+          message="Add your current season stats from Edit Profile → Performance. Your performance score above is computed from verified events."
+        />
+      </div>
     );
   }
 
@@ -39,6 +43,9 @@ export function TeamPerformanceTab({ apiUser }: { apiUser: ApiUserLike | null })
 
   return (
     <div className="flex flex-col gap-3">
+      {/* ── Computed Performance Engine card (score, tier, rank, KPI breakdown) ── */}
+      {apiUser?.id && <PerformanceCard userId={apiUser.id} />}
+
       {/* League position hero */}
       {(position || points) && (
         <Card hover>

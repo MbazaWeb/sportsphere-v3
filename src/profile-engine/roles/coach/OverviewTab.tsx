@@ -8,6 +8,7 @@
 import { Megaphone, Building2, Award, TrendingUp, Trophy, Clock, Flag } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
 import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, ProgressBar, rpString, rpNumber } from '../../shared/ui';
+import { PerformanceCard } from '@/components/performance/PerformanceCard';
 
 export function CoachOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
   const rp = getRoleProfile(apiUser, 'coach');
@@ -28,6 +29,9 @@ export function CoachOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
 
   return (
     <div className="flex flex-col gap-3">
+      {/* ── Performance Engine headline (compact: score, tier, rank, form) ── */}
+      {apiUser?.id && <PerformanceCard userId={apiUser.id} compact />}
+
       {/* Identity card */}
       <Card hover>
         <SectionTitle icon={Megaphone}>Coach Card</SectionTitle>

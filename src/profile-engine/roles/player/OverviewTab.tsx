@@ -8,6 +8,7 @@
 import { Footprints, Activity, TrendingUp, DollarSign, Building2, Flag, Ruler, Weight } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
 import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, rpString, rpNumber } from '../../shared/ui';
+import { PerformanceCard } from '@/components/performance/PerformanceCard';
 
 export function PlayerOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
   const rp = getRoleProfile(apiUser, 'player');
@@ -27,6 +28,9 @@ export function PlayerOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) 
 
   return (
     <div className="flex flex-col gap-3">
+      {/* ── Performance Engine headline (compact: score, tier, rank, form) ── */}
+      {apiUser?.id && <PerformanceCard userId={apiUser.id} compact />}
+
       {/* Identity card */}
       <Card hover>
         <SectionTitle icon={Footprints}>Player Card</SectionTitle>
