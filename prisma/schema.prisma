@@ -315,7 +315,7 @@ model Prediction {
   id             String   @id @default(uuid())
   userId         String
   matchId        String?
-  postId         String?   // link to the Post that announced this prediction
+  postId         String?  @unique  // 1:1 with Post — link to the announcing post
   homeTeam       String
   awayTeam       String
   predictedHome  Int?
@@ -331,7 +331,6 @@ model Prediction {
   post           Post?  @relation("PostPrediction", fields: [postId], references: [id], onDelete: SetNull)
 
   @@index([userId])
-  @@index([postId])
 }
 
 // ─── Community ───────────────────────────────────────────────
