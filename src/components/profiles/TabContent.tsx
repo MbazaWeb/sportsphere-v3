@@ -111,7 +111,7 @@ export default function TabContent({ config, tabId }: TabContentProps) {
 function ProfileDataSkeleton() {
   return (
     <div className="flex flex-col gap-3">
-      {[1, 2, 3].map((i) => (
+      {[1, 2, 3].map((i: any) => (
         <div key={i} className="glass-card rounded-2xl p-4">
           <div className="h-3 w-full rounded bg-surface animate-pulse mb-2" />
           <div className="h-3 w-3/4 rounded bg-surface animate-pulse" />
@@ -291,7 +291,7 @@ function TeamOverview() {
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-2"><Target className="h-4 w-4"/>Top Scorers</h3>
         <div className="flex flex-col gap-2">
-          {team.topScorers.map((s,i)=>(
+          {team.topScorers.map((s: any, i: any)=>(
             <div key={s.name} className="flex items-center gap-3 rounded-xl bg-surface p-3">
               <span className={cn('w-5 text-center text-sm font-black',i===0?'text-gold':i===1?'text-gray-300':'text-amber-600')}>{i+1}</span>
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-elevated text-xs font-bold text-white">{s.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
@@ -306,7 +306,7 @@ function TeamOverview() {
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider">Sponsors & Partners</h3>
         <div className="flex flex-col gap-2">
-          {team.sponsors.map((s)=>(
+          {team.sponsors.map((s: any)=>(
             <div key={s.name} className="flex items-center justify-between rounded-xl bg-surface p-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10"><Shirt className="h-4 w-4 text-gold"/></div>
@@ -332,7 +332,7 @@ function TeamOverview() {
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider">Coaching Staff</h3>
         <div className="flex flex-col gap-2">
-          {team.coaches.map((c)=>(
+          {team.coaches.map((c: any)=>(
             <div key={c.name} className="flex items-center gap-3 rounded-xl bg-surface p-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-elevated text-xs font-bold text-white">{c.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
               <div><p className="text-sm font-semibold text-white">{c.name}</p><p className="text-xs text-muted-foreground">{c.role} · {c.nat}</p></div>
@@ -355,7 +355,7 @@ function TeamOverview() {
             { name: 'Away Kit 24/25', price: 'TSh 85,000', gradient: 'from-blue-600 to-blue-800' },
             { name: 'Training Top', price: 'TSh 55,000', gradient: 'from-gray-600 to-gray-800' },
             { name: 'Scarf', price: 'TSh 25,000', gradient: 'from-red-500 to-yellow-600' },
-          ].map((item, i) => (
+          ].map((item: any, i: any) => (
             <div key={i} className="rounded-xl overflow-hidden bg-surface border border-surface-border">
               <div className={cn('aspect-square bg-gradient-to-b flex items-center justify-center', item.gradient)}>
                 <span className="text-2xl font-black text-white/20">SS</span>
@@ -418,7 +418,7 @@ function CompetitionOverview() {
           <div className="grid grid-cols-[2rem_1fr_2rem_2rem_2rem_3rem] px-3 py-2 text-[10px] font-semibold uppercase text-muted-foreground border-b border-surface-border">
             <span>#</span><span>Team</span><span className="text-center">P</span><span className="text-center">W</span><span className="text-center">L</span><span className="text-right">Pts</span>
           </div>
-          {comp.standings.map((row)=>(
+          {comp.standings.map((row: any)=>(
             <div key={row.pos} className="grid grid-cols-[2rem_1fr_2rem_2rem_2rem_3rem] items-center px-3 py-3 border-b border-surface-border/40 last:border-0">
               <span className={cn('text-sm font-black',row.pos<=4?'text-gold':'text-muted-foreground')}>{row.pos}</span>
               <span className="truncate text-sm font-semibold text-white">{row.team}</span>
@@ -433,7 +433,7 @@ function CompetitionOverview() {
 
       {activeTab==='scorers' && (
         <div className="flex flex-col gap-2">
-          {comp.topScorers.map((s,i)=>(
+          {comp.topScorers.map((s: any, i: any)=>(
             <div key={s.name} className="glass-card flex items-center gap-3 rounded-xl p-3">
               <span className={cn('w-5 text-center text-sm font-black',i===0?'text-gold':i===1?'text-gray-300':i===2?'text-amber-600':'text-muted-foreground')}>{i+1}</span>
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-xs font-bold text-white">{s.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
@@ -446,7 +446,7 @@ function CompetitionOverview() {
 
       {activeTab==='assists' && (
         <div className="flex flex-col gap-2">
-          {comp.topAssists.map((s,i)=>(
+          {comp.topAssists.map((s: any, i: any)=>(
             <div key={s.name} className="glass-card flex items-center gap-3 rounded-xl p-3">
               <span className={cn('w-5 text-center text-sm font-black',i===0?'text-gold':'text-muted-foreground')}>{i+1}</span>
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-xs font-bold text-white">{s.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
@@ -459,7 +459,7 @@ function CompetitionOverview() {
 
       {activeTab==='cs' && (
         <div className="flex flex-col gap-2">
-          {comp.cleanSheets.map((s,i)=>(
+          {comp.cleanSheets.map((s: any, i: any)=>(
             <div key={s.team} className="glass-card flex items-center gap-3 rounded-xl p-3">
               <span className={cn('w-5 text-center text-sm font-black',i===0?'text-gold':'text-muted-foreground')}>{i+1}</span>
               <p className="flex-1 text-sm font-semibold text-white">{s.team}</p>
@@ -525,7 +525,7 @@ function MatchOverview() {
             { label: 'Shots', home: 14, away: 8 },
             { label: 'Shots on Target', home: 6, away: 3 },
             { label: 'Corners', home: 7, away: 4 },
-          ].map((stat) => (
+          ].map((stat: any) => (
             <div key={stat.label} className="rounded-xl bg-surface p-3">
               <p className="text-[10px] text-muted-foreground uppercase">{stat.label}</p>
               <div className="mt-1 flex items-center gap-2">
@@ -671,7 +671,7 @@ function PlayerOverviewEnhanced() {
           { label: 'Shot Accuracy',   value: p.seasonStats.shotAccuracy,   max: 100 },
           { label: 'Pass Accuracy',   value: p.seasonStats.passAccuracy,   max: 100 },
           { label: 'Dribble Success', value: p.seasonStats.dribbleSuccess, max: 100 },
-        ].map((s) => (
+        ].map((s: any) => (
           <div key={s.label} className="mb-2.5 last:mb-0">
             <div className="mb-1 flex items-center justify-between">
               <span className="text-xs text-muted-foreground">{s.label}</span>
@@ -702,7 +702,7 @@ function PlayerOverviewEnhanced() {
           ))}
         </div>
         <div className="flex flex-col gap-1">
-          {p.international.tournaments.map((t) => (
+          {p.international.tournaments.map((t: any) => (
             <div key={t} className="flex items-center gap-2 rounded-lg bg-surface px-3 py-2">
               <Star className="h-3.5 w-3.5 text-gold flex-shrink-0" />
               <span className="text-xs font-medium text-white">{t}</span>
@@ -715,7 +715,7 @@ function PlayerOverviewEnhanced() {
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 text-xs font-bold text-gold uppercase tracking-wider">Sponsors</h3>
         <div className="flex flex-col gap-2">
-          {p.sponsors.map((s) => (
+          {p.sponsors.map((s: any) => (
             <div key={s.name} className="flex items-center justify-between rounded-xl bg-surface p-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10">
@@ -736,7 +736,7 @@ function PlayerOverviewEnhanced() {
           <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Honours</h3>
         </div>
         <div className="flex flex-col gap-2">
-          {p.honours.map((h) => (
+          {p.honours.map((h: any) => (
             <div key={h.title} className="flex items-center gap-3 rounded-xl bg-gold/5 border border-gold/10 p-3">
               <Trophy className="h-5 w-5 text-gold flex-shrink-0" />
               <div>
@@ -763,7 +763,7 @@ function CoachOverview() {
           { label: 'Average Possession', value: 68, max: 100 },
           { label: 'Pressing Intensity', value: 82, max: 100 },
           { label: 'Build-up Speed', value: 74, max: 100 },
-        ].map((stat) => (
+        ].map((stat: any) => (
           <div key={stat.label} className="mb-3 last:mb-0">
             <div className="mb-1.5 flex items-center justify-between">
               <span className="text-xs text-muted-foreground">{stat.label}</span>
@@ -866,7 +866,7 @@ function OrganizationOverview() {
             { label: 'HQ', value: 'Zurich' },
             { label: 'Staff', value: '800+' },
             { label: 'Revenue', value: '$4.2B' },
-          ].map((stat) => (
+          ].map((stat: any) => (
             <div key={stat.label} className="rounded-xl bg-surface p-3 text-center">
               <p className="text-sm font-bold text-gold">{stat.value}</p>
               <p className="text-[10px] text-muted-foreground">{stat.label}</p>
@@ -893,7 +893,7 @@ function BusinessOverview() {
             { label: 'Rating', value: '4.6 ★' },
             { label: 'Countries', value: '120+' },
             { label: 'Revenue', value: '$2.8B' },
-          ].map((stat) => (
+          ].map((stat: any) => (
             <div key={stat.label} className="rounded-xl bg-surface p-3 text-center">
               <p className="text-sm font-bold text-gold">{stat.value}</p>
               <p className="text-[10px] text-muted-foreground">{stat.label}</p>
@@ -916,7 +916,7 @@ function BusinessOverview() {
             { name: 'Team Kit 24/25', price: 'TSh 85,000', gradient: 'from-blue-600 to-cyan-700', stock: 'In stock' },
             { name: 'Training Ball', price: 'TSh 45,000', gradient: 'from-orange-600 to-red-700', stock: 'Low stock' },
             { name: 'Supporter Scarf', price: 'TSh 25,000', gradient: 'from-red-500 to-yellow-600', stock: 'Sold out' },
-          ].map((item, i) => (
+          ].map((item: any, i: any) => (
             <div key={i} className="rounded-xl overflow-hidden bg-surface border border-surface-border">
               <div className={cn('relative aspect-square bg-gradient-to-b flex items-center justify-center', item.gradient)}>
                 <span className="text-2xl font-black text-white/20">SS</span>
@@ -975,7 +975,7 @@ function JournalistOverview() {
             { label: 'Accuracy', value: '99%' },
             { label: 'Specialty', value: 'Transfers' },
             { label: 'Experience', value: '12 Years' },
-          ].map((stat) => (
+          ].map((stat: any) => (
             <div key={stat.label} className="rounded-xl bg-surface p-3 text-center">
               <p className="text-sm font-bold text-gold">{stat.value}</p>
               <p className="text-[10px] text-muted-foreground">{stat.label}</p>
@@ -1003,7 +1003,7 @@ function AnalystOverview() {
             { label: 'Followers', value: '450K' },
             { label: 'Accuracy', value: '94%' },
             { label: 'Models', value: '120+' },
-          ].map((stat) => (
+          ].map((stat: any) => (
             <div key={stat.label} className="rounded-xl bg-surface p-3 text-center">
               <p className="text-sm font-bold text-gold">{stat.value}</p>
               <p className="text-[10px] text-muted-foreground">{stat.label}</p>
@@ -1022,7 +1022,7 @@ function AnalystOverview() {
         </div>
         {/* Bar chart (CSS-based) */}
         <div className="flex items-end justify-between gap-1 h-32 mb-2">
-          {[65, 72, 80, 68, 85, 92, 78, 88, 95, 90].map((val, i) => (
+          {[65, 72, 80, 68, 85, 92, 78, 88, 95, 90].map((val: any, i: any) => (
             <div key={i} className="flex-1 flex flex-col items-center gap-1">
               <div
                 className="w-full rounded-t bg-gradient-to-t from-cyan-500 to-blue-400 transition-all hover:opacity-80"
@@ -1107,7 +1107,7 @@ function AnalystOverview() {
             { title: 'Build-up Patterns', dur: '4:12', gradient: 'from-blue-600 to-cyan-700' },
             { title: 'Set Piece Analysis', dur: '2:48', gradient: 'from-green-600 to-emerald-700' },
             { title: 'Player Heatmap', dur: '5:30', gradient: 'from-orange-600 to-red-700' },
-          ].map((clip, i) => (
+          ].map((clip: any, i: any) => (
             <button key={i} className="group relative aspect-video rounded-xl overflow-hidden">
               <div className={cn('absolute inset-0 bg-gradient-to-br', clip.gradient)} />
               <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors" />
@@ -1136,7 +1136,7 @@ function AnalystOverview() {
             { name: 'PPDA Pressure Model', accuracy: 87, status: 'active' },
             { name: 'Transfer Value Predictor', accuracy: 78, status: 'beta' },
             { name: 'Injury Risk Assessment', accuracy: 82, status: 'active' },
-          ].map((model, i) => (
+          ].map((model: any, i: any) => (
             <div key={i} className="rounded-xl bg-surface p-3">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-semibold text-white">{model.name}</span>
@@ -1174,7 +1174,7 @@ function CreatorOverview() {
             { label: 'Views', value: '450M' },
             { label: 'Engagement', value: '8.7%' },
             { label: 'Content', value: '3.8K' },
-          ].map((stat) => (
+          ].map((stat: any) => (
             <div key={stat.label} className="rounded-xl bg-surface p-3 text-center">
               <p className="text-sm font-bold text-gold">{stat.value}</p>
               <p className="text-[10px] text-muted-foreground">{stat.label}</p>
@@ -1201,7 +1201,7 @@ function ScoutOverview() {
             { label: 'Followers', value: '12K' },
             { label: 'Success Rate', value: '78%' },
             { label: 'Players Found', value: '45' },
-          ].map((stat) => (
+          ].map((stat: any) => (
             <div key={stat.label} className="rounded-xl bg-surface p-3 text-center">
               <p className="text-sm font-bold text-gold">{stat.value}</p>
               <p className="text-[10px] text-muted-foreground">{stat.label}</p>
@@ -1228,7 +1228,7 @@ function RefereeOverview() {
             { label: 'Red Cards', value: '42' },
             { label: 'Decisions', value: '94%' },
             { label: 'Experience', value: '15 Years' },
-          ].map((stat) => (
+          ].map((stat: any) => (
             <div key={stat.label} className="rounded-xl bg-surface p-3 text-center">
               <p className="text-sm font-bold text-gold">{stat.value}</p>
               <p className="text-[10px] text-muted-foreground">{stat.label}</p>
@@ -1255,7 +1255,7 @@ function FanOverview() {
             { label: 'Followers', value: '1.2K' },
             { label: 'Badges', value: '14' },
             { label: 'Predictions', value: '89%' },
-          ].map((stat) => (
+          ].map((stat: any) => (
             <div key={stat.label} className="rounded-xl bg-surface p-3 text-center">
               <p className="text-sm font-bold text-gold">{stat.value}</p>
               <p className="text-[10px] text-muted-foreground">{stat.label}</p>
@@ -1279,7 +1279,7 @@ function GenericOverview({ config }: { config: ProfileTypeConfig }) {
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <h3 className="mb-3 text-sm font-bold text-white">Profile Details</h3>
         <div className="grid grid-cols-2 gap-3">
-          {config.mockData.stats.slice(0, 4).map((stat) => (
+          {config.mockData.stats.slice(0, 4).map((stat: any) => (
             <div key={stat.label} className="rounded-xl bg-surface p-3 text-center">
               <p className="text-sm font-bold text-gold">{stat.value}</p>
               <p className="text-[10px] text-muted-foreground">{stat.label}</p>
@@ -1300,7 +1300,7 @@ function FeedContent() {
   
   return (
     <div className="flex flex-col gap-3">
-      {posts.slice(0, 10).map((post, i) => (
+      {posts.slice(0, 10).map((post: any, i: any) => (
         <article key={post.id || i} className="glass-card rounded-2xl p-4 glass-card-hover">
           <div className="mb-3 flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold text-xs font-bold text-black">
@@ -1356,7 +1356,7 @@ function SquadContent() {
   return (
     <div>
       <div className="mb-3 flex gap-2 overflow-x-auto scrollbar-hide">
-        {positions.map((pos, i) => (
+        {positions.map((pos: any, i: any) => (
           <button key={pos} onClick={() => setFilter(pos)}
             className={cn('flex-shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
               filter === pos ? 'bg-gold text-black' : 'bg-surface text-muted-foreground hover:text-foreground')}>
@@ -1365,7 +1365,7 @@ function SquadContent() {
         ))}
       </div>
       <div className="flex flex-col gap-2">
-        {filtered.map((p, idx) => (
+        {filtered.map((p: any, idx: any) => (
           <div key={p.id || idx} className="glass-card rounded-xl p-3 glass-card-hover">
             <div className="flex items-center gap-3">
               <span className="w-6 text-center text-sm font-bold text-gold">{(idx + 1).toString().padStart(2, '0')}</span>
@@ -1392,7 +1392,7 @@ function FixturesContent() {
   
   return (
     <div className="flex flex-col gap-2">
-      {fixtures.map((f, i) => (
+      {fixtures.map((f: any, i: any) => (
         <div key={f.id || i} className="glass-card rounded-2xl overflow-hidden glass-card-hover">
           <div className="flex items-center justify-between border-b border-surface-border px-4 py-1.5">
             <span className="text-[10px] font-bold text-muted-foreground uppercase">{f.league || 'MATCH'}</span>
@@ -1421,7 +1421,7 @@ function ResultsContent() {
   
   return (
     <div className="flex flex-col gap-2">
-      {results.map((r, i) => (
+      {results.map((r: any, i: any) => (
         <div key={r.id || i} className="glass-card rounded-2xl p-4 glass-card-hover">
           <div className="flex items-center justify-between">
             <p className="flex-1 text-right text-sm font-bold text-white">{r.homeTeam}</p>
@@ -1474,7 +1474,7 @@ function StatisticsContent() {
   }
   return (
     <div className="flex flex-col gap-3">
-      {stats.map((s) => (
+      {stats.map((s: any) => (
         <div key={s.label} className="glass-card rounded-xl p-3 glass-card-hover">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs text-muted-foreground">{s.label}</span>
@@ -1514,7 +1514,7 @@ function TimelineContent() {
   ];
   return (
     <div className="flex flex-col gap-0">
-      {events.map((e, i) => (
+      {events.map((e: any, i: any) => (
         <div key={i} className="flex gap-3">
           <div className="flex flex-col items-center">
             <div className={cn('flex h-8 w-8 items-center justify-center rounded-full border-2',
@@ -1548,7 +1548,7 @@ function CommentaryContent() {
         { min: 56, text: 'GOAL! Rashford with the equalizer! Great team play!' },
         { min: 45, text: 'Second half underway. Man Utd need to respond.' },
         { min: 34, text: 'GOAL! Arsenal take the lead through Saka.' },
-      ].map((c, i) => (
+      ].map((c: any, i: any) => (
         <div key={i} className="flex gap-3 glass-card rounded-xl p-3 glass-card-hover">
           <span className="text-xs font-bold text-gold mt-0.5">{c.min}'</span>
           <p className="text-sm text-foreground/80">{c.text}</p>
@@ -1592,7 +1592,7 @@ function TransfersContent() {
   
   return (
     <div className="flex flex-col gap-2">
-      {transfers.map((t, i) => (
+      {transfers.map((t: any, i: any) => (
         <div key={i} className="glass-card rounded-xl p-3 glass-card-hover">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -1625,7 +1625,7 @@ function MediaContent() {
   
   return (
     <div className="grid grid-cols-3 gap-1.5">
-      {mediaItems.map((item, i) => (
+      {mediaItems.map((item: any, i: any) => (
         <div key={item.id || i} className="aspect-square glass-card rounded-xl flex items-center justify-center glass-card-hover bg-surface/50 relative overflow-hidden">
           {item.mediaUrls?.[0] ? (
             <>
@@ -1655,7 +1655,7 @@ function VideosContent() {
   
   return (
     <div className="grid grid-cols-2 gap-3">
-      {videos.map((v, i) => (
+      {videos.map((v: any, i: any) => (
         <div key={v.id || i} className={cn('relative flex aspect-video items-end justify-end overflow-hidden rounded-xl bg-gradient-to-b', gradients[i % gradients.length])}>
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           <div className="relative p-2">
@@ -1681,7 +1681,7 @@ function FansContent() {
   
   return (
     <div className="flex flex-col gap-2">
-      {leaderboard.slice(0, 10).map((fan, i) => (
+      {leaderboard.slice(0, 10).map((fan: any, i: any) => (
         <button key={fan.id || i} onClick={() => {
           setViewingUser({
             id: fan.id,
@@ -1800,7 +1800,7 @@ function CareerContent() {
           <Building className="h-4 w-4" /> Teams Played
         </h3>
       </div>
-      {timelineData.map((item, i) => {
+      {timelineData.map((item: any, i: any) => {
         const duration = calcDuration(item.startDate, item.endDate, item.isCurrent);
         return (
           <div key={item.team + i} className="flex gap-3">
@@ -1834,7 +1834,7 @@ function CareerContent() {
               </div>
               {item.honours && item.honours.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
-                  {item.honours.map((h) => (
+                  {item.honours.map((h: any) => (
                     <span key={h} className="rounded-md bg-gold/10 border border-gold/20 px-2 py-0.5 text-[10px] font-medium text-gold">{h}</span>
                   ))}
                 </div>
@@ -1877,7 +1877,7 @@ function AchievementsContent() {
 
   return (
     <div className="flex flex-col gap-2">
-      {achievements.map((achievement, i) => (
+      {achievements.map((achievement: any, i: any) => (
         <div key={i} className="glass-card rounded-xl p-3 glass-card-hover flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold/10 flex-shrink-0">
             <Trophy className="h-4 w-4 text-gold" />
@@ -1938,7 +1938,7 @@ function AboutContent({ config }: { config: ProfileTypeConfig }) {
             <Award className="h-4 w-4" /> Achievements
           </h3>
           <div className="flex flex-col gap-1.5">
-            {mockData.achievementsList.map((achievement, i) => (
+            {mockData.achievementsList.map((achievement: any, i: any) => (
               <div key={i} className="flex items-center gap-2 rounded-lg bg-surface px-3 py-2">
                 <span className="text-gold text-xs font-bold">{i + 1}.</span>
                 <span className="text-sm text-white">{achievement}</span>
@@ -2098,7 +2098,7 @@ function ShopContent() {
 
       {/* Products grid */}
       <div className="grid grid-cols-2 gap-3">
-        {products.map((item, i) => (
+        {products.map((item: any, i: any) => (
           <button
             key={i}
             onClick={() => item.available && setSelectedProduct(selectedProduct === i ? null : i)}
@@ -2342,7 +2342,7 @@ function TicketBookingFlow({ match, onClose }: {
 
       {/* Step indicator */}
       <div className="mb-3 flex items-center gap-1">
-        {['select', 'details', 'payment', 'confirmation'].map((s, i) => (
+        {['select', 'details', 'payment', 'confirmation'].map((s: any, i: any) => (
           <div key={s} className={cn(
             'flex-1 h-1 rounded-full',
             ['select', 'details', 'payment', 'confirmation'].indexOf(step) >= i ? 'bg-gold' : 'bg-surface-border'
@@ -2353,7 +2353,7 @@ function TicketBookingFlow({ match, onClose }: {
       {step === 'select' && (
         <div className="flex flex-col gap-2">
           <p className="text-[10px] font-bold text-gold uppercase mb-1">Choose Seating Tier</p>
-          {match.tiers.map((tier, i) => (
+          {match.tiers.map((tier: any, i: any) => (
             <button
               key={i}
               onClick={() => { setSelectedTier(i); setStep('details'); }}
@@ -2472,7 +2472,7 @@ function NewsContent() {
         { title: 'Breaking: Major transfer confirmed', source: 'SportSphere', time: '5m ago' },
         { title: 'Match preview: Key tactical battles', source: 'Analysis', time: '30m ago' },
         { title: 'Injury update ahead of the weekend', source: 'Medical Team', time: '2h ago' },
-      ].map((n, i) => (
+      ].map((n: any, i: any) => (
         <div key={i} className="glass-card rounded-xl p-3 glass-card-hover">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10 flex-shrink-0">
@@ -2498,7 +2498,7 @@ function RankingsContent() {
         { rank: 2, team: 'France', pts: '1838' },
         { rank: 3, team: 'England', pts: '1790' },
         { rank: 4, team: 'Brazil', pts: '1782' },
-      ].map((r, i) => (
+      ].map((r: any, i: any) => (
         <div key={i} className={cn('glass-card rounded-xl p-3 glass-card-hover',
           r.rank <= 3 ? 'border-gold/20' : '')}>
           <div className="flex items-center gap-3">
@@ -2519,7 +2519,7 @@ function RankingsContent() {
 function SimpleList({ items, title }: { items: string[]; title: string }) {
   return (
     <div className="flex flex-col gap-2">
-      {items.map((item, i) => (
+      {items.map((item: any, i: any) => (
         <div key={i} className="glass-card rounded-xl p-3 glass-card-hover">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold/10 text-xs font-bold text-gold">{i + 1}</div>
@@ -2559,7 +2559,7 @@ function TeamsContent() {
   ];
   return (
     <div className="flex flex-col gap-2">
-      {teams.map((team, i) => {
+      {teams.map((team: any, i: any) => {
         return (
           <div key={i} onClick={async () => { if(!team.handle) return; try { const res = await apiFetch(`/api/users?handle=${encodeURIComponent(team.handle)}`); if(res.ok){const u=await res.json(); const {apiUserToViewing}=await import('@/types'); setViewingUser(apiUserToViewing(u,false));} } catch {} }}
             className={cn('glass-card rounded-xl p-3 glass-card-hover', team.handle && 'cursor-pointer')}>
