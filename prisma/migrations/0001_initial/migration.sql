@@ -6,7 +6,7 @@ CREATE TABLE "User" (
     "handle" TEXT NOT NULL,
     "passwordHash" TEXT,
     "resetToken" TEXT,
-    "resetTokenExpiry" DATETIME,
+    "resetTokenExpiry" TIMESTAMP(3),
     "avatarUrl" TEXT,
     "avatarInitials" TEXT,
     "role" TEXT NOT NULL DEFAULT 'fan',
@@ -20,16 +20,16 @@ CREATE TABLE "User" (
     "postCount" INTEGER NOT NULL DEFAULT 0,
     "roleData" TEXT NOT NULL DEFAULT '{}',
     "sportsFollowing" TEXT NOT NULL DEFAULT '[]',
-    "registeredAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    "lastSeenAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "registeredAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "lastSeenAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateTable
 CREATE TABLE "Follow" (
     "followerId" TEXT NOT NULL,
     "followingId" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY ("followerId", "followingId"),
     CONSTRAINT "Follow_followerId_fkey" FOREIGN KEY ("followerId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
@@ -50,8 +50,8 @@ CREATE TABLE "Post" (
     "commentCount" INTEGER NOT NULL DEFAULT 0,
     "shareCount" INTEGER NOT NULL DEFAULT 0,
     "viewCount" INTEGER NOT NULL DEFAULT 0,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Post_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -59,7 +59,7 @@ CREATE TABLE "Post" (
 CREATE TABLE "PostLike" (
     "postId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY ("postId", "userId"),
     CONSTRAINT "PostLike_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
@@ -73,7 +73,7 @@ CREATE TABLE "Comment" (
     "userId" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "likeCount" INTEGER NOT NULL DEFAULT 0,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Comment_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "Comment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -85,8 +85,8 @@ CREATE TABLE "Poll" (
     "question" TEXT NOT NULL,
     "options" TEXT NOT NULL DEFAULT '[]',
     "totalVotes" INTEGER NOT NULL DEFAULT 0,
-    "endsAt" DATETIME,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "endsAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Poll_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -101,12 +101,12 @@ CREATE TABLE "Match" (
     "status" TEXT NOT NULL DEFAULT 'upcoming',
     "minute" INTEGER,
     "venue" TEXT,
-    "kickoffAt" DATETIME NOT NULL,
+    "kickoffAt" TIMESTAMP(3) NOT NULL,
     "events" TEXT NOT NULL DEFAULT '[]',
     "continent" TEXT NOT NULL DEFAULT 'Europe',
     "country" TEXT NOT NULL DEFAULT 'England',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
 -- CreateTable
@@ -121,7 +121,7 @@ CREATE TABLE "Prediction" (
     "result" TEXT,
     "isCorrect" BOOLEAN,
     "pointsEarned" INTEGER NOT NULL DEFAULT 0,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Prediction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "Prediction_matchId_fkey" FOREIGN KEY ("matchId") REFERENCES "Match" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -134,7 +134,7 @@ CREATE TABLE "Community" (
     "topic" TEXT,
     "memberCount" INTEGER NOT NULL DEFAULT 0,
     "createdById" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Community_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
@@ -143,7 +143,7 @@ CREATE TABLE "CommunityMember" (
     "communityId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "role" TEXT NOT NULL DEFAULT 'member',
-    "joinedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "joinedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY ("communityId", "userId"),
     CONSTRAINT "CommunityMember_communityId_fkey" FOREIGN KEY ("communityId") REFERENCES "Community" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
@@ -160,7 +160,7 @@ CREATE TABLE "Notification" (
     "isRead" BOOLEAN NOT NULL DEFAULT false,
     "actorId" TEXT,
     "referenceId" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "Notification_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -172,7 +172,7 @@ CREATE TABLE "Message" (
     "receiverId" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "isRead" BOOLEAN NOT NULL DEFAULT false,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Message_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "Message_receiverId_fkey" FOREIGN KEY ("receiverId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -186,8 +186,8 @@ CREATE TABLE "VerificationRequest" (
     "status" TEXT NOT NULL DEFAULT 'pending',
     "adminNotes" TEXT,
     "reviewedBy" TEXT,
-    "submittedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "reviewedAt" DATETIME,
+    "submittedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "reviewedAt" TIMESTAMP(3),
     CONSTRAINT "VerificationRequest_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
