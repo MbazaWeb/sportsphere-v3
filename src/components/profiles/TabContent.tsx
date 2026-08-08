@@ -265,7 +265,7 @@ function TeamOverview() {
         <div>
           <p className="mb-2 text-xs text-muted-foreground">Recent Form</p>
           <div className="flex gap-2">
-            {team.currentSeason.form.map((r,i)=>(
+            {team.currentSeason.form.map((r: string,i: number)=>(
               <div key={i} className={cn('flex h-8 w-8 items-center justify-center rounded-full text-xs font-black',
                 r==='W'?'bg-green-500 text-black':r==='D'?'bg-yellow-500 text-black':'bg-red-500 text-white')}>{r}</div>
             ))}
