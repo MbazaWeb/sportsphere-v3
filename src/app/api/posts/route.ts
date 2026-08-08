@@ -36,8 +36,14 @@ export async function POST(request: NextRequest) {
       hashtags?: string[];
       location?: string;
       isBreaking?: boolean;
-      poll?: { question: string; options: string[] };
-      prediction?: { homeTeam: string; awayTeam: string; predictedHome: number; predictedAway: number };
+      poll?: { question: string; options: string[]; durationHours?: number };
+      prediction?: {
+        homeTeam: string;
+        awayTeam: string;
+        predictedHome: number;
+        predictedAway: number;
+        confidence?: 'low' | 'medium' | 'high';
+      };
     };
 
     // Validate
@@ -50,7 +56,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid post type.' }, { status: 400 });
     }
 
-    // Create the post
+    // For media posts, require at least one media URL
+    if ((postType === 'photo' || postType === 'video' || postType === 'spotlight') &&
+        (!Array.isArray(mediaUrls) || mediaUrls.length === 0)) {
+      return NextResponse.json(
+        { error: `${postType === 'photo' ? 'Photo' : 'Video'} is required for this post type.` },
+        { status: 400 }
+      );
+    }
+
+    // For polls, require question + at least 2 options
+    if (postType === 'poll' && (!poll?.question?.trim() || (poll?.options?.filter(o => o.trim()).length ?? 0) < 2)) {
+      return NextResponse.json(
+        { error: 'Poll needs a question and at least 2 options.' },
+        { status: 400 }
+      );
+    }
+
+    // For predictions, require both teams + scores
+    if (postType === 'prediction' &&
+        (!prediction?.homeTeam?.trim() || !prediction?.awayTeam?.trim() ||
+         typeof prediction.predictedHome !== 'number' || typeof prediction.predictedAway !== 'number')) {
+      return NextResponse.json(
+        { error: 'Prediction needs both teams and predicted scores.' },
+        { status: 400 }
+      );
+    }
+
+    // Create the post (now persists hashtags + location)
     const post = await db.post.create({
       data: {
         userId,
@@ -59,15 +92,18 @@ export async function POST(request: NextRequest) {
         mediaUrls: JSON.stringify(mediaUrls),
         teamTag: teamTag || null,
         playerTag: playerTag || null,
+        hashtags: JSON.stringify(Array.isArray(hashtags) ? hashtags : []),
+        location: location || null,
         isBreaking: Boolean(isBreaking),
       },
       select: {
         id: true, userId: true, content: true, postType: true, mediaUrls: true,
-        teamTag: true, playerTag: true, isBreaking: true, likeCount: true,
-        commentCount: true, shareCount: true, viewCount: true, createdAt: true,
-        updatedAt: true,
+        teamTag: true, playerTag: true, hashtags: true, location: true, isBreaking: true,
+        likeCount: true, commentCount: true, shareCount: true, viewCount: true,
+        createdAt: true, updatedAt: true,
         user: { select: USER_SELECT },
         poll: true,
+        prediction: true,
         comments: {
           select: { id: true, content: true, createdAt: true, userId: true, user: { select: USER_SELECT } },
           orderBy: { createdAt: 'desc' },
@@ -76,26 +112,32 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Create poll if provided
+    // Create poll if provided — now saves duration (endsAt)
     if (postType === 'poll' && poll && poll.question && poll.options.length >= 2) {
+      const durationHours = typeof poll.durationHours === 'number' && poll.durationHours > 0
+        ? poll.durationHours
+        : 24; // default 24h
       await db.poll.create({
         data: {
           postId: post.id,
           question: poll.question,
           options: JSON.stringify(poll.options),
+          endsAt: new Date(Date.now() + durationHours * 60 * 60 * 1000),
         },
       });
     }
 
-    // Create prediction if provided
+    // Create prediction if provided — now linked to the post via postId
     if (postType === 'prediction' && prediction) {
       await db.prediction.create({
         data: {
           userId,
+          postId: post.id,
           homeTeam: prediction.homeTeam,
           awayTeam: prediction.awayTeam,
           predictedHome: prediction.predictedHome,
           predictedAway: prediction.predictedAway,
+          confidence: prediction.confidence || null,
         },
       });
     }
@@ -106,16 +148,18 @@ export async function POST(request: NextRequest) {
       data: { postCount: { increment: 1 } },
     });
 
-    // Re-fetch with poll included
+    // Re-fetch with poll + prediction included
     const fullPost = await db.post.findUnique({
       where: { id: post.id },
       select: {
         id: true, userId: true, content: true, postType: true, mediaUrls: true,
-        teamTag: true, playerTag: true, isBreaking: true, likeCount: true,
+        teamTag: true, playerTag: true, hashtags: true, location: true,
+        isBreaking: true, likeCount: true,
         commentCount: true, shareCount: true, viewCount: true, createdAt: true,
         updatedAt: true,
         user: { select: USER_SELECT },
         poll: true,
+        prediction: true,
         comments: {
           select: { id: true, content: true, createdAt: true, userId: true, user: { select: USER_SELECT } },
           orderBy: { createdAt: 'desc' },
@@ -127,6 +171,7 @@ export async function POST(request: NextRequest) {
     const parsed = {
       ...fullPost,
       mediaUrls: safeJsonParse(fullPost?.mediaUrls, []),
+      hashtags: safeJsonParse(fullPost?.hashtags, []),
       ...(fullPost?.poll && {
         poll: { ...fullPost.poll, options: safeJsonParse(fullPost.poll.options, []) },
       }),
