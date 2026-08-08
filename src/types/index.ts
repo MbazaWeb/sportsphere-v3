@@ -11,24 +11,34 @@ export type ActivitySubTab = 'all' | 'social' | 'sports' | 'messages';
 export type RegistrationStep = 'choose' | 'simple' | 'advanced-role' | 'advanced-form' | 'complete';
 export type VerificationStatus = 'none' | 'pending' | 'verified' | 'rejected';
 
+// All 22 seeded roles + legacy aliases. Kept in sync with prisma/seed-roles.ts.
 export type ProfileTypeId =
-  | 'team'
-  | 'competition'
-  | 'match'
+  | 'fan'
   | 'player'
   | 'coach'
-  | 'stadium'
-  | 'venue'
-  | 'academy'
-  | 'community'
-  | 'organization'
-  | 'business'
-  | 'journalist'
-  | 'analyst'
-  | 'creator'
+  | 'team'
   | 'scout'
-  | 'referee'
-  | 'fan';
+  | 'official'
+  | 'support-staff'
+  | 'journalist'
+  | 'creator'
+  | 'analyst'
+  | 'commentator'
+  | 'agent'
+  | 'academy'
+  | 'organization'
+  | 'competition'
+  | 'league'
+  | 'venue'
+  | 'business'
+  | 'commercial-partner'
+  | 'community'
+  | 'moderator'
+  | 'administrator'
+  // Legacy slug aliases (still produced by older records / RoleBadge)
+  | 'stadium'
+  | 'match'
+  | 'referee';
 
 export interface UserProfile {
   id: string;
@@ -72,6 +82,9 @@ export interface ApiUser {
   avatarUrl?: string | null;
   avatarInitials: string | null;
   isVerified: boolean;
+  isPro?: boolean;
+  proSince?: string | null;
+  proTier?: string | null;
   emailVerified?: boolean;
   coverGradient: string;
   bio: string | null;
@@ -96,6 +109,8 @@ export interface ViewingUser {
   avatar: string;       // avatarUrl OR avatarInitials (caller decides how to render)
   avatarUrl?: string | null; // raw URL when available, for <img src>
   verified: boolean;    // isVerified
+  isPro?: boolean;      // Pro status (any verified non-fan role)
+  proSince?: string | null;
   coverGradient: string;
   bio: string;
   role: string;
@@ -120,6 +135,8 @@ export function apiUserToViewing(u: ApiUser, isFollowing = false): ViewingUser {
     avatar: u.avatarUrl || fallback,
     avatarUrl: u.avatarUrl || null,
     verified: u.isVerified,
+    isPro: u.isPro,
+    proSince: u.proSince,
     coverGradient: u.coverGradient || 'from-emerald-600 to-emerald-900',
     bio: u.bio || '',
     role: u.role || 'fan',

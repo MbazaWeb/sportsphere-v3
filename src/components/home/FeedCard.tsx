@@ -12,7 +12,7 @@ import { useState, useCallback } from 'react';
 // Types
 interface ApiUser {
   id: string; name: string; handle: string; avatarUrl?: string | null; avatarInitials: string;
-  isVerified: boolean; coverGradient: string; bio: string; role: string;
+  isVerified: boolean; isPro?: boolean; coverGradient: string; bio: string; role: string;
   location: string; followerCount: number; followingCount: number;
   postCount: number; registeredAt: string; verificationStatus: string;
 }
@@ -85,7 +85,7 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
           <div>
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-sm font-semibold text-white">{user.name}</span>
-              <BadgeStack role={user.role} isVerified={user.isVerified} size="xs" />
+              <BadgeStack role={user.role} isVerified={user.isVerified} isPro={user.isPro} size="xs" />
             </div>
             <span className="text-xs text-muted-foreground">{user.handle} · {formatTime(item.createdAt)}</span>
           </div>

@@ -33,27 +33,37 @@ export async function PATCH(
     // Update the verification request
     await db.verificationRequest.update({
       where: { id },
-      data: { status: newStatus },
+      data: {
+        status: newStatus,
+        reviewedAt: new Date(),
+        reviewedBy: auth.user?.sub,
+      },
     });
 
-    // Update the user
+    // Update the user. On approval, any non-fan role becomes Pro.
+    const targetRoleSlug = verReq.role;
+    const becomesPro = newStatus === "verified" && targetRoleSlug !== "fan";
+
     await db.user.update({
       where: { id: verReq.userId },
       data: {
         verificationStatus: newStatus,
         isVerified: newStatus === "verified",
+        isPro: becomesPro,
+        proSince: becomesPro ? new Date() : null,
         // If rejecting, revert role back to fan
         ...(newStatus === "rejected"
           ? {
               role: "fan",
-              roleId: undefined, // leave current roleId — don't force fan role ID
               verificationStatus: "rejected",
+              isPro: false,
+              proSince: null,
             }
           : {}),
       },
     });
 
-    return NextResponse.json({ ok: true, status: newStatus });
+    return NextResponse.json({ ok: true, status: newStatus, isPro: becomesPro });
   } catch (error) {
     console.error("Failed to update verification request:", error);
     return NextResponse.json({ error: "Failed to update request" }, { status: 500 });

@@ -80,7 +80,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Update user role and verification status
+    // Update user role and verification status.
+    // "Pro" is the umbrella term for any non-fan verified role. A fan who
+    // upgrades to Player / Team / Coach / Business / Sponsor / Competition /
+    // League / etc. becomes Pro the moment the upgrade is approved.
+    // For pending upgrades we still flip isPro=false (will be set true on
+    // admin approval). For auto-approved individual/support roles, isPro
+    // becomes true immediately.
+    const becomesPro = autoApprove && role.slug !== 'fan';
     await db.user.update({
       where: { id: user.id },
       data: {
@@ -89,6 +96,8 @@ export async function POST(request: NextRequest) {
         role: role.slug,
         verificationStatus: newStatus,
         isVerified: autoApprove,
+        isPro: becomesPro,
+        proSince: becomesPro ? new Date() : null,
         roleData: roleData || {},
       },
     });
@@ -96,11 +105,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       autoApproved: autoApprove,
+      isPro: becomesPro,
       status: newStatus,
       verificationRequest,
       message: autoApprove
-        ? 'Role activated! Your verified badge is live.'
-        : 'Role upgrade submitted for admin review.',
+        ? (becomesPro ? 'Pro activated! Your verified role is live.' : 'Role activated!')
+        : 'Role upgrade submitted for admin review. You will be Pro once approved.',
     });
   } catch (error) {
     console.error('Role upgrade failed:', error);

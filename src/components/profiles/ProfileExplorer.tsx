@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import {
   Search, ChevronRight, Users, Trophy, Star, Newspaper, BarChart3,
   Camera, Scale, Building, ShieldCheck, Briefcase, X,
+  Mic, Handshake, Award, Heart,
 } from 'lucide-react';
 import type { ProfileTypeId } from '@/types';
 import { BadgeStack } from '@/components/ui/RoleBadge';
@@ -39,17 +40,22 @@ const ROLE_GROUPS: { title: string; roles: string[]; icon: React.ElementType }[]
   { title: 'Teams & Clubs', roles: ['team'], icon: Users },
   { title: 'Players', roles: ['player'], icon: Star },
   { title: 'Coaches', roles: ['coach'], icon: Users },
-  { title: 'Referees', roles: ['referee'], icon: Scale },
-  { title: 'Journalists', roles: ['journalist'], icon: Newspaper },
-  { title: 'Analysts', roles: ['analyst'], icon: BarChart3 },
-  { title: 'Creators', roles: ['creator'], icon: Camera },
   { title: 'Scouts', roles: ['scout'], icon: Search },
-  { title: 'Stadiums', roles: ['stadium'], icon: Building },
+  { title: 'Officials & Referees', roles: ['official', 'referee'], icon: Scale },
+  { title: 'Support Staff', roles: ['support-staff'], icon: Heart },
+  { title: 'Journalists', roles: ['journalist'], icon: Newspaper },
+  { title: 'Creators', roles: ['creator'], icon: Camera },
+  { title: 'Commentators', roles: ['commentator'], icon: Mic },
+  { title: 'Analysts', roles: ['analyst'], icon: BarChart3 },
+  { title: 'Agents', roles: ['agent'], icon: Handshake },
   { title: 'Academies', roles: ['academy'], icon: ShieldCheck },
-  { title: 'Communities', roles: ['community'], icon: Users },
   { title: 'Organizations', roles: ['organization'], icon: Building },
+  { title: 'Competitions', roles: ['competition'], icon: Trophy },
+  { title: 'Leagues', roles: ['league'], icon: Award },
+  { title: 'Venues & Stadiums', roles: ['venue', 'stadium'], icon: Building },
+  { title: 'Communities', roles: ['community'], icon: Users },
   { title: 'Businesses', roles: ['business'], icon: Briefcase },
-  { title: 'Venues', roles: ['venue'], icon: Star },
+  { title: 'Sponsors & Partners', roles: ['commercial-partner'], icon: Handshake },
   { title: 'Fans', roles: ['fan'], icon: Users },
 ];
 

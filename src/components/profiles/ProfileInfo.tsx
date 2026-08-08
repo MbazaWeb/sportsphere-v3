@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { cn } from '@/lib/utils';
-import { MapPin, Calendar, ShieldCheck } from 'lucide-react';
+import { MapPin, Calendar, ShieldCheck, Sparkles } from 'lucide-react';
 import { BadgeStack } from '@/components/ui/RoleBadge';
 import type { ViewingUser } from '@/types';
 
@@ -30,9 +30,14 @@ export function ProfileInfo({ user, role }: ProfileInfoProps) {
         <div className="mb-1 flex-1 min-w-0 pb-2">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-lg font-black text-white truncate">{user.name}</h1>
+            {user.isPro && (
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-gold to-amber-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-black shadow-[0_2px_8px_rgba(245,197,24,0.25)]">
+                <Sparkles className="h-2.5 w-2.5" /> Pro
+              </span>
+            )}
           </div>
           <div className="mt-1">
-            <BadgeStack role={role} isVerified={user.verified} size="xs" />
+            <BadgeStack role={role} isVerified={user.verified} isPro={user.isPro} size="xs" />
           </div>
         </div>
       </div>

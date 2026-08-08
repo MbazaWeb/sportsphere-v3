@@ -322,7 +322,7 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
               <div className="pb-2">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-xl font-bold text-white">{userProfile?.name || 'User'}</h2>
-                  <BadgeStack role={userProfile?.role || 'fan'} isVerified={isVerified} typeName={userProfile?.typeName} size="sm" />
+                  <BadgeStack role={userProfile?.role || 'fan'} isVerified={isVerified} isPro={userProfile?.isPro} typeName={userProfile?.typeName} size="sm" />
                 </div>
                 <p className="text-sm text-muted-foreground">{userProfile?.handle || '@user'}</p>
               </div>
@@ -716,17 +716,139 @@ function AdminVerificationPanel() {
   );
 }
 
-// ---------- SETTINGS SECTION ----------
+// ---------- SETTINGS SECTION (real — wires to EditProfileModal + ProUpgradeModal) ----------
 function SettingsSection({ onBack, onLogout }: { onBack: () => void; onLogout: () => void }) {
-  const settingsSections = [{ title: 'Account', items: [{ id: 'edit-profile', label: 'Edit Profile', icon: Edit }, { id: 'privacy', label: 'Privacy', icon: Eye }, { id: 'security', label: 'Security', icon: Shield }] }, { title: 'Preferences', items: [{ id: 'notifications', label: 'Notifications', icon: Bell }, { id: 'appearance', label: 'Appearance', icon: Palette }, { id: 'language', label: 'Language', icon: Globe }] }, { title: 'Support', items: [{ id: 'help', label: 'Help', icon: HelpCircle }, { id: 'about', label: 'About', icon: Info }] }];
+  const userProfile = useAppStore((s) => s.userProfile);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editSection, setEditSection] = useState<'identity' | 'personal' | 'contact' | 'sports' | 'favorites' | 'privacy' | 'notifications' | 'appearance' | 'role'>('identity');
+  const [proOpen, setProOpen] = useState(false);
+
+  const openEditAt = (section: typeof editSection) => {
+    setEditSection(section);
+    setEditOpen(true);
+  };
+
+  const isPro = userProfile?.isPro;
+  const isFan = userProfile?.role === 'fan';
+
+  const settingsSections = [
+    { title: 'Account', items: [
+      { id: 'edit-profile', label: 'Edit Profile',   icon: Edit,     section: 'identity' as const },
+      { id: 'role',         label: 'Role Profile',    icon: Award,    section: 'role' as const },
+      { id: 'privacy',      label: 'Privacy',         icon: Eye,      section: 'privacy' as const },
+      { id: 'security',     label: 'Security',        icon: Shield,   section: null },
+    ]},
+    { title: 'Preferences', items: [
+      { id: 'notifications', label: 'Notifications',  icon: Bell,     section: 'notifications' as const },
+      { id: 'appearance',    label: 'Appearance',     icon: Palette,  section: 'appearance' as const },
+      { id: 'language',      label: 'Language',       icon: Globe,    section: 'personal' as const },
+    ]},
+    { title: 'Profile', items: [
+      { id: 'sports',        label: 'Sports & Interests', icon: Heart, section: 'sports' as const },
+      { id: 'favorites',     label: 'Favorites',          icon: Star,  section: 'favorites' as const },
+      { id: 'contact',       label: 'Contact Info',       icon: Phone, section: 'contact' as const },
+    ]},
+    { title: 'Support', items: [
+      { id: 'help',  label: 'Help',  icon: HelpCircle, section: null },
+      { id: 'about', label: 'About', icon: Info,       section: null },
+    ]},
+  ];
+
   return (
     <div>
       <header className="sticky top-0 z-40 border-b border-surface-border bg-background/90 backdrop-blur-xl">
-        <div className="flex h-14 items-center gap-3 px-4"><button onClick={onBack} className="flex h-9 w-9 items-center justify-center rounded-full bg-surface transition-colors hover:bg-surface-elevated"><X className="h-4 w-4" /></button><h1 className="text-lg font-bold text-white">Settings</h1></div>
+        <div className="flex h-14 items-center gap-3 px-4">
+          <button onClick={onBack} className="flex h-9 w-9 items-center justify-center rounded-full bg-surface transition-colors hover:bg-surface-elevated"><X className="h-4 w-4" /></button>
+          <h1 className="text-lg font-bold text-white">Settings</h1>
+        </div>
       </header>
-      <div className="p-4">{settingsSections.map((section) => (<div key={section.title} className="mb-6"><h2 className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{section.title}</h2><div className="flex flex-col gap-1 rounded-2xl bg-surface-elevated border border-surface-border overflow-hidden">{section.items.map((item, i) => (<button key={item.id} className={cn('flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-surface', i < section.items.length - 1 && 'border-b border-surface-border')}><item.icon className="h-4 w-4 text-muted-foreground" /><span className="flex-1 text-sm text-white">{item.label}</span><ChevronRight className="h-4 w-4 text-muted-foreground/50" /></button>))}</div></div>))}
-        <button onClick={onLogout} className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 py-3 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/10"><LogOut className="h-4 w-4" /> Logout</button>
+      <div className="p-4">
+        {/* Pro Activation card */}
+        <div className={cn(
+          'mb-6 overflow-hidden rounded-2xl border p-4',
+          isPro
+            ? 'border-gold/30 bg-gradient-to-br from-gold/10 to-amber-500/5'
+            : 'border-gold/20 bg-gradient-to-br from-gold/5 to-transparent'
+        )}>
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gold/15">
+              <Sparkles className="h-5 w-5 text-gold" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-sm font-bold text-white">Pro Account</h3>
+                {isPro && (
+                  <span className="inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-gold to-amber-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-black">
+                    <Sparkles className="h-2.5 w-2.5" /> Pro
+                  </span>
+                )}
+              </div>
+              {isPro ? (
+                <>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    You&apos;re a Pro {userProfile?.role || 'user'}.
+                    {userProfile?.proSince && (
+                      <> Active since {new Date(userProfile.proSince).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}.</>
+                    )}
+                  </p>
+                  <p className="mt-2 text-[11px] text-gold/80">Manage your role-specific profile to unlock more features.</p>
+                </>
+              ) : isFan ? (
+                <>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Convert your profile to a verified sports role — Player, Team, Coach, Business, Sponsor, Competition, League, and more.
+                  </p>
+                  <button onClick={() => setProOpen(true)} className="mt-2.5 w-full rounded-xl bg-gradient-to-r from-gold to-amber-500 py-2 text-xs font-bold text-black transition-opacity hover:opacity-90">
+                    Activate Pro
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Your {userProfile?.role} role is pending verification. You&apos;ll become Pro once approved.
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Settings sections */}
+        {settingsSections.map((section) => (
+          <div key={section.title} className="mb-6">
+            <h2 className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{section.title}</h2>
+            <div className="flex flex-col gap-1 rounded-2xl bg-surface-elevated border border-surface-border overflow-hidden">
+              {section.items.map((item, i) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    if (item.section) openEditAt(item.section);
+                    else if (item.id === 'security') {
+                      window.open('/sportsphere/settings/security', '_self');
+                    } else if (item.id === 'help') {
+                      window.open('mailto:hello@sportsphere.app?subject=SportSphere%20Help', '_self');
+                    } else if (item.id === 'about') {
+                      alert('SportSphere — The World\'s Biggest Sports Community. Version 3.0. Built with ❤️ for sports fans everywhere.');
+                    }
+                  }}
+                  className={cn('flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-surface', i < section.items.length - 1 && 'border-b border-surface-border')}
+                >
+                  <item.icon className="h-4 w-4 text-muted-foreground" />
+                  <span className="flex-1 text-sm text-white">{item.label}</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <button onClick={onLogout} className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 py-3 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/10">
+          <LogOut className="h-4 w-4" /> Logout
+        </button>
       </div>
+
+      <EditProfileModal open={editOpen} onClose={() => setEditOpen(false)} initialSection={editSection} />
+      <ProUpgradeModal open={proOpen} onClose={() => setProOpen(false)} />
     </div>
   );
 }

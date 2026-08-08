@@ -16,12 +16,11 @@ import { FeedsTab } from './tabs/FeedsTab';
 import { ShopTab } from './tabs/ShopTab';
 import { AboutTab } from './tabs/AboutTab';
 import { StatsTab } from './tabs/StatsTab';
-import { CareerTab } from './tabs/CareerTab';
-import { SquadTab } from './tabs/SquadTab';
-import { AnalystToolsTab } from './tabs/AnalystToolsTab';
-import { FacilitiesTab } from './tabs/FacilitiesTab';
-import { ArticlesTab } from './tabs/ArticlesTab';
-import { SpotlightTab } from './tabs/SpotlightTab';
+import {
+  CareerTab, SquadTab, AnalystToolsTab, FacilitiesTab, ArticlesTab, SpotlightTab,
+  TrophiesTab, PortfolioTab, ServicesTab, ProgramsTab, ClientsTab, MembersTab,
+  ReportsTab, StandingsTab, FixturesTab,
+} from './tabs/RoleContentTab';
 
 export default function UserProfileViewer() {
   const viewingHandle = useUIStore((s) => s.viewingUser?.handle);
@@ -72,12 +71,21 @@ export default function UserProfileViewer() {
             {activeTab === 'shop' && <ShopTab />}
             {activeTab === 'about' && <AboutTab apiUser={apiUser} user={viewingUser} role={role} />}
             {activeTab === 'stats' && <StatsTab role={role} apiUser={apiUser} />}
-            {activeTab === 'career' && <CareerTab />}
-            {activeTab === 'squad' && <SquadTab />}
-            {activeTab === 'tools' && <AnalystToolsTab />}
-            {activeTab === 'facilities' && <FacilitiesTab />}
-            {activeTab === 'articles' && <ArticlesTab />}
-            {activeTab === 'spotlight' && <SpotlightTab />}
+            {activeTab === 'career' && <CareerTab apiUser={apiUser} role={role} />}
+            {activeTab === 'squad' && <SquadTab apiUser={apiUser} role={role} />}
+            {activeTab === 'tools' && <AnalystToolsTab apiUser={apiUser} role={role} />}
+            {activeTab === 'facilities' && <FacilitiesTab apiUser={apiUser} role={role} />}
+            {activeTab === 'articles' && <ArticlesTab apiUser={apiUser} role={role} />}
+            {activeTab === 'spotlight' && <SpotlightTab apiUser={apiUser} role={role} />}
+            {activeTab === 'trophies' && <TrophiesTab apiUser={apiUser} role={role} />}
+            {activeTab === 'portfolio' && <PortfolioTab apiUser={apiUser} role={role} />}
+            {activeTab === 'services' && <ServicesTab apiUser={apiUser} role={role} />}
+            {activeTab === 'programs' && <ProgramsTab apiUser={apiUser} role={role} />}
+            {activeTab === 'clients' && <ClientsTab apiUser={apiUser} role={role} />}
+            {activeTab === 'members' && <MembersTab apiUser={apiUser} role={role} />}
+            {activeTab === 'reports' && <ReportsTab apiUser={apiUser} role={role} />}
+            {activeTab === 'standings' && <StandingsTab apiUser={apiUser} role={role} />}
+            {activeTab === 'fixtures' && <FixturesTab apiUser={apiUser} role={role} />}
           </div>
         </div>
         {peopleListOpen && apiUser && <PeopleListModal userId={apiUser.id} type={peopleListOpen} onClose={() => setPeopleListOpen(null)} />}

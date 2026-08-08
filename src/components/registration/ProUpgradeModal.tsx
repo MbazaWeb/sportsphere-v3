@@ -38,11 +38,11 @@ function ChooseRoleStep({
   }
 
   const categoryLabels: Record<string, string> = {
-    individual: 'Individuals',
-    team_entity: 'Teams & Entities',
-    organization: 'Organizations',
-    commercial: 'Commercial',
-    official: 'Officials',
+    individual: 'Individuals (Players, Coaches, Scouts, Journalists, Creators, Analysts, Commentators, Agents)',
+    team_entity: 'Teams & Venues',
+    organization: 'Organizations, Competitions & Leagues',
+    commercial: 'Businesses & Sponsors',
+    official: 'Officials (Referees & Match Officials)',
     support: 'Support Staff',
     admin: 'Administration',
   };

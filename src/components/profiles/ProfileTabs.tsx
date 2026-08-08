@@ -1,28 +1,82 @@
-﻿'use client';
+'use client';
 
 import { cn } from '@/lib/utils';
 
+// Role-specific tab layout (LinkedIn-style).
+// Each role gets tabs that make sense for what they do — Players get
+// Stats & Career, Teams get Squad & Trophies, Businesses get Shop &
+// Services, Sponsors get Portfolio, Competitions/Leagues get Standings
+// & Fixtures, and so on. All roles keep Feeds + About as common ground.
 export function getTabsForRole(role: string): Array<{ id: string; label: string }> {
   const feeds = [{ id: 'feeds', label: 'Feeds' }];
+  const about = { id: 'about', label: 'About' };
+  const overview = { id: 'overview', label: 'Overview' };
+
   switch (role) {
-    case 'team':
-      return [{ id: 'overview', label: 'Overview' }, ...feeds, { id: 'squad', label: 'Squad' }, { id: 'shop', label: 'Shop' }, { id: 'about', label: 'About' }];
-    case 'business':
-      return [{ id: 'overview', label: 'Overview' }, ...feeds, { id: 'shop', label: 'Shop' }, { id: 'about', label: 'About' }];
+    // ── Athletes & Coaches ──────────────────────────────────────
     case 'player':
-      return [{ id: 'overview', label: 'Overview' }, ...feeds, { id: 'stats', label: 'Stats' }, { id: 'career', label: 'Career' }, { id: 'about', label: 'About' }];
+      return [overview, ...feeds, { id: 'stats', label: 'Stats' }, { id: 'career', label: 'Career' }, about];
     case 'coach':
-      return [{ id: 'overview', label: 'Overview' }, ...feeds, { id: 'stats', label: 'Stats' }, { id: 'about', label: 'About' }];
-    case 'analyst':
-      return [{ id: 'overview', label: 'Overview' }, ...feeds, { id: 'tools', label: 'Tools' }, { id: 'about', label: 'About' }];
-    case 'stadium': case 'venue':
-      return [{ id: 'overview', label: 'Overview' }, ...feeds, { id: 'facilities', label: 'Facilities' }, { id: 'shop', label: 'Shop' }, { id: 'about', label: 'About' }];
+      return [overview, ...feeds, { id: 'stats', label: 'Stats' }, { id: 'career', label: 'Career' }, about];
+    case 'scout':
+      return [overview, ...feeds, { id: 'reports', label: 'Reports' }, { id: 'career', label: 'Career' }, about];
+
+    // ── Teams & Communities ─────────────────────────────────────
+    case 'team':
+      return [overview, ...feeds, { id: 'squad', label: 'Squad' }, { id: 'trophies', label: 'Trophies' }, { id: 'shop', label: 'Shop' }, about];
+    case 'community':
+      return [overview, ...feeds, { id: 'members', label: 'Members' }, about];
+
+    // ── Organizations ───────────────────────────────────────────
+    case 'organization':
+      return [overview, ...feeds, { id: 'programs', label: 'Programs' }, about];
+    case 'competition':
+    case 'league':
+      return [overview, ...feeds, { id: 'standings', label: 'Standings' }, { id: 'fixtures', label: 'Fixtures' }, { id: 'trophies', label: 'Trophies' }, about];
+    case 'academy':
+      return [overview, ...feeds, { id: 'squad', label: 'Squad' }, { id: 'programs', label: 'Programs' }, about];
+
+    // ── Commercial ──────────────────────────────────────────────
+    case 'business':
+      return [overview, ...feeds, { id: 'shop', label: 'Shop' }, { id: 'services', label: 'Services' }, about];
+    case 'commercial-partner':
+      return [overview, ...feeds, { id: 'portfolio', label: 'Portfolio' }, { id: 'shop', label: 'Shop' }, about];
+
+    // ── Venues ──────────────────────────────────────────────────
+    case 'venue':
+    case 'stadium':
+      return [overview, ...feeds, { id: 'facilities', label: 'Facilities' }, { id: 'shop', label: 'Shop' }, about];
+
+    // ── Media & Content ─────────────────────────────────────────
     case 'journalist':
-      return [{ id: 'overview', label: 'Overview' }, ...feeds, { id: 'articles', label: 'Articles' }, { id: 'about', label: 'About' }];
+      return [overview, ...feeds, { id: 'articles', label: 'Articles' }, { id: 'career', label: 'Career' }, about];
     case 'creator':
-      return [{ id: 'overview', label: 'Overview' }, ...feeds, { id: 'spotlight', label: 'Spotlight' }, { id: 'about', label: 'About' }];
+    case 'commentator':
+      return [overview, ...feeds, { id: 'spotlight', label: 'Spotlight' }, { id: 'career', label: 'Career' }, about];
+
+    // ── Analysts & Officials ────────────────────────────────────
+    case 'analyst':
+      return [overview, ...feeds, { id: 'tools', label: 'Tools' }, { id: 'articles', label: 'Articles' }, about];
+    case 'official':
+    case 'referee':
+      return [overview, ...feeds, { id: 'career', label: 'Career' }, { id: 'stats', label: 'Stats' }, about];
+    case 'support-staff':
+    case 'medical':
+      return [overview, ...feeds, { id: 'career', label: 'Career' }, about];
+
+    // ── Agents ──────────────────────────────────────────────────
+    case 'agent':
+      return [overview, ...feeds, { id: 'clients', label: 'Clients' }, { id: 'career', label: 'Career' }, about];
+
+    // ── Admin (low-key) ─────────────────────────────────────────
+    case 'moderator':
+    case 'administrator':
+    case 'developer':
+      return [overview, ...feeds, about];
+
+    // ── Default (fan + unknown) ─────────────────────────────────
     default:
-      return [...feeds, { id: 'spotlight', label: 'Spotlight' }, { id: 'about', label: 'About' }];
+      return [...feeds, { id: 'spotlight', label: 'Spotlight' }, about];
   }
 }
 

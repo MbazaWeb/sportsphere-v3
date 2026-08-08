@@ -186,9 +186,36 @@ const ROLES = [
     ],
   },
   {
+    slug: 'competition', name: 'Competition', icon: '🏆', category: 'organization',
+    description: 'Sports competitions, tournaments, and cups',
+    displayOrder: 15,
+    types: [
+      { slug: 'domestic-cup', name: 'Domestic Cup', description: 'National knockout cup competition', displayOrder: 1 },
+      { slug: 'domestic-league', name: 'Domestic League', description: 'National league competition', displayOrder: 2 },
+      { slug: 'continental', name: 'Continental Competition', description: 'Multi-nation continental competition', displayOrder: 3 },
+      { slug: 'international-cup', name: 'International Cup', description: 'Worldwide cup competition', displayOrder: 4 },
+      { slug: 'youth-competition', name: 'Youth Competition', description: 'Competition for youth teams', displayOrder: 5 },
+      { slug: 'women-competition', name: 'Women Competition', description: 'Competition for women teams', displayOrder: 6 },
+      { slug: 'tournament', name: 'Tournament', description: 'Single-event tournament format', displayOrder: 7 },
+    ],
+  },
+  {
+    slug: 'league', name: 'League', icon: '🎖️', category: 'organization',
+    description: 'Sports leagues managing regular-season competitions',
+    displayOrder: 16,
+    types: [
+      { slug: 'top-flight', name: 'Top-Flight League', description: 'Highest division league in a country', displayOrder: 1 },
+      { slug: 'second-tier', name: 'Second Tier League', description: 'Second division league', displayOrder: 2 },
+      { slug: 'lower-division', name: 'Lower Division League', description: 'Third division and below', displayOrder: 3 },
+      { slug: 'semi-pro-league', name: 'Semi-Pro League', description: 'Semi-professional league', displayOrder: 4 },
+      { slug: 'amateur-league', name: 'Amateur League', description: 'Amateur or recreational league', displayOrder: 5 },
+      { slug: 'youth-league', name: 'Youth League', description: 'League for youth teams', displayOrder: 6 },
+    ],
+  },
+  {
     slug: 'venue', name: 'Venue', icon: '🏟️', category: 'team_entity',
     description: 'Sports venues, stadiums, and facilities',
-    displayOrder: 15,
+    displayOrder: 17,
     types: [
       { slug: 'stadium', name: 'Stadium', description: 'Large sports venue with spectator capacity', displayOrder: 1 },
       { slug: 'arena', name: 'Arena', description: 'Indoor sports venue', displayOrder: 2 },
@@ -199,7 +226,7 @@ const ROLES = [
   {
     slug: 'business', name: 'Business', icon: '💼', category: 'commercial',
     description: 'Sports-related businesses and commercial entities',
-    displayOrder: 16,
+    displayOrder: 18,
     types: [
       { slug: 'sportswear', name: 'Sportswear Brand', description: 'Manufactures sports apparel and equipment', displayOrder: 1 },
       { slug: 'sports-media', name: 'Sports Media', description: 'Media company focused on sports content', displayOrder: 2 },
@@ -212,7 +239,7 @@ const ROLES = [
   {
     slug: 'commercial-partner', name: 'Commercial Partner', icon: '🤝', category: 'commercial',
     description: 'Sponsors, broadcasters, and commercial partners in sports',
-    displayOrder: 17,
+    displayOrder: 19,
     types: [
       { slug: 'sponsor', name: 'Sponsor', description: 'Provides financial support to teams or events', displayOrder: 1 },
       { slug: 'title-sponsor', name: 'Title Sponsor', description: 'Primary sponsor with naming rights', displayOrder: 2 },
@@ -227,7 +254,7 @@ const ROLES = [
   {
     slug: 'community', name: 'Community', icon: '👥', category: 'team_entity',
     description: 'Fan communities, supporter groups, and discussion forums',
-    displayOrder: 18,
+    displayOrder: 20,
     types: [
       { slug: 'fan-club', name: 'Fan Club', description: 'Official or unofficial fan club', displayOrder: 1 },
       { slug: 'supporters-group', name: 'Supporters Group', description: 'Organized supporters group', displayOrder: 2 },
@@ -238,7 +265,7 @@ const ROLES = [
   {
     slug: 'moderator', name: 'Moderator', icon: '🛡️', category: 'admin',
     description: 'Moderates content and community interactions',
-    displayOrder: 19,
+    displayOrder: 21,
     types: [
       { slug: 'content-moderator', name: 'Content Moderator', description: 'Reviews and moderates user-generated content', displayOrder: 1 },
       { slug: 'community-moderator', name: 'Community Moderator', description: 'Moderates community discussions', displayOrder: 2 },
@@ -247,7 +274,7 @@ const ROLES = [
   {
     slug: 'administrator', name: 'Administrator', icon: '👑', category: 'admin',
     description: 'Platform administrators with management privileges',
-    displayOrder: 20,
+    displayOrder: 22,
     types: [
       { slug: 'super-admin', name: 'Super Administrator', description: 'Full platform access and control', displayOrder: 1 },
       { slug: 'platform-admin', name: 'Platform Administrator', description: 'Manages platform configuration', displayOrder: 2 },

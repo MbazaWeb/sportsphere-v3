@@ -10,6 +10,7 @@ export interface UserProfile {
   role: ProfileTypeId; verificationStatus: "none"|"pending"|"verified"|"rejected";
   bio: string; sportsFollowing: string[]; registeredAt: string; roleData: Record<string,string>;
   isVerified?: boolean; emailVerified?: boolean;
+  isPro?: boolean; proSince?: string | null; proTier?: string | null;
   followerCount?: number;
   followingCount?: number;
   postCount?: number;

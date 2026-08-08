@@ -102,6 +102,14 @@ model User {
   role                String   @default("fan")  // legacy slug — kept in sync via roleId
   verificationStatus  String   @default("none")
   isVerified          Boolean  @default(false)
+  // ─── Pro / Subscription ──────────────────────────────────────
+  // A "Pro" user is one who has converted their profile to a verified
+  // non-fan role (Player, Team, Coach, Business, Sponsor, Competition,
+  // League, and all other sports roles). `isPro` is set true when a
+  // non-fan role upgrade is approved. `proSince` records the timestamp.
+  isPro               Boolean  @default(false)
+  proSince            DateTime?
+  proTier             String?   // 'pro' | 'pro-plus' | null (reserved for future billing tiers)
   bio                 String?
   location            String?
   coverGradient       String   @default("from-emerald-600 to-emerald-900")

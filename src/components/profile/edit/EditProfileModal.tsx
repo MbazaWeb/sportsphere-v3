@@ -51,7 +51,14 @@ const FAN_TYPES = [
 
 type SectionId = typeof SECTIONS[number]['id'];
 
-export default function EditProfileModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+interface EditProfileModalProps {
+  open: boolean;
+  onClose: () => void;
+  /** Optional initial section to open at. Used by the Settings screen. */
+  initialSection?: SectionId;
+}
+
+export default function EditProfileModal({ open, onClose, initialSection }: EditProfileModalProps) {
   const userProfile = useAuthStore((s) => s.userProfile);
   const setUserProfile = useAuthStore((s) => s.setUserProfile);
   const showToast = useUIStore((s) => s.showToast);
@@ -65,6 +72,8 @@ export default function EditProfileModal({ open, onClose }: { open: boolean; onC
 
   useEffect(() => {
     if (!open) return;
+    // Jump to requested section on open (used by Settings menu buttons).
+    if (initialSection) setActiveSection(initialSection);
     async function loadProfile() {
       setLoading(true);
       try {
@@ -77,7 +86,7 @@ export default function EditProfileModal({ open, onClose }: { open: boolean; onC
       setLoading(false);
     }
     loadProfile();
-  }, [open]);
+  }, [open, initialSection]);
 
   useEffect(() => {
     if (!formData || Object.keys(formData).length === 0) { setCompletion(0); return; }
@@ -833,6 +842,14 @@ function RoleProfileSection({ data, update }: { data: Record<string, unknown>; u
       { key: 'assists', label: 'Career Assists', type: 'text', placeholder: '80' },
       { key: 'appearances', label: 'Career Appearances', type: 'text', placeholder: '400' },
     ],
+    coach: [
+      { key: 'license', label: 'License', type: 'text', placeholder: 'UEFA Pro License' },
+      { key: 'experience', label: 'Experience (years)', type: 'text', placeholder: '15' },
+      { key: 'formation', label: 'Preferred Formation', type: 'select', options: ['4-3-3', '4-4-2', '3-5-2', '4-2-3-1', '3-4-3', '5-3-2'] },
+      { key: 'currentTeam', label: 'Current Team', type: 'text', placeholder: 'Manchester City' },
+      { key: 'winRate', label: 'Win Rate', type: 'text', placeholder: '72%' },
+      { key: 'trophies', label: 'Total Trophies', type: 'text', placeholder: '22' },
+    ],
     team: [
       { key: 'foundedYear', label: 'Foundation Year', type: 'text', placeholder: '1878' },
       { key: 'president', label: 'President', type: 'text', placeholder: 'Name' },
@@ -847,28 +864,31 @@ function RoleProfileSection({ data, update }: { data: Record<string, unknown>; u
       { key: 'website', label: 'Official Website', type: 'text', placeholder: 'https://...' },
       { key: 'trophies', label: 'Total Trophies', type: 'text', placeholder: '66' },
     ],
-    coach: [
-      { key: 'license', label: 'License', type: 'text', placeholder: 'UEFA Pro License' },
-      { key: 'experience', label: 'Experience (years)', type: 'text', placeholder: '15' },
-      { key: 'formation', label: 'Preferred Formation', type: 'select', options: ['4-3-3', '4-4-2', '3-5-2', '4-2-3-1', '3-4-3', '5-3-2'] },
-      { key: 'currentTeam', label: 'Current Team', type: 'text', placeholder: 'Manchester City' },
-      { key: 'winRate', label: 'Win Rate', type: 'text', placeholder: '72%' },
+    scout: [
+      { key: 'coverageCountries', label: 'Coverage Countries', type: 'text', placeholder: 'Kenya, Tanzania, Nigeria' },
+      { key: 'specialization', label: 'Specialization', type: 'select', options: ['Youth', 'Professional', 'Women', 'Goalkeepers'] },
+      { key: 'reports', label: 'Reports Filed', type: 'text', placeholder: '230+' },
+      { key: 'currentClub', label: 'Current Club', type: 'text', placeholder: 'Manchester United' },
+      { key: 'experience', label: 'Experience (years)', type: 'text', placeholder: '8' },
     ],
-    referee: [
+    official: [
       { key: 'level', label: 'Level', type: 'text', placeholder: 'FIFA Elite' },
       { key: 'association', label: 'Association', type: 'text', placeholder: 'PGMOL' },
       { key: 'years', label: 'Years Officiating', type: 'text', placeholder: '15' },
       { key: 'matchesOfficiated', label: 'Matches Officiated', type: 'text', placeholder: '520+' },
+      { key: 'specialization', label: 'Specialization', type: 'select', options: ['Referee', 'Assistant Referee', 'VAR', 'Fourth Official'] },
+    ],
+    'support-staff': [
+      { key: 'specialization', label: 'Specialization', type: 'select', options: ['Physiotherapist', 'Athletic Trainer', 'Strength Coach', 'Nutritionist', 'Psychologist', 'Performance Analyst', 'Team Doctor'] },
+      { key: 'currentTeam', label: 'Current Team', type: 'text', placeholder: 'Manchester United' },
+      { key: 'experience', label: 'Experience (years)', type: 'text', placeholder: '10' },
+      { key: 'certifications', label: 'Certifications', type: 'text', placeholder: 'MSc Sports Science' },
     ],
     journalist: [
       { key: 'mediaHouse', label: 'Media House', type: 'text', placeholder: 'Guardian' },
       { key: 'topicsCovered', label: 'Topics Covered', type: 'text', placeholder: 'Transfers, Tactics' },
       { key: 'articles', label: 'Articles Published', type: 'text', placeholder: '1200+' },
-    ],
-    analyst: [
-      { key: 'specialization', label: 'Specialization', type: 'text', placeholder: 'Tactical Analysis' },
-      { key: 'dataModels', label: 'Data Models', type: 'text', placeholder: 'xG, PPDA' },
-      { key: 'reports', label: 'Reports Published', type: 'text', placeholder: '450+' },
+      { key: 'experience', label: 'Experience (years)', type: 'text', placeholder: '8' },
     ],
     creator: [
       { key: 'contentCategories', label: 'Content Categories', type: 'text', placeholder: 'Highlights, Vlogs' },
@@ -876,41 +896,109 @@ function RoleProfileSection({ data, update }: { data: Record<string, unknown>; u
       { key: 'platforms', label: 'Platforms', type: 'text', placeholder: 'YouTube, TikTok, IG' },
       { key: 'equipment', label: 'Equipment', type: 'text', placeholder: 'Sony A7IV' },
     ],
-    scout: [
-      { key: 'coverageCountries', label: 'Coverage Countries', type: 'text', placeholder: 'Kenya, Tanzania, Nigeria' },
-      { key: 'specialization', label: 'Specialization', type: 'select', options: ['Youth', 'Professional', 'Women', 'Goalkeepers'] },
-      { key: 'reports', label: 'Reports Filed', type: 'text', placeholder: '230+' },
+    analyst: [
+      { key: 'specialization', label: 'Specialization', type: 'text', placeholder: 'Tactical Analysis' },
+      { key: 'dataModels', label: 'Data Models', type: 'text', placeholder: 'xG, PPDA' },
+      { key: 'reports', label: 'Reports Published', type: 'text', placeholder: '450+' },
+      { key: 'currentTeam', label: 'Current Team', type: 'text', placeholder: 'Liverpool FC' },
+    ],
+    commentator: [
+      { key: 'specialization', label: 'Specialization', type: 'select', options: ['TV Commentary', 'Radio Commentary', 'TV Presenting', 'Radio Presenting'] },
+      { key: 'mediaHouse', label: 'Media House', type: 'text', placeholder: 'Sky Sports' },
+      { key: 'experience', label: 'Experience (years)', type: 'text', placeholder: '12' },
+      { key: 'matches', label: 'Matches Covered', type: 'text', placeholder: '800+' },
+    ],
+    agent: [
+      { key: 'specialization', label: 'Specialization', type: 'select', options: ['Player Agent', 'Coach Agent', 'Licensed Agent'] },
+      { key: 'agency', label: 'Agency', type: 'text', placeholder: 'Stellar Group' },
+      { key: 'clients', label: 'Notable Clients', type: 'text', placeholder: 'Player names' },
+      { key: 'licenseNumber', label: 'License Number', type: 'text', placeholder: 'FIFA-XXXX' },
+      { key: 'deals', label: 'Deals Closed', type: 'text', placeholder: '50+' },
+    ],
+    academy: [
+      { key: 'programs', label: 'Programs', type: 'text', placeholder: 'U9-U18' },
+      { key: 'graduates', label: 'Notable Graduates', type: 'text', placeholder: 'Messi, Xavi, Iniesta' },
+      { key: 'affiliatedClub', label: 'Affiliated Club', type: 'text', placeholder: 'FC Barcelona' },
+      { key: 'ageRange', label: 'Age Range', type: 'text', placeholder: '9-18' },
+      { key: 'facilities', label: 'Facilities', type: 'textarea', placeholder: 'La Masia training complex...' },
+    ],
+    organization: [
+      { key: 'orgType', label: 'Organization Type', type: 'select', options: ['Federation', 'Olympic Committee', 'National Association', 'Regional Association', 'NGO', 'Government Org'] },
+      { key: 'mission', label: 'Mission', type: 'textarea', placeholder: 'Develop football worldwide' },
+      { key: 'programs', label: 'Programs', type: 'text', placeholder: 'World Cup, Club WC' },
+      { key: 'foundedYear', label: 'Founded Year', type: 'text', placeholder: '1904' },
+      { key: 'memberCount', label: 'Member Count', type: 'text', placeholder: '211 associations' },
+    ],
+    competition: [
+      { key: 'competitionType', label: 'Competition Type', type: 'select', options: ['Domestic Cup', 'Domestic League', 'Continental', 'International Cup', 'Youth', 'Women', 'Tournament'] },
+      { key: 'sport', label: 'Sport', type: 'text', placeholder: 'Football' },
+      { key: 'foundedYear', label: 'Founded Year', type: 'text', placeholder: '1955' },
+      { key: 'participants', label: 'Number of Participants', type: 'text', placeholder: '32 teams' },
+      { key: 'currentChampion', label: 'Current Champion', type: 'text', placeholder: 'Manchester City' },
+      { key: 'trophies', label: 'Total Seasons Held', type: 'text', placeholder: '69' },
+      { key: 'format', label: 'Format', type: 'textarea', placeholder: 'Group stage + knockout...' },
+    ],
+    league: [
+      { key: 'leagueType', label: 'League Type', type: 'select', options: ['Top-Flight', 'Second Tier', 'Lower Division', 'Semi-Pro', 'Amateur', 'Youth'] },
+      { key: 'country', label: 'Country', type: 'text', placeholder: 'England' },
+      { key: 'sport', label: 'Sport', type: 'text', placeholder: 'Football' },
+      { key: 'teams', label: 'Number of Teams', type: 'text', placeholder: '20' },
+      { key: 'foundedYear', label: 'Founded Year', type: 'text', placeholder: '1992' },
+      { key: 'currentChampion', label: 'Current Champion', type: 'text', placeholder: 'Manchester City' },
+      { key: 'season', label: 'Current Season', type: 'text', placeholder: '2024/25' },
+    ],
+    venue: [
+      { key: 'venueType', label: 'Venue Type', type: 'select', options: ['Stadium', 'Arena', 'Training Ground', 'Sports Complex'] },
+      { key: 'capacity', label: 'Capacity', type: 'text', placeholder: '90000' },
+      { key: 'events', label: 'Events Held', type: 'text', placeholder: 'FA Cup Finals, Concerts' },
+      { key: 'surface', label: 'Surface', type: 'text', placeholder: 'Grass' },
+      { key: 'address', label: 'Address', type: 'text', placeholder: 'Sir Matt Busb Way, Manchester' },
+      { key: 'parking', label: 'Parking', type: 'text', placeholder: 'Yes - 3000 spaces' },
+    ],
+    business: [
+      { key: 'industry', label: 'Industry', type: 'select', options: ['Sportswear', 'Sports Media', 'Sports Agency', 'Sports Tech', 'Sports Nutrition', 'Sports Retailer'] },
+      { key: 'products', label: 'Products', type: 'text', placeholder: 'Boots, Kits, Balls' },
+      { key: 'branches', label: 'Branches', type: 'text', placeholder: 'Worldwide' },
+      { key: 'businessHours', label: 'Business Hours', type: 'text', placeholder: '9-5' },
+      { key: 'foundedYear', label: 'Founded Year', type: 'text', placeholder: '1964' },
+      { key: 'website', label: 'Website', type: 'text', placeholder: 'https://...' },
+    ],
+    'commercial-partner': [
+      { key: 'partnerType', label: 'Partner Type', type: 'select', options: ['Sponsor', 'Title Sponsor', 'Broadcaster', 'Streaming Platform', 'Ticketing Provider', 'Travel Partner', 'Data Provider', 'Event Organizer'] },
+      { key: 'industry', label: 'Industry', type: 'text', placeholder: 'Airlines, Banking, Telecom...' },
+      { key: 'partnerships', label: 'Active Partnerships', type: 'text', placeholder: 'Manchester United, Premier League' },
+      { key: 'dealValue', label: 'Total Deal Value', type: 'text', placeholder: '£500M+' },
+      { key: 'since', label: 'Active Since', type: 'text', placeholder: '2010' },
+    ],
+    community: [
+      { key: 'topic', label: 'Community Topic', type: 'text', placeholder: 'Arsenal' },
+      { key: 'memberCount', label: 'Member Count', type: 'text', placeholder: '125000' },
+      { key: 'rules', label: 'Community Rules', type: 'textarea', placeholder: 'Be respectful...' },
+      { key: 'foundedYear', label: 'Founded Year', type: 'text', placeholder: '2015' },
+      { key: 'admin', label: 'Community Admin', type: 'text', placeholder: 'Name' },
+    ],
+    moderator: [
+      { key: 'specialization', label: 'Specialization', type: 'select', options: ['Content Moderator', 'Community Moderator'] },
+      { key: 'experience', label: 'Experience (years)', type: 'text', placeholder: '3' },
+      { key: 'reports', label: 'Reports Reviewed', type: 'text', placeholder: '5000+' },
+    ],
+    administrator: [
+      { key: 'adminType', label: 'Admin Type', type: 'select', options: ['Super Admin', 'Platform Admin', 'Sports Admin', 'Verification Admin', 'User Admin', 'Media Admin', 'Developer Admin', 'Read-Only Auditor'] },
+      { key: 'experience', label: 'Experience (years)', type: 'text', placeholder: '5' },
+      { key: 'department', label: 'Department', type: 'text', placeholder: 'Trust & Safety' },
+    ],
+    // ── Legacy slug aliases (route to the new config) ────────────
+    referee: [
+      { key: 'level', label: 'Level', type: 'text', placeholder: 'FIFA Elite' },
+      { key: 'association', label: 'Association', type: 'text', placeholder: 'PGMOL' },
+      { key: 'years', label: 'Years Officiating', type: 'text', placeholder: '15' },
+      { key: 'matchesOfficiated', label: 'Matches Officiated', type: 'text', placeholder: '520+' },
     ],
     stadium: [
       { key: 'capacity', label: 'Capacity', type: 'text', placeholder: '74310' },
       { key: 'surface', label: 'Surface', type: 'text', placeholder: 'Grass' },
       { key: 'address', label: 'Address', type: 'text', placeholder: 'Sir Matt Busby Way, Manchester' },
       { key: 'parking', label: 'Parking', type: 'text', placeholder: 'Yes - 3000 spaces' },
-    ],
-    academy: [
-      { key: 'programs', label: 'Programs', type: 'text', placeholder: 'U9-U18' },
-      { key: 'graduates', label: 'Notable Graduates', type: 'text', placeholder: 'Messi, Xavi, Iniesta' },
-    ],
-    community: [
-      { key: 'topic', label: 'Community Topic', type: 'text', placeholder: 'Arsenal' },
-      { key: 'memberCount', label: 'Member Count', type: 'text', placeholder: '125000' },
-      { key: 'rules', label: 'Community Rules', type: 'textarea', placeholder: 'Be respectful...' },
-    ],
-    organization: [
-      { key: 'orgType', label: 'Organization Type', type: 'text', placeholder: 'Governing Body' },
-      { key: 'mission', label: 'Mission', type: 'textarea', placeholder: 'Develop football worldwide' },
-      { key: 'programs', label: 'Programs', type: 'text', placeholder: 'World Cup, Club WC' },
-    ],
-    business: [
-      { key: 'industry', label: 'Industry', type: 'text', placeholder: 'Sportswear' },
-      { key: 'products', label: 'Products', type: 'text', placeholder: 'Boots, Kits, Balls' },
-      { key: 'branches', label: 'Branches', type: 'text', placeholder: 'Worldwide' },
-      { key: 'businessHours', label: 'Business Hours', type: 'text', placeholder: '9-5' },
-    ],
-    venue: [
-      { key: 'venueType', label: 'Venue Type', type: 'text', placeholder: 'Multi-purpose' },
-      { key: 'capacity', label: 'Capacity', type: 'text', placeholder: '90000' },
-      { key: 'events', label: 'Events Held', type: 'text', placeholder: 'FA Cup Finals, Concerts' },
     ],
   };
   const fields = roleConfigs[role] || [];
