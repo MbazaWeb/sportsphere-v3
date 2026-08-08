@@ -1,13 +1,14 @@
 'use client';
 import { apiFetch } from '@/lib/api';
 
-import { Heart, MessageCircle, Share2, Bookmark, Check } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, Check, RotateCcw, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BadgeStack } from '@/components/ui/RoleBadge';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { formatCount } from '@/store/useAppStore';
 import { useState, useCallback } from 'react';
+import { EditPredictionModal } from './EditPredictionModal';
 
 // Types
 interface ApiUser {
@@ -17,12 +18,34 @@ interface ApiUser {
   postCount: number; registeredAt: string; verificationStatus: string;
 }
 
+interface ApiPoll {
+  id: string;
+  question: string;
+  options: string[];
+  totalVotes: number;
+  optionCounts?: number[];        // per-option counts (from feed API)
+  userVotedOption?: number | null; // 0..n-1 if the viewer already voted, else null
+  endsAt?: string | null;
+}
+
+interface ApiPrediction {
+  id: string;
+  homeTeam: string;
+  awayTeam: string;
+  predictedHome: number | null;
+  predictedAway: number | null;
+  confidence: string | null;
+  result?: string | null;
+  isCorrect?: boolean | null;
+}
+
 interface ApiPost {
   id: string; userId: string; content: string; postType: string;
   mediaUrls: string[]; teamTag: string | null; playerTag: string | null;
   isBreaking: boolean; likeCount: number; commentCount: number;
   shareCount: number; viewCount: number; createdAt: string;
-  poll?: { id: string; question: string; options: string[]; totalVotes: number } | null;
+  poll?: ApiPoll | null;
+  prediction?: ApiPrediction | null;
   user: ApiUser;
 }
 
@@ -36,11 +59,11 @@ interface FeedCardProps {
 export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps) {
   const setViewingUser = useUIStore((s) => s.setViewingUser);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const currentUserId = useAuthStore((s) => s.userProfile?.id);
   const setLoginModalOpen = useUIStore((s) => s.setLoginModalOpen);
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [votedOption, setVotedOption] = useState<number | null>(null);
-  const [pollVotes, setPollVotes] = useState(item.poll?.totalVotes ?? 0);
+  const [hidden, setHidden] = useState(false);
   const user = item.user;
 
   const handleViewUser = useCallback(() => {
@@ -57,6 +80,8 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
     if (!isAuthenticated) { setLoginModalOpen(true); return; }
     setSaved(!saved);
   };
+
+  if (hidden) return null;
 
   return (
     <article className="glass-card premium-card rounded-2xl overflow-hidden glass-card-hover">
@@ -128,49 +153,20 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
         )}
 
         {item.poll && item.poll.options && item.poll.options.length > 0 && (
-          <div className="mb-3 flex flex-col gap-2">
-            <p className="text-sm font-bold text-white mb-1">{item.poll.question}</p>
-            {item.poll.options.map((opt: string, i: number) => {
-              const basePct = Math.round(100 / item.poll!.options.length);
-              const pct = votedOption !== null
-                ? (i === votedOption ? Math.round(100 / item.poll!.options.length) + 5 : Math.round((100 - Math.round(100 / item.poll!.options.length) - 5) / (item.poll!.options.length - 1 || 1)))
-                : basePct;
-              return (
-                <button
-                  key={i}
-                  onClick={async () => {
-                    if (!isAuthenticated) { setLoginModalOpen(true); return; }
-                    if (votedOption !== null) return;
-                    setVotedOption(i);
-                    setPollVotes(v => v + 1);
-                    try {
-                      await apiFetch('/api/polls/vote', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ pollId: item.poll!.id, optionIndex: i }),
-                      });
-                    } catch { }
-                  }}
-                  disabled={votedOption !== null}
-                  className={cn(
-                    'relative overflow-hidden rounded-lg p-3 text-left transition-all',
-                    votedOption === i ? 'bg-gold/20 border border-gold/40' : 'bg-surface border border-surface-border',
-                    votedOption !== null && votedOption !== i && 'opacity-60'
-                  )}
-                >
-                  {votedOption !== null && (
-                    <div className="absolute inset-y-0 left-0 bg-gold/20 rounded-lg transition-all duration-500" style={{ width: `${pct}%` }} />
-                  )}
-                  <div className="relative flex items-center justify-between">
-                    <span className="text-sm font-medium text-white">{opt}</span>
-                    {votedOption === i && <Check className="h-3.5 w-3.5 text-gold" />}
-                    {votedOption !== null && <span className="text-xs font-bold text-muted-foreground">{pct}%</span>}
-                  </div>
-                </button>
-              );
-            })}
-            <p className="text-xs text-muted-foreground">{pollVotes.toLocaleString()} votes{votedOption !== null && ' · You voted'}</p>
-          </div>
+          <PollBlock
+            postId={item.id}
+            poll={item.poll}
+            isAuthenticated={isAuthenticated}
+            onRequireAuth={() => setLoginModalOpen(true)}
+          />
+        )}
+
+        {item.prediction && (
+          <PredictionBlock
+            prediction={item.prediction}
+            isOwner={currentUserId === item.userId}
+            onDeleted={() => setHidden(true)}
+          />
         )}
 
         <div className="flex items-center justify-between border-t border-surface-border pt-3 mt-1">
@@ -207,5 +203,298 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
         </div>
       </div>
     </article>
+  );
+}
+
+// ─── Poll Block ───────────────────────────────────────────────
+// Allows the user to vote, change vote, or unvote. Vote state is
+// hydrated from the API (post.poll.userVotedOption) so reloads
+// show the user's actual choice instead of resetting to "not voted".
+function PollBlock({
+  poll,
+  isAuthenticated,
+  onRequireAuth,
+}: {
+  postId: string;
+  poll: ApiPoll;
+  isAuthenticated: boolean;
+  onRequireAuth: () => void;
+}) {
+  // Local state mirrors what the API told us, then updates optimistically.
+  const [votedOption, setVotedOption] = useState<number | null>(
+    poll.userVotedOption ?? null
+  );
+  const [optionCounts, setOptionCounts] = useState<number[]>(
+    poll.optionCounts ?? poll.options.map(() => 0)
+  );
+  const [busy, setBusy] = useState(false);
+
+  const totalVotes = optionCounts.reduce((a, b) => a + b, 0);
+  const hasVoted = votedOption !== null;
+  const pollClosed = !!poll.endsAt && new Date(poll.endsAt) < new Date();
+  const showResults = hasVoted || pollClosed;
+
+  const handleVote = async (i: number) => {
+    if (!isAuthenticated) { onRequireAuth(); return; }
+    if (busy || pollClosed) return;
+    if (votedOption === i) return; // no-op on same choice
+
+    const prevVoted = votedOption;
+    const prevCounts = optionCounts;
+
+    // Optimistic update
+    const nextCounts = [...optionCounts];
+    if (prevVoted !== null) {
+      // Switching vote: decrement old, increment new (total unchanged)
+      if (nextCounts[prevVoted] > 0) nextCounts[prevVoted] -= 1;
+      nextCounts[i] += 1;
+    } else {
+      // First vote: increment new (total +1)
+      nextCounts[i] += 1;
+    }
+    setOptionCounts(nextCounts);
+    setVotedOption(i);
+    setBusy(true);
+
+    try {
+      const res = await apiFetch('/api/polls/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pollId: poll.id, optionIndex: i }),
+      });
+      if (!res.ok) {
+        // Revert on failure
+        setVotedOption(prevVoted);
+        setOptionCounts(prevCounts);
+      }
+    } catch {
+      setVotedOption(prevVoted);
+      setOptionCounts(prevCounts);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleUnvote = async () => {
+    if (!isAuthenticated) { onRequireAuth(); return; }
+    if (busy || pollClosed || votedOption === null) return;
+
+    const prevVoted = votedOption;
+    const prevCounts = optionCounts;
+
+    // Optimistic
+    const nextCounts = [...optionCounts];
+    if (nextCounts[prevVoted] > 0) nextCounts[prevVoted] -= 1;
+    setOptionCounts(nextCounts);
+    setVotedOption(null);
+    setBusy(true);
+
+    try {
+      const res = await apiFetch('/api/polls/vote', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pollId: poll.id }),
+      });
+      if (!res.ok) {
+        setVotedOption(prevVoted);
+        setOptionCounts(prevCounts);
+      }
+    } catch {
+      setVotedOption(prevVoted);
+      setOptionCounts(prevCounts);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mb-3 flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-bold text-white">{poll.question}</p>
+        {pollClosed && (
+          <span className="rounded-full bg-surface px-2 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">
+            Closed
+          </span>
+        )}
+      </div>
+
+      {poll.options.map((opt: string, i: number) => {
+        const count = optionCounts[i] ?? 0;
+        const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+        const isMyChoice = votedOption === i;
+        return (
+          <button
+            key={i}
+            onClick={() => handleVote(i)}
+            disabled={busy || pollClosed}
+            className={cn(
+              'relative overflow-hidden rounded-lg p-3 text-left transition-all',
+              isMyChoice ? 'bg-gold/20 border border-gold/40' : 'bg-surface border border-surface-border',
+              showResults && !isMyChoice && 'opacity-70',
+              busy ? 'cursor-wait' : 'cursor-pointer hover:border-gold/30'
+            )}
+          >
+            {showResults && (
+              <div
+                className={cn(
+                  'absolute inset-y-0 left-0 rounded-lg transition-all duration-500',
+                  isMyChoice ? 'bg-gold/25' : 'bg-surface-elevated/60'
+                )}
+                style={{ width: `${pct}%` }}
+              />
+            )}
+            <div className="relative flex items-center justify-between">
+              <span className="text-sm font-medium text-white">{opt}</span>
+              <div className="flex items-center gap-1.5">
+                {isMyChoice && <Check className="h-3.5 w-3.5 text-gold" />}
+                {showResults && (
+                  <span className="text-xs font-bold text-muted-foreground">{pct}%</span>
+                )}
+              </div>
+            </div>
+          </button>
+        );
+      })}
+
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">
+          {totalVotes.toLocaleString()} vote{totalVotes === 1 ? '' : 's'}
+          {hasVoted && !pollClosed && ' · You voted'}
+          {pollClosed && hasVoted && ' · Your final vote'}
+        </p>
+        {hasVoted && !pollClosed && (
+          <button
+            onClick={handleUnvote}
+            disabled={busy}
+            className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-gold transition-colors disabled:opacity-50"
+            title="Remove your vote"
+          >
+            <RotateCcw className="h-3 w-3" />
+            {busy ? 'Updating…' : 'Change vote'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Prediction Block ─────────────────────────────────────────
+// Renders the structured prediction data (was previously invisible
+// in the feed — only the content text showed).
+function PredictionBlock({
+  prediction,
+  isOwner,
+  onDeleted,
+}: {
+  prediction: ApiPrediction;
+  isOwner: boolean;
+  onDeleted?: () => void;
+}) {
+  // Local state lets the owner edit and see updates immediately
+  // without refetching the whole feed.
+  const [current, setCurrent] = useState(prediction);
+  const [editing, setEditing] = useState(false);
+
+  const hScore = current.predictedHome;
+  const aScore = current.predictedAway;
+  const resultLabel =
+    hScore === null || aScore === null
+      ? null
+      : hScore > aScore
+      ? `${current.homeTeam} wins`
+      : aScore > hScore
+      ? `${current.awayTeam} wins`
+      : 'Draw';
+
+  const confidenceColors: Record<string, string> = {
+    low: 'text-orange-400 bg-orange-500/10 border-orange-500/30',
+    medium: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
+    high: 'text-green-400 bg-green-500/10 border-green-500/30',
+  };
+  const confidenceLabels: Record<string, string> = {
+    low: 'Low confidence',
+    medium: 'Medium confidence',
+    high: 'High confidence',
+  };
+  const conf = current.confidence ?? 'medium';
+  const resolved = typeof current.isCorrect === 'boolean';
+
+  return (
+    <div className="mb-3 rounded-xl border border-gold/20 bg-gold/5 overflow-hidden">
+      <div className="flex items-center justify-between border-b border-gold/15 bg-gold/5 px-3 py-1.5">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-gold">
+          Prediction
+        </span>
+        {isOwner && !resolved && (
+          <button
+            onClick={() => setEditing(true)}
+            className="flex items-center gap-1 rounded-full bg-surface/80 px-2 py-0.5 text-[10px] font-bold uppercase text-muted-foreground hover:text-gold transition-colors"
+            title="Edit your prediction"
+          >
+            <Pencil className="h-3 w-3" />
+            Edit
+          </button>
+        )}
+        {isOwner && resolved && (
+          <span className="rounded-full bg-surface/80 px-1.5 py-0.5 text-[9px] font-bold uppercase text-muted-foreground">
+            Yours
+          </span>
+        )}
+      </div>
+      <div className="px-3 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex-1 text-center min-w-0">
+            <p className="text-sm font-bold text-white truncate">{current.homeTeam}</p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="rounded-lg bg-surface px-3 py-1.5 text-2xl font-black text-gold">
+              {hScore ?? '–'}
+            </span>
+            <span className="text-muted-foreground">-</span>
+            <span className="rounded-lg bg-surface px-3 py-1.5 text-2xl font-black text-gold">
+              {aScore ?? '–'}
+            </span>
+          </div>
+          <div className="flex-1 text-center min-w-0">
+            <p className="text-sm font-bold text-white truncate">{current.awayTeam}</p>
+          </div>
+        </div>
+        <div className="mt-2 flex items-center justify-center gap-2">
+          {resultLabel && (
+            <span className="text-xs text-muted-foreground">{resultLabel}</span>
+          )}
+          <span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-bold', confidenceColors[conf] ?? confidenceColors.medium)}>
+            {confidenceLabels[conf] ?? 'Medium confidence'}
+          </span>
+        </div>
+        {resolved && (
+          <p className="mt-2 text-center text-xs font-semibold text-white">
+            {current.isCorrect ? '✓ Correct' : '✗ Incorrect'}
+          </p>
+        )}
+      </div>
+
+      {isOwner && !resolved && (
+        <EditPredictionModal
+          open={editing}
+          onOpenChange={setEditing}
+          prediction={current}
+          onUpdated={(data) => {
+            setCurrent({
+              ...current,
+              homeTeam: data.homeTeam,
+              awayTeam: data.awayTeam,
+              predictedHome: data.predictedHome,
+              predictedAway: data.predictedAway,
+              confidence: data.confidence,
+            });
+          }}
+          onDeleted={() => {
+            // Hide the entire FeedCard from the feed.
+            onDeleted?.();
+          }}
+        />
+      )}
+    </div>
   );
 }

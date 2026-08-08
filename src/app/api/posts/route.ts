@@ -173,7 +173,13 @@ export async function POST(request: NextRequest) {
       mediaUrls: safeJsonParse(fullPost?.mediaUrls, []),
       hashtags: safeJsonParse(fullPost?.hashtags, []),
       ...(fullPost?.poll && {
-        poll: { ...fullPost.poll, options: safeJsonParse(fullPost.poll.options, []) },
+        poll: {
+          ...fullPost.poll,
+          options: safeJsonParse(fullPost.poll.options, []),
+          // Newly-created poll — zero votes everywhere, viewer hasn't voted.
+          optionCounts: safeJsonParse<string[]>(fullPost.poll.options, []).map(() => 0),
+          userVotedOption: null,
+        },
       }),
       user: fullPost?.user ? {
         ...fullPost.user,

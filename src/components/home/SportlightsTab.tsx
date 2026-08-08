@@ -34,7 +34,18 @@ interface ApiPost {
   mediaUrls: string[]; teamTag: string | null; playerTag: string | null;
   isBreaking: boolean; likeCount: number; commentCount: number;
   shareCount: number; viewCount: number; createdAt: string;
-  poll?: { id: string; question: string; options: string[]; totalVotes: number } | null;
+  poll?: {
+    id: string; question: string; options: string[]; totalVotes: number;
+    optionCounts?: number[];
+    userVotedOption?: number | null;
+    endsAt?: string | null;
+  } | null;
+  prediction?: {
+    id: string; homeTeam: string; awayTeam: string;
+    predictedHome: number | null; predictedAway: number | null;
+    confidence: string | null; result?: string | null;
+    isCorrect?: boolean | null;
+  } | null;
   user: ApiUser;
 }
 interface ApiSpotlightItem {
