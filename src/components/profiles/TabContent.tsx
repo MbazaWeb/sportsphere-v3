@@ -294,7 +294,7 @@ function TeamOverview() {
           {team.topScorers.map((s: any, i: any)=>(
             <div key={s.name} className="flex items-center gap-3 rounded-xl bg-surface p-3">
               <span className={cn('w-5 text-center text-sm font-black',i===0?'text-gold':i===1?'text-gray-300':'text-amber-600')}>{i+1}</span>
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-elevated text-xs font-bold text-white">{s.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-elevated text-xs font-bold text-white">{s.name.split(' ').map((n: string)=>n[0]).join('').slice(0,2)}</div>
               <div className="flex-1"><p className="text-sm font-semibold text-white">{s.name}</p><p className="text-xs text-muted-foreground">{s.pos}</p></div>
               <span className="text-xl font-black text-gold">{s.goals}</span>
             </div>
@@ -334,7 +334,7 @@ function TeamOverview() {
         <div className="flex flex-col gap-2">
           {team.coaches.map((c: any)=>(
             <div key={c.name} className="flex items-center gap-3 rounded-xl bg-surface p-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-elevated text-xs font-bold text-white">{c.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-elevated text-xs font-bold text-white">{c.name.split(' ').map((n: string)=>n[0]).join('').slice(0,2)}</div>
               <div><p className="text-sm font-semibold text-white">{c.name}</p><p className="text-xs text-muted-foreground">{c.role} · {c.nat}</p></div>
             </div>
           ))}
@@ -436,7 +436,7 @@ function CompetitionOverview() {
           {comp.topScorers.map((s: any, i: any)=>(
             <div key={s.name} className="glass-card flex items-center gap-3 rounded-xl p-3">
               <span className={cn('w-5 text-center text-sm font-black',i===0?'text-gold':i===1?'text-gray-300':i===2?'text-amber-600':'text-muted-foreground')}>{i+1}</span>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-xs font-bold text-white">{s.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-xs font-bold text-white">{s.name.split(' ').map((n: string)=>n[0]).join('').slice(0,2)}</div>
               <div className="flex-1"><p className="text-sm font-semibold text-white">{s.name}</p><p className="text-xs text-muted-foreground">{s.team} · {s.apps} apps</p></div>
               <div className="text-right"><p className="text-xl font-black text-gold">{s.goals}</p><p className="text-[10px] text-muted-foreground">goals</p></div>
             </div>
@@ -449,7 +449,7 @@ function CompetitionOverview() {
           {comp.topAssists.map((s: any, i: any)=>(
             <div key={s.name} className="glass-card flex items-center gap-3 rounded-xl p-3">
               <span className={cn('w-5 text-center text-sm font-black',i===0?'text-gold':'text-muted-foreground')}>{i+1}</span>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-xs font-bold text-white">{s.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-xs font-bold text-white">{s.name.split(' ').map((n: string)=>n[0]).join('').slice(0,2)}</div>
               <div className="flex-1"><p className="text-sm font-semibold text-white">{s.name}</p><p className="text-xs text-muted-foreground">{s.team}</p></div>
               <div className="text-right"><p className="text-xl font-black text-blue-400">{s.assists}</p><p className="text-[10px] text-muted-foreground">assists</p></div>
             </div>
