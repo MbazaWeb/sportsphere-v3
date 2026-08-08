@@ -15,7 +15,7 @@ import {
   BarChart3, Target, Flag, Calendar, ArrowUpRight, FileText,
   CheckCircle, AlertCircle, Pen, Crown, Sparkles, Flame,
   Award, Medal, Gift, Diamond, Gem, Music, Mic, Podcast,
-  Video, Image, Camera, Tv, Radio, Newspaper, BookOpen,
+  Video, Image, ImageIcon, Camera, Tv, Radio, Newspaper, BookOpen,
   GraduationCap, Briefcase, Building, Home, Wifi, Coffee,
   Utensils, Car, Bus, Train, Plane, Globe, Compass, Info,
   Database, ShoppingBag, CreditCard, Truck, MapPinned, Tag, Ticket,
