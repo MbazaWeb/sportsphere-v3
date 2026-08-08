@@ -1,21 +1,35 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function SplashScreen({ onDone }: { onDone: () => void }) {
   const splashRef = useRef<HTMLDivElement>(null);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
+    // Animate progress from 0 → 100 over ~3.6s
+    const duration = 3600;
+    const interval = 40;
+    const steps = duration / interval;
+    let current = 0;
+
+    const timer = setInterval(() => {
+      current += 1;
+      // Ease-out curve — fast at start, slow near 100
+      const pct = Math.round(100 * (1 - Math.pow(1 - current / steps, 2.5)));
+      setProgress(Math.min(pct, 100));
+      if (current >= steps) clearInterval(timer);
+    }, interval);
+
     const t1 = setTimeout(() => {
       if (splashRef.current) {
         splashRef.current.style.opacity = '0';
         splashRef.current.style.pointerEvents = 'none';
       }
     }, 4000);
-    const t2 = setTimeout(() => {
-      onDone();
-    }, 4800);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    const t2 = setTimeout(() => { onDone(); }, 4800);
+
+    return () => { clearInterval(timer); clearTimeout(t1); clearTimeout(t2); };
   }, [onDone]);
 
   return (
@@ -36,8 +50,6 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
       <div style={{
         position: 'absolute', bottom: 0, left: 0,
         width: '100%', height: '40%',
-        background: `linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(3,8,18,0) 40%, rgba(3,8,18,1) 100%)`,
-        backgroundColor: 'transparent',
         backgroundImage: `
           linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(3,8,18,0) 40%, rgba(3,8,18,1) 100%),
           url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 300'%3E%3Cpath d='M0 300 L0 180 Q150 100 300 140 Q450 180 600 120 Q750 60 900 100 Q1050 140 1200 80 L1200 300 Z' fill='%23334466' opacity='0.3'/%3E%3Cpath d='M0 300 L0 220 Q200 160 400 190 Q600 220 800 170 Q1000 120 1200 150 L1200 300 Z' fill='%23223355' opacity='0.25'/%3E%3Ccircle cx='200' cy='60' r='4' fill='%23ffffff' opacity='0.3'/%3E%3Ccircle cx='350' cy='40' r='3' fill='%23ffffff' opacity='0.2'/%3E%3Ccircle cx='500' cy='55' r='4' fill='%23ffffff' opacity='0.25'/%3E%3Ccircle cx='700' cy='35' r='3' fill='%23ffffff' opacity='0.2'/%3E%3Ccircle cx='900' cy='50' r='4' fill='%23ffffff' opacity='0.3'/%3E%3Ccircle cx='1050' cy='40' r='3' fill='%23ffffff' opacity='0.2'/%3E%3C/svg%3E")
@@ -59,7 +71,7 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
         lineHeight: 1,
       }}>S</div>
 
-      {/* Logo wrapper — floating animation */}
+      {/* Keyframes */}
       <style>{`
         @keyframes logoFloat {
           0%, 100% { transform: translateY(0px); }
@@ -69,13 +81,13 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
-        @keyframes loadProgress {
-          0% { width: 0%; }
-          80% { width: 85%; }
-          100% { width: 100%; }
+        @keyframes pctPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
         }
       `}</style>
 
+      {/* Logo */}
       <div style={{
         zIndex: 10, width: '60%', maxWidth: 350,
         textAlign: 'center', marginBottom: '8vh',
@@ -88,7 +100,7 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
       <div style={{
         zIndex: 10, width: '80%', maxWidth: 280,
         display: 'flex', flexDirection: 'column',
-        alignItems: 'center', gap: 15,
+        alignItems: 'center', gap: 12,
       }}>
         {/* Spinner */}
         <div style={{
@@ -107,21 +119,34 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
         }}>
           <div style={{
             height: '100%',
+            width: `${progress}%`,
             background: 'linear-gradient(90deg, #ffc400 0%, #ffffff 100%)',
             borderRadius: 2,
-            animation: 'loadProgress 3s ease-in-out forwards',
+            transition: 'width 0.04s linear',
           }} />
         </div>
 
-        {/* Loading text */}
+        {/* Percentage + label */}
         <div style={{
-          color: 'rgba(255,255,255,0.7)',
-          fontSize: '0.8rem', letterSpacing: '2px',
-          textTransform: 'uppercase', marginTop: 5,
-        }}>Loading Experience...</div>
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', width: '100%',
+        }}>
+          <div style={{
+            color: 'rgba(255,255,255,0.5)',
+            fontSize: '0.7rem', letterSpacing: '2px',
+            textTransform: 'uppercase',
+          }}>Loading...</div>
+          <div style={{
+            color: '#ffc400',
+            fontSize: '0.85rem', fontWeight: 700,
+            letterSpacing: '1px',
+            animation: progress < 100 ? 'pctPulse 1s ease-in-out infinite' : 'none',
+            minWidth: 36, textAlign: 'right',
+          }}>{progress}%</div>
+        </div>
       </div>
 
-      {/* Footer */}
+      {/* Footer — LIVE. PLAY. CONNECT. — no line below */}
       <div style={{
         position: 'absolute', bottom: '8vh',
         zIndex: 10, textAlign: 'center', width: '100%',
@@ -129,15 +154,9 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
         <div style={{
           color: 'white', fontSize: '1.2rem',
           letterSpacing: '4px', fontWeight: 600,
-          marginBottom: 15,
         }}>
           LIVE. <span style={{ color: '#ffc400' }}>PLAY.</span> CONNECT.
         </div>
-        <div style={{
-          width: '50%', maxWidth: 300, height: 4,
-          margin: '0 auto', borderRadius: 2,
-          background: 'linear-gradient(90deg, #ffc400 0%, #ffffff 50%, #ffc400 100%)',
-        }} />
       </div>
     </div>
   );
