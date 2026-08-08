@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { FavoriteTargetType } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
+
+const VALID_TYPES: FavoriteTargetType[] = [
+  'TEAM', 'PLAYER', 'COACH', 'STADIUM', 'LEAGUE', 'NATIONAL_TEAM', 'COMPETITION', 'SPORT'
+];
 
 // GET /api/profile/favorites — list current user's favorites
 export async function GET(request: NextRequest) {
@@ -38,8 +43,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'targetType, targetName and targetId are required.' }, { status: 400 });
     }
 
-    const validTypes = ['team', 'player', 'coach', 'stadium', 'league', 'national_team', 'competition'];
-    if (!validTypes.includes(targetType)) {
+    const enumType = String(targetType).toUpperCase() as FavoriteTargetType;
+    if (!VALID_TYPES.includes(enumType)) {
       return NextResponse.json({ error: 'Invalid targetType.' }, { status: 400 });
     }
 
@@ -47,14 +52,14 @@ export async function POST(request: NextRequest) {
       where: {
         userId_targetType_targetId: {
           userId,
-          targetType: String(targetType),
+          targetType: enumType,
           targetId: String(targetId),
         },
       },
       update: { targetName: String(targetName), targetHandle: targetHandle || null },
       create: {
         userId,
-        targetType: String(targetType),
+        targetType: enumType,
         targetId: String(targetId),
         targetName: String(targetName),
         targetHandle: targetHandle || null,
