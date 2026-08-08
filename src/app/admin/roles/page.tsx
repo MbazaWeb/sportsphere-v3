@@ -9,7 +9,8 @@ interface VerificationRequest {
   roleTypeId: string;
   roleData: Record<string, string>;
   status: "pending" | "verified" | "rejected";
-  createdAt: string;
+  createdAt: string;  // mapped from submittedAt
+  submittedAt: string;
   user: {
     id: string;
     name: string;
@@ -187,7 +188,7 @@ export default function AdminRolesPage() {
                     {statusBadge(req.status)}
                   </td>
                   <td className="px-5 py-4 text-xs text-slate-400">
-                    {new Date(req.createdAt).toLocaleDateString("en-GB", {
+                    {new Date(req.createdAt ?? req.submittedAt).toLocaleDateString("en-GB", {
                       day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
                     })}
                   </td>

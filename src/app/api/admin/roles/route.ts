@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     const requests = await db.verificationRequest.findMany({
       where: status === "ALL" ? {} : { status },
-      orderBy: { createdAt: "desc" },
+      orderBy: { submittedAt: "desc" },
       include: {
         user: {
           select: {
