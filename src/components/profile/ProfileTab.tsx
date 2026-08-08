@@ -94,6 +94,13 @@ function LoggedInProfile({ onNavigate, onLogout }: { onNavigate: (section: strin
   const [activeTab] = useState<'spotlight'>('spotlight');
   const [realPosts, setRealPosts] = useState<Array<{ id: string; content: string; createdAt: string; likeCount: number; commentCount: number; postType: string; mediaUrls: string[] }>>([]);
   const [postsLoading, setPostsLoading] = useState(true);
+  const [favorites, setFavorites] = useState<Array<{ id: string; targetType: string; targetName: string; targetHandle: string | null }>>([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(true);
+  const [addFavoriteOpen, setAddFavoriteOpen] = useState(false);
+  const [favoriteName, setFavoriteName] = useState('');
+  const [favoriteType, setFavoriteType] = useState<'TEAM' | 'PLAYER' | 'COACH' | 'COMPETITION' | 'LEAGUE' | 'NATIONAL_TEAM' | 'STADIUM' | 'SPORT'>('TEAM');
+  const [favoriteSaving, setFavoriteSaving] = useState(false);
+  const [favoriteError, setFavoriteError] = useState('');
   const coverInputRef = useRef<HTMLInputElement>(null);
 const [coverUploading, setCoverUploading] = useState(false);
 
@@ -156,6 +163,63 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
     }
     loadPosts();
   }, [userProfile?.id]);
+
+  // Fetch the user's favorites from /api/profile/favorites (replaces the
+  // previously hardcoded "Manchester United / Marcus Rashford" demo data).
+  useEffect(() => {
+    async function loadFavorites() {
+      try {
+        const res = await apiFetch('/api/profile/favorites');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) setFavorites(data);
+        }
+      } catch { /* ignore */ }
+      setFavoritesLoading(false);
+    }
+    loadFavorites();
+  }, [userProfile?.id]);
+
+  async function removeFavorite(id: string) {
+    try {
+      const res = await apiFetch(`/api/profile/favorites?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (res.ok) setFavorites(prev => prev.filter(f => f.id !== id));
+    } catch { /* ignore */ }
+  }
+
+  async function addFavorite() {
+    if (!favoriteName.trim()) {
+      setFavoriteError('Please enter a name.');
+      return;
+    }
+    setFavoriteSaving(true);
+    setFavoriteError('');
+    try {
+      const slug = favoriteName.trim().toLowerCase().replace(/\s+/g, '-');
+      const res = await apiFetch('/api/profile/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetType: favoriteType,
+          targetId: slug,
+          targetName: favoriteName.trim(),
+          targetHandle: null,
+        }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setFavorites(prev => [created, ...prev.filter(f => f.id !== created.id)]);
+        setFavoriteName('');
+        setAddFavoriteOpen(false);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setFavoriteError(data?.error || 'Failed to add favorite.');
+      }
+    } catch {
+      setFavoriteError('Network error. Please try again.');
+    }
+    setFavoriteSaving(false);
+  }
 
   function timeAgo(dateStr: string) {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -485,18 +549,99 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
           </div>
         )}
 
-        {/* ---- FAVORITES ---- */}
+        {/* ---- FAVORITES (dynamic — fetched from /api/profile/favorites) ---- */}
         <div className="mt-4 glass-card rounded-2xl p-4 glass-card-hover">
-          <div className="flex items-center gap-2 mb-3">
-            <Star className="h-4 w-4 text-gold" />
-            <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Favorites</h3>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Star className="h-4 w-4 text-gold" />
+              <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Favorites</h3>
+            </div>
+            <button
+              onClick={() => { setAddFavoriteOpen(true); setFavoriteError(''); }}
+              className="flex items-center gap-1 text-xs text-gold hover:underline"
+            >
+              <Plus className="h-3 w-3" /> Add favorite
+            </button>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {/* This would be loaded from API, using static for demo */}
-            <span className="rounded-xl bg-gold/10 px-3 py-1.5 text-xs font-medium text-gold border border-gold/20">Manchester United</span>
-            <span className="rounded-xl bg-gold/10 px-3 py-1.5 text-xs font-medium text-gold border border-gold/20">Marcus Rashford</span>
-          </div>
-          <button className="mt-2 text-xs text-gold hover:underline">Add favorite</button>
+
+          {favoritesLoading ? (
+            <div className="flex flex-wrap gap-2">
+              {[0, 1, 2].map(i => (
+                <div key={i} className="h-7 w-24 rounded-xl bg-surface animate-pulse" />
+              ))}
+            </div>
+          ) : favorites.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-2">
+              No favorites yet. Add teams, players, or competitions you follow.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {favorites.map(f => (
+                <span
+                  key={f.id}
+                  className="group inline-flex items-center gap-1.5 rounded-xl bg-gold/10 px-3 py-1.5 text-xs font-medium text-gold border border-gold/20"
+                >
+                  {f.targetName}
+                  <button
+                    onClick={() => removeFavorite(f.id)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-gold/70 hover:text-red-400"
+                    aria-label={`Remove ${f.targetName}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Inline "Add favorite" form — toggled by the Add favorite button */}
+          {addFavoriteOpen && (
+            <div className="mt-3 rounded-xl border border-surface-border bg-surface p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-white">Add a favorite</p>
+                <button
+                  onClick={() => { setAddFavoriteOpen(false); setFavoriteName(''); setFavoriteError(''); }}
+                  className="text-muted-foreground hover:text-white"
+                  aria-label="Close add favorite form"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <select
+                  value={favoriteType}
+                  onChange={e => setFavoriteType(e.target.value as typeof favoriteType)}
+                  className="rounded-lg bg-surface-elevated border border-surface-border px-2 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold"
+                >
+                  <option value="TEAM">Team</option>
+                  <option value="PLAYER">Player</option>
+                  <option value="COACH">Coach</option>
+                  <option value="COMPETITION">Competition</option>
+                  <option value="LEAGUE">League</option>
+                  <option value="NATIONAL_TEAM">National Team</option>
+                  <option value="STADIUM">Stadium</option>
+                  <option value="SPORT">Sport</option>
+                </select>
+                <input
+                  type="text"
+                  value={favoriteName}
+                  onChange={e => setFavoriteName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') addFavorite(); }}
+                  placeholder="e.g. Manchester United"
+                  className="flex-1 rounded-lg bg-surface-elevated border border-surface-border px-3 py-2 text-xs text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold"
+                  autoFocus
+                />
+                <button
+                  onClick={addFavorite}
+                  disabled={favoriteSaving}
+                  className="rounded-lg bg-gold text-black px-3 py-2 text-xs font-bold hover:bg-gold/90 transition-colors disabled:opacity-50"
+                >
+                  {favoriteSaving ? 'Adding…' : 'Add'}
+                </button>
+              </div>
+              {favoriteError && <p className="text-[11px] text-red-400">{favoriteError}</p>}
+            </div>
+          )}
         </div>
 
         {/* ---- More Section ---- */}
