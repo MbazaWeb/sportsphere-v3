@@ -9,6 +9,8 @@ const NAV = [
   { href: "/admin/users", label: "👥 Users Manager" },
   { href: "/admin/sports", label: "🏆 Sports Manager" },
   { href: "/admin/roles", label: "🛡️ Role Approvals" },
+  { href: "/admin/performance", label: "⚖️ Performance KPIs" },
+  { href: "/admin/verification", label: "✅ Event Verification" },
   { href: "/admin/posts", label: "📝 Content Moderation" },
 ];
 
