@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import type { NextRequest } from 'next/server';
 import { safeJsonParse } from './json';
 
 // Re-export everything edge-safe from session.ts so callers have one import.
@@ -16,6 +17,14 @@ export {
   SESSION_MAX_AGE,
 } from './session';
 export type { SessionPayload } from './session';
+
+// ─── Convenience: extract user ID from request session cookie ─
+// Use this in API routes instead of relying on the proxy x-user-id header.
+export async function getUserIdFromRequest(request: NextRequest): Promise<string | null> {
+  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  const payload = await verifySession(token);
+  return payload?.sub ?? null;
+}
 
 // ─── Password hashing (server-only — uses bcryptjs) ──────────
 export async function hashPassword(password: string): Promise<string> {
@@ -83,13 +92,4 @@ export function serializePublicUser(u: {
   };
 }
 
-// ─── Convenience: extract user ID from request session cookie ─
-// Use this in API routes that previously relied on the proxy x-user-id header.
-// Reads the JWT directly from the cookie, no proxy middleware required.
-import type { NextRequest } from 'next/server';
 
-export async function getUserIdFromRequest(request: NextRequest): Promise<string | null> {
-  const token = request.cookies.get(SESSION_COOKIE)?.value;
-  const payload = await verifySession(token);
-  return payload?.sub ?? null;
-}
