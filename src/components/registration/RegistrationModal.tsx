@@ -94,7 +94,7 @@ function FanStep({ onBack, onComplete }: { onBack: () => void; onComplete: (data
         </div>
       </div>
       <div className="mb-6">
-        <label className="mb-2 block text-xs font-medium text-muted-foreground">Sports you follow <span className="text-gold">*</span></label>
+        <label className="mb-2 block text-xs font-medium text-muted-foreground">Sports you follow <span className="text-muted-foreground/50">(optional)</span></label>
         <div className="flex flex-wrap gap-2">
           {availableSports.map(sport => (
             <button key={sport} onClick={() => toggleSport(sport)}

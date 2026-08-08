@@ -119,14 +119,14 @@ export default function LoginModal() {
           )}
 
           <div className="mb-3">
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Email</label>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Email or Handle</label>
             <input
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-              placeholder="your@email.com"
-              autoComplete="email"
+              placeholder="your@email.com or @handle"
+              autoComplete="username"
               className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold"
             />
           </div>

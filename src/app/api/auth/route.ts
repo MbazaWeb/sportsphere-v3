@@ -15,13 +15,26 @@ export async function POST(request: NextRequest) {
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: 'Email and password are required.' },
+        { error: 'Email/handle and password are required.' },
         { status: 400 }
       );
     }
 
-    const user = await db.user.findUnique({
-      where: { email: String(email).toLowerCase().trim() },
+    const identifier = String(email).trim().toLowerCase();
+
+    // Support login by email OR handle (@yourhandle or yourhandle)
+    const isHandle = !identifier.includes('@') || identifier.startsWith('@');
+    const handle = identifier.startsWith('@') ? identifier : `@${identifier}`;
+
+    const user = await db.user.findFirst({
+      where: isHandle && !identifier.includes('.')
+        ? { handle: { equals: handle, mode: 'insensitive' } }
+        : {
+            OR: [
+              { email: { equals: identifier, mode: 'insensitive' } },
+              { handle: { equals: handle, mode: 'insensitive' } },
+            ],
+          },
     });
 
     // Same error for "no user" and "wrong password" — don't leak existence.
