@@ -60,7 +60,7 @@ function GuestProfile() {
     <div className="mx-auto flex max-w-lg flex-col items-center px-6 pt-12">
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-4">
-          <img src="/logo.svg" alt="SportSphere" style={{height: 80, width: 'auto'}} />
+          <img src="/sportsphere/logo.svg" alt="SportSphere" style={{height: 80, width: 'auto'}} />
           <div className="flex items-baseline gap-0"><span style={{fontSize:28,fontWeight:900,fontStyle:'italic',color:'#fff',lineHeight:1}}>Sport</span><span style={{fontSize:28,fontWeight:900,fontStyle:'italic',color:'#F5C518',lineHeight:1}}>Sphere</span></div>
           <p className="text-sm text-muted-foreground text-center">The world&apos;s biggest sports social network.</p>
         </div>

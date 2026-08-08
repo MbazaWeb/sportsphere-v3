@@ -81,7 +81,7 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
         textAlign: 'center', marginBottom: '8vh',
         animation: 'logoFloat 3s ease-in-out infinite',
       }}>
-        <img src="/logo.svg" alt="SportSphere Logo" style={{ width: '100%', height: 'auto', display: 'block' }} />
+        <img src="/sportsphere/logo.svg" alt="SportSphere Logo" style={{ width: '100%', height: 'auto', display: 'block' }} />
       </div>
 
       {/* Loading state */}
