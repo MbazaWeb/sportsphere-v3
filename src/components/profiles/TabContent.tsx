@@ -565,7 +565,7 @@ function PlayerOverviewEnhanced() {
             { label: 'Height',        value: p.height },
             { label: 'Weight',        value: p.weight || '70 kg' },
             { label: 'Dominant Side', value: p.foot || p.dominantSide || 'Right' },
-          ].map(({ label, value }: { label: string; value: string }) => (
+          ].map(({ label, value }: { label: string; value: any }) => (
             <div key={label} className="rounded-lg bg-surface p-2.5">
               <p className="text-[10px] text-muted-foreground">{label}</p>
               <p className="text-sm font-semibold text-white">{value}</p>
@@ -658,7 +658,7 @@ function PlayerOverviewEnhanced() {
             { label: 'Assists', value: p.seasonStats.assists },
             { label: 'Apps',    value: p.seasonStats.appearances },
             { label: 'Rating',  value: p.seasonStats.rating },
-          ].map(({ label, value }: { label: string; value: string }) => (
+          ].map(({ label, value }: { label: string; value: any }) => (
             <div key={label} className="rounded-xl bg-surface p-2.5 text-center">
               <p className="text-xl font-black text-gold">{value}</p>
               <p className="text-[10px] text-muted-foreground">{label}</p>
@@ -694,7 +694,7 @@ function PlayerOverviewEnhanced() {
             { label: 'Caps',    value: p.international.caps },
             { label: 'Goals',   value: p.international.goals },
             { label: 'Assists', value: p.international.assists },
-          ].map(({ label, value }: { label: string; value: string }) => (
+          ].map(({ label, value }: { label: string; value: any }) => (
             <div key={label} className="rounded-xl bg-surface p-2.5 text-center">
               <p className="text-xl font-black text-white">{value}</p>
               <p className="text-[10px] text-muted-foreground">{label}</p>
