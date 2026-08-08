@@ -580,7 +580,7 @@ function PlayerOverviewEnhanced() {
           <Zap className="h-4 w-4" /> Key Skills & Attributes
         </h3>
         <div className="flex flex-wrap gap-2">
-          {(p.skills || ['Pace & Acceleration', 'Clinical Finishing', 'Dribbling', 'Left Wing Play', 'Counter-Attacking', 'Philanthropy & Leadership']).map((skill: string) => (
+          {((p.skills as string[]) || ['Pace & Acceleration', 'Clinical Finishing', 'Dribbling', 'Left Wing Play', 'Counter-Attacking', 'Philanthropy & Leadership']).map((skill: string) => (
             <span
               key={skill}
               className="rounded-lg bg-gold/10 border border-gold/20 px-3 py-1.5 text-xs font-semibold text-gold hover:bg-gold/20 hover:border-gold/40 transition-all cursor-default"
