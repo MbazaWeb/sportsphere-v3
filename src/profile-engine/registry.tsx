@@ -22,6 +22,14 @@ import { creatorRole } from './roles/creator';
 import { analystRole } from './roles/analyst';
 import { commentatorRole } from './roles/commentator';
 import { agentRole } from './roles/agent';
+import { organizationRole } from './roles/organization';
+import { competitionRole } from './roles/competition';
+import { leagueRole } from './roles/league';
+import { academyRole } from './roles/academy';
+import { venueRole } from './roles/venue';
+import { businessRole } from './roles/business';
+import { commercialPartnerRole } from './roles/commercial-partner';
+import { communityRole } from './roles/community';
 
 // Generic role configs (typed schema, shared renderer)
 import { genericConfigs } from './roles/generic/configs';
@@ -30,8 +38,15 @@ import { GenericRoleTab } from './roles/generic/GenericRoleTab';
 // ─── Build the registry ────────────────────────────────────────
 const REGISTRY = new Map<string, RoleConfig>();
 
-// Custom roles (Phase 1: player, coach, team · Phase 2: scout, journalist, creator, analyst, commentator, agent)
-for (const cfg of [playerRole, coachRole, teamRole, scoutRole, journalistRole, creatorRole, analystRole, commentatorRole, agentRole]) {
+// Custom roles
+//   Phase 1: player, coach, team
+//   Phase 2: scout, journalist, creator, analyst, commentator, agent
+//   Phase 3: organization, competition, league, academy, venue, business, commercial-partner, community
+for (const cfg of [
+  playerRole, coachRole, teamRole,
+  scoutRole, journalistRole, creatorRole, analystRole, commentatorRole, agentRole,
+  organizationRole, competitionRole, leagueRole, academyRole, venueRole, businessRole, commercialPartnerRole, communityRole,
+]) {
   REGISTRY.set(cfg.role, cfg);
 }
 

@@ -481,16 +481,13 @@ export const developerConfig: RoleConfig = { ...administratorConfig, role: 'deve
 // included in this array — the registry's custom modules take over.
 // (The `if (!REGISTRY.has(cfg.role))` guard in registry.tsx would
 //  silently skip them anyway, but excluding them here is cleaner.)
+//
+// Phase 3 likewise promoted: organization, competition, league,
+// academy, venue, business, commercial-partner, community.
+// Remaining in this array: fan, official, support-staff, moderator,
+// administrator (and their 4 legacy aliases).
 export const genericConfigs: RoleConfig[] = [
   fanConfig,
-  academyConfig,
-  organizationConfig,
-  competitionConfig,
-  leagueConfig,
-  venueConfig,
-  businessConfig,
-  commercialPartnerConfig,
-  communityConfig,
   officialConfig,
   supportStaffConfig,
   moderatorConfig,

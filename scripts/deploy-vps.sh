@@ -2,7 +2,10 @@
 set -e
 
 APP_DIR="/var/www/sportsphere"
-REPO="https://github.com/MbazzaTZ/SportSphere-Project.git"
+# Repo we actually push to from local dev. (Previous value MbazzaTZ/SportSphere-Project.git
+# was a stale/abandoned repo — VPS was pulling old code that didn't include
+# the Profile Engine work or any Phase 1-2 fixes.)
+REPO="https://github.com/MbazaWeb/sportsphere-v3.git"
 PORT=3002
 DB_NAME="sportsphere"
 DB_USER="sportsphere_admin"
