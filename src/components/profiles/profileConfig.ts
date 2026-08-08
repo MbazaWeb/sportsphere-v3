@@ -121,7 +121,10 @@ const TABS = {
 const COVER_DARK = 'from-[#0F1D3A] via-[#1A2A4A] to-[#0A1628]';
 
 // Profile type configurations
-export const PROFILE_TYPES: Record<ProfileTypeId, ProfileTypeConfig> = {
+// NOTE: Partial<> because not every ProfileTypeId has a demo config here.
+// Production profile rendering uses UserProfileViewer + getTabsForRole,
+// not this map. This map only drives the standalone demo pages.
+export const PROFILE_TYPES: Partial<Record<ProfileTypeId, ProfileTypeConfig>> = {
   team: {
     id: 'team', label: 'Team', emoji: '👥',
     tabs: [TABS.overview, TABS.feed, TABS.squad, TABS.fixtures, TABS.results, TABS.standings, TABS.statistics, TABS.transfers, TABS.media, TABS.fans, TABS.shop, TABS.tickets, TABS.about],
