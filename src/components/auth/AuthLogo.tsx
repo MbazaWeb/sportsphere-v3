@@ -2,7 +2,7 @@
 
 export function AuthLogo() {
   return (
-    <div className="flex justify-center mb-6">
+    <div className="flex justify-center mb-3 sm:mb-6">
       <img
         src="/sportsphere/logo-wordmark.svg"
         alt="SportSphere"

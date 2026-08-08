@@ -47,39 +47,39 @@ export function RegistrationFanStep({ onBack, onComplete }: RegistrationFanStepP
   const valid = name.trim() && email.trim() && handle.trim() && password.length >= 8 && passwordsMatch;
 
   return (
-    <div>
-      <div className="mb-4 flex items-center gap-3">
+    <div className="flex flex-col">
+      <div className="mb-3 sm:mb-4 flex items-center gap-3">
         <button onClick={onBack} className="flex h-8 w-8 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
           <X className="h-4 w-4" />
         </button>
         <h2 className="text-lg font-black text-white">Join SportSphere</h2>
       </div>
-      <p className="mb-4 text-sm text-muted-foreground">
+      <p className="mb-3 sm:mb-4 text-xs sm:text-sm text-muted-foreground">
         Create your fan account and start following your favorite sports. You can upgrade to other roles later.
       </p>
-      <div className="flex flex-col gap-3 mb-4">
+      <div className="flex flex-col gap-2.5 sm:gap-3 mb-3 sm:mb-4">
         {[
           { label: 'Full Name', value: name, onChange: setName, placeholder: 'Your full name' },
           { label: 'Email', value: email, onChange: setEmail, placeholder: 'your@email.com', type: 'email' },
           { label: 'Handle', value: handle, onChange: (v: string) => setHandle(v.startsWith('@') ? v : '@' + v), placeholder: '@yourhandle' },
         ].map(({ label, value, onChange, placeholder, type }) => (
           <div key={label}>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">{label}</label>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">{label}</label>
             <input
               type={type || 'text'}
               value={value}
               onChange={e => onChange(e.target.value)}
               placeholder={placeholder}
-              className="w-full rounded-xl bg-surface border border-surface-border px-4 py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold transition-colors"
+              className="w-full rounded-xl bg-surface border border-surface-border px-4 py-2.5 sm:py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold transition-colors"
             />
           </div>
         ))}
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Password <span className="text-muted-foreground/70">(min 8 chars)</span></label>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">Password <span className="text-muted-foreground/70">(min 8 chars)</span></label>
           <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" placeholder="At least 8 characters" />
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Confirm Password</label>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">Confirm Password</label>
           <PasswordInput
             value={confirm}
             onChange={setConfirm}
@@ -92,7 +92,7 @@ export function RegistrationFanStep({ onBack, onComplete }: RegistrationFanStepP
           )}
         </div>
       </div>
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <label className="mb-2 block text-xs font-medium text-muted-foreground">Sports you follow <span className="text-muted-foreground/50">(optional)</span></label>
         <div className="flex flex-wrap gap-2">
           {availableSports.map(sport => (
