@@ -1,11 +1,11 @@
 'use client';
 import { apiFetch } from '@/lib/api';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   FileText, Image as ImageIcon, Video, Zap, BarChart3, Target,
-  Plus, X, Hash, MapPin
+  Plus, X, Hash, MapPin, WifiOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
@@ -16,6 +16,7 @@ import { PhotoUpload } from '@/components/uploads/PhotoUpload';
 import { VideoUpload } from '@/components/uploads/VideoUpload';
 import { PollCreator } from './PollCreator';
 import { PredictionCreator } from './PredictionCreator';
+import { queuePost, isOffline, getQueuedPosts } from '@/lib/offline-posts';
 
 const CREATE_TYPES = [
   { id: 'post',       label: 'Post',       icon: FileText,   color: 'bg-blue-500/10 text-blue-400 border-blue-500/20',   desc: 'Share your thoughts' },
@@ -33,6 +34,12 @@ export default function CreateTab() {
   const setLoginModalOpen = useUIStore((s) => s.setLoginModalOpen);
 
   const [activeType, setActiveType] = useState<string | null>(null);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  // Refresh pending count whenever CreateTab mounts (user navigates to it)
+  useEffect(() => {
+    setPendingCount(getQueuedPosts().length);
+  }, []);
 
   if (!isAuthenticated) {
     return (
@@ -67,6 +74,21 @@ export default function CreateTab() {
       </header>
 
       <div className="p-4">
+        {/* Offline-queue indicator */}
+        {pendingCount > 0 && (
+          <div className="mb-4 flex items-start gap-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 p-3">
+            <WifiOff className="h-4 w-4 text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-amber-400">
+                {pendingCount} post{pendingCount === 1 ? '' : 's'} waiting to publish
+              </p>
+              <p className="text-[11px] text-amber-400/70 mt-0.5">
+                Saved locally — will publish automatically when you reconnect.
+              </p>
+            </div>
+          </div>
+        )}
+
         <p className="mb-4 text-sm text-muted-foreground">What do you want to share?</p>
         <div className="grid grid-cols-2 gap-3">
           {CREATE_TYPES.map((type) => {
@@ -139,38 +161,55 @@ function Composer({ type, onBack }: { type: string; onBack: () => void }) {
     setSubmitting(true);
     setError('');
 
-    try {
-      const body: Record<string, unknown> = {
-        content,
-        postType: type,
-        mediaUrls,
-        hashtags,
-        location: location.trim() || undefined,
-        isBreaking: breaking,
+    const body: Record<string, unknown> = {
+      content,
+      postType: type,
+      mediaUrls,
+      hashtags,
+      location: location.trim() || undefined,
+      isBreaking: breaking,
+    };
+
+    if (type === 'poll' && pollData) {
+      body.poll = {
+        question: pollData.question,
+        options: pollData.options,
+        durationHours: pollData.durationHours,
       };
+    }
 
-      if (type === 'poll' && pollData) {
-        body.poll = {
-          question: pollData.question,
-          options: pollData.options,
-          durationHours: pollData.durationHours,
-        };
-      }
+    if (type === 'prediction' && predictionData) {
+      body.prediction = predictionData;
+    }
 
-      if (type === 'prediction' && predictionData) {
-        body.prediction = predictionData;
-      }
+    // ─── Offline-first path ──────────────────────────────────────────
+    // If the browser is offline, queue the post locally and exit.
+    // The useOfflinePostSync hook will publish it automatically when the
+    // network returns. Media posts can be queued because mediaUrls already
+    // point to server-hosted files (uploaded before this step).
+    if (isOffline()) {
+      queuePost(body);
+      showToast('You\u2019re offline. Post saved \u2014 will publish when you reconnect.');
+      setText(''); setMediaUrls([]); setHashtags([]); setLocation(''); setBreaking(false);
+      setTimeout(() => {
+        onBack();
+        setActiveTab('home');
+      }, 600);
+      setSubmitting(false);
+      return;
+    }
 
+    try {
       const res = await apiFetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(data.error || 'Failed to create post.');
+        setError(data?.error || `Failed to create post (HTTP ${res.status}).`);
         setSubmitting(false);
         return;
       }
@@ -182,8 +221,17 @@ function Composer({ type, onBack }: { type: string; onBack: () => void }) {
         onBack();
         setActiveTab('home');
       }, 800);
-    } catch {
-      setError('Network error. Please try again.');
+    } catch (err) {
+      // Network failure during an online session — queue for auto-sync
+      // instead of showing a dead-end error.
+      console.error('Create post network error:', err);
+      queuePost(body);
+      showToast('Network error. Post saved \u2014 will publish automatically when you reconnect.');
+      setText(''); setMediaUrls([]); setHashtags([]); setLocation(''); setBreaking(false);
+      setTimeout(() => {
+        onBack();
+        setActiveTab('home');
+      }, 600);
     }
     setSubmitting(false);
   };

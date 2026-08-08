@@ -22,6 +22,7 @@ import UserProfileViewer from '@/components/profiles/UserProfileViewer';
 import { PROFILE_TYPES, type ProfileTypeId } from '@/components/profiles/profileConfig';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useServiceWorker } from '@/hooks/useServiceWorker';
+import { useOfflinePostSync } from '@/hooks/useOfflinePostSync';
 
 function Toast() {
   const msg = useUIStore((s) => s.toastMessage);
@@ -106,6 +107,7 @@ export default function Home() {
 
   useServiceWorker();
   useAuthSession();
+  useOfflinePostSync();
   if (!splashDone) return <SplashScreen onDone={() => setSplashDone(true)} />;
 
   return (

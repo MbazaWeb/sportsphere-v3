@@ -70,7 +70,7 @@ export function PhotoUpload({ mediaUrls, onChange }: PhotoUploadProps) {
         setUploadProgress(p => (p < 90 ? p + 5 : p));
       }, 200);
 
-      const res = await apiFetch('/api/upload', {
+      const res = await apiFetch('/api/uploads', {
         method: 'POST',
         body: formData,
       });
@@ -88,7 +88,12 @@ export function PhotoUpload({ mediaUrls, onChange }: PhotoUploadProps) {
       }
     } catch (err) {
       console.error('Photo upload error:', err);
-      setError('Network error. Please check your connection and try again.');
+      const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+      setError(
+        offline
+          ? "You're offline. Reconnect and try again — your photo wasn't uploaded."
+          : 'Network error. Please check your connection and try again.'
+      );
     } finally {
       setTimeout(() => setUploadProgress(0), 400);
       setUploading(false);

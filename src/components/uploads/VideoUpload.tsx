@@ -67,7 +67,7 @@ export function VideoUpload({ mediaUrls, onChange, type }: VideoUploadProps) {
         setUploadProgress(p => (p < 90 ? p + 3 : p));
       }, 300);
 
-      const res = await apiFetch('/api/upload', {
+      const res = await apiFetch('/api/uploads', {
         method: 'POST',
         body: formData,
       });
@@ -85,7 +85,12 @@ export function VideoUpload({ mediaUrls, onChange, type }: VideoUploadProps) {
       }
     } catch (err) {
       console.error('Video upload error:', err);
-      setError('Network error. Please check your connection and try again.');
+      const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+      setError(
+        offline
+          ? "You're offline. Reconnect and try again — your video wasn't uploaded."
+          : 'Network error. Please check your connection and try again.'
+      );
     } finally {
       setTimeout(() => setUploadProgress(0), 500);
       setUploading(false);

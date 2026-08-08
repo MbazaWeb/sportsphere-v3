@@ -17,7 +17,7 @@ import PullToRefresh from '@/components/layout/PullToRefresh';
 
 // Types
 interface ApiUser {
-  id: string; name: string; handle: string; avatarInitials: string;
+  id: string; name: string; handle: string; avatarUrl?: string | null; avatarInitials: string;
   isVerified: boolean; coverGradient: string; bio: string; role: string;
   location: string; followerCount: number; followingCount: number;
   postCount: number; registeredAt: string; verificationStatus: string;
@@ -53,8 +53,8 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [liveMatches, setLiveMatches] = useState<ApiMatch[]>([]);
   const [posts, setPosts] = useState<ApiPost[]>([]);
-  const [teams, setTeams] = useState<Array<{ id: string; name: string; handle: string; avatarInitials: string | null; coverGradient: string }>>([]);
-  const [leaderboard, setLeaderboard] = useState<Array<{ id: string; rank: number; name: string; handle: string; avatarInitials: string | null; points: number; isVerified: boolean; role: string }>>([]);
+  const [teams, setTeams] = useState<Array<{ id: string; name: string; handle: string; avatarUrl?: string | null; avatarInitials: string | null; coverGradient: string }>>([]);
+  const [leaderboard, setLeaderboard] = useState<Array<{ id: string; rank: number; name: string; handle: string; avatarUrl?: string | null; avatarInitials: string | null; points: number; isVerified: boolean; role: string }>>([]);
   const [spotlightItems, setSpotlightItems] = useState<ApiSpotlightItem[]>([]);
   const [loading, setLoading] = useState(true);
   const setViewingUser = useUIStore((s) => s.setViewingUser);
@@ -214,8 +214,12 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                   <span className={cn('w-5 text-center text-sm font-black', item.rank === 1 ? 'text-gold' : item.rank === 2 ? 'text-gray-300' : item.rank === 3 ? 'text-orange-400' : 'text-muted-foreground')}>
                     {item.rank}
                   </span>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/10 text-xs font-bold text-gold">
-                    {item.avatarInitials || item.name.slice(0, 2).toUpperCase()}
+                  <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gold/10 text-xs font-bold text-gold flex-shrink-0">
+                    {item.avatarUrl ? (
+                      <img src={item.avatarUrl} alt={item.name} className="h-full w-full object-cover" />
+                    ) : (
+                      item.avatarInitials || item.name.slice(0, 2).toUpperCase()
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-white truncate">{item.name}</p>
@@ -247,8 +251,12 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                   onClick={() => openTeamByHandle(team.handle)}
                   className="flex-shrink-0 flex items-center gap-2 rounded-xl bg-surface border border-surface-border px-3 py-2 text-sm font-medium text-white hover:border-gold/30 transition-colors"
                 >
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gold/10 text-[10px] font-bold text-gold">
-                    {team.avatarInitials || team.name.slice(0, 2).toUpperCase()}
+                  <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-gold/10 text-[10px] font-bold text-gold flex-shrink-0">
+                    {team.avatarUrl ? (
+                      <img src={team.avatarUrl} alt={team.name} className="h-full w-full object-cover" />
+                    ) : (
+                      team.avatarInitials || team.name.slice(0, 2).toUpperCase()
+                    )}
                   </div>
                   {team.name}
                 </button>

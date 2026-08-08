@@ -14,9 +14,13 @@ export function ProfileInfo({ user, role }: ProfileInfoProps) {
   return (
     <div className="relative -mt-14 px-4">
       <div className="flex items-end gap-4">
-        <div className={cn('flex h-24 w-24 flex-shrink-0 items-center justify-center rounded-full border-4 border-background text-2xl font-bold relative',
+        <div className={cn('flex h-24 w-24 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-background text-2xl font-bold relative',
           user.verified ? 'bg-gold text-black' : 'bg-surface-elevated text-white')}>
-          {user.avatar}
+          {user.avatarUrl ? (
+            <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
+          ) : (
+            user.avatar
+          )}
           {user.verified && (
             <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-background">
               <ShieldCheck className="h-5 w-5 text-gold" />

@@ -68,7 +68,7 @@ export default function UserProfileViewer() {
           <ProfileTabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
           <div className="p-4 flex flex-col gap-3 pb-20">
             {activeTab === 'overview' && <OverviewTab apiUser={apiUser} user={viewingUser} role={role} />}
-            {activeTab === 'feeds' && <FeedsTab posts={userPosts} loading={loading} avatar={viewingUser.avatar} name={viewingUser.name} verified={viewingUser.verified} formatTime={formatTime} />}
+            {activeTab === 'feeds' && <FeedsTab posts={userPosts} loading={loading} avatar={viewingUser.avatar} avatarUrl={viewingUser.avatarUrl} name={viewingUser.name} verified={viewingUser.verified} formatTime={formatTime} />}
             {activeTab === 'shop' && <ShopTab />}
             {activeTab === 'about' && <AboutTab apiUser={apiUser} user={viewingUser} role={role} />}
             {activeTab === 'stats' && <StatsTab role={role} apiUser={apiUser} />}

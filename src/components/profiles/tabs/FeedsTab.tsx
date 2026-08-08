@@ -8,13 +8,14 @@ import type { ApiPost } from '../types';
 interface FeedsTabProps {
   posts: ApiPost[];
   loading: boolean;
-  avatar: string;
+  avatar: string;          // initials fallback (or URL if avatarUrl not provided)
+  avatarUrl?: string | null;  // real avatar image URL
   name: string;
   verified: boolean;
   formatTime: (date: string) => string;
 }
 
-export function FeedsTab({ posts, loading, avatar, name, verified, formatTime }: FeedsTabProps) {
+export function FeedsTab({ posts, loading, avatar, avatarUrl, name, verified, formatTime }: FeedsTabProps) {
   const [feedsSubtab, setFeedsSubtab] = useState<'posts' | 'media'>('posts');
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
 
@@ -40,7 +41,13 @@ export function FeedsTab({ posts, loading, avatar, name, verified, formatTime }:
           posts.map((post) => (
             <article key={post.id} className="glass-card rounded-xl p-4 glass-card-hover">
               <div className="flex items-center gap-2 mb-2">
-                <div className={cn('flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold', verified ? 'bg-gold text-black' : 'bg-surface text-white')}>{avatar}</div>
+                <div className={cn('flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-xs font-bold flex-shrink-0', verified ? 'bg-gold text-black' : 'bg-surface text-white')}>
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt={name} className="h-full w-full object-cover" />
+                  ) : (
+                    avatar
+                  )}
+                </div>
                 <span className="text-sm font-bold text-white">{name}</span>
                 <span className="text-xs text-muted-foreground">· {formatTime(post.createdAt)}</span>
               </div>

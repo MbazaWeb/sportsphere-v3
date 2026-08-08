@@ -11,7 +11,7 @@ import { apiUserToViewing } from '@/types';
 
 // Types from parent
 interface ApiUser {
-  id: string; name: string; handle: string; avatarInitials: string;
+  id: string; name: string; handle: string; avatarUrl?: string | null; avatarInitials: string;
   isVerified: boolean; coverGradient: string; bio: string; role: string;
   location: string; followerCount: number; followingCount: number;
   postCount: number; registeredAt: string; verificationStatus: string;
@@ -135,9 +135,13 @@ export function TrendingTab() {
         return (
           <article key={post.id} className="glass-card rounded-2xl p-4 glass-card-hover">
             <button onClick={() => setViewingUser(fu)} className="mb-2 flex items-center gap-3 text-left w-full">
-              <div className={cn('flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold',
+              <div className={cn('flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-xs font-bold flex-shrink-0',
                 fu.verified ? 'bg-gold text-black' : 'bg-surface text-white')}>
-                {fu.avatar}
+                {fu.avatarUrl ? (
+                  <img src={fu.avatarUrl} alt={fu.name} className="h-full w-full object-cover" />
+                ) : (
+                  fu.avatar || fu.name.slice(0, 2).toUpperCase()
+                )}
               </div>
               <div>
                 <div className="flex items-center gap-1">

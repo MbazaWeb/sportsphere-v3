@@ -64,11 +64,12 @@ export interface MockUserData {
   coverGradient: string;
 }
 
-// API user shape — matches DB User model output from /api/users
+// API user shape — matches DB User model output from /api/users and /api/feed
 export interface ApiUser {
   id: string;
   name: string;
   handle: string;
+  avatarUrl?: string | null;
   avatarInitials: string | null;
   isVerified: boolean;
   emailVerified?: boolean;
@@ -86,12 +87,14 @@ export interface ApiUser {
 }
 
 // ViewingUser — used by uiStore when opening a profile overlay
-// Maps from ApiUser shape for display
+// Maps from ApiUser shape for display. `avatar` may be a URL (rendered as <img>)
+// or a 2-letter initial string (rendered as text).
 export interface ViewingUser {
   id: string;
   name: string;
   handle: string;
-  avatar: string;       // avatarInitials
+  avatar: string;       // avatarUrl OR avatarInitials (caller decides how to render)
+  avatarUrl?: string | null; // raw URL when available, for <img src>
   verified: boolean;    // isVerified
   coverGradient: string;
   bio: string;
@@ -105,12 +108,17 @@ export interface ViewingUser {
 }
 
 // Helper to map ApiUser → ViewingUser
+// Preserves avatarUrl when present so callers can render a real <img>;
+// falls back to initials (and then to the first 2 letters of the name) for
+// the text-avatar path.
 export function apiUserToViewing(u: ApiUser, isFollowing = false): ViewingUser {
+  const fallback = u.avatarInitials || (u.name ? u.name.slice(0, 2).toUpperCase() : '??');
   return {
     id: u.id,
     name: u.name,
     handle: u.handle,
-    avatar: u.avatarInitials || u.name.slice(0, 2).toUpperCase(),
+    avatar: u.avatarUrl || fallback,
+    avatarUrl: u.avatarUrl || null,
     verified: u.isVerified,
     coverGradient: u.coverGradient || 'from-emerald-600 to-emerald-900',
     bio: u.bio || '',
