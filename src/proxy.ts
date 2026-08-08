@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Protect /sportsphere/admin routes
+  // Protect /admin routes — redirect to home if no session
   if (pathname.startsWith("/admin")) {
     const sessionCookie = request.cookies.get("ss_session");
     if (!sessionCookie || !sessionCookie.value) {
-      const loginUrl = new URL("/", request.url);
-      loginUrl.searchParams.set("reason", "session_expired");
-      return NextResponse.redirect(loginUrl);
+      return NextResponse.redirect(new URL("/", request.url));
     }
   }
 

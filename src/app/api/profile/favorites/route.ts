@@ -32,10 +32,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }
 
-    const { targetType, targetName, targetHandle } = await request.json();
+    const { targetType, targetName, targetHandle, targetId } = await request.json();
 
-    if (!targetType || !targetName) {
-      return NextResponse.json({ error: 'targetType and targetName are required.' }, { status: 400 });
+    if (!targetType || !targetName || !targetId) {
+      return NextResponse.json({ error: 'targetType, targetName and targetId are required.' }, { status: 400 });
     }
 
     const validTypes = ['team', 'player', 'coach', 'stadium', 'league', 'national_team', 'competition'];
@@ -45,16 +45,17 @@ export async function POST(request: NextRequest) {
 
     const favorite = await db.userFavorite.upsert({
       where: {
-        userId_targetType_targetName: {
+        userId_targetType_targetId: {
           userId,
           targetType: String(targetType),
-          targetName: String(targetName),
+          targetId: String(targetId),
         },
       },
-      update: { targetHandle: targetHandle || null },
+      update: { targetName: String(targetName), targetHandle: targetHandle || null },
       create: {
         userId,
         targetType: String(targetType),
+        targetId: String(targetId),
         targetName: String(targetName),
         targetHandle: targetHandle || null,
       },
