@@ -25,6 +25,7 @@ export default function LoginModal() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
 
@@ -32,6 +33,7 @@ export default function LoginModal() {
 
   const handleLogin = async () => {
     setError('');
+    setNotFound(false);
     setLoading(true);
     try {
       const res = await apiFetch('/api/auth', {
@@ -41,7 +43,8 @@ export default function LoginModal() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Login failed');
+        if (data.notFound) setNotFound(true);
+        else setError(data.error || 'Login failed');
         setLoading(false);
         return;
       }
@@ -112,6 +115,18 @@ export default function LoginModal() {
               <X className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
+
+          {notFound && (
+            <div className="mb-3 rounded-xl bg-blue-500/10 border border-blue-500/20 p-3">
+              <p className="text-xs text-blue-300 mb-2">No account found with that email or handle.</p>
+              <button
+                onClick={openRegister}
+                className="w-full rounded-lg bg-gold py-2 text-xs font-bold text-black hover:bg-gold/90 transition-colors"
+              >
+                Create an Account
+              </button>
+            </div>
+          )}
 
           {error && (
             <div className="mb-3 rounded-xl bg-red-500/10 border border-red-500/20 p-3">

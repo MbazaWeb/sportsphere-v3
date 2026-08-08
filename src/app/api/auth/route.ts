@@ -37,18 +37,18 @@ export async function POST(request: NextRequest) {
           },
     });
 
-    // Same error for "no user" and "wrong password" — don't leak existence.
+    // User not found — prompt to register
     if (!user || !user.passwordHash) {
       return NextResponse.json(
-        { error: 'Invalid email or password.' },
-        { status: 401 }
+        { error: 'No account found with that email or handle. Would you like to create one?', notFound: true },
+        { status: 404 }
       );
     }
 
     const valid = await verifyPassword(password, user.passwordHash);
     if (!valid) {
       return NextResponse.json(
-        { error: 'Invalid email or password.' },
+        { error: 'Incorrect password. Please try again.' },
         { status: 401 }
       );
     }

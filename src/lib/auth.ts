@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import type { NextRequest } from 'next/server';
 import { safeJsonParse } from './json';
+import { SESSION_COOKIE, verifySession } from './session';
 
 // Re-export everything edge-safe from session.ts so callers have one import.
 // `lib/auth.ts` itself is server-only (it pulls in bcryptjs); middleware
