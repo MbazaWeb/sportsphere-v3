@@ -1,0 +1,66 @@
+{
+  "cli": {
+    "version": ">= 15.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": false,
+        "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "channel": "development",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://104.152.50.173:3002/sportsphere"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview",
+      "ios": {
+        "simulator": false
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://104.152.50.173:3002/sportsphere"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "channel": "production",
+      "ios": {
+        "applicationArchivePath": "build/Sportsphere.ipa"
+      },
+      "android": {
+        "buildType": "app-bundle",
+        "applicationArchivePath": "build/Sportsphere.aab"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://104.152.50.173:3002/sportsphere"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "your-apple-id@email.com",
+        "ascAppId": "your-app-store-connect-app-id",
+        "appleTeamId": "your-apple-team-id"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account-key.json",
+        "package": "com.sportsphere.app"
+      }
+    }
+  },
+  "update": {
+    "url": "https://u.expo.dev/projectId"
+  }
+}

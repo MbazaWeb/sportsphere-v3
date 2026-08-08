@@ -26,6 +26,15 @@
       "output": "server",
       "favicon": "./assets/favicon.png"
     },
+    "updates": {
+      "url": "https://u.expo.dev/your-project-id",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "plugins": [
       "expo-router",
       [
@@ -37,7 +46,8 @@
           "backgroundColor": "#0A1628"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-updates"
     ],
     "experiments": {
       "typedRoutes": true
@@ -47,7 +57,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": ""
+        "projectId": "your-project-id"
       }
     }
   }
