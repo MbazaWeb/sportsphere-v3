@@ -55,6 +55,10 @@ if [ -d "$APP_DIR/.git" ]; then
   find . -path ./node_modules -prune -o -path ./.next -prune -o \
     -name 'middleware.js' -not -path '*/node_modules/*' -not -path '*/.next/*' \
     -not -path '*/mobile/*' -print -delete 2>/dev/null || true
+  # Remove root-level proxy.ts — only src/proxy.ts should exist. A root
+  # proxy.ts that re-exports from src/ breaks the build with "Next.js can't
+  # recognize the exported `config` field in route. It mustn't be reexported."
+  rm -f ./proxy.ts ./proxy.js 2>/dev/null || true
   # Also collapse accidental nested src/src/ directory if present
   # (caused by a bad cp/rsync in a previous deploy — Next.js then sees
   # ./src/src/proxy.ts as a second proxy file)
