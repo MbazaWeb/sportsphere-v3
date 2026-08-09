@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { hashResetToken } from '@/lib/auth-helpers';
 import {
   hashPassword,
   isResetTokenValid,
@@ -30,8 +31,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Hash the submitted token before comparing — the DB stores sha-256 hashes,
+    // not raw tokens (Fix #4 from the security audit).
+    const hashedSubmitted = hashResetToken(String(token).trim());
+
     const user = await db.user.findFirst({
-      where: { resetToken: String(token).trim() },
+      where: {
+        resetToken: hashedSubmitted,
+        resetTokenExpiry: { gt: new Date() },
+      },
     });
 
     if (!user || !isResetTokenValid(user.resetTokenExpiry)) {

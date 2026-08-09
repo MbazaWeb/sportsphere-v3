@@ -12,7 +12,7 @@ import { sendPasswordResetEmail } from '@/lib/email';
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
 import { generateResetToken, hashResetToken, safeCompare } from "@/lib/auth-helpers";
-import { db } from "@/db"; // adjust to your prisma/db import
+import { db } from "@/lib/db";
 
 // Shared success message — never reveal whether the email exists.
 const RESPONSE = {
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
   const user = await db.user.findUnique({
     where: { email: email.toLowerCase().trim() },
-    select: { id: true },
+    select: { id: true, email: true, name: true },
   });
 
   if (!user) {

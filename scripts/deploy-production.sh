@@ -44,6 +44,10 @@ if [ -d "$APP_DIR/.git" ]; then
   # Also remove untracked junk that may have come back via stray shell redirects.
   # `-` and `72` and `ipconfig` etc. are never legitimate source files.
   git clean -fd -- '-' ipconfig next sudo sportsphere@2.0.0 tsc-errors.txt tsconfig.tsbuildinfo 72 seed.sql 2>/dev/null || true
+  # Remove legacy middleware.ts (Next.js 16 uses proxy.ts instead).
+  # This file is untracked on the VPS from a previous deploy and breaks the
+  # build with "Middleware is missing expected function export name".
+  rm -f src/middleware.ts middleware.ts 2>/dev/null || true
 else
   echo "[1/9] Cloning..."
   sudo mkdir -p "$APP_DIR"
@@ -59,7 +63,9 @@ cat > .env << ENV
 NODE_ENV=production
 DATABASE_URL="${DATABASE_URL}"
 SESSION_SECRET="${SESSION_SECRET}"
+JWT_SECRET="${SESSION_SECRET}"
 NEXT_PUBLIC_APP_URL=http://${VPS_IP}:${PORT}
+NEXT_PUBLIC_BASE_URL=http://${VPS_IP}:${PORT}
 NEXT_PUBLIC_APP_NAME=SportSphere
 PORT=${PORT}
 ENV

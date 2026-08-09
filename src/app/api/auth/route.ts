@@ -1,103 +1,140 @@
 /**
- * app/api/auth/login/route.ts
+ * POST /api/auth — Login
  *
- * FIXES APPLIED:
- *   - Rate limiting added: max 10 attempts per IP per 15 minutes  (Fix #3)
- *   - Session cookie now uses Secure flag when NODE_ENV=production (Fix #2,#5)
+ * Accepts email OR handle + password. Returns the public user + session JWT.
+ * Sets the ss_session httpOnly cookie (web) AND returns the token in the JSON
+ * body (mobile — RN can't use cookies, stores the token in expo-secure-store).
  *
- * ─── HOW TO APPLY ─────────────────────────────────────────────────────────
- * 1. Copy the rate-limit block (lines marked ADD) into your existing
- *    login route handler.
- * 2. Update the cookie() call to include the Secure flag (see bottom).
- *
- * This file shows the complete pattern; adapt field names / DB calls
- * to match your existing implementation.
+ * Canonical session system:
+ *   - Secret: SESSION_SECRET (env, required in production)
+ *   - Cookie: ss_session
+ *   - Sign:   signSession() from @/lib/session
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { rateLimit } from "@/lib/rate-limit";
-import { db } from "@/db"; // adjust to your prisma/db import
-import bcrypt from "bcryptjs";
-import { SignJWT } from "jose";
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
+import {
+  signSession,
+  buildSessionCookie,
+  SESSION_COOKIE,
+  SESSION_MAX_AGE,
+  serializePublicUser,
+  verifyPassword,
+  type SessionPayload,
+} from '@/lib/auth';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? "change-me-in-production"
-);
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
-  // ── ADD: Rate limiting ──────────────────────────────────────────────────
+  // ── Rate limiting: 10 attempts per IP per 15 minutes ────────────────────
   const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
-    request.headers.get("x-real-ip") ??
-    "unknown";
+    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
+    request.headers.get('x-real-ip') ??
+    'unknown';
 
-  const { success, remaining, resetAt } = rateLimit(ip, {
+  const { success, resetAt } = rateLimit(ip, {
     maxRequests: 10,
-    windowMs: 15 * 60 * 1000, // 15 minutes
+    windowMs: 15 * 60 * 1000,
   });
 
   if (!success) {
     return NextResponse.json(
-      { error: "Too many login attempts. Please try again later." },
+      { error: 'Too many login attempts. Please try again later.' },
       {
         status: 429,
         headers: {
-          "Retry-After": String(Math.ceil((resetAt - Date.now()) / 1000)),
-          "X-RateLimit-Limit": "10",
-          "X-RateLimit-Remaining": "0",
+          'Retry-After': String(Math.ceil((resetAt - Date.now()) / 1000)),
+          'X-RateLimit-Limit': '10',
+          'X-RateLimit-Remaining': '0',
         },
       }
     );
   }
-  // ── END rate limiting ───────────────────────────────────────────────────
 
-  const body = await request.json();
-  const { email, password } = body;
+  // ── Parse body ──────────────────────────────────────────────────────────
+  const body = await request.json().catch(() => ({}));
+  const { email, handle, password } = body as {
+    email?: string;
+    handle?: string;
+    password?: string;
+  };
 
-  if (!email || !password) {
+  const identifier = (email ?? handle ?? '').trim();
+  if (!identifier || !password) {
     return NextResponse.json(
-      { error: "Email and password are required." },
+      { error: 'Email/handle and password are required.' },
       { status: 400 }
     );
   }
 
-  // Always return the same generic message regardless of whether the
-  // email exists — prevents user enumeration.
-  const GENERIC_ERROR = "Invalid email or password.";
+  // Generic error — never reveal whether the email exists (prevents enumeration)
+  const GENERIC_ERROR = 'Invalid email/handle or password.';
 
-  const user = await db.user.findUnique({
-    where: { email: email.toLowerCase().trim() },
-    select: { id: true, email: true, passwordHash: true, role: true },
+  // ── Look up user by email OR handle ─────────────────────────────────────
+  const isEmail = identifier.includes('@');
+  const user = await db.user.findFirst({
+    where: isEmail
+      ? { email: identifier.toLowerCase() }
+      : { handle: { equals: identifier, mode: 'insensitive' } },
+    select: {
+      id: true, name: true, email: true, handle: true,
+      passwordHash: true, role: true,
+      avatarUrl: true, avatarInitials: true,
+      verificationStatus: true, isVerified: true, emailVerified: true,
+      isPro: true, proSince: true, proTier: true,
+      bio: true, location: true, coverGradient: true, coverUrl: true,
+      followerCount: true, followingCount: true, postCount: true,
+      sportsFollowing: true, roleData: true, registeredAt: true,
+      roleId: true, roleTypeId: true,
+      userRole: { select: { id: true, name: true, slug: true, icon: true, category: true } },
+      userRoleType: { select: { id: true, name: true, slug: true } },
+      userSports: { select: { sport: { select: { id: true, name: true, slug: true, icon: true, category: true, sportType: true, format: true } } } },
+    },
   });
 
-  if (!user) {
+  if (!user || !user.passwordHash) {
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 });
   }
 
-  const passwordValid = await bcrypt.compare(password, user.passwordHash);
+  const passwordValid = await verifyPassword(password, user.passwordHash);
   if (!passwordValid) {
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 });
   }
 
-  // Issue session JWT (7-day TTL)
-  const token = await new SignJWT({ userId: user.id, role: user.role })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime("7d")
-    .sign(JWT_SECRET);
+  // ── Issue session JWT ───────────────────────────────────────────────────
+  const payload: SessionPayload = {
+    sub: user.id,
+    email: user.email,
+    handle: user.handle,
+    role: user.role,
+    roleId: user.roleId,
+    roleTypeId: user.roleTypeId,
+  };
+  const token = await signSession(payload);
+  const expiresAt = Date.now() + SESSION_MAX_AGE * 1000;
 
-  const response = NextResponse.json({ ok: true });
+  // ── Build response with cookie (web) + token in body (mobile) ───────────
+  const publicUser = {
+    ...serializePublicUser(user),
+    roleName: user.userRole?.name || 'Fan',
+    roleSlug: user.userRole?.slug || 'fan',
+    roleIcon: user.userRole?.icon || '⭐',
+    roleCategory: user.userRole?.category || 'individual',
+    typeName: user.userRoleType?.name || 'Casual Fan',
+    typeSlug: user.userRoleType?.slug || 'casual',
+    sports: user.userSports.map((us) => us.sport),
+    roleProfile: {},
+  };
 
-  // ── ADD: Secure cookie flags ────────────────────────────────────────────
-  const isProduction = process.env.NODE_ENV === "production";
-  response.cookies.set("session", token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: isProduction, // only sent over HTTPS in production
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 days in seconds
-  });
-  // ── END cookie ──────────────────────────────────────────────────────────
+  const response = NextResponse.json({ user: publicUser, token, expiresAt }, { status: 200 });
+  response.headers.set('Set-Cookie', buildSessionCookie(token));
+
+  // Update lastSeenAt in the background (non-blocking)
+  db.user.update({
+    where: { id: user.id },
+    data: { lastSeenAt: new Date() },
+  }).catch(() => {});
 
   return response;
 }
