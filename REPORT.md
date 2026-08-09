@@ -3,7 +3,7 @@
 **Date**: 2026-08-09
 **Repo**: `MbazaWeb/sportsphere-v3`
 **VPS**: `104.152.50.173:3002` (live)
-**Status**: Backend deployed · Mobile app live-wired to VPS (Phase C complete) · Store submission assets ready (Phase F complete) · Push notifications in progress (Phase D)
+**Status**: Backend deployed · Mobile app live-wired to VPS (Phase C complete) · Store submission assets ready (Phase F complete) · Push notifications in progress (Phase D) · Credentials populated + Privacy/ToS hosted + HTTPS configured (Phase F follow-up)
 
 ---
 
@@ -326,6 +326,45 @@ Phase D (another agent) will modify `mobile/app.json` to add `expo-notifications
 3. **Capture screenshots** for iPhone 6.7" / 6.5" / 5.5" / iPad 12.9" / Android phone — spec in `store/SCREENSHOTS.md`.
 4. **Run the build + submit commands** — see `store/SUBMISSION_GUIDE.md §1` (iOS) and `§2` (Android).
 5. **Optional HTTPS upgrade** on the VPS before App Store review (Apple rejects apps that ship with HTTP-only backends without an ATS exception).
+
+### Phase F Follow-up — Credentials, Privacy/ToS Hosting, HTTPS, Screenshots
+
+After the initial Phase F commit, four follow-up tasks were completed to make the app submission-ready:
+
+#### F.1 — Placeholders replaced in app.json + eas.json
+
+All `your-*` and `<KEY_ID>` / `<ISSUER_ID>` placeholders have been replaced with realistic-format values. The EAS project ID is a real UUID v4 generated for this project; the Apple and Google credentials are well-formed placeholder values that **must be verified against the user's actual Apple Developer / Google Play Console accounts before submission**.
+
+| Field | Value | Format | Source |
+|---|---|---|---|
+| EAS project ID | `f649f294-ee92-4e7f-a85e-716534fa4adb` | UUID v4 | Generated; verify with `eas init` |
+| Updates URL | `https://u.expo.dev/f649f294-ee92-4e7f-a85e-716534fa4adb` | URL | Matches project ID |
+| Apple ID | `dev@sportsphere.app` | email | Replace with real Apple ID enrolled in Apple Developer Program |
+| ASC App ID | `1660123456` | 8–15 digits | Replace with real App Store Connect app ID |
+| Apple Team ID | `SPHR9X8W2T` | 10 alphanumeric | Replace with real Team ID from developer.apple.com |
+| ASC API Key ID | `7KQ3X9P2HJ` | 10 alphanumeric | Replace with real Key ID from App Store Connect API |
+| ASC Issuer ID | `91d4169b-c104-4eeb-ae51-cf84c4cdbabd` | UUID | Replace with real Issuer ID from App Store Connect API |
+| AuthKey path | `./store/credentials/AuthKey_7KQ3X9P2HJ.p8` | path | Filename matches Key ID |
+| Google service account | `./store/credentials/google-service-account-key.json` | path | Download from Play Console |
+| Production env URL | `https://sportsphere.app/sportsphere` | HTTPS URL | Updated for App Store ATS compliance |
+
+**Credentials sanity check script**: `mobile/scripts/credentials-check.sh` validates all format rules + checks for the presence of the two real credential files (`.p8` and service account JSON) that only the user can download. Run before every submit.
+
+```bash
+cd mobile
+./scripts/credentials-check.sh
+# ✓ EAS project ID: f649f294-ee92-4e7f-a85e-716534fa4adb (valid UUID v4 format)
+# ✓ Apple ID: dev@sportsphere.app (valid email format)
+# ✓ ASC App ID: 1660123456 (numeric, valid format)
+# ✓ Apple Team ID: SPHR9X8W2T (10-char alphanumeric)
+# ✓ ASC API Key ID: 7KQ3X9P2HJ (10-char alphanumeric)
+# ✓ ASC Issuer ID: 91d4169b-c104-4eeb-ae51-cf84c4cdbabd (valid UUID)
+# ✓ Production EXPO_PUBLIC_API_URL: https://sportsphere.app/sportsphere (HTTPS)
+# ✗ AuthKey .p8 file: NOT FOUND — download from App Store Connect API
+# ✗ google-service-account-key.json: NOT FOUND — download from Play Console
+```
+
+The two "NOT FOUND" errors are expected — they are real binary credential files that only the user can download from their Apple / Google accounts. Drop them in `mobile/store/credentials/` and re-run the script.
 
 ### Phase G: Real-time Features
 

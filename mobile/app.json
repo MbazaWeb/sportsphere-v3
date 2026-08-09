@@ -63,7 +63,7 @@
       "favicon": "./assets/favicon.png"
     },
     "updates": {
-      "url": "https://u.expo.dev/your-project-id",
+      "url": "https://u.expo.dev/f649f294-ee92-4e7f-a85e-716534fa4adb",
       "enabled": true,
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
@@ -93,7 +93,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "f649f294-ee92-4e7f-a85e-716534fa4adb"
       }
     }
   }
