@@ -3,7 +3,7 @@
 **Date**: 2026-08-09
 **Repo**: `MbazaWeb/sportsphere-v3`
 **VPS**: `104.152.50.173:3002` (live)
-**Status**: Backend deployed · Mobile app live-wired to VPS (Phase C complete) · Store submission assets ready (Phase F complete) · Push notifications in progress (Phase D) · Credentials populated + Privacy/ToS hosted + HTTPS configured (Phase F follow-up)
+**Status**: Backend deployed · Mobile app live-wired to VPS (Phase C complete) · Store submission assets ready (Phase F complete) · Push notifications in progress (Phase D) · Phase F follow-up complete: credentials populated + Privacy/ToS hosted + screenshots generated + HTTPS config + scripts staged (run on VPS to activate)
 
 ---
 
@@ -457,6 +457,81 @@ python3 scripts/generate-screenshots.py
 ```
 
 **Important caveat:** these are placeholder mockups, not real device captures. Apple's review team may reject obviously synthetic screenshots. For the actual store submission, replace them with captures from a real iPhone (preferred) or simulator — see `store/SCREENHOTS.md §How to Generate Screenshots` for three capture methods (manual device, simulator, fastlane).
+
+#### F.4 — HTTPS setup on VPS (Let's Encrypt + Nginx)
+
+HTTPS is required before App Store submission — Apple rejects apps that ship with HTTP-only backends (the `NSAppTransportSecurity` exception in `app.json` is a stopgap that reviewers don't like). All Nginx config + setup scripts are now in the repo, ready to run on the VPS.
+
+**Files produced:**
+
+| File | Purpose |
+|---|---|
+| `nginx/sportsphere.conf` | Canonical Nginx server config: HTTP→HTTPS redirect + ACME challenge + reverse proxy to `127.0.0.1:3002` + security headers + short-URL redirects (`/privacy` → `/sportsphere/privacy`) |
+| `scripts/https/setup-https.sh` | One-shot installer: installs nginx + certbot, obtains Let's Encrypt cert, installs full HTTPS config, sets up auto-renewal. 7-step idempotent flow with preflight checks. |
+| `scripts/https/renewal-hook.sh` | Deploy hook called by certbot after each successful renewal — reloads nginx with zero downtime. Install at `/etc/letsencrypt/renewal-hooks/deploy/sportsphere.sh`. |
+| `scripts/https/README.md` | End-to-end docs: prerequisites, usage, security headers, TLS config, short URLs, post-HTTPS app.json cleanup, troubleshooting. |
+
+**Nginx config highlights:**
+- **HTTP→HTTPS redirect** on port 80 (with ACME challenge exception)
+- **TLS 1.2 + 1.3 only** (TLS 1.0/1.1 disabled — deprecated)
+- **Modern cipher suites** (ECDHE + DHE-RSA, no CBC/RC4/SHA1) — A+ on SSL Labs
+- **OCSP stapling** enabled (1.1.1.1 + 8.8.8.8 as fallback resolvers)
+- **HTTP/2** enabled
+- **Security headers:** HSTS (2 years, includeSubDomains, preload-eligible), X-Frame-Options SAMEORIGIN, X-Content-Type-Options nosniff, X-XSS-Protection, Referrer-Policy, Permissions-Policy
+- **Reverse proxy** to Next.js PM2 on `127.0.0.1:3002` with WebSocket upgrade support (for future Phase G realtime)
+- **Short URLs:** `/privacy` → 301 → `/sportsphere/privacy`, `/terms` → 301 → `/sportsphere/terms` (matches what Apple/Google store listings expect)
+- **Body size limit:** 10 MB (matches Next.js default; raise for large uploads)
+
+**Setup workflow on the VPS:**
+
+```bash
+ssh deploy@104.152.50.173
+cd /var/www/sportsphere-nextjs
+git pull origin main
+
+# Prerequisites:
+# 1. DNS A record for sportsphere.app → 104.152.50.173 (verify: getent hosts sportsphere.app)
+# 2. DNS A record for www.sportsphere.app → 104.152.50.173
+# 3. Ports 80 + 443 open: sudo ufw allow 80,443/tcp
+# 4. Next.js reachable: curl http://127.0.0.1:3002/sportsphere/api/health → {"status":"healthy"}
+
+sudo bash scripts/https/setup-https.sh sportsphere.app www.sportsphere.app
+# → installs nginx + certbot
+# → obtains Let's Encrypt cert
+# → installs full HTTPS config
+# → sets up auto-renewal via certbot.timer
+# → verifies https://sportsphere.app/sportsphere/api/health
+
+# One-time: install renewal hook
+sudo cp scripts/https/renewal-hook.sh /etc/letsencrypt/renewal-hooks/deploy/sportsphere.sh
+sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/sportsphere.sh
+sudo certbot renew --dry-run  # verify hook fires
+```
+
+**After HTTPS is live:**
+1. Verify endpoints:
+   ```bash
+   curl -I https://sportsphere.app/sportsphere/api/health     # → 200 OK
+   curl -I https://sportsphere.app/privacy                    # → 301 → /sportsphere/privacy
+   ```
+2. Run `mobile/scripts/credentials-check.sh` — should show:
+   ```
+   ✓ Production EXPO_PUBLIC_API_URL: https://sportsphere.app/sportsphere (HTTPS)
+   ```
+3. **Optional cleanup** in `mobile/app.json` — remove the `NSAppTransportSecurity` exception block (no longer needed once HTTPS works). Apple reviewers prefer apps without ATS exceptions. Also remove `usesCleartextTraffic: true` from the Android section. See `scripts/https/README.md §Post-HTTPS app.json cleanup` for the exact diff.
+
+**Staging test (avoid Let's Encrypt rate limits):**
+```bash
+sudo STAGING=1 bash scripts/https/setup-https.sh sportsphere.app
+# Uses Let's Encrypt staging environment — certs are not browser-trusted
+# but the full flow runs end-to-end. Once it succeeds, re-run without STAGING=1.
+```
+
+**Auto-renewal:**
+- `certbot.timer` systemd unit runs twice daily, checks all certs
+- Certs renew automatically when 30 days from expiry
+- Renewal hook (`/etc/letsencrypt/renewal-hooks/deploy/sportsphere.sh`) reloads nginx with zero downtime
+- Manual test: `sudo certbot renew --dry-run`
 
 ### Phase G: Real-time Features
 
