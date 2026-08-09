@@ -1,11 +1,12 @@
 /**
  * PM2 ecosystem config — SportSphere v3
  *
- * Usage:
- *   pm2 start ecosystem.config.js
- *   pm2 reload ecosystem.config.js   # zero-downtime reload
- *   pm2 save                         # persist across reboots
- *   pm2 startup                      # register pm2 with systemd
+ * Usage on VPS:
+ *   git pull origin main
+ *   npm run build
+ *   pm2 start ecosystem.config.cjs --update-env
+ *   pm2 save
+ *   pm2 startup   # run once to register with systemd
  */
 module.exports = {
   apps: [
@@ -19,7 +20,9 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3002,
-        HOSTNAME: '127.0.0.1',
+        // 0.0.0.0 — bind on all interfaces so Nginx can reach the app.
+        // Nginx proxies 127.0.0.1:3002 → this process.
+        HOSTNAME: '0.0.0.0',
       },
       // Logging
       out_file: '/var/log/pm2/sportsphere-out.log',
@@ -31,7 +34,6 @@ module.exports = {
       restart_delay: 3000,
       max_restarts: 10,
       min_uptime: '10s',
-      // Watch (disable in production — use deployments instead)
       watch: false,
     },
   ],
