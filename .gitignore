@@ -66,3 +66,8 @@ skills/
 
 # Tool result artifacts
 tool-results/
+.session-secret
+backup_*.sql
+.env
+node_modules/
+.next/
