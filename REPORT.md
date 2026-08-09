@@ -3,7 +3,7 @@
 **Date**: 2026-08-09
 **Repo**: `MbazaWeb/sportsphere-v3`
 **VPS**: `104.152.50.173:3002` (live)
-**Status**: Backend deployed · Mobile app live-wired to VPS (Phase C complete) · Store submission assets ready (Phase F complete) · Push notifications in progress (Phase D) · Phase F follow-up complete: credentials populated + Privacy/ToS hosted + screenshots generated + HTTPS config + scripts staged (run on VPS to activate) · Post-HTTPS app.json cleanup complete (ATS exception + cleartext traffic removed — app is now HTTPS-only and App Store review-ready) · HTTPS setup script hardened after first VPS run (F.6 — removed `--stapling-ocsp` for certbot 1.21 compat + added DNS-vs-VPS-IP preflight sanity check) · **DNS ISSUE FOUND on first VPS run**: `sportsphere.app` and `www.sportsphere.app` currently resolve to AWS Global Accelerator IPs (`13.248.243.5` + `76.223.105.230`), NOT the VPS (`104.152.50.173`) — Let's Encrypt verification cannot proceed until the user repoints DNS at the VPS
+**Status**: Backend deployed · Mobile app live-wired to VPS (Phase C complete) · Store submission assets ready (Phase F complete) · Push notifications in progress (Phase D) · Phase F follow-up complete: credentials populated + Privacy/ToS hosted + screenshots generated + HTTPS config + scripts staged (run on VPS to activate) · Post-HTTPS app.json cleanup complete (ATS exception + cleartext traffic removed — app is now HTTPS-only and App Store review-ready) · HTTPS setup script hardened after first + second VPS run (F.6 — removed `--stapling-ocsp` for certbot 1.21 compat + added DNS-vs-VPS-IP preflight sanity check + IPv4/IPv6 split detection so A records aren't compared against the VPS's IPv6) · **DNS ISSUE FOUND on VPS run**: `sportsphere.app` and `www.sportsphere.app` currently resolve to AWS Global Accelerator IPs (`13.248.243.5` + `76.223.105.230`), NOT the VPS (`104.152.50.173` IPv4 / `2602:fc16:6:4::bd8c` IPv6) — Let's Encrypt verification cannot proceed until the user repoints DNS at the VPS
 
 ---
 
@@ -590,37 +590,41 @@ Once HTTPS is live on the VPS (via F.4's `scripts/https/setup-https.sh`), the `N
 3. Do a clean rebuild of any existing development build on your device — Apple caches ATS exceptions in the binary, so an OTA update alone won't pick up this change
 4. Verify on device: launch the app, hit the Home tab — feed should load with no network errors and no ATS warning in the device console
 
-#### F.6 — HTTPS script hardened after first VPS run (certbot compat + DNS sanity check)
+#### F.6 — HTTPS script hardened after first + second VPS run (certbot compat + DNS sanity check + IPv4/v6 split)
 
-First real VPS run of `setup-https.sh` surfaced two issues that weren't visible in the dev sandbox:
+First and second real VPS runs of `setup-https.sh` surfaced three issues that weren't visible in the dev sandbox:
 
 1. **certbot 1.21.0 on Ubuntu 22.04 doesn't support the `--stapling-ocsp` flag** — that flag was added in certbot 1.24+. The script aborted at the cert-issuance step with `certbot: error: unrecognized arguments: --stapling-ocsp`. **Fix:** removed the flag from `setup-https.sh`. OCSP stapling is still enabled — it's already configured directly in `nginx/sportsphere.conf` via `ssl_stapling on; ssl_stapling_verify on;`, so certbot doesn't need to set it up. This is the cleaner approach anyway (the certbot flag just edits nginx config to add the same directives).
 
-2. **DNS records point at AWS Global Accelerator, not the VPS** — the script's preflight (in its original form) only checked that the domain *resolved*, not that it resolved *to this VPS*. Both `sportsphere.app` and `www.sportsphere.app` currently resolve to AWS IPs (`13.248.243.5` and `76.223.105.230`), which means HTTP-01 challenge traffic from Let's Encrypt would be routed to AWS, not the VPS, and verification would fail. The script would then have proceeded to call certbot anyway and produced a confusing "challenge failed" error. **Fix:** added a preflight check that auto-detects the VPS public IP (via `ifconfig.me` / `api.ipify.org` / `icanhazip.com`) and compares each domain's resolved IP against it. If they don't match, the script aborts with a clear actionable message before touching certbot. Override is available via `SKIP_DNS_CHECK=1` for edge cases.
+2. **DNS records point at AWS Global Accelerator, not the VPS** — the script's preflight (in its original form) only checked that the domain *resolved*, not that it resolved *to this VPS*. Both `sportsphere.app` and `www.sportsphere.app` currently resolve to AWS IPs (`13.248.243.5` and `76.223.105.230`), which means HTTP-01 challenge traffic from Let's Encrypt would be routed to AWS, not the VPS, and verification would fail. The script would then have proceeded to call certbot anyway and produced a confusing "challenge failed" error. **Fix (first pass):** added a preflight check that auto-detects the VPS public IP and compares each domain's resolved IP against it. If they don't match, the script aborts with a clear actionable message before touching certbot. Override is available via `SKIP_DNS_CHECK=1` for edge cases.
+
+3. **The first-pass preflight check picked up the VPS's IPv6 instead of IPv4** — the VPS has dual-stack connectivity, and `curl ifconfig.me` preferred IPv6, returning `2602:fc16:6:4::bd8c`. The DNS records being checked were IPv4 (`13.248.243.5` / `76.223.105.230`), so the comparison always failed — and worse, the warning message told the user to "set an A record (IPv4) → 2602:fc16:6:4::bd8c (IPv6)", which is impossible (A records hold IPv4; AAAA records hold IPv6). **Fix (second pass):** detect IPv4 and IPv6 separately using `curl -4` and `curl -6` against multiple providers, collect ALL IPs returned by `getent hosts` for each domain (not just the first), and accept a match against EITHER the VPS's IPv4 OR IPv6. The warning message now correctly distinguishes A (IPv4) vs AAAA (IPv6) records and shows the right value for each. Manual override env vars: `VPS_PUBLIC_IPV4` and `VPS_PUBLIC_IPV6`.
 
 **Files changed:**
 
 | File | Change |
 |---|---|
-| `scripts/https/setup-https.sh` | Removed `--stapling-ocsp` from `CERTBOT_ARGS` (certbot 1.21 compat) with explanatory comment. Added new preflight block: auto-detects VPS public IP, compares each domain's resolved IP against it, aborts with actionable message on mismatch. Override via `SKIP_DNS_CHECK=1`. |
-| `scripts/https/README.md` | Expanded prerequisite #1 with explicit "plain A record, not CNAME, not CDN proxy" requirement + AWS Global Accelerator warning. Added two new troubleshooting sections: `--stapling-ocsp` error + "Aborting: DNS does not point at this VPS" error with step-by-step fix instructions. |
+| `scripts/https/setup-https.sh` | (1) Removed `--stapling-ocsp` from `CERTBOT_ARGS` (certbot 1.21 compat) with explanatory comment. (2) Added new preflight block: auto-detects VPS public IP, compares each domain's resolved IP against it, aborts with actionable message on mismatch. Override via `SKIP_DNS_CHECK=1`. (3) Reworked the preflight to detect IPv4 and IPv6 separately (via `curl -4` / `curl -6` against `api.ipify.org` / `ifconfig.me` / `icanhazip.com` with v4/v6-specific endpoints), collect ALL IPs from `getent hosts` (not just the first), accept a match against EITHER v4 OR v6, and emit correctly-typed A vs AAAA record advice in the warning message. Added `VPS_PUBLIC_IPV4` + `VPS_PUBLIC_IPV6` override env vars. |
+| `scripts/https/README.md` | Expanded prerequisite #1 with explicit "plain A record, not CNAME, not CDN proxy" requirement + AWS Global Accelerator warning. Added two new troubleshooting sections: `--stapling-ocsp` error + "Aborting: DNS does not point at this VPS" error with step-by-step fix instructions including A vs AAAA distinction + override env var examples. |
 
 **Verification:**
 - `bash -n scripts/https/setup-https.sh` — syntax valid
-- The preflight check now produces this output (example from the VPS run that surfaced the issue):
+- The preflight check now produces this output on the user's VPS:
   ```
   ✓ Nginx config found
-  ✓ VPS public IP detected: 104.152.50.173
+  ✓ VPS public IPs detected: 104.152.50.173 / 2602:fc16:6:4::bd8c
   ✓ DNS sportsphere.app → 13.248.243.5
-  ⚠  ↳ sportsphere.app resolves to 13.248.243.5, NOT this VPS (104.152.50.173)
+  ⚠  ↳ sportsphere.app resolves to 13.248.243.5, NONE of which match this VPS (104.152.50.173 / 2602:fc16:6:4::bd8c)
   ⚠  ↳ Let's Encrypt verification will FAIL because the challenge request
   ⚠  ↳ will be routed elsewhere (e.g. AWS Global Accelerator, Cloudflare proxy, CDN).
-  ⚠  ↳ Fix: at your DNS provider, set an A record for sportsphere.app → 104.152.50.173
-  ⚠  ↳       (not a CNAME, not a CDN/proxy — must be a plain A record to the VPS IP)
+  ⚠  ↳ Fix: at your DNS provider, set an A record (IPv4) for sportsphere.app → 104.152.50.173
+  ⚠  ↳   or: set an AAAA record (IPv6) for sportsphere.app → 2602:fc16:6:4::bd8c
+  ⚠  ↳       (not a CNAME, not a CDN/proxy — must be a plain A/AAAA record to the VPS IP)
+  ⚠  ↳ Then wait for DNS propagation (5–15 min typically) and re-run this script.
   ✓ DNS www.sportsphere.app → 76.223.105.230
-  ⚠  ↳ www.sportsphere.app resolves to 76.223.105.230, NOT this VPS (104.152.50.173)
+  ⚠  ↳ www.sportsphere.app resolves to 76.223.105.230, NONE of which match this VPS (...)
   ⚠  ↳ ...
-  ✗ Aborting: DNS does not point at this VPS. Fix the A records and retry.
+  ✗ Aborting: DNS does not point at this VPS. Fix the A/AAAA records and retry.
   ```
 
 **Action required from the user before HTTPS can be activated:**
@@ -632,11 +636,12 @@ To fix at your DNS provider (Route 53 / Cloudflare / Namecheap / etc.):
 1. Find the existing DNS record for `sportsphere.app` — likely either:
    - An **A record** pointing at `13.248.243.5` (AWS Global Accelerator), or
    - A **CNAME / ALIAS** pointing at an AWS-managed DNS name (e.g. `*.cloudfront.net` or a Global Accelerator DNS name)
-2. **Delete the existing record** and create a **plain A record** for `sportsphere.app` → `104.152.50.173` (the VPS IP)
-3. Repeat for `www.sportsphere.app` → `104.152.50.173`
-4. If using Cloudflare, make sure the proxy status is **DNS only** (grey cloud, not orange cloud) — Let's Encrypt's HTTP-01 challenge cannot traverse Cloudflare's HTTPS proxy
-5. Wait for DNS propagation (typically 5–15 min — verify with `dig +short sportsphere.app @1.1.1.1` from a different network)
-6. On the VPS, pull the latest script and re-run:
+2. **Delete the existing record** and create a **plain A record** (IPv4) for `sportsphere.app` → `104.152.50.173` (the VPS's IPv4)
+3. Optionally also create an **AAAA record** (IPv6) → `2602:fc16:6:4::bd8c` for IPv6-capable clients
+4. Repeat for `www.sportsphere.app` → `104.152.50.173`
+5. If using Cloudflare, make sure the proxy status is **DNS only** (grey cloud, not orange cloud) — Let's Encrypt's HTTP-01 challenge cannot traverse Cloudflare's HTTPS proxy
+6. Wait for DNS propagation (typically 5–15 min — verify with `dig +short sportsphere.app @1.1.1.1` from a different network)
+7. On the VPS, pull the latest script and re-run:
    ```bash
    cd /var/www/sportsphere-nextjs
    git pull origin main
@@ -682,13 +687,14 @@ Currently 0 events / 0 verifications. Need to:
 
 **⚠️ BLOCKER — Fix DNS first (discovered in F.6 VPS run):**
 
-`sportsphere.app` and `www.sportsphere.app` currently resolve to AWS Global Accelerator IPs (`13.248.243.5` + `76.223.105.230`), NOT the VPS (`104.152.50.173`). Let's Encrypt verification cannot proceed until DNS points at the VPS. At your DNS provider:
+`sportsphere.app` and `www.sportsphere.app` currently resolve to AWS Global Accelerator IPs (`13.248.243.5` + `76.223.105.230`), NOT the VPS (`104.152.50.173` IPv4 / `2602:fc16:6:4::bd8c` IPv6). Let's Encrypt verification cannot proceed until DNS points at the VPS. At your DNS provider:
 
 1. Delete the existing A/CNAME/ALIAS record for `sportsphere.app`
-2. Create a **plain A record** for `sportsphere.app` → `104.152.50.173`
-3. Repeat for `www.sportsphere.app` → `104.152.50.173`
-4. If using Cloudflare, set proxy status to **DNS only** (grey cloud, not orange)
-5. Verify with `dig +short sportsphere.app @1.1.1.1` from a different network — should return `104.152.50.173`
+2. Create a **plain A record** (IPv4) for `sportsphere.app` → `104.152.50.173`
+3. Optionally create an **AAAA record** (IPv6) → `2602:fc16:6:4::bd8c` for IPv6-capable clients
+4. Repeat for `www.sportsphere.app` → `104.152.50.173`
+5. If using Cloudflare, set proxy status to **DNS only** (grey cloud, not orange)
+6. Verify with `dig +short sportsphere.app @1.1.1.1` from a different network — should return `104.152.50.173`
 
 **Then activate HTTPS on the VPS:**
 

@@ -164,16 +164,27 @@ sudo bash scripts/https/setup-https.sh sportsphere.app www.sportsphere.app
 ```
 
 ### "Aborting: DNS does not point at this VPS"
-The script's preflight check resolved your domain and found that its IP does NOT match this VPS's public IP. Let's Encrypt verification would silently fail in this case, so the script aborts before calling certbot. To fix:
+The script's preflight check resolved your domain and found that none of its IPs match this VPS's public IPs. Let's Encrypt verification would silently fail in this case, so the script aborts before calling certbot. To fix:
 1. Log into your DNS provider (Route 53, Cloudflare, Namecheap, etc.)
-2. Find the A record for the domain shown in the warning
-3. Change its value to your VPS's public IP (shown in the warning as `VPS public IP detected: x.x.x.x`)
-4. **Important:** if the record is currently a CNAME pointing at an AWS endpoint (e.g. `*.cloudfront.net` or an AWS Global Accelerator DNS name), **delete the CNAME and create a plain A record** — Let's Encrypt's HTTP-01 challenge cannot traverse through AWS Global Accelerator or Cloudflare's orange-cloud proxy
-5. Wait for DNS propagation (typically 5–15 min — verify with `dig +short sportsphere.app @1.1.1.1`)
-6. Re-run the script. If you want to proceed anyway despite the mismatch (NOT recommended — Let's Encrypt will still fail):
+2. Find the existing record for the domain shown in the warning — likely either:
+   - An **A record** (IPv4) pointing at an AWS IP like `13.248.243.5` (Global Accelerator), or
+   - A **CNAME / ALIAS** pointing at an AWS-managed DNS name (e.g. `*.cloudfront.net`)
+3. **Delete it** and create a **plain A record** (IPv4) → the VPS's IPv4 (shown in the warning as `VPS public IPs detected: <ipv4> / <ipv6>`)
+4. If your VPS also has IPv6 connectivity, you can additionally create an **AAAA record** (IPv6) → the VPS's IPv6. Optional but recommended for v6-capable clients.
+5. **Important:** if the record is currently a CNAME pointing at an AWS endpoint, **do not just edit the value — delete the CNAME and create a plain A record**. Let's Encrypt's HTTP-01 challenge cannot traverse through AWS Global Accelerator or Cloudflare's orange-cloud proxy
+6. If using Cloudflare, set proxy status to **DNS only** (grey cloud, not orange cloud)
+7. Wait for DNS propagation (typically 5–15 min — verify with `dig +short sportsphere.app @1.1.1.1` from a different network)
+8. Re-run the script. If you want to proceed anyway despite the mismatch (NOT recommended — Let's Encrypt will still fail):
    ```bash
    sudo SKIP_DNS_CHECK=1 bash scripts/https/setup-https.sh sportsphere.app www.sportsphere.app
    ```
+
+If you want to override the auto-detected VPS IP (e.g. the auto-detection picked IPv6 but you want to verify against IPv4):
+```bash
+sudo VPS_PUBLIC_IPV4=104.152.50.173 bash scripts/https/setup-https.sh sportsphere.app www.sportsphere.app
+# Or both:
+sudo VPS_PUBLIC_IPV4=104.152.50.173 VPS_PUBLIC_IPV6=2602:fc16:6:4::bd8c bash scripts/https/setup-https.sh sportsphere.app www.sportsphere.app
+```
 
 ### "nginx: configuration test failed"
 - `sudo nginx -t` shows the exact line that failed.

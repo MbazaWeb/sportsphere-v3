@@ -73,21 +73,66 @@ log "Nginx config found"
 # Check DNS resolution + verify each domain points at THIS VPS
 # (Let's Encrypt's HTTP-01 challenge will silently fail if DNS routes traffic
 #  elsewhere — e.g. through AWS Global Accelerator or Cloudflare proxy)
-VPS_PUBLIC_IP="${VPS_PUBLIC_IP:-}"
-if [[ -z "$VPS_PUBLIC_IP" ]]; then
-  # Auto-detect public IP via three providers (best-effort, non-fatal)
-  for url in https://ifconfig.me https://api.ipify.org https://icanhazip.com; do
-    VPS_PUBLIC_IP=$(curl -fsS --max-time 5 "$url" 2>/dev/null | tr -d '[:space:]') || true
-    [[ -n "$VPS_PUBLIC_IP" ]] && break
+#
+# We detect BOTH IPv4 and IPv6 of the VPS separately, because:
+#  - DNS records are usually A (IPv4) — comparing them against the VPS's IPv6
+#    (which curl prefers when the VPS has v6 connectivity) would always mismatch
+#  - A records hold IPv4; AAAA records hold IPv6; mixing them is invalid
+# We then compare each domain's resolved IPs (both v4 and v6 from getent)
+# against EITHER detected VPS IP — a match on either is OK.
+VPS_PUBLIC_IPV4="${VPS_PUBLIC_IPV4:-${VPS_PUBLIC_IP:-}}"
+VPS_PUBLIC_IPV6="${VPS_PUBLIC_IPV6:-}"
+
+# Auto-detect IPv4 (force -4 so we don't get back IPv6 from providers that
+# return whatever the request came from)
+if [[ -z "$VPS_PUBLIC_IPV4" ]]; then
+  for url in https://api.ipify.org https://ifconfig.me https://ipv4.icanhazip.com; do
+    VPS_PUBLIC_IPV4=$(curl -4 -fsS --max-time 5 "$url" 2>/dev/null | tr -d '[:space:]') || true
+    [[ -n "$VPS_PUBLIC_IPV4" ]] && break
   done
 fi
-if [[ -z "$VPS_PUBLIC_IP" ]]; then
-  warn "Could not auto-detect VPS public IP — skipping DNS-target sanity check."
-  warn "If Let's Encrypt verification fails, set VPS_PUBLIC_IP manually:"
-  warn "  sudo VPS_PUBLIC_IP=104.152.50.173 bash $0 $*"
-else
-  log "VPS public IP detected: $VPS_PUBLIC_IP"
+
+# Auto-detect IPv6 (force -6; non-fatal if VPS has no v6 connectivity)
+if [[ -z "$VPS_PUBLIC_IPV6" ]]; then
+  for url in https://api64.ipify.org https://ifconfig.me https://ipv6.icanhazip.com; do
+    VPS_PUBLIC_IPV6=$(curl -6 -fsS --max-time 5 "$url" 2>/dev/null | tr -d '[:space:]') || true
+    # Discard obviously-non-v6 results (some endpoints fall back to v4 even with -6)
+    if [[ -n "$VPS_PUBLIC_IPV6" && "$VPS_PUBLIC_IPV6" != *":"* ]]; then
+      VPS_PUBLIC_IPV6=""
+    fi
+    [[ -n "$VPS_PUBLIC_IPV6" ]] && break
+  done
 fi
+
+# Build a display string + accept-either list
+VPS_IPS_DISPLAY=""
+VPS_IPS_ARGS=()
+if [[ -n "$VPS_PUBLIC_IPV4" ]]; then
+  VPS_IPS_DISPLAY+="$VPS_PUBLIC_IPV4"
+  VPS_IPS_ARGS+=("$VPS_PUBLIC_IPV4")
+fi
+if [[ -n "$VPS_PUBLIC_IPV6" ]]; then
+  [[ -n "$VPS_IPS_DISPLAY" ]] && VPS_IPS_DISPLAY+=" / "
+  VPS_IPS_DISPLAY+="$VPS_PUBLIC_IPV6"
+  VPS_IPS_ARGS+=("$VPS_PUBLIC_IPV6")
+fi
+
+if [[ ${#VPS_IPS_ARGS[@]} -eq 0 ]]; then
+  warn "Could not auto-detect VPS public IP (neither v4 nor v6) — skipping DNS-target sanity check."
+  warn "If Let's Encrypt verification fails, set VPS_PUBLIC_IPV4 manually:"
+  warn "  sudo VPS_PUBLIC_IPV4=104.152.50.173 bash $0 $*"
+else
+  log "VPS public IPs detected: $VPS_IPS_DISPLAY"
+fi
+
+# Helper: does the resolved IP list contain any VPS IP?
+ip_matches_any() {
+  local needle="$1"; shift
+  for hay in "$@"; do
+    [[ "$needle" == "$hay" ]] && return 0
+  done
+  return 1
+}
 
 DNS_MISMATCH=0
 for d in "${DOMAINS[@]}"; do
@@ -95,20 +140,35 @@ for d in "${DOMAINS[@]}"; do
     err "DNS for $d does not resolve. Add an A record pointing to this VPS first."
     exit 1
   fi
-  RESOLVED_IP=$(getent hosts "$d" | awk '{print $1}' | head -1)
-  log "DNS $d → $RESOLVED_IP"
-  if [[ -n "$VPS_PUBLIC_IP" && "$RESOLVED_IP" != "$VPS_PUBLIC_IP" ]]; then
-    warn "  ↳ $d resolves to $RESOLVED_IP, NOT this VPS ($VPS_PUBLIC_IP)"
-    warn "  ↳ Let's Encrypt verification will FAIL because the challenge request"
-    warn "  ↳ will be routed elsewhere (e.g. AWS Global Accelerator, Cloudflare proxy, CDN)."
-    warn "  ↳ Fix: at your DNS provider, set an A record for $d → $VPS_PUBLIC_IP"
-    warn "  ↳       (not a CNAME, not a CDN/proxy — must be a plain A record to the VPS IP)"
-    warn "  ↳ Then wait for DNS propagation (5–15 min typically) and re-run this script."
-    DNS_MISMATCH=1
+  # getent hosts returns multiple lines: "<ip> <fqdn> <aliases>" — collect all IPs
+  mapfile -t RESOLVED_IPS < <(getent hosts "$d" | awk '{print $1}')
+  log "DNS $d → ${RESOLVED_IPS[*]}"
+  if [[ ${#VPS_IPS_ARGS[@]} -gt 0 ]]; then
+    MATCHED=0
+    for rip in "${RESOLVED_IPS[@]}"; do
+      if ip_matches_any "$rip" "${VPS_IPS_ARGS[@]}"; then
+        MATCHED=1
+        break
+      fi
+    done
+    if [[ $MATCHED -eq 0 ]]; then
+      warn "  ↳ $d resolves to ${RESOLVED_IPS[*]}, NONE of which match this VPS ($VPS_IPS_DISPLAY)"
+      warn "  ↳ Let's Encrypt verification will FAIL because the challenge request"
+      warn "  ↳ will be routed elsewhere (e.g. AWS Global Accelerator, Cloudflare proxy, CDN)."
+      if [[ -n "$VPS_PUBLIC_IPV4" ]]; then
+        warn "  ↳ Fix: at your DNS provider, set an A record (IPv4) for $d → $VPS_PUBLIC_IPV4"
+      fi
+      if [[ -n "$VPS_PUBLIC_IPV6" ]]; then
+        warn "  ↳   or: set an AAAA record (IPv6) for $d → $VPS_PUBLIC_IPV6"
+      fi
+      warn "  ↳       (not a CNAME, not a CDN/proxy — must be a plain A/AAAA record to the VPS IP)"
+      warn "  ↳ Then wait for DNS propagation (5–15 min typically) and re-run this script."
+      DNS_MISMATCH=1
+    fi
   fi
 done
 if [[ $DNS_MISMATCH -ne 0 ]]; then
-  err "Aborting: DNS does not point at this VPS. Fix the A records and retry."
+  err "Aborting: DNS does not point at this VPS. Fix the A/AAAA records and retry."
   err "To override (NOT recommended — Let's Encrypt will still fail):"
   err "  sudo SKIP_DNS_CHECK=1 bash $0 $*"
   if [[ "${SKIP_DNS_CHECK:-0}" != "1" ]]; then
