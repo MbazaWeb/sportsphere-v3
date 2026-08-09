@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySession } from "@/lib/session";
 
+/**
+ * Allowed admin role values (case-insensitive).
+ * Using exact match prevents unintended matches like
+ * "administrative-assistant".
+ */
+const ADMIN_ROLES = new Set(["administrator", "admin"]);
+
 export async function verifyAdminSession(request: NextRequest) {
   const sessionCookie = request.cookies.get("ss_session");
   
@@ -20,13 +27,9 @@ export async function verifyAdminSession(request: NextRequest) {
     };
   }
 
-  const role = payload.role?.toUpperCase() || "";
-  const isTargetAdmin = 
-    role === "ADMINISTRATOR" || 
-    role === "ADMIN" || 
-    role.includes("ADMIN");
-
-  if (!isTargetAdmin) {
+  // FIX: Exact match only — no more .includes("ADMIN")
+  const role = (payload.role ?? "").toLowerCase().trim();
+  if (!ADMIN_ROLES.has(role)) {
     return { 
       authorized: false, 
       response: NextResponse.json({ error: "Forbidden: Administrator role required" }, { status: 403 }) 

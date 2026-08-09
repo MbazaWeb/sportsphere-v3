@@ -15,7 +15,6 @@ import { verifySession, SESSION_COOKIE } from '@/lib/session';
 
 /**
  * Routes that require an authenticated session (any role).
- * The proxy redirects unauthenticated visitors to /login.
  */
 const PROTECTED_PREFIXES = [
   '/sportsphere/admin',
@@ -26,7 +25,6 @@ const PROTECTED_PREFIXES = [
 
 /**
  * Routes that additionally require an ADMIN role.
- * Authenticated non-admin users are sent to /403.
  */
 const ADMIN_PREFIXES = ['/sportsphere/admin'];
 
@@ -58,7 +56,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   if (isAdminRoute) {
     const role = (payload.role ?? '').toLowerCase().trim();
     if (!ADMIN_ROLES.has(role)) {
-      return NextResponse.redirect(new URL('/403', request.url));
+      // Authenticated but not admin → redirect to home
+      return NextResponse.redirect(new URL('/sportsphere/home', request.url));
     }
   }
 
@@ -68,7 +67,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 function redirectToLogin(request: NextRequest): NextResponse {
-  const loginUrl = new URL('/login', request.url);
+  const loginUrl = new URL('/sportsphere', request.url);
   loginUrl.searchParams.set('from', request.nextUrl.pathname);
   return NextResponse.redirect(loginUrl);
 }

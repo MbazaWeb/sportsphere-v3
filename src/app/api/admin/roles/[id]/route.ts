@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { verifyAdminSession } from "@/lib/adminGuard";
+import { logAdminAction } from "@/lib/audit";
 
 export async function PATCH(
   request: NextRequest,
@@ -40,28 +41,45 @@ export async function PATCH(
       },
     });
 
-    // Update the user. On approval, any non-fan role becomes Pro.
+    // Update the user.
     const targetRoleSlug = verReq.role;
     const becomesPro = newStatus === "verified" && targetRoleSlug !== "fan";
 
+    // FIX: On approval, update user.role to the requested role slug
+    // (previously this was only done on rejection, causing approved users
+    // to stay as "fan" despite being verified)
+    const userData: Record<string, unknown> = {
+      verificationStatus: newStatus,
+      isVerified: newStatus === "verified",
+      isPro: becomesPro,
+      proSince: becomesPro ? new Date() : null,
+    };
+
+    if (newStatus === "rejected") {
+      userData.role = "fan";
+      userData.isPro = false;
+      userData.proSince = null;
+    } else {
+      // On approval, set the user's role to the verified role
+      userData.role = targetRoleSlug;
+    }
+
     await db.user.update({
       where: { id: verReq.userId },
-      data: {
-        verificationStatus: newStatus,
-        isVerified: newStatus === "verified",
-        isPro: becomesPro,
-        proSince: becomesPro ? new Date() : null,
-        // If rejecting, revert role back to fan
-        ...(newStatus === "rejected"
-          ? {
-              role: "fan",
-              verificationStatus: "rejected",
-              isPro: false,
-              proSince: null,
-            }
-          : {}),
-      },
+      data: userData,
     });
+
+    // ── Audit log ────────────────────────────────────────────────
+    await logAdminAction({
+      request,
+      actorId: auth.user!.sub,
+      action: `verification.${action}`,
+      module: "verifications",
+      targetId: id,
+      targetType: "VerificationRequest",
+      oldValue: { status: "pending", role: targetRoleSlug, userId: verReq.userId },
+      newValue: { status: newStatus, isPro: becomesPro, role: userData.role },
+    }).catch(() => {});
 
     return NextResponse.json({ ok: true, status: newStatus, isPro: becomesPro });
   } catch (error) {

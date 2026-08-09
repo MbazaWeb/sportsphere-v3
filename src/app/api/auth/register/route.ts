@@ -3,6 +3,7 @@
  *
  * Creates a User with the default Fan role + Casual Fan type.
  * Optionally links selected sports (UserSport rows).
+ * Sends OTP verification email via Resend.
  * Returns the same shape as login: { user, token, expiresAt }.
  *
  * Rate limited: 5 registrations per IP per hour.
@@ -19,8 +20,12 @@ import {
   hashPassword,
   type SessionPayload,
 } from '@/lib/auth';
+import { sendOtpEmail } from '@/lib/email';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
+
+const OTP_TTL_MS = 1000 * 60 * 5; // 5 minutes
 
 export async function POST(request: NextRequest) {
   // ── Rate limiting (stricter for registration) ───────────────────────────
@@ -39,7 +44,9 @@ export async function POST(request: NextRequest) {
       { error: 'Too many registration attempts. Please try again later.' },
       {
         status: 429,
-        headers: { 'Retry-After': String(Math.ceil((resetAt - Date.now()) / 1000)) },
+        headers: {
+          'Retry-After': String(Math.ceil((resetAt - Date.now()) / 1000)),
+        },
       }
     );
   }
@@ -71,7 +78,6 @@ export async function POST(request: NextRequest) {
   const cleanEmail = email.toLowerCase().trim();
   const cleanHandle = handle.trim();
 
-  // Handle format: letters, numbers, underscores, hyphens; 3-30 chars
   if (!/^[a-zA-Z0-9_-]{3,30}$/.test(cleanHandle)) {
     return NextResponse.json(
       { error: 'Handle must be 3-30 characters: letters, numbers, _ or - only.' },
@@ -112,10 +118,13 @@ export async function POST(request: NextRequest) {
 
   const fanTypeId = fanRole.types[0].id;
 
-  // ── Hash password + create user ─────────────────────────────────────────
+  // ── Hash password + generate OTP ────────────────────────────────────────
   const passwordHash = await hashPassword(password);
   const avatarInitials = name.trim().slice(0, 2).toUpperCase();
+  const otp = crypto.randomInt(100000, 1000000).toString();
+  const otpExpiry = new Date(Date.now() + OTP_TTL_MS);
 
+  // ── Create user ─────────────────────────────────────────────────────────
   const user = await db.user.create({
     data: {
       name: name.trim(),
@@ -129,7 +138,8 @@ export async function POST(request: NextRequest) {
       verificationStatus: 'none',
       isVerified: false,
       emailVerified: false,
-      // Link selected sports (optional — sports is an array of sport slugs)
+      emailVerifyToken: otp,
+      emailVerifyExpiry: otpExpiry,
       ...(sports && sports.length > 0
         ? {
             userSports: {
@@ -156,6 +166,11 @@ export async function POST(request: NextRequest) {
     },
   });
 
+  // ── Send OTP email (fire-and-forget) ────────────────────────────────────
+  sendOtpEmail(cleanEmail, otp).catch((err) => {
+    console.error('[register] Failed to send OTP email:', err);
+  });
+
   // ── Issue session JWT ───────────────────────────────────────────────────
   const payload: SessionPayload = {
     sub: user.id,
@@ -180,7 +195,7 @@ export async function POST(request: NextRequest) {
     roleProfile: {},
   };
 
-  const response = NextResponse.json({ user: publicUser, token, expiresAt }, { status: 201 });
+  const response = NextResponse.json({ user: publicUser, token, expiresAt, otpSent: true }, { status: 201 });
   response.headers.set('Set-Cookie', buildSessionCookie(token));
   return response;
 }

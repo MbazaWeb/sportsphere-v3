@@ -4,11 +4,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { safeJsonParse } from '@/lib/json';
+import { verifyAdminSession } from '@/lib/adminGuard';
+import { logAdminAction } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
 // ─── GET /api/sports ──────────────────────────────────────────
-// Query params: ?category=team_sport&sportType=outdoor&format=team
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
@@ -37,22 +38,13 @@ export async function GET(request: NextRequest) {
       where,
       orderBy: { displayOrder: 'asc' },
       select: {
-        id: true,
-        name: true,
-        slug: true,
-        icon: true,
-        category: true,
-        sportType: true,
-        format: true,
-        contactType: true,
-        olympicStatus: true,
-        description: true,
-        tags: true,
-        displayOrder: true,
+        id: true, name: true, slug: true, icon: true,
+        category: true, sportType: true, format: true,
+        contactType: true, olympicStatus: true,
+        description: true, tags: true, displayOrder: true,
       },
     });
 
-    // Parse tags from JSON for each sport
     const result = sports.map(s => ({
       ...s,
       tags: safeJsonParse(s.tags, []),
@@ -67,29 +59,26 @@ export async function GET(request: NextRequest) {
 
 // ─── POST /api/sports — Create a new sport (admin only) ──────
 export async function POST(request: NextRequest) {
-  try {
-    const userRole = request.headers.get('x-user-role');
-    if (userRole !== 'administrator' && userRole !== 'super-admin') {
-      return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
-    }
+  // FIX: Use verifyAdminSession instead of x-user-role header
+  const auth = await verifyAdminSession(request);
+  if (!auth.authorized) return auth.response;
 
+  try {
     const body = await request.json();
     const { name, slug, icon, category, sportType, format, contactType, olympicStatus, description, tags, displayOrder } = body as {
-      name?: string;
-      slug?: string;
-      icon?: string;
-      category?: string;
-      sportType?: string;
-      format?: string;
-      contactType?: string;
-      olympicStatus?: string;
-      description?: string;
-      tags?: string[];
-      displayOrder?: number;
+      name?: string; slug?: string; icon?: string;
+      category?: string; sportType?: string; format?: string;
+      contactType?: string; olympicStatus?: string;
+      description?: string; tags?: string[]; displayOrder?: number;
     };
 
     if (!name || !slug) {
       return NextResponse.json({ error: 'Name and slug are required.' }, { status: 400 });
+    }
+
+    // Length validation
+    if (name.length > 100) {
+      return NextResponse.json({ error: 'Name too long (max 100 chars).' }, { status: 400 });
     }
 
     const sport = await db.sport.create({
@@ -108,6 +97,17 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // ── Audit log ────────────────────────────────────────────────
+    await logAdminAction({
+      request,
+      actorId: auth.user!.sub,
+      action: 'sport.create',
+      module: 'sports',
+      targetId: sport.id,
+      targetType: 'Sport',
+      newValue: { name: sport.name, slug: sport.slug },
+    }).catch(() => {});
+
     return NextResponse.json(sport, { status: 201 });
   } catch (error) {
     console.error('Failed to create sport:', error);
@@ -117,26 +117,17 @@ export async function POST(request: NextRequest) {
 
 // ─── PUT /api/sports — Update a sport (admin only) ───────────
 export async function PUT(request: NextRequest) {
-  try {
-    const userRole = request.headers.get('x-user-role');
-    if (userRole !== 'administrator' && userRole !== 'super-admin') {
-      return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
-    }
+  // FIX: Use verifyAdminSession instead of x-user-role header
+  const auth = await verifyAdminSession(request);
+  if (!auth.authorized) return auth.response;
 
+  try {
     const body = await request.json();
     const { id, name, slug, icon, category, sportType, format, contactType, olympicStatus, description, tags, displayOrder, isActive } = body as {
-      id?: string;
-      name?: string;
-      slug?: string;
-      icon?: string;
-      category?: string;
-      sportType?: string;
-      format?: string;
-      contactType?: string;
-      olympicStatus?: string;
-      description?: string;
-      tags?: string[];
-      displayOrder?: number;
+      id?: string; name?: string; slug?: string; icon?: string;
+      category?: string; sportType?: string; format?: string;
+      contactType?: string; olympicStatus?: string;
+      description?: string; tags?: string[]; displayOrder?: number;
       isActive?: boolean;
     };
 
@@ -162,6 +153,17 @@ export async function PUT(request: NextRequest) {
       where: { id },
       data: update,
     });
+
+    // ── Audit log ────────────────────────────────────────────────
+    await logAdminAction({
+      request,
+      actorId: auth.user!.sub,
+      action: 'sport.update',
+      module: 'sports',
+      targetId: id,
+      targetType: 'Sport',
+      newValue: update,
+    }).catch(() => {});
 
     return NextResponse.json(sport);
   } catch (error) {

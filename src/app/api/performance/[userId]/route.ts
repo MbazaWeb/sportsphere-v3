@@ -4,33 +4,35 @@
 // Returns the cached PerformanceProfile + recent events, transactions,
 // and snapshots for the Performance Card UI.
 //
-// If no profile exists yet (new user with no verified events), returns
-// a 200 with `{ profile: null, computed: null }` — the UI will show
-// an "unranked" placeholder.
+// If no profile exists yet, returns a 200 with `{ profile: null }`.
 
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { getPerformanceProfileWithActivity, recalcPerformanceProfile } from '@/lib/performance-engine';
+import { verifyAdminSession } from '@/lib/adminGuard';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-  _req: Request,
+  _req: NextRequest,
   { params }: { params: Promise<{ userId: string }> },
 ) {
   try {
     const { userId } = await params;
 
-    // Optional: ?recalc=1 forces a recompute (admin/debug only — heavy)
+    // FIX: ?recalc=1 requires admin authentication
     const url = new URL(_req.url);
     const forceRecalc = url.searchParams.get('recalc') === '1';
+
     if (forceRecalc) {
+      const auth = await verifyAdminSession(_req);
+      if (!auth.authorized) return auth.response;
       await recalcPerformanceProfile(userId);
     }
 
     const data = await getPerformanceProfileWithActivity(userId);
 
-    // Fetch the user's basic info to know their role + position
+    // Fetch the user's basic info
     const user = await db.user.findUnique({
       where: { id: userId },
       select: {
@@ -44,7 +46,7 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Compute tier percentile (top X% in their category bucket)
+    // Compute tier percentile
     let percentile: number | null = null;
     let categorySize = 0;
     if (data.profile?.categoryBucket) {

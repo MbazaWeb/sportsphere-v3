@@ -791,3 +791,92 @@ git pull origin main
 # If still hitting Windows-invalid path error:
 git reset --hard origin/main
 ```
+
+---
+
+## 14. Phase D.1 — Admin Security Audit & Fixes
+
+**Date**: 2026-08-09
+**Trigger**: Full admin panel + role security scan
+
+### Critical Security Issues Fixed
+
+| # | Issue | Severity | Fix |
+|---|---|---|---|
+| 1 | `PUT /api/admin/users/[id]` had ZERO auth — anyone could change any user's role (privilege escalation) | 🔴 Critical | Added `verifyAdminSession()` + role allowlist + self-demotion guard |
+| 2 | `DELETE /api/admin/posts/[id]` had ZERO auth — anyone could delete any post | 🔴 Critical | Added `verifyAdminSession()` + audit logging |
+| 3 | `src/proxy.ts` read wrong cookie name (`session` instead of `ss_session`) — admin pages unprotected | 🔴 Critical | Fixed cookie name + uses same SESSION_SECRET as backend |
+| 4 | Role approval bug — `PATCH /api/admin/roles/[id]` approve didn't update `user.role` to target role | 🔴 High | Now sets `user.role = targetRoleSlug` on approve |
+| 5 | Sports Manager POST/PUT used `x-user-role` header (never set by any client) | 🟡 High | Replaced with `verifyAdminSession()` |
+| 6 | `?recalc=1` on performance endpoint had no auth — potential DoS | 🟡 High | Added `verifyAdminSession()` check for recalc |
+| 7 | `isBanned` field missing from User model (admin UI had Ban/Unban buttons) | 🟡 High | Added `isBanned`, `bannedAt`, `bannedReason` fields + migration |
+| 8 | `adminGuard.ts` used `role.includes("ADMIN")` — matches unintended roles | 🟡 Medium | Changed to exact match Set: `admin`, `administrator` |
+| 9 | Login redirect checked `role === 'admin'` (misses 'administrator') | 🟡 Medium | Changed to `role.includes('admin')` after `.toLowerCase()` |
+| 10 | Hardcoded password `"Sports123!"` in `setup-admin.js` | 🟡 Medium | Removed; now reads from `ADMIN_PASSWORD` env var |
+| 11 | AuditLog model existed but zero code wrote to it | 🟡 Medium | Created `src/lib/audit.ts` + wired into all state-changing admin routes |
+| 12 | Login & register routes were stub files (no actual DB logic) | 🔴 Critical | Wrote real login (ban check, session, user enumeration prevention) + register (OTP email, validation) |
+
+### Files Created
+
+| File | Purpose |
+|---|---|
+| `src/lib/audit.ts` | `logAdminAction()` — writes to AuditLog table with IP, user agent, before/after state |
+| `prisma/migrations/20260809_admin_security_fixes_isbanned/migration.sql` | Adds `isBanned`, `bannedAt`, `bannedReason` columns to User |
+
+### Files Modified
+
+| File | Change |
+|---|---|
+| `src/app/api/admin/users/[id]/route.ts` | Added auth guard, role allowlist, ban reason, self-demotion guard, audit log |
+| `src/app/api/admin/posts/[id]/route.ts` | Added auth guard, audit log |
+| `src/app/api/admin/roles/[id]/route.ts` | Fixed role approval (sets `user.role` on approve), added audit log |
+| `src/app/api/admin/users/route.ts` | Added `isBanned`/`bannedAt`/`bannedReason` to response, pagination support |
+| `src/app/api/admin/verification/events/[id]/review/route.ts` | Added audit logging for approve/reject actions |
+| `src/app/api/sports/route.ts` | Replaced `x-user-role` header check with `verifyAdminSession()`, added audit logs |
+| `src/app/api/performance/[userId]/route.ts` | Added admin auth for `?recalc=1` |
+| `src/app/api/auth/route.ts` | Wrote real login: credential check, ban check, session issuance, user serialization |
+| `src/app/api/auth/register/route.ts` | Wrote real register: validation, duplicate check, OTP email, session issuance |
+| `src/proxy.ts` | Fixed cookie name (`session` → `ss_session`), uses SESSION_SECRET env |
+| `src/lib/adminGuard.ts` | Tightened to exact role match (Set), removed `.includes()` |
+| `src/components/auth/LoginModal.tsx` | Fixed admin redirect: `role.includes('admin')` instead of exact match |
+| `src/app/admin/users/page.tsx` | Full rewrite: role dropdown, ban/unban with reason, pagination, status badges |
+| `setup-admin.js` | Removed hardcoded password; reads `ADMIN_PASSWORD` env var |
+| `prisma/schema.prisma` | Added `isBanned`, `bannedAt`, `bannedReason` to User model |
+| `.env` | Created with production values (RESEND_API_KEY, SESSION_SECRET placeholders) |
+| `.env.example` | Updated with `FROM_EMAIL`, production-ready defaults |
+
+### Files Removed
+
+| File | Reason |
+|---|---|
+| `app/api/auth/login/route.ts` | Duplicate stub — wrong import (`@/db`), never used |
+| `app/api/auth/register/route.ts` | Duplicate stub — no actual register logic |
+| `app/api/auth/forgot-password/route.ts` | Duplicate stub |
+
+### OTP Email Verification (Resend)
+
+- **Provider**: Resend (`resend` npm package v6.18.1, already installed)
+- **From address**: `SportSphere <onboarding@resend.dev>` (configurable via `FROM_EMAIL` env)
+- **OTP generation**: `crypto.randomInt(100000, 1000000)` — 6-digit, 5-minute TTL
+- **Existing email utility**: `src/lib/email.ts` — already has `sendOtpEmail()`, `sendPasswordResetEmail()`, `sendWelcomeEmail()`
+- **Register flow**: User created → OTP generated → stored in `emailVerifyToken`/`emailVerifyExpiry` → sent via Resend (fire-and-forget)
+- **Verify flow**: `POST /api/auth/verify-email/request` + `POST /api/auth/verify-email/confirm` (already existed, unchanged)
+
+### Migration to Run on VPS
+
+```bash
+prisma migrate deploy
+```
+
+This applies:
+1. `20260809_admin_security_fixes_isbanned` — adds isBanned, bannedAt, bannedReason
+
+### Environment Variables Updated
+
+| Variable | Status |
+|---|---|
+| `SESSION_SECRET` | 🔴 Must generate: `openssl rand -hex 32` |
+| `JWT_SECRET` | 🔴 Must generate: `openssl rand -hex 32` |
+| `RESEND_API_KEY` | 🔴 Set (rotate after exposure) |
+| `FROM_EMAIL` | 🟡 Set to `onboarding@resend.dev` (change after domain verification) |
+| `DATABASE_URL` | 🔴 Set to local PG connection |

@@ -23,6 +23,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { verifyAdminSession } from "@/lib/adminGuard";
 import { recalcPerformanceProfile } from "@/lib/performance-engine";
+import { logAdminAction } from "@/lib/audit";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -150,6 +151,17 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         console.error(`recalc failed for user ${event.userId} after event approval:`, recalcErr);
       }
 
+      // Audit log
+      await logAdminAction({
+        request,
+        actorId: auth.user!.sub,
+        action: 'event.verification.approve',
+        module: 'verifications',
+        targetId: id,
+        targetType: 'PerformanceEvent',
+        newValue: { pointsCredited: Math.round(event.pointsCalculated), newBalance: balanceAfter },
+      }).catch(() => {});
+
       return NextResponse.json({
         success: true,
         action: "approved",
@@ -202,6 +214,17 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
           },
         });
       });
+
+      // Audit log
+      await logAdminAction({
+        request,
+        actorId: auth.user!.sub,
+        action: 'event.verification.reject',
+        module: 'verifications',
+        targetId: id,
+        targetType: 'PerformanceEvent',
+        newValue: { notes: notes ?? null },
+      }).catch(() => {});
 
       return NextResponse.json({
         success: true,

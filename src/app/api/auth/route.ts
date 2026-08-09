@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
       followerCount: true, followingCount: true, postCount: true,
       sportsFollowing: true, roleData: true, registeredAt: true,
       roleId: true, roleTypeId: true,
+      isBanned: true, bannedReason: true,
       userRole: { select: { id: true, name: true, slug: true, icon: true, category: true } },
       userRoleType: { select: { id: true, name: true, slug: true } },
       userSports: { select: { sport: { select: { id: true, name: true, slug: true, icon: true, category: true, sportType: true, format: true } } } },
@@ -95,6 +96,14 @@ export async function POST(request: NextRequest) {
 
   if (!user || !user.passwordHash) {
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 });
+  }
+
+  // ── Ban check (Phase D.1 security fix) ──────────────────────────────────
+  if (user.isBanned) {
+    return NextResponse.json(
+      { error: 'Your account has been suspended. Contact support for assistance.' },
+      { status: 403 }
+    );
   }
 
   const passwordValid = await verifyPassword(password, user.passwordHash);
