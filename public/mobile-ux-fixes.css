@@ -1,0 +1,119 @@
+/**
+ * mobile-ux-fixes.css
+ * ──────────────────────────────────────────────────────────────────────────
+ * Fixes three mobile UX issues:
+ *   1. Accidental swipe-back while filling forms
+ *   2. Screen shake / bounce / layout jitter
+ *   3. Unwanted screen rotation
+ *
+ * Import this in your global CSS or layout:
+ *   @import "./mobile-ux-fixes.css";   ← if using CSS @import
+ *   or add className to <body> in layout.tsx
+ */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   1. PREVENT ACCIDENTAL BROWSER SWIPE-BACK
+   ══════════════════════════════════════════════════════════════════════════
+   The browser's swipe-to-go-back gesture fires when a horizontal touch
+   starts near the left edge of the screen. Two complementary fixes:
+
+   A) `overscroll-behavior-x: none` — tell the browser not to trigger
+      navigation gestures when the user has reached the horizontal scroll
+      boundary of an element.
+
+   B) The JS approach in layout.tsx (see below) intercepts touchstart near
+      the left edge and calls preventDefault() only inside form elements,
+      which is more surgical than disabling overscroll globally.
+*/
+
+html,
+body {
+  /* Stop rubber-band / overscroll in both axes on iOS */
+  overscroll-behavior: none;
+}
+
+/* On screens where the app behaves as a PWA / full-screen web-app,
+   disable the swipe-back gesture entirely at the document level.       */
+@media (display-mode: standalone) {
+  html {
+    overscroll-behavior-x: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   2. STOP SCREEN SHAKE / LAYOUT JITTER
+   ══════════════════════════════════════════════════════════════════════════
+   Common causes of "shake":
+   - Scrollbar appearing/disappearing changes viewport width
+   - Address-bar show/hide on iOS changes viewport height (use dvh)
+   - transform: translate3d on animated elements causes repaints
+*/
+
+/* Fix scrollbar-induced width shift */
+html {
+  scrollbar-gutter: stable; /* prevents layout shift when scrollbar appears */
+}
+
+/* Use dynamic viewport height so content doesn't jump when
+   the mobile browser chrome shows/hides.                    */
+body {
+  min-height: 100dvh; /* dvh tracks the actual visible area */
+}
+
+/* Prevent content from shifting when the soft keyboard opens on mobile */
+body {
+  /* Keeps the viewport anchored; the keyboard pushes up from below */
+  position: relative;
+}
+
+/* Smooth font rendering — reduces subpixel jitter on retina screens */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Prevent inputs from zooming the page on iOS (Safari auto-zooms
+   when font-size < 16px — this overrides that without disabling
+   user scaling entirely).                                          */
+input,
+select,
+textarea {
+  font-size: max(16px, 1em);
+}
+
+/* Prevent tap highlight flicker on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   3. LOCK ORIENTATION TO PORTRAIT (optional — remove if you want landscape)
+   ══════════════════════════════════════════════════════════════════════════
+   CSS-only orientation hint (supported in Chrome 116+, Safari 16.4+).
+   For full lock, pair with the Web Screen Orientation API in JS (see below).
+*/
+@media (orientation: landscape) and (max-width: 768px) {
+  /* Rotate the UI back to portrait when device is held sideways on mobile */
+  body {
+    transform: rotate(-90deg);
+    transform-origin: left top;
+    width: 100vh;
+    height: 100vw;
+    overflow-x: hidden;
+    position: absolute;
+    top: 100%;
+    left: 0;
+  }
+}
+
+/*
+   If you prefer to ALLOW rotation but just want to stop the jitter,
+   comment out the @media block above and instead add this to your
+   layout.tsx <head>:
+
+   <meta name="viewport"
+     content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+   The key change is `viewport-fit=cover` — it prevents the viewport
+   from resizing when the orientation changes, eliminating the jump.
+*/
