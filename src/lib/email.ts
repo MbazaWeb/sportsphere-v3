@@ -6,11 +6,45 @@
  *
  * Usage:
  *   import { sendOtpEmail, sendPasswordResetEmail, sendWelcomeEmail } from '@/lib/email';
+ *
+ * NOTE: The Resend client is initialized lazily (on first use), NOT at module
+ * load time. This is critical because `new Resend(undefined)` throws — if we
+ * constructed it at the top level, the build would crash during "Collecting
+ * page data" for any route that imports this module, before RESEND_API_KEY
+ * is ever set in .env.
  */
 
-import { Resend } from 'resend';
+import type { Resend as ResendType } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: ResendType | null = null;
+let _warnedMissingKey = false;
+
+/**
+ * Lazily construct the Resend client. Returns null if RESEND_API_KEY is not
+ * configured — callers should check for null and degrade gracefully.
+ */
+function getResend(): ResendType | null {
+  if (_resend) return _resend;
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    if (!_warnedMissingKey) {
+      console.warn(
+        '[email] RESEND_API_KEY is not set — email sending is disabled. ' +
+          'Set RESEND_API_KEY in .env to enable email verification, password reset, and welcome emails.'
+      );
+      _warnedMissingKey = true;
+    }
+    return null;
+  }
+
+  // Lazy require so the module doesn't crash at import time if the package
+  // isn't installed (e.g. during local type-checking without node_modules).
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { Resend } = require('resend') as { Resend: typeof ResendType };
+  _resend = new Resend(apiKey);
+  return _resend;
+}
 
 // The "from" address. While on Resend's free tier / using onboarding@resend.dev
 // you can only send to verified addresses. Swap this once you verify a domain:
@@ -21,6 +55,9 @@ const FROM_ADDRESS =
 // ─── OTP / Email Verification ─────────────────────────────────────────────
 
 export async function sendOtpEmail(email: string, otp: string): Promise<void> {
+  const resend = getResend();
+  if (!resend) return; // email disabled — caller should handle gracefully
+
   const { error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: [email],
@@ -66,6 +103,14 @@ export async function sendPasswordResetEmail(
   email: string,
   resetUrl: string
 ): Promise<void> {
+  const resend = getResend();
+  if (!resend) {
+    // Email disabled — log the reset URL so it's visible in server logs
+    // (useful for dev/testing when RESEND_API_KEY isn't configured).
+    console.warn(`[email] Password reset email skipped (no RESEND_API_KEY). Reset URL: ${resetUrl}`);
+    return;
+  }
+
   const { error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: [email],
@@ -110,6 +155,9 @@ export async function sendWelcomeEmail(
   email: string,
   name: string
 ): Promise<void> {
+  const resend = getResend();
+  if (!resend) return; // email disabled — non-fatal
+
   const { error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: [email],
