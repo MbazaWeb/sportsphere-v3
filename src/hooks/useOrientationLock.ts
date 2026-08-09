@@ -22,23 +22,39 @@
 
 import { useEffect } from "react";
 
-type OrientationType =
-  | "portrait"
+type OrientationLockType =
+  | "any"
+  | "natural"
   | "landscape"
+  | "portrait"
   | "portrait-primary"
   | "portrait-secondary"
   | "landscape-primary"
-  | "landscape-secondary"
-  | "natural"
-  | "any";
+  | "landscape-secondary";
 
-export function useOrientationLock(orientation: OrientationType = "portrait") {
+/**
+ * The `lock()` and `unlock()` methods on `ScreenOrientation` are part of the
+ * W3C Screen Orientation API but are NOT included in TypeScript's bundled
+ * lib.dom.d.ts (the spec is still in flux and browser support is incomplete).
+ * We declare a minimal extension here so the rest of the code is type-safe.
+ */
+interface LockableScreenOrientation extends ScreenOrientation {
+  lock(orientation: OrientationLockType): Promise<void>;
+  unlock(): void;
+}
+
+interface LockableScreen extends Screen {
+  orientation: LockableScreenOrientation;
+}
+
+export function useOrientationLock(orientation: OrientationLockType = "portrait") {
   useEffect(() => {
     async function lock() {
       try {
+        const s = screen as LockableScreen | undefined;
         // The API is only available in secure contexts (HTTPS)
-        if (screen?.orientation?.lock) {
-          await screen.orientation.lock(orientation);
+        if (s?.orientation?.lock) {
+          await s.orientation.lock(orientation);
         }
       } catch {
         // Silently ignore — the browser may not support locking
@@ -50,7 +66,8 @@ export function useOrientationLock(orientation: OrientationType = "portrait") {
 
     return () => {
       try {
-        screen?.orientation?.unlock?.();
+        const s = screen as LockableScreen | undefined;
+        s?.orientation?.unlock?.();
       } catch {
         // ignore
       }

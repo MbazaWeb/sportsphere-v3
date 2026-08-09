@@ -1,31 +1,19 @@
 /**
  * lib/auth-helpers.ts
  *
- * Shared auth utilities used across API routes.
+ * Reset token helpers only. The session verification functions that used to
+ * live here (verifyAdminSession, verifySession) were dead code — the admin
+ * routes use @/lib/adminGuard which uses the canonical session system
+ * (@/lib/session → ss_session cookie + SESSION_SECRET).
  *
  * FIXES APPLIED:
- *   - hashResetToken()     → sha-256 hash before storing in DB      (Fix #4)
- *   - verifyAdminSession() → exact-match role check, not .includes() (Fix #7)
+ *   - hashResetToken() → sha-256 hash before storing in DB      (Fix #4)
+ *   - Removed dead verifyAdminSession/verifySession that used the wrong
+ *     JWT_SECRET + 'session' cookie (canonical system uses SESSION_SECRET
+ *     + 'ss_session' cookie via @/lib/session).
  */
 
-import { createHash, randomBytes } from "crypto";
-import { jwtVerify } from "jose";
-import { cookies } from "next/headers";
-
-// ────────────────────────────────────────────────────────────────────────────
-// Constants
-// ────────────────────────────────────────────────────────────────────────────
-
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? "change-me-in-production"
-);
-
-/**
- * Exact role values that grant admin access (lowercase, trimmed).
- * Using an allowlist instead of .includes() prevents "community-admin"
- * or any other role substring accidentally granting full admin access.
- */
-const ADMIN_ROLES = new Set(["admin", "administrator"]);
+import { createHash, randomBytes } from 'crypto';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Reset Token Helpers  (Fix #4 — hash before storing)
@@ -48,7 +36,7 @@ export function generateResetToken(): {
   rawToken: string;
   hashedToken: string;
 } {
-  const rawToken = randomBytes(32).toString("hex"); // 64-char hex
+  const rawToken = randomBytes(32).toString('hex'); // 64-char hex
   const hashedToken = hashResetToken(rawToken);
   return { rawToken, hashedToken };
 }
@@ -59,10 +47,10 @@ export function generateResetToken(): {
  *
  *   const storedHash = user.resetToken;
  *   const submittedHash = hashResetToken(req.query.token);
- *   const valid = timingSafeEqual(storedHash, submittedHash);
+ *   const valid = safeCompare(storedHash, submittedHash);
  */
 export function hashResetToken(rawToken: string): string {
-  return createHash("sha256").update(rawToken).digest("hex");
+  return createHash('sha256').update(rawToken).digest('hex');
 }
 
 /**
@@ -74,70 +62,5 @@ export function safeCompare(a: string, b: string): boolean {
   const bufA = Buffer.from(a);
   const bufB = Buffer.from(b);
   // crypto.timingSafeEqual requires same-length buffers
-  return require("crypto").timingSafeEqual(bufA, bufB);
-}
-
-// ────────────────────────────────────────────────────────────────────────────
-// Admin Session Verification  (Fix #7 — exact role match)
-// ────────────────────────────────────────────────────────────────────────────
-
-export interface SessionPayload {
-  userId: string;
-  role: string;
-  email?: string;
-}
-
-/**
- * Verify the session cookie and confirm the user has an admin role.
- *
- * Returns the decoded payload on success, or throws an error that the
- * caller should convert into a 401/403 response.
- *
- * Replace the previous `role.includes("ADMIN")` check:
- *
- *   // OLD (fragile — "community-admin" would match):
- *   if (!role.includes("ADMIN")) throw new Error("Forbidden");
- *
- *   // NEW (exact allowlist):
- *   const payload = await verifyAdminSession();
- */
-export async function verifyAdminSession(): Promise<SessionPayload> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
-
-  if (!token) {
-    throw new Error("Unauthenticated");
-  }
-
-  let payload: SessionPayload;
-  try {
-    const { payload: verified } = await jwtVerify(token, JWT_SECRET);
-    payload = verified as SessionPayload;
-  } catch {
-    throw new Error("Invalid or expired session");
-  }
-
-  const role = (payload.role ?? "").toLowerCase().trim();
-  if (!ADMIN_ROLES.has(role)) {
-    throw new Error("Forbidden: admin role required");
-  }
-
-  return payload;
-}
-
-/**
- * Verify any authenticated session (non-admin routes).
- */
-export async function verifySession(): Promise<SessionPayload> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
-
-  if (!token) throw new Error("Unauthenticated");
-
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload as SessionPayload;
-  } catch {
-    throw new Error("Invalid or expired session");
-  }
+  return require('crypto').timingSafeEqual(bufA, bufB);
 }
