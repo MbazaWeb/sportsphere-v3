@@ -3,7 +3,7 @@
  * Mirrors Prisma User model + typed role profiles
  */
 
-import type { UserRole } from './auth.js';
+import type { UserRole } from './auth';
 
 export interface BaseUser {
   id: string;

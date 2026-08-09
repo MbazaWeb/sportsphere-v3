@@ -2,12 +2,14 @@
  * Sportsphere Mobile — Root Layout
  * --------------------------------
  * Loads fonts, applies brand background, sets up SafeArea + status bar.
+ * Boots the auth store (calls /api/auth/me) and gates routes: if no session
+ * and not on an auth screen, redirect to login.
  */
 
 import '../global.css';
 
 import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
@@ -26,6 +28,7 @@ import {
 } from '@expo-google-fonts/outfit';
 
 import { colors } from '@sportsphere/design-system/tokens';
+import { useAuthStore } from '../lib/authStore';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -41,11 +44,36 @@ export default function RootLayout() {
     Outfit_700Bold,
   });
 
+  const router = useRouter();
+  const segments = useSegments();
+  const session = useAuthStore((s) => s.session);
+  const initialized = useAuthStore((s) => s.initialized);
+  const fetchMe = useAuthStore((s) => s.fetchMe);
+
+  // Boot: try to rehydrate the session from SecureStore.
+  useEffect(() => {
+    fetchMe().catch(() => {});
+  }, [fetchMe]);
+
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync().catch(() => {});
     }
   }, [fontsLoaded, fontError]);
+
+  // Auth gate: redirect between (auth) and (tabs) based on session presence.
+  useEffect(() => {
+    if (!initialized || !fontsLoaded) return;
+    const inAuthGroup = (segments[0] as string) === '(auth)';
+
+    if (!session && !inAuthGroup) {
+      // Not signed in — go to login.
+      router.replace('/(auth)/login');
+    } else if (session && inAuthGroup) {
+      // Signed in but still on auth screen — go to tabs.
+      router.replace('/(tabs)');
+    }
+  }, [session, initialized, fontsLoaded, segments, router]);
 
   if (!fontsLoaded && !fontError) {
     return null;  // splash screen still visible
@@ -65,6 +93,9 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="leaderboard" />
+        <Stack.Screen name="player/[id]" />
         <Stack.Screen name="+not-found" />
       </Stack>
     </SafeAreaProvider>

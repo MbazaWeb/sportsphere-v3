@@ -1,5 +1,5 @@
-import type { LoginRequest, RegisterRequest, AuthResponse } from '@sportsphere/types/auth.js';
-import { createApiClient } from './index.js';
+import type { LoginRequest, RegisterRequest, AuthResponse } from '@sportsphere/types/auth';
+import { createApiClient } from './index';
 
 export function createAuthApi(client: ReturnType<typeof createApiClient>) {
   return {

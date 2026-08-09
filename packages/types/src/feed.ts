@@ -78,7 +78,9 @@ export interface Comment {
 }
 
 export interface FeedFilters {
-  type?: PostType;
+  /** Feed algorithm to use; can be a PostType filter or one of the
+   *  algorithm buckets understood by the API: 'for-you' | 'trending' | 'spotlight'. */
+  type?: PostType | 'for-you' | 'trending' | 'spotlight';
   sport?: string;
   cursor?: string;
   limit?: number;

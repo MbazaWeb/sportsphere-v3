@@ -3,13 +3,27 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": ["./*"],
-      "@sportsphere/design-system": ["../packages/design-system/src"],
-      "@sportsphere/design-system/*": ["../packages/design-system/src/*"],
-      "@sportsphere/types": ["../packages/types/src"],
-      "@sportsphere/types/*": ["../packages/types/src/*"],
-      "@sportsphere/api-client": ["../packages/api-client/src"],
-      "@sportsphere/api-client/*": ["../packages/api-client/src/*"]
+      "@/*": [
+        "./*"
+      ],
+      "@sportsphere/design-system": [
+        "../packages/design-system/src"
+      ],
+      "@sportsphere/design-system/*": [
+        "../packages/design-system/src/*"
+      ],
+      "@sportsphere/types": [
+        "../packages/types/src"
+      ],
+      "@sportsphere/types/*": [
+        "../packages/types/src/*"
+      ],
+      "@sportsphere/api-client": [
+        "../packages/api-client/src"
+      ],
+      "@sportsphere/api-client/*": [
+        "../packages/api-client/src/*"
+      ]
     }
   },
   "include": [
@@ -19,6 +33,7 @@
     "expo-env.d.ts",
     "../packages/design-system/src/**/*.ts",
     "../packages/types/src/**/*.ts",
-    "../packages/api-client/src/**/*.ts"
+    "../packages/api-client/src/**/*.ts",
+    "nativewind-env.d.ts"
   ]
 }

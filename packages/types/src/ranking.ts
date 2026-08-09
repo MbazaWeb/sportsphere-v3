@@ -2,8 +2,8 @@
  * Ranking + leaderboard shared types
  */
 
-import type { PerformanceTier } from './performance.js';
-import type { PlayerPosition } from './user.js';
+import type { PerformanceTier } from './performance';
+import type { PlayerPosition } from './user';
 
 export type RankingCategory =
   | 'OVERALL'

@@ -1,2 +1,2 @@
-export * from './tokens.js';
-export { default as tailwindPreset } from './tailwind-preset.js';
+export * from './tokens';
+export { default as tailwindPreset } from './tailwind-preset';

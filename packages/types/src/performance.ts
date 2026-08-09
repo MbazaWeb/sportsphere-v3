@@ -3,7 +3,7 @@
  * Mirrors src/lib/performance-engine/types.ts
  */
 
-import type { PlayerPosition } from './user.js';
+import type { PlayerPosition } from './user';
 
 export type KPIRole = 'PLAYER' | 'COACH' | 'TEAM';
 

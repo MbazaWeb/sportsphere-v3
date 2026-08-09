@@ -7,10 +7,24 @@
  * For local dev against the running Next.js app on web:
  *   EXPO_PUBLIC_API_URL=http://192.168.x.x:3000
  *   (use your LAN IP — the simulator/device cannot reach localhost of the dev machine)
+ *
+ * For the deployed VPS:
+ *   EXPO_PUBLIC_API_URL=http://104.152.50.173:3002/sportsphere
  */
 
 import * as SecureStore from 'expo-secure-store';
-import { createApiClient, createAuthApi, createFeedApi, createPerformanceApi, createLeaderboardApi } from '@sportsphere/api-client';
+import {
+  createApiClient,
+  createAuthApi,
+  createFeedApi,
+  createPerformanceApi,
+  createLeaderboardApi,
+  createNotificationsApi,
+  createSportsApi,
+  createPostsApi,
+  createProfileApi,
+  createFollowsApi,
+} from '@sportsphere/api-client';
 
 const JWT_KEY = 'sportsphere.jwt';
 
@@ -50,7 +64,12 @@ export const apiClient = createApiClient({
   },
 });
 
-export const authApi        = createAuthApi(apiClient);
-export const feedApi        = createFeedApi(apiClient);
-export const performanceApi = createPerformanceApi(apiClient);
-export const leaderboardApi = createLeaderboardApi(apiClient);
+export const authApi          = createAuthApi(apiClient);
+export const feedApi          = createFeedApi(apiClient);
+export const performanceApi   = createPerformanceApi(apiClient);
+export const leaderboardApi   = createLeaderboardApi(apiClient);
+export const notificationsApi = createNotificationsApi(apiClient);
+export const sportsApi        = createSportsApi(apiClient);
+export const postsApi         = createPostsApi(apiClient);
+export const profileApi       = createProfileApi(apiClient);
+export const followsApi       = createFollowsApi(apiClient);

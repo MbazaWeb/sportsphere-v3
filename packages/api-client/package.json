@@ -10,7 +10,12 @@
     "./auth": "./src/auth.ts",
     "./feed": "./src/feed.ts",
     "./performance": "./src/performance.ts",
-    "./leaderboard": "./src/leaderboard.ts"
+    "./leaderboard": "./src/leaderboard.ts",
+    "./notifications": "./src/notifications.ts",
+    "./sports": "./src/sports.ts",
+    "./posts": "./src/posts.ts",
+    "./profile": "./src/profile.ts",
+    "./follows": "./src/follows.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

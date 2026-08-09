@@ -14,7 +14,7 @@
  *   export default { presets: [preset], content: [...] }
  */
 
-import { colors, radii, typography, shadows } from './tokens.js';
+import { colors, radii, typography, shadows } from './tokens';
 
 export default {
   darkMode: 'class',
