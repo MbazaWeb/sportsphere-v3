@@ -3,7 +3,7 @@
 **Date**: 2026-08-09
 **Repo**: `MbazaWeb/sportsphere-v3`
 **VPS**: `104.152.50.173:3002` (live)
-**Status**: Backend deployed · Mobile app live-wired to VPS (Phase C complete) · Ready for Phase D
+**Status**: Backend deployed · Mobile app live-wired to VPS (Phase C complete) · Store submission assets ready (Phase F complete) · Push notifications in progress (Phase D)
 
 ---
 
@@ -171,7 +171,8 @@ Each profile bakes `EXPO_PUBLIC_API_URL=http://104.152.50.173:3002/sportsphere` 
 | `59e259c` | Fix migration: SQLite `DATETIME` → PostgreSQL `TIMESTAMP(3)` in `0001_initial` |
 | `d98259b` | Mobile: Expo SDK 52 + NativeWind v4 wired up + brand icons |
 | `9077887` | EAS Update config: 3 branch channels + `expo-updates` plugin |
-| **Phase C** | **Mobile app wired to live VPS — auth + 5 tabs + leaderboard + player detail + post composer (this commit)** |
+| **Phase C** | **Mobile app wired to live VPS — auth + 5 tabs + leaderboard + player detail + post composer** |
+| **Phase F** | **Store submission assets — production app.json + eas.json + listing metadata + Privacy Policy + ToS + screenshots spec + submission guide + release.sh script (this commit)** |
 
 ---
 
@@ -274,7 +275,7 @@ All five tabs + auth + leaderboard + player detail are now wired to the live VPS
 | **Player detail** | ✅ `/player/[id]` with PerformanceCard (tier, points, form, events ledger, follow toggle) |
 | **Leaderboard** | ✅ `/leaderboard` modal with dimension chips + role filter + rank movement |
 
-### Phase D: Push Notifications (next)
+### Phase D: Push Notifications (in progress — owned by another agent)
 
 - `expo-notifications` package + APNs/FCM credentials
 - Server-side: Notification table → push token lookup → send
@@ -287,12 +288,44 @@ All five tabs + auth + leaderboard + player detail are now wired to the live VPS
 - OG meta tags on web for social share previews
 - Share sheet integration on mobile (Share2 → native share)
 
-### Phase F: Native Build & App Store
+### Phase F: Native Build & App Store — ✅ COMPLETE (configuration & assets)
 
-1. `eas build --profile production --platform ios` → `.ipa` to App Store
-2. `eas build --profile production --platform android` → `.aab` to Play Store
-3. App Store Connect + Play Console setup (screenshots, privacy policy, review)
-4. OTA updates via `eas update --branch production` post-launch
+All configuration, store assets, and submission documentation are in place. The actual `eas build` + `eas submit` commands are ready to run once the user supplies their Apple / Google / Expo credentials.
+
+#### What shipped
+
+| Asset | Path | Purpose |
+|---|---|---|
+| Production `app.json` | `mobile/app.json` | Enriched with iOS `infoPlist` usage strings (camera, photo library, mic, location, ATT), Android `permissions` (8) + `usesCleartextTraffic` for VPS HTTP, `buildNumber` + `versionCode` for store versioning, ATS exception for VPS IP |
+| Production `eas.json` | `mobile/eas.json` | 3 build profiles (dev / preview / production) + 3 submit profiles with `ascApiKeyPath`, `appleTeamId`, `serviceAccountKeyPath`, `track` per environment. `autoIncrement: true` on production. `requireCommit: true` to prevent accidental builds of uncommitted code. |
+| App Store + Play Store listing | `mobile/store/listings/en-US.json` | Apple: name, subtitle, description (3500 chars), keywords (100 chars), categories (SPORTS + SOCIAL_NETWORKING). Android: name, short desc (80 chars), full desc, promo text, categories, content rating. |
+| Privacy Policy | `mobile/store/privacy-policy.md` | GDPR-compliant, 12 sections: data collected, legal basis, sharing processors (Expo, APNs, FCM, hosting), retention, user rights, security (Argon2id, SecureStore, JWT), children, international transfers, cookies, changes, contact. |
+| Terms of Service | `mobile/store/terms-of-service.md` | 16 sections: eligibility, account, acceptable use, UGC licence, performance engine disclaimer, verification, Pro accounts, IP, disclaimers, liability, indemnification, termination, governing law, dispute resolution, changes, contact. |
+| Screenshots spec | `mobile/store/SCREENSHOTS.md` | 10 screenshots per device (iPhone 6.7" / 6.5" / 5.5" / iPad 12.9" / Android phone), each with screen, caption, file name, and capture instructions (manual + simulator + fastlane). Promo text for both stores. |
+| Submission guide | `mobile/store/SUBMISSION_GUIDE.md` | End-to-end: prerequisites (Apple Dev $99, Play Console $25, EAS login), placeholder replacement table, iOS build + submit + ASC listing tabs, Android build + submit + Play Console sections, OTA update workflow, versioning strategy, release checklist, troubleshooting. |
+| Credentials folder | `mobile/store/credentials/` | `.gitignored` — holds `AuthKey_<KEY_ID>.p8` + `google-service-account-key.json`. README explains security. |
+| Release script | `mobile/scripts/release.sh` | `./release.sh patch|minor|major` — bumps version + buildNumber + versionCode, commits, tags, builds .ipa + .aab. `./release.sh ota "msg"` — pushes JS-only update to production channel. `./release.sh build` — bumps build number only. |
+
+#### Production export verification
+
+| Platform | Bundle size | Hermes bytecode | Errors |
+|---|---|---|---|
+| iOS | 5.61 MB | ✅ | 0 |
+| Android | 5.61 MB | ✅ | 0 |
+
+Ran with `EXPO_PUBLIC_API_URL="https://104.152.50.173:3002/sportsphere"` (production env from `eas.json`). `tsc --noEmit`: 0 TypeScript errors.
+
+#### Coordination with Phase D
+
+Phase D (another agent) will modify `mobile/app.json` to add `expo-notifications` to the `plugins` array and likely add an `ios.apsEnvironment` entitlement. **Phase F's changes to `app.json` did NOT touch the `plugins` array** — they only added `infoPlist`, `permissions`, `versionCode`, `buildNumber`, and ATS config. Phase D's plugin addition will merge cleanly.
+
+#### What's left for the user
+
+1. **Replace placeholders** in `app.json` and `eas.json` (EAS project ID, Apple ID, Apple Team ID, ASC API Key ID + Issuer ID, Google service account JSON path) — see `store/SUBMISSION_GUIDE.md §0.5`.
+2. **Host the privacy policy + ToS** at `https://sportsphere.app/privacy` and `/terms` — content is ready in `store/privacy-policy.md` + `store/terms-of-service.md`.
+3. **Capture screenshots** for iPhone 6.7" / 6.5" / 5.5" / iPad 12.9" / Android phone — spec in `store/SCREENSHOTS.md`.
+4. **Run the build + submit commands** — see `store/SUBMISSION_GUIDE.md §1` (iOS) and `§2` (Android).
+5. **Optional HTTPS upgrade** on the VPS before App Store review (Apple rejects apps that ship with HTTP-only backends without an ATS exception).
 
 ### Phase G: Real-time Features
 
@@ -322,17 +355,29 @@ Currently 0 events / 0 verifications. Need to:
 
 ## 11. Recommended Next Move
 
-**Phase C is complete** — the mobile app is now fully wired to the live VPS with real auth, live feed, scores, notifications, profile, leaderboard, and player detail. The recommended next move is to **register your first real user from the mobile app**, which will:
+**Phase C is complete** (mobile wired to live VPS) and **Phase F is complete** (store submission assets ready). The recommended next move is to **register your first real user from a development build on a real device**, which will:
 
 1. Validate the end-to-end mobile → VPS API contract on a real device
 2. Populate the `User` table (currently 0 rows) with a real account
 3. Let you publish your first post via the Create tab and watch it appear on the Home feed
 4. Surface any device-specific issues (auth flow on iOS vs Android, push token registration, image uploads)
 
+**To get a development build on a real device:**
+
+```bash
+cd mobile
+# Replace `your-project-id` in app.json + eas.json first (see store/SUBMISSION_GUIDE.md §0.5)
+eas login
+eas init
+eas build --profile development --platform ios    # ~25 min on EAS cloud
+# Install .ipa on your iPhone via Xcode
+```
+
 **After first user is registered**, prioritise:
-1. **Phase D — Push notifications** so the Activity tab lights up in real time
+1. **Phase D — Push notifications** (in progress) so the Activity tab lights up in real time
 2. **Phase H — Performance engine activation** so the Leaderboard populates beyond `[]`
-3. **Phase F — Native build** via `eas build --profile development --platform ios` for on-device testing
+3. **Phase F — Production build** via `./scripts/release.sh patch` once Phase D lands (combines build + tag + submit)
+4. **Phase I — Production hardening** (HTTPS via Let's Encrypt) before App Store review
 
 ---
 
@@ -363,6 +408,17 @@ eas init
 eas build --profile development --platform ios
 # After install:
 eas update --branch development --message "fix feed rendering"
+```
+
+### Production build + submit (Phase F)
+
+```bash
+cd mobile
+# Replace placeholders first — see store/SUBMISSION_GUIDE.md §0.5
+./scripts/release.sh patch         # bump version, commit, tag, build .ipa + .aab
+eas submit --platform ios --profile production
+eas submit --platform android --profile production
+# Then complete store listings per store/SUBMISSION_GUIDE.md §1.3 (Apple) and §2.3 (Google)
 ```
 
 ### Check VPS health

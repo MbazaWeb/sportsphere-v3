@@ -11,7 +11,28 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.sportsphere.app",
-      "backgroundColor": "#0A1628"
+      "backgroundColor": "#0A1628",
+      "buildNumber": "1",
+      "infoPlist": {
+        "CFBundleDisplayName": "Sportsphere",
+        "CFBundleShortVersionString": "1.0.0",
+        "NSCameraUsageDescription": "Sportsphere needs camera access so you can attach photos to posts and updates to your profile.",
+        "NSPhotoLibraryUsageDescription": "Sportsphere needs photo library access so you can pick images for posts, highlights, and your profile avatar.",
+        "NSPhotoLibraryAddUsageDescription": "Sportsphere can save highlight images you create back to your photo library.",
+        "NSMicrophoneUsageDescription": "Sportsphere uses the microphone only when you record short video highlights for posts.",
+        "NSLocationWhenInUseUsageDescription": "Sportsphere uses your location to surface nearby matches, venues, and sports communities on the Scores tab.",
+        "NSUserTrackingUsageDescription": "Sportsphere uses this to measure campaign performance and improve your feed relevance. No data is shared with third parties.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
+          "NSExceptionDomains": {
+            "104.152.50.173": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true
+            }
+          }
+        },
+        "UIViewControllerBasedStatusBarAppearance": true
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +40,22 @@
         "backgroundColor": "#0A1628"
       },
       "package": "com.sportsphere.app",
-      "backgroundColor": "#0A1628"
+      "backgroundColor": "#0A1628",
+      "versionCode": 1,
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "VIBRATE"
+      ],
+      "usesCleartextTraffic": true,
+      "blockedPermissions": [
+        "com.google.android.gms.permission.AD_ID"
+      ]
     },
     "web": {
       "bundler": "metro",
