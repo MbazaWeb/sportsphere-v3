@@ -44,24 +44,13 @@ if [ -d "$APP_DIR/.git" ]; then
   # Also remove untracked junk that may have come back via stray shell redirects.
   # `-` and `72` and `ipconfig` etc. are never legitimate source files.
   git clean -fd -- '-' ipconfig next sudo sportsphere@2.0.0 tsc-errors.txt tsconfig.tsbuildinfo 72 seed.sql 2>/dev/null || true
-  # Remove legacy middleware.ts (Next.js 16 uses proxy.ts instead).
-  # This file is untracked on the VPS from a previous deploy and breaks the
-  # build with "Middleware is missing expected function export name" or
-  # "Both middleware file and proxy file are detected".
-  # Use find to catch ALL copies (src/middleware.ts, src/src/middleware.ts, etc.)
-  find . -path ./node_modules -prune -o -path ./.next -prune -o \
-    -name 'middleware.ts' -not -path '*/node_modules/*' -not -path '*/.next/*' \
-    -not -path '*/mobile/*' -print -delete 2>/dev/null || true
-  find . -path ./node_modules -prune -o -path ./.next -prune -o \
-    -name 'middleware.js' -not -path '*/node_modules/*' -not -path '*/.next/*' \
-    -not -path '*/mobile/*' -print -delete 2>/dev/null || true
-  # Remove root-level proxy.ts — only src/proxy.ts should exist. A root
-  # proxy.ts that re-exports from src/ breaks the build with "Next.js can't
-  # recognize the exported `config` field in route. It mustn't be reexported."
-  rm -f ./proxy.ts ./proxy.js 2>/dev/null || true
+  # middleware.ts at src/ is the Next.js edge auth guard — do NOT delete it.
+  # (Previous versions used proxy.ts — that was incorrect; Next.js requires
+  # the file to be named middleware.ts. proxy.ts has been removed from repo.)
+  rm -f ./src/proxy.ts ./proxy.ts ./proxy.js 2>/dev/null || true
   # Also collapse accidental nested src/src/ directory if present
   # (caused by a bad cp/rsync in a previous deploy — Next.js then sees
-  # ./src/src/proxy.ts as a second proxy file)
+  # causing duplicate middleware detection)
   if [ -d "./src/src" ]; then
     echo "  Found nested ./src/src/ — removing (causes 'Both middleware and proxy detected' error)"
     rm -rf ./src/src
@@ -78,11 +67,11 @@ fi
 echo "[2/9] Writing .env..."
 DATABASE_URL="postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}"
 
-# Cloudinary credentials (avatar + cover image uploads).
-# Source: Cloudinary dashboard → Console → Settings → API Keys.
-CLOUDINARY_CLOUD_NAME="kco40444"
-CLOUDINARY_API_KEY="347775392245998"
-CLOUDINARY_API_SECRET="cWyHoG-02cqA2Yeb8squOHmW7YM"
+# Cloudinary credentials — read from the server .env or set before running.
+# To set on VPS: edit /var/www/sportsphere-nextjs/.cloudinary-creds
+CLOUDINARY_CLOUD_NAME="${CLOUDINARY_CLOUD_NAME:-}"
+CLOUDINARY_API_KEY="${CLOUDINARY_API_KEY:-}"
+CLOUDINARY_API_SECRET="${CLOUDINARY_API_SECRET:-}"
 
 cat > .env << ENV
 NODE_ENV=production
@@ -148,7 +137,7 @@ npm run build
 
 echo "[9b/9] Restarting PM2..."
 pm2 delete sportsphere 2>/dev/null || true
-PORT=$PORT pm2 start npm --name "sportsphere" -- start
+PORT=$PORT pm2 start node --name "sportsphere" -- .next/standalone/server.js
 pm2 save
 
 echo ""

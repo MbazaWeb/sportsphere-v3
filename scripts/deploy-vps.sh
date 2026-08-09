@@ -32,9 +32,10 @@ cat > .env.production << ENV
 NODE_ENV=production
 DATABASE_URL="postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}"
 NEXT_PUBLIC_APP_URL=http://104.152.50.173:${PORT}
+NEXT_PUBLIC_BASE_PATH=/sportsphere
 NEXT_PUBLIC_APP_NAME=SportSphere
-NEXTAUTH_SECRET=$(openssl rand -base64 32)
-NEXTAUTH_URL=http://104.152.50.173:${PORT}
+SESSION_SECRET=$(openssl rand -hex 32)
+JWT_SECRET=$(openssl rand -hex 32)
 PORT=${PORT}
 ENV
 
@@ -63,7 +64,7 @@ npm run build
 # 7. PM2
 echo "[7/7] PM2..."
 pm2 delete sportsphere 2>/dev/null || true
-PORT=$PORT pm2 start npm --name "sportsphere" -- start
+PORT=$PORT pm2 start node --name "sportsphere" -- .next/standalone/server.js
 pm2 save
 
 echo ""

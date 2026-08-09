@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
+    "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
+    "start": "NODE_ENV=production node .next/standalone/server.js",
     "lint": "eslint .",
     "build:pwa": "next build",
     "mobile:init": "npx cap init SportSphere com.sportsphere.app --web-dir out",
@@ -24,7 +24,8 @@
     "db:studio": "prisma studio",
     "db:push": "prisma db push",
     "db:setup": "prisma generate && prisma db push && npx tsx prisma/seed.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "start:dev": "next start"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.536.0",

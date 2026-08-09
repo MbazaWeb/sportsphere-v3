@@ -20,7 +20,7 @@ export {
 export type { SessionPayload } from './session';
 
 // ─── Convenience: extract user ID from request session cookie ─
-// Use this in API routes instead of relying on the proxy x-user-id header.
+// Use this in API routes instead of relying on the middleware x-user-id header.
 export async function getUserIdFromRequest(request: NextRequest): Promise<string | null> {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   const payload = await verifySession(token);
