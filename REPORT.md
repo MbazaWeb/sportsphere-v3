@@ -366,6 +366,57 @@ cd mobile
 
 The two "NOT FOUND" errors are expected — they are real binary credential files that only the user can download from their Apple / Google accounts. Drop them in `mobile/store/credentials/` and re-run the script.
 
+#### F.2 — Privacy Policy + ToS hosted as Next.js pages
+
+The Privacy Policy and Terms of Service are now live as Next.js routes, accessible at the URLs Apple and Google expect:
+
+| Page | URL (with basePath) | Source |
+|---|---|---|
+| Privacy Policy | `https://sportsphere.app/sportsphere/privacy` | `src/app/privacy/page.tsx` |
+| Terms of Service | `https://sportsphere.app/sportsphere/terms` | `src/app/terms/page.tsx` |
+
+Both pages are server components (no `'use client'`) with proper `<Metadata>` for SEO (`title`, `description`, `robots: index, follow`). The pages render the full content from `mobile/store/privacy-policy.md` and `mobile/store/terms-of-service.md` as styled React components — same Sportsphere brand (navy `#0A1628` bg, gold `#F5C518` headings, orange `#FF6B35` hover accents), Inter font, max-w-3xl readable column, fully responsive.
+
+**Sections covered (Privacy Policy — 12 sections):**
+1. Information We Collect (account, profile, UGC, verification docs, device IDs, usage data, push tokens)
+2. How We Use Your Information (operate service, compute rankings, send notifications, prevent abuse, improve, legal)
+3. Legal Basis (GDPR — contract, legitimate interests, consent)
+4. Data Sharing (table: Expo/EAS, Apple APNs, Google FCM, hosting, email)
+5. Data Retention (active / deleted / logs / push tokens)
+6. Your Rights (access, rectify, erase, restrict, portability, withdraw consent, complain)
+7. Security (Argon2id, JWT + SecureStore, TLS, PostgreSQL RBAC, AuditLog)
+8. Children's Privacy
+9. International Transfers (SCC)
+10. Cookies (mobile: none; web: HttpOnly session only)
+11. Changes to this Policy
+12. Contact
+
+**Sections covered (Terms of Service — 16 sections):**
+1. Eligibility (13+ / 16+ EU)
+2. Your Account
+3. Acceptable Use (9 prohibited behaviours)
+4. User-Generated Content (licence grant, responsibility, moderation)
+5. Performance Engine & Rankings (algorithmic, no guarantee, anti-tampering)
+6. Verification (false docs = immediate suspension)
+7. Pro Accounts (auto-renew, cancel in store settings)
+8. Intellectual Property (Sportsphere trademarks)
+9. Disclaimers (AS IS)
+10. Limitation of Liability
+11. Indemnification
+12. Termination
+13. Governing Law
+14. Dispute Resolution (30-day informal first)
+15. Changes to these Terms
+16. Contact
+
+**Verification:**
+- `tsc --noEmit` on the entire web app: 0 errors
+- Both pages render at `/sportsphere/privacy` and `/sportsphere/terms` once deployed
+- Cross-links: Privacy → Terms and Terms → Privacy (footer link)
+- Mailto links: `privacy@sportsphere.app` and `legal@sportsphere.app`
+
+**To deploy:** the existing `scripts/deploy-production.sh` on the VPS will pick up the new routes automatically on the next `git pull && npm run build && pm2 restart`. After deploy, the listing URLs in `mobile/store/listings/en-US.json` (`privacyPolicyUrl: "https://sportsphere.app/privacy"`) will resolve correctly once DNS for `sportsphere.app` points at the VPS. Until DNS is configured, the pages are reachable at `http://104.152.50.173:3002/sportsphere/privacy` and `/terms`.
+
 ### Phase G: Real-time Features
 
 - WebSocket gateway (Socket.io or Ably) for live match scores, comment threads, presence
