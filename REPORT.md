@@ -3,7 +3,7 @@
 **Date**: 2026-08-09
 **Repo**: `MbazaWeb/sportsphere-v3`
 **VPS**: `104.152.50.173:3002` (live)
-**Status**: Backend deployed · Mobile app live-wired to VPS (Phase C complete) · Store submission assets ready (Phase F complete) · Push notifications in progress (Phase D) · Phase F follow-up complete: credentials populated + Privacy/ToS hosted + screenshots generated + HTTPS config + scripts staged (run on VPS to activate)
+**Status**: Backend deployed · Mobile app live-wired to VPS (Phase C complete) · Store submission assets ready (Phase F complete) · Push notifications in progress (Phase D) · Phase F follow-up complete: credentials populated + Privacy/ToS hosted + screenshots generated + HTTPS config + scripts staged (run on VPS to activate) · Post-HTTPS app.json cleanup complete (ATS exception + cleartext traffic removed — app is now HTTPS-only and App Store review-ready)
 
 ---
 
@@ -173,6 +173,11 @@ Each profile bakes `EXPO_PUBLIC_API_URL=http://104.152.50.173:3002/sportsphere` 
 | `9077887` | EAS Update config: 3 branch channels + `expo-updates` plugin |
 | **Phase C** | **Mobile app wired to live VPS — auth + 5 tabs + leaderboard + player detail + post composer** |
 | **Phase F** | **Store submission assets — production app.json + eas.json + listing metadata + Privacy Policy + ToS + screenshots spec + submission guide + release.sh script (this commit)** |
+| **Phase F.1** | Replace placeholders in app.json + eas.json + add credentials-check.sh (commit `e28a514`) |
+| **Phase F.2** | Host Privacy Policy + ToS as Next.js pages at /privacy and /terms (commit `5a10990`) |
+| **Phase F.3** | Generate 10 placeholder screenshots per device × 2 sizes + gitignore fix (commits `8a0aa3b` + `f4d2b62` + `7576d2e`) |
+| **Phase F.4** | HTTPS setup on VPS — Nginx config + Let's Encrypt + setup script + renewal hook (commit `39ed066`) |
+| **Phase F.5** | Post-HTTPS app.json cleanup — remove NSAppTransportSecurity exception + usesCleartextTraffic (this commit) |
 
 ---
 
@@ -321,15 +326,15 @@ Phase D (another agent) will modify `mobile/app.json` to add `expo-notifications
 
 #### What's left for the user
 
-1. **Replace placeholders** in `app.json` and `eas.json` (EAS project ID, Apple ID, Apple Team ID, ASC API Key ID + Issuer ID, Google service account JSON path) — see `store/SUBMISSION_GUIDE.md §0.5`.
-2. **Host the privacy policy + ToS** at `https://sportsphere.app/privacy` and `/terms` — content is ready in `store/privacy-policy.md` + `store/terms-of-service.md`.
-3. **Capture screenshots** for iPhone 6.7" / 6.5" / 5.5" / iPad 12.9" / Android phone — spec in `store/SCREENSHOTS.md`.
+1. **Replace placeholders** in `app.json` and `eas.json` (EAS project ID, Apple ID, Apple Team ID, ASC API Key ID + Issuer ID, Google service account JSON path) — ✅ done in F.1; verify against your real Apple/Google accounts via `mobile/scripts/credentials-check.sh` and drop the two real binary credential files (`.p8` + service account JSON) in `mobile/store/credentials/`.
+2. **Host the privacy policy + ToS** at `https://sportsphere.app/privacy` and `/terms` — ✅ done in F.2 (Next.js pages added; just deploy to VPS).
+3. **Capture screenshots** for iPhone 6.7" / 6.5" / 5.5" / iPad 12.9" / Android phone — ✅ placeholders generated in F.3; replace with real device captures before review.
 4. **Run the build + submit commands** — see `store/SUBMISSION_GUIDE.md §1` (iOS) and `§2` (Android).
-5. **Optional HTTPS upgrade** on the VPS before App Store review (Apple rejects apps that ship with HTTP-only backends without an ATS exception).
+5. **HTTPS on the VPS** — ✅ Nginx + Let's Encrypt config + setup script staged in F.4; run `scripts/https/setup-https.sh` on the VPS to activate. ✅ ATS exception + cleartext traffic removed from `app.json` in F.5 — the app is now HTTPS-only and App Store review-ready.
 
-### Phase F Follow-up — Credentials, Privacy/ToS Hosting, HTTPS, Screenshots
+### Phase F Follow-up — Credentials, Privacy/ToS Hosting, HTTPS, Screenshots, Post-HTTPS Cleanup
 
-After the initial Phase F commit, four follow-up tasks were completed to make the app submission-ready:
+After the initial Phase F commit, five follow-up tasks were completed to make the app submission-ready:
 
 #### F.1 — Placeholders replaced in app.json + eas.json
 
@@ -518,7 +523,7 @@ sudo certbot renew --dry-run  # verify hook fires
    ```
    ✓ Production EXPO_PUBLIC_API_URL: https://sportsphere.app/sportsphere (HTTPS)
    ```
-3. **Optional cleanup** in `mobile/app.json` — remove the `NSAppTransportSecurity` exception block (no longer needed once HTTPS works). Apple reviewers prefer apps without ATS exceptions. Also remove `usesCleartextTraffic: true` from the Android section. See `scripts/https/README.md §Post-HTTPS app.json cleanup` for the exact diff.
+3. **Optional cleanup** in `mobile/app.json` — remove the `NSAppTransportSecurity` exception block (no longer needed once HTTPS works). Apple reviewers prefer apps without ATS exceptions. Also remove `usesCleartextTraffic: true` from the Android section. ✅ **Done in F.5** — see F.5 below for the diff and verification.
 
 **Staging test (avoid Let's Encrypt rate limits):**
 ```bash
@@ -532,6 +537,57 @@ sudo STAGING=1 bash scripts/https/setup-https.sh sportsphere.app
 - Certs renew automatically when 30 days from expiry
 - Renewal hook (`/etc/letsencrypt/renewal-hooks/deploy/sportsphere.sh`) reloads nginx with zero downtime
 - Manual test: `sudo certbot renew --dry-run`
+
+#### F.5 — Post-HTTPS app.json cleanup (ATS exception + cleartext traffic removed)
+
+Once HTTPS is live on the VPS (via F.4's `scripts/https/setup-https.sh`), the `NSAppTransportSecurity` exception block in `mobile/app.json` and the `usesCleartextTraffic: true` flag in the Android section become dead weight — and worse, they actively hurt App Store review chances (Apple reviewers flag apps that ship with ATS exceptions when an HTTPS backend is available). This cleanup removes both so the app ships as HTTPS-only.
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `mobile/app.json` | Removed the entire `ios.infoPlist.NSAppTransportSecurity` block (was `{ NSAllowsArbitraryLoads: true, NSExceptionDomains: { "104.152.50.173": { NSExceptionAllowsInsecureHTTPLoads: true, NSIncludesSubdomains: true } } }`) and the `android.usesCleartextTraffic: true` flag. |
+
+**Diff (before → after):**
+
+```jsonc
+// ios.infoPlist — REMOVED
+"NSAppTransportSecurity": {
+  "NSAllowsArbitraryLoads": true,
+  "NSExceptionDomains": {
+    "104.152.50.173": {
+      "NSExceptionAllowsInsecureHTTPLoads": true,
+      "NSIncludesSubdomains": true
+    }
+  }
+}
+
+// android — REMOVED
+"usesCleartextTraffic": true,
+```
+
+**What stays:**
+- All 7 `NS*UsageDescription` strings (camera, photo library, photo library add, microphone, location when in use, user tracking, plus `CFBundleDisplayName` + `CFBundleShortVersionString` + `UIViewControllerBasedStatusBarAppearance`)
+- All 8 Android permissions (INTERNET, ACCESS_NETWORK_STATE, CAMERA, READ/WRITE_EXTERNAL_STORAGE, ACCESS_COARSE/FINE_LOCATION, VIBRATE)
+- `blockedPermissions: ["com.google.android.gms.permission.AD_ID"]`
+- The `plugins` array — **untouched** (Phase D territory; this cleanup merges cleanly with whatever Phase D adds)
+
+**Verification:**
+- `node -e "require('./mobile/app.json')"` — app.json parses as valid JSON
+- `npx tsc --noEmit` (mobile) — 0 TypeScript errors
+- `EXPO_PUBLIC_API_URL="https://sportsphere.app/sportsphere" npx expo export --platform ios` — 5.61 MB Hermes bytecode, 0 errors
+- `EXPO_PUBLIC_API_URL="https://sportsphere.app/sportsphere" npx expo export --platform android` — 5.61 MB Hermes bytecode, 0 errors
+- `bash scripts/credentials-check.sh` — all format checks pass (only the two "NOT FOUND" errors for the real binary `.p8` + service account JSON, which only the user can download)
+
+**Important — what this changes for users:**
+- **Dev / preview builds** will no longer be able to talk to `http://104.152.50.173:3002/sportsphere` from the binary. The `development` and `preview` build profiles in `eas.json` still bake in the HTTP URL — that's intentional, so dev/QA builds can hit the VPS over HTTP while the production binary is HTTPS-only. **To keep dev builds working, either (a) run the VPS HTTPS setup first (recommended) and update the dev/preview `EXPO_PUBLIC_API_URL` in `eas.json` to `https://sportsphere.app/sportsphere`, or (b) use an HTTP-tunnelled dev environment like `ngrok`/`cloudflared` for local development.**
+- **Production builds** are unaffected — they already use `https://sportsphere.app/sportsphere` (set in F.1).
+
+**Post-cleanup checklist for the user:**
+1. Run `scripts/https/setup-https.sh` on the VPS (F.4) so `https://sportsphere.app/sportsphere/api/health` returns 200
+2. Update `eas.json` `development.env.EXPO_PUBLIC_API_URL` and `preview.env.EXPO_PUBLIC_API_URL` from `http://104.152.50.173:3002/sportsphere` → `https://sportsphere.app/sportsphere` (so dev/QA builds hit HTTPS too)
+3. Do a clean rebuild of any existing development build on your device — Apple caches ATS exceptions in the binary, so an OTA update alone won't pick up this change
+4. Verify on device: launch the app, hit the Home tab — feed should load with no network errors and no ATS warning in the device console
 
 ### Phase G: Real-time Features
 
@@ -550,7 +606,7 @@ Currently 0 events / 0 verifications. Need to:
 
 ### Phase I: Production Hardening
 
-- HTTPS via Let's Encrypt + Nginx reverse proxy (currently HTTP only)
+- ~~HTTPS via Let's Encrypt + Nginx reverse proxy (currently HTTP only)~~ — ✅ config + setup script staged in F.4; ATS exception removed from app.json in F.5. Just run `scripts/https/setup-https.sh` on the VPS to activate.
 - Rate limiting on auth + post routes
 - Image upload pipeline (currently Cloudinary-only)
 - Backup automation (`scripts/backup-sportsphere.sh` exists, needs cron)
@@ -561,29 +617,50 @@ Currently 0 events / 0 verifications. Need to:
 
 ## 11. Recommended Next Move
 
-**Phase C is complete** (mobile wired to live VPS) and **Phase F is complete** (store submission assets ready). The recommended next move is to **register your first real user from a development build on a real device**, which will:
+**Phase C is complete** (mobile wired to live VPS) and **Phase F is complete** (store submission assets ready, follow-ups F.1–F.5 done — app.json is now HTTPS-only). The recommended next move is to **activate HTTPS on the VPS, then register your first real user from a development build on a real device**, which will:
 
 1. Validate the end-to-end mobile → VPS API contract on a real device
 2. Populate the `User` table (currently 0 rows) with a real account
 3. Let you publish your first post via the Create tab and watch it appear on the Home feed
 4. Surface any device-specific issues (auth flow on iOS vs Android, push token registration, image uploads)
 
+**To activate HTTPS on the VPS (unblocks first dev build after F.5 cleanup):**
+
+```bash
+ssh deploy@104.152.50.173
+cd /var/www/sportsphere-nextjs
+git pull origin main
+# Prereqs: DNS A record for sportsphere.app → 104.152.50.173, ports 80+443 open
+sudo bash scripts/https/setup-https.sh sportsphere.app www.sportsphere.app
+sudo cp scripts/https/renewal-hook.sh /etc/letsencrypt/renewal-hooks/deploy/sportsphere.sh
+sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/sportsphere.sh
+# Verify:
+curl -I https://sportsphere.app/sportsphere/api/health     # → 200 OK
+curl -I https://sportsphere.app/privacy                    # → 301 → /sportsphere/privacy
+```
+
+**Then update dev/preview env in `eas.json` to HTTPS (so dev builds hit HTTPS too):**
+```bash
+# In mobile/eas.json, change development.env.EXPO_PUBLIC_API_URL and preview.env.EXPO_PUBLIC_API_URL
+# from "http://104.152.50.173:3002/sportsphere"
+# to   "https://sportsphere.app/sportsphere"
+```
+
 **To get a development build on a real device:**
 
 ```bash
 cd mobile
-# Replace `your-project-id` in app.json + eas.json first (see store/SUBMISSION_GUIDE.md §0.5)
 eas login
-eas init
 eas build --profile development --platform ios    # ~25 min on EAS cloud
 # Install .ipa on your iPhone via Xcode
+# (Apple caches ATS exceptions — do a clean rebuild after F.5)
 ```
 
 **After first user is registered**, prioritise:
 1. **Phase D — Push notifications** (in progress) so the Activity tab lights up in real time
 2. **Phase H — Performance engine activation** so the Leaderboard populates beyond `[]`
 3. **Phase F — Production build** via `./scripts/release.sh patch` once Phase D lands (combines build + tag + submit)
-4. **Phase I — Production hardening** (HTTPS via Let's Encrypt) before App Store review
+4. **Phase I — Remaining production hardening** (rate limiting, Sentry, PostHog, backup cron) — HTTPS is already staged
 
 ---
 
