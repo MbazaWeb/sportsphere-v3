@@ -18,7 +18,7 @@ export async function GET() {
       take: 20,
     });
 
-    return NextResponse.json(communities.map(c => ({
+    return NextResponse.json(communities.map((c: typeof communities[number]) => ({
       ...c,
       createdBy: c.createdBy ? {
         ...c.createdBy,

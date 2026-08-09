@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
               create: (await db.sport.findMany({
                 where: { slug: { in: sports } },
                 select: { id: true },
-              })).map((s) => ({ sportId: s.id })),
+              })).map((s: { id: string }) => ({ sportId: s.id })),
             },
           }
         : {}),
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
     roleCategory: user.userRole?.category || 'individual',
     typeName: user.userRoleType?.name || 'Casual Fan',
     typeSlug: user.userRoleType?.slug || 'casual',
-    sports: user.userSports.map((us) => us.sport),
+    sports: user.userSports.map((us: typeof user.userSports[number]) => us.sport),
     roleProfile: {},
   };
 

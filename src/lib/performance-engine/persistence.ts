@@ -103,7 +103,7 @@ export async function recalcPerformanceProfile(userId: string): Promise<void> {
     take: 60,
   });
   const seasonAverage = snapshots.length > 0
-    ? snapshots.reduce((s, x) => s + x.performanceScore, 0) / snapshots.length
+    ? snapshots.reduce((s: number, x: typeof snapshots[number]) => s + x.performanceScore, 0) / snapshots.length
     : 50;
   const careerAverage = undefined; // TODO: pull from older snapshots
 
@@ -274,7 +274,8 @@ export async function recordPerformanceEvent(input: RecordEventInput): Promise<v
   const balanceAfter = balanceBefore + finalPoints;
 
   // Create event + transaction in a single transaction
-  await db.$transaction(async (tx) => {
+  await db.$transaction(// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async (tx: any) => {
     const event = await tx.performanceEvent.create({
       data: {
         userId: input.userId,
@@ -439,7 +440,7 @@ export async function runDailySnapshot(): Promise<{ captured: number }> {
 
   const now = new Date();
   await db.performanceSnapshot.createMany({
-    data: profiles.map((p) => ({
+    data: profiles.map((p: typeof profiles[number]) => ({
       userId: p.userId,
       capturedAt: now,
       period: 'daily',

@@ -73,13 +73,13 @@ export async function GET(request: NextRequest) {
         })
       : [];
 
-    const mentionMap = new Map(mentionedUsers.map((u) => [u.id, u]));
+    const mentionMap = new Map(mentionedUsers.map((u: typeof mentionedUsers[number]) => [u.id, u]));
 
     // Fetch the viewer's likes for these comments (top-level + replies) in one query.
     const allCommentIds = new Set<string>();
     for (const c of comments) {
       allCommentIds.add(c.id);
-      c.replies.forEach((r) => allCommentIds.add(r.id));
+      c.replies.forEach((r: typeof c.replies[number]) => allCommentIds.add(r.id));
     }
     const viewerLikes = viewerId
       ? await db.commentLike.findMany({
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
           select: { commentId: true },
         })
       : [];
-    const likedSet = new Set(viewerLikes.map((l) => l.commentId));
+    const likedSet = new Set(viewerLikes.map((l: typeof viewerLikes[number]) => l.commentId));
 
     // Build the response shape — flatten the JSON-string fields and attach
     // `viewerLiked` boolean + resolved mentioned users to every comment.
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
         mentionedUserIds: ids,
         mentionedUsers: ids.map((id) => mentionMap.get(id)).filter(Boolean),
         viewerLiked: likedSet.has(c.id),
-        replies: c.replies.map((r) => {
+        replies: c.replies.map((r: typeof c.replies[number]) => {
           const rids = safeJsonParse<string[]>(r.mentionedUserIds, []);
           return {
             ...r,
@@ -112,14 +112,14 @@ export async function GET(request: NextRequest) {
       };
     };
 
-    const parsed = comments.map(parseComment).map((c) => ({
+    const parsed = comments.map(parseComment).map((c: ReturnType<typeof parseComment>) => ({
       ...c,
       user: {
         ...c.user,
         roleData: safeJsonParse(c.user.roleData, {}),
         sportsFollowing: safeJsonParse(c.user.sportsFollowing, []),
       },
-      replies: c.replies.map((r) => ({
+      replies: c.replies.map((r: ReturnType<typeof parseComment>['replies'][number]) => ({
         ...r,
         user: {
           ...r.user,
@@ -195,10 +195,10 @@ export async function POST(request: NextRequest) {
           select: { id: true, handle: true },
         });
         // Lowercased fallback in case Postgres collation differs.
-        const lowerToId = new Map(byIn.map((u) => [u.handle.toLowerCase(), u.id]));
+        const lowerToId = new Map(byIn.map((u: typeof byIn[number]) => [u.handle.toLowerCase(), u.id]));
         for (const h of handleTokens) {
           const id = lowerToId.get(h.toLowerCase());
-          if (id) idTokens.push(id);
+          if (id) idTokens.push(id as string);
         }
       }
       cleanMentions = Array.from(new Set(idTokens));
@@ -239,7 +239,7 @@ export async function POST(request: NextRequest) {
       replies: [],
       user: {
         ...comment.user,
-        roleData: safeJsonParse(comment.user.roleData, {}),
+        roleData: safeJsonParse(comment.user.roleData as string, {}),
         sportsFollowing: safeJsonParse(comment.user.sportsFollowing, []),
       },
     };

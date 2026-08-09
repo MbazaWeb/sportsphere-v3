@@ -78,7 +78,7 @@ export async function GET(req: Request) {
       take: limit,
     });
 
-    const leaderboard = users.map((u, i) => {
+    const leaderboard = users.map((u: typeof users[number], i: number) => {
       const perf = u.performanceProfile;
       return {
         rank: i + 1,

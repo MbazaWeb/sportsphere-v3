@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
         typeName: user.userRoleType?.name || 'Casual Fan',
         typeSlug: user.userRoleType?.slug || 'casual',
         typeDescription: user.userRoleType?.description || null,
-        sports: user.userSports.map(us => us.sport),
+        sports: user.userSports.map((us: typeof user.userSports[number]) => us.sport),
         sportsFollowing: safeJsonParse(user.sportsFollowing, []),
         roleData: safeJsonParse(user.roleData, {}),
         // For custom roles: prefer typed profile data, fall back to JSON
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
         privacySettings: safeJsonParse(user.privacySettings, {}),
         notifPrefs: safeJsonParse(user.notifPrefs, {}),
         dateOfBirth: user.dateOfBirth?.toISOString() || null,
-        favorites: user.favorites.map(f => ({
+        favorites: user.favorites.map((f: typeof user.favorites[number]) => ({
           id: f.id, targetType: f.targetType, targetName: f.targetName, targetHandle: f.targetHandle,
         })),
       };
@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
       typeName: user.userRoleType?.name || 'Casual Fan',
       typeSlug: user.userRoleType?.slug || 'casual',
       typeDescription: user.userRoleType?.description || null,
-      sports: user.userSports.map(us => us.sport),
+      sports: user.userSports.map((us: typeof user.userSports[number]) => us.sport),
       sportsFollowing: safeJsonParse(user.sportsFollowing, []),
       roleData: safeJsonParse(user.roleData, {}),
       roleProfile: isTypedProfileRole(user.role) && typedProfile && Object.keys(typedProfile).length > 0
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
       privacySettings: safeJsonParse(user.privacySettings, {}),
       notifPrefs: safeJsonParse(user.notifPrefs, {}),
       dateOfBirth: user.dateOfBirth?.toISOString() || null,
-      favorites: user.favorites.map(f => ({
+      favorites: user.favorites.map((f: typeof user.favorites[number]) => ({
         id: f.id, targetType: f.targetType, targetName: f.targetName, targetHandle: f.targetHandle,
       })),
     });
@@ -237,23 +237,23 @@ export async function PUT(request: NextRequest) {
         where: {
           isActive: true,
           OR: [
-            { slug: { in: newSports.map((s: string) => s.toLowerCase().replace(/\s+/g, '-')) } },
+            { slug: { in: (newSports as string[]).map((s: string) => s.toLowerCase().replace(/\s+/g, '-')) } },
             { name: { in: newSports } },
           ],
         },
         select: { id: true },
       });
-      const newSportIds = sportRecords.map(s => s.id);
+      const newSportIds = sportRecords.map((s: typeof sportRecords[number]) => s.id);
 
       // Get current UserSport records
       const currentUserSports = await db.userSport.findMany({
         where: { userId },
         select: { sportId: true },
       });
-      const currentSportIds = new Set(currentUserSports.map(us => us.sportId));
+      const currentSportIds = new Set(currentUserSports.map((us: typeof currentUserSports[number]) => us.sportId));
 
       // Determine adds and removes
-      const toAdd = newSportIds.filter(id => !currentSportIds.has(id));
+      const toAdd = newSportIds.filter((id: string) => !currentSportIds.has(id));
       const toRemove = [...currentSportIds].filter(id => !newSportIds.includes(id));
 
       // Delete removed sports
@@ -266,7 +266,7 @@ export async function PUT(request: NextRequest) {
       // Create added sports
       if (toAdd.length > 0) {
         await db.userSport.createMany({
-          data: toAdd.map(sportId => ({ userId, sportId })),
+          data: toAdd.map((sportId: string) => ({ userId, sportId })),
           skipDuplicates: true,
         });
       }

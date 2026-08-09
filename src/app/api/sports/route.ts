@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const result = sports.map(s => ({
+    const result = sports.map((s: typeof sports[number]) => ({
       ...s,
       tags: safeJsonParse(s.tags, []),
     }));

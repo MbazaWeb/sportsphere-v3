@@ -7,7 +7,41 @@
 // This file is the ONLY place that knows about Prisma — the calculator
 // itself stays pure / unit-testable.
 
-import type { PlayerProfile, CoachProfile, TeamProfile } from '@prisma/client';
+// Local type aliases matching prisma/schema.prisma typed profile tables
+// (Prisma client types used directly to avoid regeneration requirement)
+type PlayerProfile = {
+  userId: string; position?: string | null; secondaryPosition?: string | null;
+  preferredFoot?: string | null; jerseyNumber?: string | null;
+  height?: number | null; weight?: number | null;
+  appearances?: number | null; starts?: number | null; minutes?: number | null;
+  goals?: number | null; assists?: number | null; yellowCards?: number | null;
+  redCards?: number | null; rating?: number | null; motm?: number | null;
+  passAccuracy?: number | null; chancesCreated?: number | null;
+  shots?: number | null; shotsOnTarget?: number | null;
+  tackles?: number | null; interceptions?: number | null;
+  duelsWon?: number | null; aerialDuels?: number | null;
+  cleanSheets?: number | null; saves?: number | null; savePct?: number | null;
+  goalsConceded?: number | null; penaltiesSaved?: number | null;
+  playerType?: string | null; careerStatus?: string | null;
+  currentClub?: string | null; nationalTeam?: string | null;
+  marketValue?: string | null; form?: string | null; ranking?: string | null;
+  [key: string]: unknown;
+};
+type CoachProfile = {
+  userId: string; coachingRole?: string | null; currentTeam?: string | null;
+  matchesManaged?: number | null; wins?: number | null; draws?: number | null;
+  losses?: number | null; goalsFor?: number | null; goalsAgainst?: number | null;
+  cleanSheets?: number | null; trophiesWon?: number | null;
+  preferredFormation?: string | null; playingPhilosophy?: string | null;
+  [key: string]: unknown;
+};
+type TeamProfile = {
+  userId: string; nickname?: string | null; league?: string | null;
+  matchesPlayed?: number | null; wins?: number | null; draws?: number | null;
+  losses?: number | null; goalsFor?: number | null; goalsAgainst?: number | null;
+  points?: number | null; position?: string | null; form?: string | null;
+  [key: string]: unknown;
+};
 import type { KPIReading, PositionGroup, ComputedPerformance } from './types';
 import { resolvePositionGroup } from './positions';
 import {
@@ -141,7 +175,7 @@ export function computePerformanceFromTypedProfile(
   let matchesPlayed = 0;
 
   if (input.role === 'player' && input.player) {
-    position = input.player.position;
+    position = input.player.position ?? null;
     group = resolvePositionGroup(position);
     readings = playerToReadings(input.player);
     matchesPlayed = Number(input.player.appearances ?? 0);

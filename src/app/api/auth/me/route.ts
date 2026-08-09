@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       roleCategory: user.userRole?.category || 'individual',
       typeName: user.userRoleType?.name || 'Casual Fan',
       typeSlug: user.userRoleType?.slug || 'casual',
-      sports: user.userSports.map(us => us.sport),
+      sports: user.userSports.map((us: typeof user.userSports[number]) => us.sport),
       // Phase 4: expose typed profile for custom roles
       typedProfile,
       // For custom roles: prefer typed profile, fall back to legacy JSON

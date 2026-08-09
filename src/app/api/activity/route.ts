@@ -77,14 +77,14 @@ export async function GET(request: NextRequest) {
       }
     };
 
-    sentMessages.forEach((m) => processMessage(m, true));
-    receivedMessages.forEach((m) => processMessage(m, false));
+    sentMessages.forEach((m: typeof sentMessages[number]) => processMessage(m, true));
+    receivedMessages.forEach((m: typeof receivedMessages[number]) => processMessage(m, false));
 
     const messages = Array.from(conversations.values()).sort(
       (a, b) => new Date(b.lastTime).getTime() - new Date(a.lastTime).getTime()
     );
 
-    const safeNotifications = notifications.map((n) => ({
+    const safeNotifications = notifications.map((n: typeof notifications[number]) => ({
       ...n,
       actor: n.actor ? {
         ...n.actor,

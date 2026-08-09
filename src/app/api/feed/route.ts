@@ -94,8 +94,8 @@ export async function GET(request: NextRequest) {
 
     // ─── Hydrate polls with per-option counts + viewer's vote ────────
     const pollIds = posts
-      .map((p) => p.poll?.id)
-      .filter((id): id is string => !!id);
+      .map((p: typeof posts[number]) => p.poll?.id)
+      .filter((id: string | undefined): id is string => !!id);
 
     // Single findMany fetches ALL vote rows for these polls.
     // From those we derive per-poll option counts and the viewer's choice.
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
     for (const v of viewerVotes) viewerVoteByPoll.set(v.pollId, v.optionIdx);
 
     // Parse JSON string fields with safe fallback
-    const parsed = posts.map((post) => {
+    const parsed = posts.map((post: typeof posts[number]) => {
       const options = post.poll
         ? safeJsonParse<string[]>(post.poll.options, [])
         : [];

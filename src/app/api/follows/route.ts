@@ -74,17 +74,17 @@ export async function GET(request: NextRequest) {
         select: { follower: { select: USER_SELECT } },
         orderBy: { createdAt: 'desc' },
       });
-      users = follows.map((f) => f.follower);
+      users = follows.map((f: typeof follows[number]) => f.follower);
     } else {
       const follows = await db.follow.findMany({
         where: { followerId: userId },
         select: { following: { select: USER_SELECT } },
         orderBy: { createdAt: 'desc' },
       });
-      users = follows.map((f) => f.following);
+      users = follows.map((f: typeof follows[number]) => f.following);
     }
 
-    const parsed = users.map((u) => ({
+    const parsed = users.map((u: typeof users[number]) => ({
       ...u,
       roleData: safeJsonParse(u.roleData, {}),
       sportsFollowing: safeJsonParse(u.sportsFollowing, []),

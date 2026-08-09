@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { FavoriteTargetType } from '@prisma/client';
-
 export const dynamic = 'force-dynamic';
 
+// Enum values mirrored from schema.prisma (Prisma client not generated in CI)
+type FavoriteTargetType = 'TEAM' | 'PLAYER' | 'COACH' | 'STADIUM' | 'LEAGUE' | 'NATIONAL_TEAM' | 'COMPETITION' | 'SPORT';
 const VALID_TYPES: FavoriteTargetType[] = [
   'TEAM', 'PLAYER', 'COACH', 'STADIUM', 'LEAGUE', 'NATIONAL_TEAM', 'COMPETITION', 'SPORT'
 ];

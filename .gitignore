@@ -71,3 +71,5 @@ backup_*.sql
 .env
 node_modules/
 .next/
+.env
+.env

@@ -77,7 +77,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       const balanceBefore = current?.totalPoints ?? 0;
       const balanceAfter = balanceBefore + Math.round(event.pointsCalculated);
 
-      await db.$transaction(async (tx) => {
+      await db.$transaction(// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async (tx: any) => {
         // 1. Mark event as verified
         await tx.performanceEvent.update({
           where: { id },
@@ -172,7 +173,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       });
     } else {
       // ── Reject: no points, just mark rejected ──
-      await db.$transaction(async (tx) => {
+      await db.$transaction(// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async (tx: any) => {
         await tx.performanceEvent.update({
           where: { id },
           data: {

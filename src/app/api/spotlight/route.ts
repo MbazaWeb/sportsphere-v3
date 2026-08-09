@@ -20,7 +20,7 @@ export async function GET() {
       take: 20,
     });
 
-    const parsed = posts.map((post) => ({
+    const parsed = posts.map((post: typeof posts[number]) => ({
       ...post,
       mediaUrls: safeJsonParse(post.mediaUrls, []),
       user: {

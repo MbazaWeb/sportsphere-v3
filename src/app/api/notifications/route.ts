@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       take: 30,
     });
 
-    return NextResponse.json(notifications.map(n => ({
+    return NextResponse.json(notifications.map((n: typeof notifications[number]) => ({
       ...n,
       actor: n.actor ? {
         ...n.actor,

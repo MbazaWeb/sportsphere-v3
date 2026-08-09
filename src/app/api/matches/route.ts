@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       take: 50,
     });
 
-    const parsed = matches.map((m) => ({
+    const parsed = matches.map((m: typeof matches[number]) => ({
       ...m,
       events: safeJsonParse(m.events, []),
     }));
