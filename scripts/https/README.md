@@ -14,11 +14,13 @@ This directory contains the scripts and Nginx config to terminate TLS at Nginx a
 
 Before running `setup-https.sh`, make sure:
 
-1. **DNS is configured** — A records for `sportsphere.app` and `www.sportsphere.app` both point at your VPS IP (`104.152.50.173`). Verify with:
+1. **DNS is configured** — **plain A records** (not CNAME, not a CDN proxy) for `sportsphere.app` and `www.sportsphere.app` both pointing directly at your VPS IP (`104.152.50.173`). Verify with:
    ```bash
    getent hosts sportsphere.app
    getent hosts www.sportsphere.app
+   # Expected: both lines should show 104.152.50.173
    ```
+   **If the resolved IP is anything else** (e.g. `13.248.x.x` or `76.223.x.x` — AWS Global Accelerator IPs, which appear if the domain is set up as an AWS-managed endpoint), Let's Encrypt's HTTP-01 challenge will be routed to AWS instead of your VPS and verification will fail. The setup script auto-detects this and aborts before calling certbot.
 
 2. **Ports 80 + 443 are open** in the VPS firewall:
    ```bash
@@ -152,6 +154,26 @@ The `usesCleartextTraffic: true` in the Android section can also be removed.
   ssl_certificate     /etc/letsencrypt/live/<ACTUAL_NAME>/fullchain.pem;
   ssl_certificate_key /etc/letsencrypt/live/<ACTUAL_NAME>/privkey.pem;
   ```
+
+### "certbot: error: unrecognized arguments: --stapling-ocsp"
+This happens on older certbot (< 1.24, e.g. Ubuntu 22.04 ships certbot 1.21.0). The `--stapling-ocsp` flag was removed from `setup-https.sh` in this case — OCSP stapling is now enabled directly in `nginx/sportsphere.conf` via `ssl_stapling on; ssl_stapling_verify on;`, so certbot doesn't need to set it up. If you see this error, pull the latest version of the script:
+```bash
+cd /var/www/sportsphere-nextjs
+git pull origin main
+sudo bash scripts/https/setup-https.sh sportsphere.app www.sportsphere.app
+```
+
+### "Aborting: DNS does not point at this VPS"
+The script's preflight check resolved your domain and found that its IP does NOT match this VPS's public IP. Let's Encrypt verification would silently fail in this case, so the script aborts before calling certbot. To fix:
+1. Log into your DNS provider (Route 53, Cloudflare, Namecheap, etc.)
+2. Find the A record for the domain shown in the warning
+3. Change its value to your VPS's public IP (shown in the warning as `VPS public IP detected: x.x.x.x`)
+4. **Important:** if the record is currently a CNAME pointing at an AWS endpoint (e.g. `*.cloudfront.net` or an AWS Global Accelerator DNS name), **delete the CNAME and create a plain A record** — Let's Encrypt's HTTP-01 challenge cannot traverse through AWS Global Accelerator or Cloudflare's orange-cloud proxy
+5. Wait for DNS propagation (typically 5–15 min — verify with `dig +short sportsphere.app @1.1.1.1`)
+6. Re-run the script. If you want to proceed anyway despite the mismatch (NOT recommended — Let's Encrypt will still fail):
+   ```bash
+   sudo SKIP_DNS_CHECK=1 bash scripts/https/setup-https.sh sportsphere.app www.sportsphere.app
+   ```
 
 ### "nginx: configuration test failed"
 - `sudo nginx -t` shows the exact line that failed.

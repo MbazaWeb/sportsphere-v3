@@ -70,7 +70,26 @@ if [[ ! -f "$NGINX_CONF_SRC" ]]; then
 fi
 log "Nginx config found"
 
-# Check DNS resolution
+# Check DNS resolution + verify each domain points at THIS VPS
+# (Let's Encrypt's HTTP-01 challenge will silently fail if DNS routes traffic
+#  elsewhere — e.g. through AWS Global Accelerator or Cloudflare proxy)
+VPS_PUBLIC_IP="${VPS_PUBLIC_IP:-}"
+if [[ -z "$VPS_PUBLIC_IP" ]]; then
+  # Auto-detect public IP via three providers (best-effort, non-fatal)
+  for url in https://ifconfig.me https://api.ipify.org https://icanhazip.com; do
+    VPS_PUBLIC_IP=$(curl -fsS --max-time 5 "$url" 2>/dev/null | tr -d '[:space:]') || true
+    [[ -n "$VPS_PUBLIC_IP" ]] && break
+  done
+fi
+if [[ -z "$VPS_PUBLIC_IP" ]]; then
+  warn "Could not auto-detect VPS public IP — skipping DNS-target sanity check."
+  warn "If Let's Encrypt verification fails, set VPS_PUBLIC_IP manually:"
+  warn "  sudo VPS_PUBLIC_IP=104.152.50.173 bash $0 $*"
+else
+  log "VPS public IP detected: $VPS_PUBLIC_IP"
+fi
+
+DNS_MISMATCH=0
 for d in "${DOMAINS[@]}"; do
   if ! getent hosts "$d" >/dev/null; then
     err "DNS for $d does not resolve. Add an A record pointing to this VPS first."
@@ -78,7 +97,25 @@ for d in "${DOMAINS[@]}"; do
   fi
   RESOLVED_IP=$(getent hosts "$d" | awk '{print $1}' | head -1)
   log "DNS $d → $RESOLVED_IP"
+  if [[ -n "$VPS_PUBLIC_IP" && "$RESOLVED_IP" != "$VPS_PUBLIC_IP" ]]; then
+    warn "  ↳ $d resolves to $RESOLVED_IP, NOT this VPS ($VPS_PUBLIC_IP)"
+    warn "  ↳ Let's Encrypt verification will FAIL because the challenge request"
+    warn "  ↳ will be routed elsewhere (e.g. AWS Global Accelerator, Cloudflare proxy, CDN)."
+    warn "  ↳ Fix: at your DNS provider, set an A record for $d → $VPS_PUBLIC_IP"
+    warn "  ↳       (not a CNAME, not a CDN/proxy — must be a plain A record to the VPS IP)"
+    warn "  ↳ Then wait for DNS propagation (5–15 min typically) and re-run this script."
+    DNS_MISMATCH=1
+  fi
 done
+if [[ $DNS_MISMATCH -ne 0 ]]; then
+  err "Aborting: DNS does not point at this VPS. Fix the A records and retry."
+  err "To override (NOT recommended — Let's Encrypt will still fail):"
+  err "  sudo SKIP_DNS_CHECK=1 bash $0 $*"
+  if [[ "${SKIP_DNS_CHECK:-0}" != "1" ]]; then
+    exit 1
+  fi
+  warn "SKIP_DNS_CHECK=1 set — proceeding anyway (will likely fail at certbot step)"
+fi
 
 # Check that Next.js is reachable on localhost:3002
 if ! curl -fsS http://127.0.0.1:3002/sportsphere/api/health >/dev/null 2>&1; then
@@ -173,7 +210,10 @@ CERTBOT_ARGS=(
   --register-unsafely-without-email
   --redirect           # auto-add HTTP→HTTPS redirect
   --hsts                # auto-add HSTS header
-  --stapling-ocsp       # auto-enable OCSP stapling
+  # NOTE: --stapling-ocsp was removed — only available in certbot >= 1.24.
+  # Ubuntu 22.04 ships certbot 1.21.0. OCSP stapling is already configured
+  # directly in nginx/sportsphere.conf via ssl_stapling on; ssl_stapling_verify on;
+  # so we don't need certbot to enable it.
 )
 
 for d in "${DOMAINS[@]}"; do
