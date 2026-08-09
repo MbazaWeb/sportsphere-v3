@@ -1,3 +1,4 @@
+import { sendPasswordResetEmail } from '@/lib/email';
 /**
  * app/api/auth/forgot-password/route.ts
  *
@@ -68,9 +69,9 @@ export async function POST(request: NextRequest) {
   });
 
   const resetUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/reset-password?token=${rawToken}`;
-  // await sendResetEmail(user.email, resetUrl); // your email helper
+  
 
-  console.log("[dev] Reset URL:", resetUrl); // remove in production
+  await sendPasswordResetEmail(user.email, resetUrl);
 
   return NextResponse.json(RESPONSE);
 }

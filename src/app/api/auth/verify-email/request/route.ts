@@ -1,22 +1,40 @@
 // POST /api/auth/verify-email/request — Request an email verification OTP
-// Generates a 6-digit code, stores it on the user record, and returns success.
-// In production, this would send an email. In dev, logs to console.
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { verifySession, SESSION_COOKIE } from '@/lib/session';
+import { sendOtpEmail } from '@/lib/email';
+import { rateLimit } from '@/lib/rate-limit';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
-
-function generateOTP(): string {
-  const digits = new Uint8Array(6);
-  crypto.getRandomValues(digits);
-  return Array.from(digits, (b) => (b % 10).toString()).join('');
-}
 
 const OTP_TTL_MS = 1000 * 60 * 15; // 15 minutes
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: max 5 OTP requests per IP per 15 minutes
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown';
+
+    const { success, resetAt } = rateLimit(ip, {
+      maxRequests: 5,
+      windowMs: 15 * 60 * 1000,
+    });
+
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait before requesting another code.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil((resetAt - Date.now()) / 1000)),
+          },
+        }
+      );
+    }
+
     // Authenticate
     const token = request.cookies.get(SESSION_COOKIE)?.value;
     const session = await verifySession(token);
@@ -37,8 +55,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email already verified' }, { status: 400 });
     }
 
-    // Generate OTP
-    const otp = generateOTP();
+    // Generate cryptographically-random 6-digit OTP
+    const otp = crypto.randomInt(100000, 1000000).toString();
     const expiry = new Date(Date.now() + OTP_TTL_MS);
 
     await db.user.update({
@@ -46,17 +64,8 @@ export async function POST(request: NextRequest) {
       data: { emailVerifyToken: otp, emailVerifyExpiry: expiry },
     });
 
-    // Dev: log OTP to console. Production: send email.
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('──────────────────────────────────────────────');
-      console.log(`Email verification OTP for ${user.email}`);
-      console.log(`   OTP: ${otp}`);
-      console.log(`   Expires: ${expiry.toISOString()}`);
-      console.log('──────────────────────────────────────────────');
-    }
-
-    // In production, you would send an email here:
-    // await sendEmail({ to: user.email, subject: 'Verify your email', otp });
+    // Send via Resend
+    await sendOtpEmail(user.email, otp);
 
     return NextResponse.json({
       ok: true,
