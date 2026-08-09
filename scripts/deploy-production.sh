@@ -77,6 +77,13 @@ fi
 # ─── 2. Write .env (Next.js reads .env in production) ────────────
 echo "[2/9] Writing .env..."
 DATABASE_URL="postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}"
+
+# Cloudinary credentials (avatar + cover image uploads).
+# Source: Cloudinary dashboard → Console → Settings → API Keys.
+CLOUDINARY_CLOUD_NAME="kco40444"
+CLOUDINARY_API_KEY="347775392245998"
+CLOUDINARY_API_SECRET="cWyHoG-02cqA2Yeb8squOHmW7YM"
+
 cat > .env << ENV
 NODE_ENV=production
 DATABASE_URL="${DATABASE_URL}"
@@ -86,6 +93,12 @@ NEXT_PUBLIC_APP_URL=http://${VPS_IP}:${PORT}
 NEXT_PUBLIC_BASE_URL=http://${VPS_IP}:${PORT}
 NEXT_PUBLIC_APP_NAME=SportSphere
 PORT=${PORT}
+
+# Cloudinary (image uploads — avatar, cover photos)
+CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+CLOUDINARY_URL=cloudinary://${CLOUDINARY_API_KEY}:${CLOUDINARY_API_SECRET}@${CLOUDINARY_CLOUD_NAME}
 ENV
 export DATABASE_URL="$DATABASE_URL"
 
