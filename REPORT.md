@@ -417,6 +417,47 @@ Both pages are server components (no `'use client'`) with proper `<Metadata>` fo
 
 **To deploy:** the existing `scripts/deploy-production.sh` on the VPS will pick up the new routes automatically on the next `git pull && npm run build && pm2 restart`. After deploy, the listing URLs in `mobile/store/listings/en-US.json` (`privacyPolicyUrl: "https://sportsphere.app/privacy"`) will resolve correctly once DNS for `sportsphere.app` points at the VPS. Until DNS is configured, the pages are reachable at `http://104.152.50.173:3002/sportsphere/privacy` and `/terms`.
 
+#### F.3 — Placeholder screenshots generated (10 per device)
+
+Generated 10 placeholder PNG screenshots per device, in two sizes (iPhone 6.7" 1290×2796 + Android phone 1080×1920). These are valid PNGs at the exact dimensions Apple and Google expect, with the Sportsphere brand (navy bg + gold accents + Inter/Outfit typography). The user can use them as-is for initial store listing submission, or replace them with real captures from a development build (see `store/SCREENSHOTS.md`).
+
+**Generator script:** `scripts/generate-screenshots.py` (Python + PIL). Reads Outfit + Inter TTFs from `mobile/node_modules/@expo-google-fonts/`. Idempotent — re-run after editing to regenerate all 20 PNGs.
+
+**Screenshots produced:**
+
+| # | File | Screen | Caption |
+|---|---|---|---|
+| 1 | `01-Login.png` | `(auth)/login` | Sign in or create an account |
+| 2 | `02-Feed-For-You.png` | `(tabs)/index` For You | Your personalised sports feed |
+| 3 | `03-Feed-Trending.png` | `(tabs)/index` Trending | Trending across 22 role types |
+| 4 | `04-Scores.png` | `(tabs)/scores` | Live scores from 20 sports |
+| 5 | `05-Create.png` | `(tabs)/create` | Post, predict, poll, spotlight |
+| 6 | `06-Activity.png` | `(tabs)/activity` | All your activity in one place |
+| 7 | `07-Profile.png` | `(tabs)/profile` | Your role, sports, and stats |
+| 8 | `08-Leaderboard.png` | `/leaderboard` modal | Climb the global leaderboard |
+| 9 | `09-Player-Detail.png` | `/player/[id]` | Player tiers, ranks & events |
+| 10 | `10-Register.png` | `(auth)/register` | Pick your favourite sports |
+
+**File locations:**
+- iOS 6.7": `mobile/store/screenshots/ios/iphone-67/01-Login.png` … `10-Register.png` (1290×2796 each, ~80–130 KB)
+- Android: `mobile/store/screenshots/android/phone/01-Login.png` … `10-Register.png` (1080×1920 each, ~100–225 KB)
+
+Each screenshot includes:
+- Faux status bar (9:41 + signal/wifi/battery indicators)
+- Faux tab bar (5 tabs with active state highlighted in gold) — except #1, #8, #9, #10 which are full-screen modals
+- Brand block (gold "S" monogram + "SPORTSPHERE" wordmark + tagline)
+- Realistic UI elements (cards, chips, buttons, badges) drawn with the same color palette as the actual app
+- Page number footer (e.g. "01 / 10")
+
+**Re-generating after edits:**
+```bash
+cd /home/z/my-project/work/sportsphere-v3
+python3 scripts/generate-screenshots.py
+# → 10 PNGs × 2 sizes = 20 files written in ~5 seconds
+```
+
+**Important caveat:** these are placeholder mockups, not real device captures. Apple's review team may reject obviously synthetic screenshots. For the actual store submission, replace them with captures from a real iPhone (preferred) or simulator — see `store/SCREENHOTS.md §How to Generate Screenshots` for three capture methods (manual device, simulator, fastlane).
+
 ### Phase G: Real-time Features
 
 - WebSocket gateway (Socket.io or Ably) for live match scores, comment threads, presence
