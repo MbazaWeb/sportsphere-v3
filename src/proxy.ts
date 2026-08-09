@@ -1,12 +1,13 @@
 /**
- * middleware.ts — Next.js edge middleware (auth guard)
+ * proxy.ts  — Next.js 16 edge proxy (replaces middleware.ts)
  *
- * Runs in the Edge runtime on every request matching the config.matcher.
- * Protects admin/dashboard routes by verifying the ss_session JWT cookie
- * (signed with SESSION_SECRET via @/lib/session).
+ * Runs in the Edge runtime. Protects admin/dashboard routes by verifying
+ * the ss_session JWT cookie (signed with SESSION_SECRET via @/lib/session).
  *
- * File MUST be named middleware.ts (not proxy.ts) — Next.js picks it up
- * automatically when placed in the src/ directory.
+ * Why proxy.ts and not middleware.ts?
+ *   Next.js 16 renamed `middleware` → `proxy`. The file must be named proxy.ts
+ *   and export a `proxy` function. middleware.ts is deprecated.
+ *   Source: https://next.org/blog/next-16
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -30,7 +31,7 @@ const ADMIN_PREFIXES = ['/sportsphere/admin'];
 /** Exact admin role values that are allowed (lowercase, exact match). */
 const ADMIN_ROLES = new Set(['admin', 'administrator']);
 
-export async function middleware(request: NextRequest): Promise<NextResponse> {
+export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
   const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
@@ -56,7 +57,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     const role = (payload.role ?? '').toLowerCase().trim();
     if (!ADMIN_ROLES.has(role)) {
       // Authenticated but not admin → redirect to home
-      return NextResponse.redirect(new URL('/sportsphere', request.url));
+      return NextResponse.redirect(new URL('/sportsphere/home', request.url));
     }
   }
 
@@ -71,7 +72,7 @@ function redirectToLogin(request: NextRequest): NextResponse {
   return NextResponse.redirect(loginUrl);
 }
 
-// Matcher: only run the middleware on the routes that need it.
+// Matcher: only run the proxy on the routes that need it.
 export const config = {
   matcher: [
     '/sportsphere/admin/:path*',

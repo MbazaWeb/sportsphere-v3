@@ -44,13 +44,13 @@ if [ -d "$APP_DIR/.git" ]; then
   # Also remove untracked junk that may have come back via stray shell redirects.
   # `-` and `72` and `ipconfig` etc. are never legitimate source files.
   git clean -fd -- '-' ipconfig next sudo sportsphere@2.0.0 tsc-errors.txt tsconfig.tsbuildinfo 72 seed.sql 2>/dev/null || true
-  # middleware.ts at src/ is the Next.js edge auth guard — do NOT delete it.
-  # (Previous versions used proxy.ts — that was incorrect; Next.js requires
-  # the file to be named middleware.ts. proxy.ts has been removed from repo.)
-  rm -f ./src/proxy.ts ./proxy.ts ./proxy.js 2>/dev/null || true
+  # proxy.ts at src/ is the Next.js 16 edge auth guard — do NOT delete it.
+  # Next.js 16 renamed middleware.ts → proxy.ts with export function proxy().
+  # Remove any stale middleware.ts that may linger from pre-v16 deploys.
+  rm -f ./src/middleware.ts ./middleware.ts ./middleware.js 2>/dev/null || true
   # Also collapse accidental nested src/src/ directory if present
   # (caused by a bad cp/rsync in a previous deploy — Next.js then sees
-  # causing duplicate middleware detection)
+  # causing duplicate proxy detection)
   if [ -d "./src/src" ]; then
     echo "  Found nested ./src/src/ — removing (causes 'Both middleware and proxy detected' error)"
     rm -rf ./src/src
