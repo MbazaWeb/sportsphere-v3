@@ -46,8 +46,22 @@ if [ -d "$APP_DIR/.git" ]; then
   git clean -fd -- '-' ipconfig next sudo sportsphere@2.0.0 tsc-errors.txt tsconfig.tsbuildinfo 72 seed.sql 2>/dev/null || true
   # Remove legacy middleware.ts (Next.js 16 uses proxy.ts instead).
   # This file is untracked on the VPS from a previous deploy and breaks the
-  # build with "Middleware is missing expected function export name".
-  rm -f src/middleware.ts middleware.ts 2>/dev/null || true
+  # build with "Middleware is missing expected function export name" or
+  # "Both middleware file and proxy file are detected".
+  # Use find to catch ALL copies (src/middleware.ts, src/src/middleware.ts, etc.)
+  find . -path ./node_modules -prune -o -path ./.next -prune -o \
+    -name 'middleware.ts' -not -path '*/node_modules/*' -not -path '*/.next/*' \
+    -not -path '*/mobile/*' -print -delete 2>/dev/null || true
+  find . -path ./node_modules -prune -o -path ./.next -prune -o \
+    -name 'middleware.js' -not -path '*/node_modules/*' -not -path '*/.next/*' \
+    -not -path '*/mobile/*' -print -delete 2>/dev/null || true
+  # Also collapse accidental nested src/src/ directory if present
+  # (caused by a bad cp/rsync in a previous deploy — Next.js then sees
+  # ./src/src/proxy.ts as a second proxy file)
+  if [ -d "./src/src" ]; then
+    echo "  Found nested ./src/src/ — removing (causes 'Both middleware and proxy detected' error)"
+    rm -rf ./src/src
+  fi
 else
   echo "[1/9] Cloning..."
   sudo mkdir -p "$APP_DIR"
