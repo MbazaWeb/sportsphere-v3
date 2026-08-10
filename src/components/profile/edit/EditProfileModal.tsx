@@ -44,10 +44,26 @@ const FAN_TYPES = [
 
 type SectionId = typeof SECTIONS[number]['id'];
 
+/** Accept old 9-section IDs for backward compat from Settings screen */
+type LegacySectionId = 'identity' | 'personal' | 'contact' | 'sports' | 'favorites' | 'privacy' | 'notifications' | 'appearance' | 'role';
+
+const SECTION_MAP: Record<LegacySectionId, SectionId> = {
+  identity:      'profile',
+  personal:      'profile',
+  contact:       'profile',
+  sports:        'sports',
+  favorites:     'sports',
+  privacy:       'settings',
+  notifications: 'settings',
+  appearance:    'settings',
+  role:          'settings',
+};
+
 interface EditProfileModalProps {
   open: boolean;
   onClose: () => void;
-  initialSection?: SectionId;
+  /** New 3-section ID, or any legacy 9-section ID (auto-mapped). */
+  initialSection?: SectionId | LegacySectionId;
 }
 
 export default function EditProfileModal({ open, onClose, initialSection }: EditProfileModalProps) {
@@ -56,15 +72,29 @@ export default function EditProfileModal({ open, onClose, initialSection }: Edit
   const showToast     = useUIStore((s) => s.showToast);
 
   const [activeSection, setActiveSection] = useState<SectionId>('profile');
+  const [settingsTab, setSettingsTab]     = useState<'privacy' | 'notifs' | 'look' | 'role'>('privacy');
   const [formData, setFormData]           = useState<Record<string, unknown>>({});
   const [loading, setLoading]             = useState(true);
   const [saving, setSaving]               = useState(false);
   const [dirty, setDirty]                 = useState(false);
   const [completion, setCompletion]       = useState(0);
 
+  // Resolve initialSection — map legacy IDs to new 3-section IDs
+  const resolvedSection = initialSection
+    ? (SECTION_MAP[initialSection as LegacySectionId] ?? (initialSection as SectionId))
+    : 'profile' as SectionId;
+
   useEffect(() => {
     if (!open) return;
-    if (initialSection) setActiveSection(initialSection);
+    setActiveSection(resolvedSection);
+    // If the legacy ID maps to 'settings', also pick the right sub-tab
+    if (initialSection && resolvedSection === 'settings') {
+      const tabMap: Partial<Record<LegacySectionId, 'privacy' | 'notifs' | 'look' | 'role'>> = {
+        privacy: 'privacy', notifications: 'notifs', appearance: 'look', role: 'role',
+      };
+      const tab = tabMap[initialSection as LegacySectionId];
+      if (tab) setSettingsTab(tab);
+    }
     async function loadProfile() {
       setLoading(true);
       try {
@@ -230,7 +260,7 @@ export default function EditProfileModal({ open, onClose, initialSection }: Edit
                 >
                   {activeSection === 'profile'  && <ProfileSection  data={formData} update={update} />}
                   {activeSection === 'sports'   && <SportsSection   data={formData} update={update} />}
-                  {activeSection === 'settings' && <SettingsSection data={formData} update={update} />}
+                  {activeSection === 'settings' && <SettingsSection data={formData} update={update} initialTab={settingsTab} />}
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -532,8 +562,8 @@ const SETTINGS_TABS = [
   { id: 'role',      label: 'Role' },
 ] as const;
 
-function SettingsSection({ data, update }: { data: Record<string, unknown>; update: (k: string, v: unknown) => void }) {
-  const [tab, setTab] = useState<'privacy' | 'notifs' | 'look' | 'role'>('privacy');
+function SettingsSection({ data, update, initialTab }: { data: Record<string, unknown>; update: (k: string, v: unknown) => void; initialTab?: 'privacy' | 'notifs' | 'look' | 'role' }) {
+  const [tab, setTab] = useState<'privacy' | 'notifs' | 'look' | 'role'>(initialTab || 'privacy');
   return (
     <div>
       {/* Sub-tabs */}

@@ -732,7 +732,7 @@ function AdminVerificationPanel() {
 function SettingsSection({ onBack, onLogout }: { onBack: () => void; onLogout: () => void }) {
   const userProfile = useAppStore((s) => s.userProfile);
   const [editOpen, setEditOpen] = useState(false);
-  const [editSection, setEditSection] = useState<'identity' | 'personal' | 'contact' | 'sports' | 'favorites' | 'privacy' | 'notifications' | 'appearance' | 'role'>('identity');
+  const [editSection, setEditSection] = useState<'profile' | 'sports' | 'settings'>('profile');
   const [proOpen, setProOpen] = useState(false);
 
   const openEditAt = (section: typeof editSection) => {
@@ -745,20 +745,14 @@ function SettingsSection({ onBack, onLogout }: { onBack: () => void; onLogout: (
 
   const settingsSections = [
     { title: 'Account', items: [
-      { id: 'edit-profile', label: 'Edit Profile',   icon: Edit,     section: 'identity' as const },
-      { id: 'role',         label: 'Role Profile',    icon: Award,    section: 'role' as const },
-      { id: 'privacy',      label: 'Privacy',         icon: Eye,      section: 'privacy' as const },
-      { id: 'security',     label: 'Security',        icon: Shield,   section: null },
+      { id: 'edit-profile',  label: 'Edit Profile',          icon: Edit,    section: 'profile' as const },
+      { id: 'sports',        label: 'Sports & Interests',     icon: Heart,   section: 'sports' as const },
     ]},
     { title: 'Preferences', items: [
-      { id: 'notifications', label: 'Notifications',  icon: Bell,     section: 'notifications' as const },
-      { id: 'appearance',    label: 'Appearance',     icon: Palette,  section: 'appearance' as const },
-      { id: 'language',      label: 'Language',       icon: Globe,    section: 'personal' as const },
-    ]},
-    { title: 'Profile', items: [
-      { id: 'sports',        label: 'Sports & Interests', icon: Heart, section: 'sports' as const },
-      { id: 'favorites',     label: 'Favorites',          icon: Star,  section: 'favorites' as const },
-      { id: 'contact',       label: 'Contact Info',       icon: Phone, section: 'contact' as const },
+      { id: 'privacy',       label: 'Privacy & Security',     icon: Eye,     section: 'settings' as const },
+      { id: 'notifications', label: 'Notifications',         icon: Bell,    section: 'settings' as const },
+      { id: 'appearance',    label: 'Appearance',            icon: Palette, section: 'settings' as const },
+      { id: 'role',          label: 'Role Profile',           icon: Award,   section: 'settings' as const },
     ]},
     { title: 'Support', items: [
       { id: 'help',  label: 'Help',  icon: HelpCircle, section: null },
@@ -835,9 +829,7 @@ function SettingsSection({ onBack, onLogout }: { onBack: () => void; onLogout: (
                   key={item.id}
                   onClick={() => {
                     if (item.section) openEditAt(item.section);
-                    else if (item.id === 'security') {
-                      window.open('/sportsphere/settings/security', '_self');
-                    } else if (item.id === 'help') {
+                    else if (item.id === 'help') {
                       window.open('mailto:hello@sportsphere.app?subject=SportSphere%20Help', '_self');
                     } else if (item.id === 'about') {
                       alert('SportSphere — The World\'s Biggest Sports Community. Version 3.0. Built with ❤️ for sports fans everywhere.');
