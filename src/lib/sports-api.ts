@@ -128,9 +128,16 @@ function tsdStanding(r: Record<string, any>): StandingRow {
 
 // TheSportsDB fetches
 async function tsdGet(path: string): Promise<any> {
-  const res = await fetch(`${TSD_BASE}/${path}`, { next: { revalidate: 60 } });
-  if (!res.ok) throw new Error(`TSD ${res.status}`);
-  return res.json();
+  try {
+    const res = await fetch(`${TSD_BASE}/${path}`, { next: { revalidate: 60 } });
+    if (!res.ok) throw new Error(`TSD ${res.status}`);
+    const text = await res.text();
+    if (!text || text.trim().length === 0) return {};
+    return JSON.parse(text);
+  } catch (err) {
+    console.warn(`[TSD] Request failed for ${path}:`, err instanceof Error ? err.message : err);
+    return {};
+  }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -310,7 +317,7 @@ export const POPULAR_LEAGUE_IDS: Record<string, string> = {
   'Portuguese Primeira Liga': '4344',
   'Dutch Eredivisie': '4337',
   'Scottish Premiership': '4346',
-  'Major League Soccer': '4346',
+  'Major League Soccer': '4347',
   'NBA': '4387',
   'NFL': '4391',
 };

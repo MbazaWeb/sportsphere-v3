@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { apiFetch } from '@/lib/api';
 
 interface Stats {
   users: number;
@@ -14,7 +15,7 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/admin/stats")
+    apiFetch("/api/admin/stats")
       .then((res) => res.json())
       .then((data) => {
         setStats(data);

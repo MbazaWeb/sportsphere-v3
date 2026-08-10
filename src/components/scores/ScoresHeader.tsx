@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 import { FilterDropdown } from './FilterDropdown';
 import { useAppStore, type ScoresSubTab } from '@/store/useAppStore';
 
@@ -47,7 +48,7 @@ export function ScoresHeader({
     if (scoresSubTab !== 'live') return;
     const fetchCount = async () => {
       try {
-        const res = await fetch('/api/matches?status=live');
+        const res = await apiFetch('/api/matches?status=live');
         if (res.ok) {
           const data = await res.json();
           setLiveCount(Array.isArray(data) ? data.length : 0);

@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { apiFetch } from '@/lib/api';
 
 interface SportItem {
   id: string;
@@ -18,7 +19,7 @@ export default function AdminSportsPage() {
 
   const fetchSports = () => {
     setLoading(true);
-    fetch("/api/sports")
+    apiFetch("/api/sports")
       .then((res) => res.json())
       .then((data) => {
         setSports(Array.isArray(data) ? data : []);
@@ -40,7 +41,7 @@ export default function AdminSportsPage() {
 
     try {
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-      const res = await fetch("/api/sports", {
+      const res = await apiFetch("/api/sports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, slug, icon, isActive: true, displayOrder: sports.length + 1 }),

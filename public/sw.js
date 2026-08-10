@@ -42,8 +42,9 @@ self.addEventListener('fetch', (event) => {
   // Never cache Next.js dev/prod chunks or API routes — these must
   // always be served fresh to avoid stale module errors.
   const url = new URL(event.request.url);
-  if (url.pathname.startsWith('/api/')) return;
-  if (url.pathname.startsWith('/_next/')) return;
+  const bp = self.location.pathname.replace(/\/sw\.js$/, '');
+  if (url.pathname.startsWith(`${bp}/api/`)) return;
+  if (url.pathname.startsWith(`${bp}/_next/`)) return;
 
   event.respondWith(
     fetch(event.request)

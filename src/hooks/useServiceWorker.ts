@@ -28,7 +28,9 @@ export function useServiceWorker() {
 
     const registerSW = async () => {
       try {
-        const registration = await navigator.serviceWorker.register('/sw.js');
+        const registration = await navigator.serviceWorker.register(
+          `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/sw.js`
+        );
         if (process.env.NODE_ENV !== 'production') {
           console.log('SW registered:', registration.scope);
         }

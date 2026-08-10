@@ -17,6 +17,7 @@ import {
   computeWeightedKpiScore,
   resolvePositionGroup,
 } from '@/lib/performance-engine';
+import { apiFetch } from '@/lib/api';
 import type { KPIReading, PositionGroup } from '@/lib/performance-engine';
 
 interface PerformanceBreakdownProps {
@@ -44,10 +45,10 @@ export function PerformanceBreakdown({ userId }: PerformanceBreakdownProps) {
       // Fetch the user's typed profile to compute the breakdown locally.
       // This keeps the breakdown in sync with the typed profile columns
       // even if the cached PerformanceProfile is stale.
-      const res = await fetch(`/api/performance/${userId}?include=readings`);
+      const res = await apiFetch(`/api/performance/${userId}?include=readings`);
       if (!res.ok) return;
       const json = await res.json();
-      if (cancelled && json.readings) {
+      if (!cancelled && json.readings) {
         setData({
           readings: json.readings,
           group: json.group,

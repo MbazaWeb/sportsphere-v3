@@ -44,6 +44,7 @@ import {
   ChevronUp, ChevronDown, Activity, Award, Zap, AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 import { getTier } from '@/lib/performance-engine';
 import { PerformanceBreakdown } from './PerformanceBreakdown';
 import { PerformanceTrend } from './PerformanceTrend';
@@ -122,7 +123,7 @@ export function PerformanceCard({ userId, compact = false }: PerformanceCardProp
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/performance/${userId}`);
+        const res = await apiFetch(`/api/performance/${userId}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         if (!cancelled) {

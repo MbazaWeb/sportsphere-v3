@@ -56,6 +56,9 @@ yarn-error.log*
 # Backups
 backups/
 
+# User uploads (runtime only, not in git)
+public/uploads/
+
 # Skills (internal tooling)
 skills/
 
