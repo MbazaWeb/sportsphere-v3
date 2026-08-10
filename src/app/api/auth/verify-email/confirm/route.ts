@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
       where: { id: user.id },
       data: {
         emailVerified: true,
+        isVerified: true,
         emailVerifyToken: null,
         emailVerifyExpiry: null,
       },
