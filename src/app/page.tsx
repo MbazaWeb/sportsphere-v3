@@ -80,7 +80,10 @@ function TabContent() {
       setActiveTab('home');
       setLoginModalOpen(true);
     }
-  }, [activeTab, isAuthenticated, setActiveTab, setLoginModalOpen]);
+  // Only react to activeTab changes, not isAuthenticated changes,
+  // to avoid resetting the tab when session hydrates
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const allTabs: Array<'home'|'scores'|'create'|'activity'|'profile'> = ['home','scores','create','activity','profile'];
   // Only allow swiping within the tabs available to the current user
@@ -118,10 +121,12 @@ export default function Home() {
   const viewingProfile = useUIStore((s) => s.viewingProfile);
   const viewingUser    = useUIStore((s) => s.viewingUser);
 
+  const setActiveTab = useNavigationStore((s) => s.setActiveTab);
+
   useServiceWorker();
   useAuthSession();
   useOfflinePostSync();
-  if (!splashDone) return <SplashScreen onDone={() => setSplashDone(true)} />;
+  if (!splashDone) return <SplashScreen onDone={() => { setActiveTab('home'); setSplashDone(true); }} />;
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
