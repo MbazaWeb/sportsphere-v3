@@ -1,7 +1,14 @@
 /**
- * POST /api/auth/register — Create a new Fan account
+ * POST /api/auth/register — Create a new account
  *
- * Creates a User with the default Fan role + Casual Fan type.
+ * If roleId + roleTypeId are provided (PRO registration):
+ *   - Creates user with the selected role
+ *   - Individual/support categories → auto-approved (isPro=true, verified)
+ *   - Other categories → pending admin review (isPro=false, pending)
+ *
+ * If no roleId (Fan registration):
+ *   - Creates user with default Fan role + Casual Fan type
+ *
  * Optionally links selected sports (UserSport rows).
  * Sends OTP verification email via Resend.
  * Returns the same shape as login: { user, token, expiresAt }.
@@ -27,8 +34,11 @@ export const dynamic = 'force-dynamic';
 
 const OTP_TTL_MS = 1000 * 60 * 5; // 5 minutes
 
+// Roles that auto-approve instantly (same logic as /api/roles/upgrade)
+const AUTO_APPROVE_CATEGORIES = ['individual', 'support'];
+
 export async function POST(request: NextRequest) {
-  // ── Rate limiting (stricter for registration) ───────────────────────────
+  // ── Rate limiting ──────────────────────────────────────────────────────
   const ip =
     request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
     request.headers.get('x-real-ip') ??
@@ -36,42 +46,32 @@ export async function POST(request: NextRequest) {
 
   const { success, resetAt } = rateLimit(ip, {
     maxRequests: 5,
-    windowMs: 60 * 60 * 1000, // 1 hour
+    windowMs: 60 * 60 * 1000,
   });
 
   if (!success) {
     return NextResponse.json(
       { error: 'Too many registration attempts. Please try again later.' },
-      {
-        status: 429,
-        headers: {
-          'Retry-After': String(Math.ceil((resetAt - Date.now()) / 1000)),
-        },
-      }
+      { status: 429, headers: { 'Retry-After': String(Math.ceil((resetAt - Date.now()) / 1000)) } },
     );
   }
 
-  // ── Parse + validate body ───────────────────────────────────────────────
+  // ── Parse + validate body ─────────────────────────────────────────────
   const body = await request.json().catch(() => ({}));
-  const { name, email, password, handle, sports } = body as {
-    name?: string;
-    email?: string;
-    password?: string;
-    handle?: string;
-    sports?: string[];
+  const { name, email, password, handle, sports, roleId, roleTypeId } = body as {
+    name?: string; email?: string; password?: string; handle?: string;
+    sports?: string[]; roleId?: string; roleTypeId?: string;
   };
 
   if (!name?.trim() || !email?.trim() || !password || !handle?.trim()) {
     return NextResponse.json(
-      { error: 'Name, email, handle, and password are required.' },
-      { status: 400 }
+      { error: 'Name, email, handle, and password are required.' }, { status: 400 },
     );
   }
 
   if (password.length < 6) {
     return NextResponse.json(
-      { error: 'Password must be at least 6 characters.' },
-      { status: 400 }
+      { error: 'Password must be at least 6 characters.' }, { status: 400 },
     );
   }
 
@@ -80,51 +80,84 @@ export async function POST(request: NextRequest) {
 
   if (!/^[a-zA-Z0-9_-]{3,30}$/.test(cleanHandle)) {
     return NextResponse.json(
-      { error: 'Handle must be 3-30 characters: letters, numbers, _ or - only.' },
-      { status: 400 }
+      { error: 'Handle must be 3-30 characters: letters, numbers, _ or - only.' }, { status: 400 },
     );
   }
 
-  // ── Check for existing email / handle ───────────────────────────────────
+  // ── Check for existing email / handle ─────────────────────────────────
   const existing = await db.user.findFirst({
-    where: {
-      OR: [
-        { email: cleanEmail },
-        { handle: { equals: cleanHandle, mode: 'insensitive' } },
-      ],
-    },
+    where: { OR: [{ email: cleanEmail }, { handle: { equals: cleanHandle, mode: 'insensitive' } }] },
     select: { id: true, email: true, handle: true },
   });
 
   if (existing) {
-    if (existing.email === cleanEmail) {
+    if (existing.email === cleanEmail)
       return NextResponse.json({ error: 'Email already registered.' }, { status: 409 });
-    }
     return NextResponse.json({ error: 'Handle already taken.' }, { status: 409 });
   }
 
-  // ── Look up default Fan role + Casual Fan type ──────────────────────────
-  const fanRole = await db.role.findUnique({
-    where: { slug: 'fan' },
-    select: { id: true, types: { select: { id: true, slug: true }, where: { slug: 'casual' } } },
-  });
+  // ── Resolve role + type ────────────────────────────────────────────────
+  let targetRoleId: string;
+  let targetRoleTypeId: string;
+  let roleSlug = 'fan';
+  let verificationStatus: 'none' | 'pending' | 'verified' = 'none';
+  let isVerified = false;
+  let isPro = false;
+  let proSince: Date | null = null;
 
-  if (!fanRole || fanRole.types.length === 0) {
-    return NextResponse.json(
-      { error: 'Registration not ready — Fan role not seeded. Run: npx tsx prisma/seed-roles.ts' },
-      { status: 500 }
-    );
+  if (roleId && roleTypeId) {
+    // PRO registration — validate the role + type exist and match
+    const [selectedRole, selectedType] = await Promise.all([
+      db.role.findUnique({ where: { id: roleId, isActive: true } }),
+      db.roleType.findUnique({ where: { id: roleTypeId, isActive: true } }),
+    ]);
+
+    if (!selectedRole)
+      return NextResponse.json({ error: 'Selected role not found.' }, { status: 400 });
+    if (!selectedType || selectedType.roleId !== roleId)
+      return NextResponse.json({ error: 'Invalid role type for this role.' }, { status: 400 });
+
+    targetRoleId = selectedRole.id;
+    targetRoleTypeId = selectedType.id;
+    roleSlug = selectedRole.slug;
+
+    // Apply same auto-approve logic as the upgrade route
+    const autoApprove = AUTO_APPROVE_CATEGORIES.includes(selectedRole.category);
+    if (autoApprove) {
+      verificationStatus = 'verified';
+      isVerified = true;
+      if (roleSlug !== 'fan') {
+        isPro = true;
+        proSince = new Date();
+      }
+    } else {
+      verificationStatus = 'pending';
+      isVerified = false;
+      isPro = false;
+    }
+  } else {
+    // Fan registration — default behavior
+    const fanRole = await db.role.findUnique({
+      where: { slug: 'fan' },
+      select: { id: true, types: { select: { id: true, slug: true }, where: { slug: 'casual' } } },
+    });
+    if (!fanRole || fanRole.types.length === 0) {
+      return NextResponse.json(
+        { error: 'Registration not ready — Fan role not seeded. Run: npx tsx prisma/seed-roles.ts' },
+        { status: 500 },
+      );
+    }
+    targetRoleId = fanRole.id;
+    targetRoleTypeId = fanRole.types[0].id;
   }
 
-  const fanTypeId = fanRole.types[0].id;
-
-  // ── Hash password + generate OTP ────────────────────────────────────────
+  // ── Hash password + generate OTP ──────────────────────────────────────
   const passwordHash = await hashPassword(password);
   const avatarInitials = name.trim().slice(0, 2).toUpperCase();
   const otp = crypto.randomInt(100000, 1000000).toString();
   const otpExpiry = new Date(Date.now() + OTP_TTL_MS);
 
-  // ── Create user ─────────────────────────────────────────────────────────
+  // ── Create user ────────────────────────────────────────────────────────
   const user = await db.user.create({
     data: {
       name: name.trim(),
@@ -132,14 +165,28 @@ export async function POST(request: NextRequest) {
       handle: cleanHandle,
       passwordHash,
       avatarInitials,
-      role: 'fan',
-      roleId: fanRole.id,
-      roleTypeId: fanTypeId,
-      verificationStatus: 'none',
-      isVerified: false,
+      role: roleSlug,
+      roleId: targetRoleId,
+      roleTypeId: targetRoleTypeId,
+      verificationStatus,
+      isVerified,
+      isPro,
+      proSince,
       emailVerified: false,
       emailVerifyToken: otp,
       emailVerifyExpiry: otpExpiry,
+      // If PRO pending, create a verification request record for admin
+      ...(verificationStatus === 'pending' ? {
+        verificationRequests: {
+          create: {
+            role: roleSlug,
+            roleId: targetRoleId,
+            roleTypeId: targetRoleTypeId,
+            roleData: {},
+            status: 'pending',
+          },
+        },
+      } : {}),
       ...(sports && sports.length > 0
         ? {
             userSports: {
@@ -166,19 +213,15 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  // ── Send OTP email (fire-and-forget) ────────────────────────────────────
+  // ── Send OTP email (fire-and-forget) ───────────────────────────────────
   sendOtpEmail(cleanEmail, otp).catch((err) => {
     console.error('[register] Failed to send OTP email:', err);
   });
 
-  // ── Issue session JWT ───────────────────────────────────────────────────
+  // ── Issue session JWT ──────────────────────────────────────────────────
   const payload: SessionPayload = {
-    sub: user.id,
-    email: user.email,
-    handle: user.handle,
-    role: user.role,
-    roleId: user.roleId,
-    roleTypeId: user.roleTypeId,
+    sub: user.id, email: user.email, handle: user.handle,
+    role: user.role, roleId: user.roleId, roleTypeId: user.roleTypeId,
   };
   const token = await signSession(payload);
   const expiresAt = Date.now() + SESSION_MAX_AGE * 1000;
@@ -195,7 +238,10 @@ export async function POST(request: NextRequest) {
     roleProfile: {},
   };
 
-  const response = NextResponse.json({ user: publicUser, token, expiresAt, otpSent: true }, { status: 201 });
+  const response = NextResponse.json(
+    { user: publicUser, token, expiresAt, otpSent: true, isPro, verificationStatus },
+    { status: 201 },
+  );
   response.headers.set('Set-Cookie', buildSessionCookie(token));
   return response;
 }

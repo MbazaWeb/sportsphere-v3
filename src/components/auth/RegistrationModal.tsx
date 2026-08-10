@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/authStore';
 import { useNavigationStore } from '@/store/navigationStore';
 import { AuthLogo } from '@/components/auth/AuthLogo';
-import { RegistrationFanStep } from './RegistrationFanStep';
+import { RegistrationFanStep, type RegistrationData } from './RegistrationFanStep';
 import { RegistrationSuccessStep } from './RegistrationSuccessStep';
 
 export default function RegistrationModal() {
@@ -16,6 +16,8 @@ export default function RegistrationModal() {
 
   const [step, setStep] = useState<'fan' | 'complete'>('fan');
   const [completedName, setCompletedName] = useState('');
+  const [isPendingPro, setIsPendingPro] = useState(false);
+  const [completedRoleName, setCompletedRoleName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
@@ -25,6 +27,8 @@ export default function RegistrationModal() {
     setTimeout(() => {
       setStep('fan');
       setSubmitError('');
+      setIsPendingPro(false);
+      setCompletedRoleName('');
     }, 300);
   };
 
@@ -35,8 +39,6 @@ export default function RegistrationModal() {
 
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   useEffect(() => {
-    // Only treat as keyboard-open when an actual text input gets focus,
-    // not when buttons / links are focused.
     const isTextInput = (el: EventTarget | null) => {
       if (!(el instanceof HTMLElement)) return false;
       const tag = el.tagName.toLowerCase();
@@ -51,7 +53,6 @@ export default function RegistrationModal() {
     };
     const onFocusOut = (e: FocusEvent) => {
       if (isTextInput(e.target)) {
-        // Delay to allow focus to move to another input (avoids flicker)
         setTimeout(() => {
           if (!isTextInput(document.activeElement)) setIsKeyboardOpen(false);
         }, 0);
@@ -67,13 +68,21 @@ export default function RegistrationModal() {
 
   if (!registrationOpen) return null;
 
-  const handleFanComplete = async (d: { name: string; email: string; handle: string; password: string; sports: string[] }) => {
+  const handleComplete = async (d: RegistrationData) => {
     setSubmitting(true);
     setSubmitError('');
-    const result = await completeRegistration(d);
+    const result = await completeRegistration({
+      name: d.name, email: d.email, handle: d.handle,
+      password: d.password, sports: d.sports,
+      roleId: d.roleId, roleTypeId: d.roleTypeId,
+    });
     setSubmitting(false);
     if (result.ok) {
       setCompletedName(d.name);
+      // If a PRO role was selected, the account will be pending
+      const isPro = !!d.roleId && d.selectedRole?.slug !== 'fan';
+      setIsPendingPro(isPro);
+      setCompletedRoleName(d.selectedRole?.name || '');
       setStep('complete');
     } else {
       setSubmitError(result.error || 'Registration failed.');
@@ -89,8 +98,6 @@ export default function RegistrationModal() {
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
         className="w-full max-w-lg rounded-t-3xl sm:rounded-3xl glass-card flex flex-col overflow-hidden"
         style={{
-          // dvh = dynamic viewport height — accounts for mobile browser chrome
-          // and on-screen keyboard. Falls back to vh on older browsers.
           maxHeight: isKeyboardOpen ? '85dvh' : '90dvh',
         }}
       >
@@ -109,8 +116,15 @@ export default function RegistrationModal() {
           )}
           <AnimatePresence mode="wait">
             <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.15 }}>
-              {step === 'fan' && <RegistrationFanStep onBack={handleClose} onComplete={handleFanComplete} />}
-              {step === 'complete' && <RegistrationSuccessStep name={completedName} onClose={handleCompleteClose} />}
+              {step === 'fan' && <RegistrationFanStep onBack={handleClose} onComplete={handleComplete} />}
+              {step === 'complete' && (
+                <RegistrationSuccessStep
+                  name={completedName}
+                  isPending={isPendingPro}
+                  roleName={completedRoleName}
+                  onClose={handleCompleteClose}
+                />
+              )}
             </motion.div>
           </AnimatePresence>
         </div>

@@ -48,7 +48,7 @@ interface AuthState {
   setIsAuthenticated: (v: boolean) => void; setUserProfile: (p: UserProfile|null) => void;
   setRegistrationOpen: (o: boolean) => void; setRegistrationStep: (s: AuthState["registrationStep"]) => void;
   setHydrated: (v: boolean) => void;
-  completeRegistration: (d: {name:string;email:string;handle:string;password:string;sports:string[]}) => Promise<{ ok: boolean; error?: string }>;
+  completeRegistration: (d: {name:string;email:string;handle:string;password:string;sports:string[];roleId?:string;roleTypeId?:string}) => Promise<{ ok: boolean; error?: string }>;
   submitRoleUpgrade: (d: {roleId:string;roleTypeId:string;roleData?:Record<string,string>}) => Promise<{ ok: boolean; error?: string; autoApproved?: boolean }>;
   logout: () => Promise<void>;
 }
@@ -71,6 +71,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         body: JSON.stringify({
           name: d.name, email: d.email, handle: d.handle,
           password: d.password, sports: d.sports,
+          ...(d.roleId ? { roleId: d.roleId } : {}),
+          ...(d.roleTypeId ? { roleTypeId: d.roleTypeId } : {}),
         }),
       });
       const data = await res.json();
