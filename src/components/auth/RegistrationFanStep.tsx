@@ -232,17 +232,12 @@ export function RegistrationFanStep({ onBack, onComplete }: RegistrationFanStepP
               <div className="flex items-center gap-2 mb-3">
                 <button onClick={() => { setSelectedRole(null); setSelectedType(null); }}
                   className="text-xs text-gold hover:underline">← Back</button>
-                <span className="text-sm font-bold text-white">{selectedRole.icon} {selectedRole.name}</span>
+                <span className="text-sm font-bold text-white">{selectedRole!.icon} {selectedRole!.name}</span>
               </div>
               <div className="max-h-36 overflow-y-auto scrollbar-hide space-y-1.5">
-                {selectedRole.types.map(type => (
+                {selectedRole!.types.map((type) => (
                   <button key={type.id} onClick={() => setSelectedType(type)}
-                    className={cn(
-                      'w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all border',
-                      selectedType?.id === type.id
-                        ? 'border-gold/60 bg-gold/5'
-                        : 'border-surface-border bg-surface hover:border-gold/40'
-                    )}>
+                    className="w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all border border-surface-border bg-surface hover:border-gold/40">
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-white">{type.name}</p>
                       {type.description && <p className="text-[10px] text-muted-foreground line-clamp-1">{type.description}</p>}
