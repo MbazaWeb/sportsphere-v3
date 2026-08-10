@@ -41,6 +41,7 @@
     "capacitor.config.ts",
     "mobile",
     "packages",
-    "Admin"
+    "Admin",
+    "prisma"
   ]
 }
