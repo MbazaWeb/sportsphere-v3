@@ -152,12 +152,12 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
   video.preload = 'auto';
 
   await new Promise<void>((resolve, reject) => {
-    video.onloadedmetadata = resolve;
+    video.onloadedmetadata = () => resolve();
     video.onerror = () => reject(new Error('Failed to load video'));
   });
 
   video.currentTime = startTime;
-  await new Promise<void>(resolve => { video.onseeked = resolve; });
+  await new Promise<void>(resolve => { video.onseeked = () => resolve(); });
 
   setProcessingMsg('Trimming video...');
 
