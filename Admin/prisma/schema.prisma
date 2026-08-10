@@ -1,14 +1,4 @@
 
-enum AdminRoleType {
-  SUPER_ADMIN
-  ORGANIZATION_ADMIN
-  SECURITY_MANAGER
-  PROGRAM_ADMIN
-  TEAM_MANAGER
-  FINANCE_ADMIN
-  SPORTS_MANAGER
-  NEWS_MANAGER
-}
 
 // SportSphere — Prisma Schema
 // SQLite for local dev, PostgreSQL for VPS production
@@ -99,8 +89,6 @@ model UserSport {
 
 // ─── User ─────────────────────────────────────────────────────
 model User {
-  adminRoleType AdminRoleType @default(SUPER_ADMIN)
-  assignedScopeId String?
   id                  String   @id @default(uuid())
   name                String
   email               String   @unique

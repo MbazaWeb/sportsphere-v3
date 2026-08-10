@@ -2,9 +2,9 @@ module.exports = {
   apps: [
     {
       name: 'sportsphere',
-      script: 'server.js',
+      script: '.next/standalone/server.js',
       interpreter: 'node',
-      cwd: '/var/www/sportsphere-nextjs/.next/standalone',
+      cwd: '/var/www/sportsphere-nextjs',
       instances: 1,
       exec_mode: 'fork',
       env: {

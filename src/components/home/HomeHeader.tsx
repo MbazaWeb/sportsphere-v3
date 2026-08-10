@@ -48,7 +48,7 @@ export function HomeHeader({ isSearchOpen, setIsSearchOpen, isCartOpen, setIsCar
       <header className="sticky top-0 z-40 border-b border-surface-border bg-background/90 backdrop-blur-xl">
         <div className="flex h-14 items-center justify-between px-4">
           <button onClick={() => window.scrollTo(0, 0)} className="flex items-center">
-            <img src="/sportsphere/logo-wordmark.svg" alt="SportSphere" style={{ height: '28px', width: 'auto' }} />
+            <img src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/sportsphere'}/logo-wordmark.svg`} alt="SportSphere" style={{ height: '28px', width: 'auto' }} />
           </button>
           <div className="flex items-center gap-2">
             <Link
