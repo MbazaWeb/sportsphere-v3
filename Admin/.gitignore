@@ -1,0 +1,13 @@
+# Admin console — local only
+node_modules/
+.next/
+out/
+.env
+.env.local
+.env.production
+*.log
+.DS_Store
+.idea/
+.vscode/
+*.tsbuildinfo
+next-env.d.ts
