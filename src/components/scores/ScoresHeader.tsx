@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Trophy } from 'lucide-react';
+import { Search, Trophy, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { apiFetch } from '@/lib/api';
 import { FilterDropdown } from './FilterDropdown';
@@ -15,7 +15,7 @@ const SUBTABS: { id: ScoresSubTab; label: string }[] = [
   { id: 'standings', label: 'Standings' },
 ];
 
-const POPULAR_LEAGUES = [
+const DEFAULT_LEAGUES = [
   'All', 'English Premier League', 'Spanish La Liga', 'German Bundesliga',
   'Italian Serie A', 'French Ligue 1', 'UEFA Champions League',
   'UEFA Europa League', 'English Championship',
@@ -41,9 +41,11 @@ export function ScoresHeader({
   const scoresSubTab = useAppStore((s) => s.scoresSubTab);
   const setScoresSubTab = useAppStore((s) => s.setScoresSubTab);
 
-  // Live match count indicator
   const [liveCount, setLiveCount] = useState<number | null>(null);
+  const [leagues, setLeagues] = useState<string[]>(DEFAULT_LEAGUES);
+  const [leaguesLoading, setLeaguesLoading] = useState(false);
 
+  // Fetch live match count
   useEffect(() => {
     if (scoresSubTab !== 'live') return;
     const fetchCount = async () => {
@@ -60,16 +62,42 @@ export function ScoresHeader({
     return () => clearInterval(interval);
   }, [scoresSubTab]);
 
+  // Fetch available leagues from the sports API
+  useEffect(() => {
+    const fetchLeagues = async () => {
+      setLeaguesLoading(true);
+      try {
+        const res = await apiFetch('/api/standings');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.available) && data.available.length > 0) {
+            setLeagues(['All', ...data.available]);
+          }
+        }
+      } catch {
+        // Keep default leagues on error
+      } finally {
+        setLeaguesLoading(false);
+      }
+    };
+    fetchLeagues();
+  }, []);
+
   return (
     <header className="sticky top-0 z-40 border-b border-surface-border bg-background/90 backdrop-blur-xl">
       <div className="flex h-14 items-center justify-between px-4">
         <h2 className="text-lg font-bold text-foreground">Scores</h2>
-        {liveCount !== null && liveCount > 0 && (
-          <span className="flex items-center gap-1.5 rounded-full bg-red-500/10 border border-red-500/20 px-2.5 py-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
-            <span className="text-[10px] font-bold text-red-400">{liveCount} LIVE</span>
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {leaguesLoading && (
+            <RefreshCw className="h-3.5 w-3.5 text-muted-foreground animate-spin" />
+          )}
+          {liveCount !== null && liveCount > 0 && (
+            <span className="flex items-center gap-1.5 rounded-full bg-red-500/10 border border-red-500/20 px-2.5 py-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
+              <span className="text-[10px] font-bold text-red-400">{liveCount} LIVE</span>
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Subtabs */}
@@ -90,11 +118,11 @@ export function ScoresHeader({
         ))}
       </div>
 
-      {/* League filter — for standings and match tabs */}
+      {/* League filter */}
       <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
         <FilterDropdown
           label="League"
-          options={POPULAR_LEAGUES}
+          options={leagues}
           value={tournament}
           onChange={(v) => { setTournament(v); if (v !== 'All') { setSport('All'); setContinent('All'); setCountry('All'); } }}
           icon={Trophy}

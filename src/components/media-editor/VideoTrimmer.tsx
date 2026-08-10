@@ -16,7 +16,6 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  // State
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -25,16 +24,15 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
   const [isDraggingStart, setIsDraggingStart] = useState(false);
   const [isDraggingEnd, setIsDraggingEnd] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [hasBeenTrimmed, setHasBeenTrimmed] = useState(false);
+  const [processingMsg, setProcessingMsg] = useState('');
 
-  // Load video metadata on mount
+  const MAX_DURATION = type === 'spotlight' ? 30 : 60;
+
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.onloadedmetadata = () => {
         const dur = videoRef.current!.duration;
         setDuration(dur);
-        
-        const MAX_DURATION = type === 'spotlight' ? 30 : 60;
         if (dur > MAX_DURATION) {
           setEndTime(MAX_DURATION);
         } else {
@@ -44,7 +42,6 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
     }
   }, [objectUrl, file.type, type]);
 
-  // Auto-pause when reaching the end trim point
   useEffect(() => {
     if (videoRef.current && isPlaying) {
       if (currentTime >= endTime) {
@@ -88,10 +85,9 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
     }
   };
 
-  // --- Trim Handle Logic ---
-  const handleMouseDown = (type: 'start' | 'end') => (e: React.MouseEvent) => {
+  const handleMouseDown = (trimType: 'start' | 'end') => (e: React.MouseEvent) => {
     e.preventDefault();
-    if (type === 'start') setIsDraggingStart(true);
+    if (trimType === 'start') setIsDraggingStart(true);
     else setIsDraggingEnd(true);
   };
 
@@ -110,7 +106,6 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
           setCurrentTime(clamped);
         }
       } else if (isDraggingEnd) {
-        const MAX_DURATION = type === 'spotlight' ? 30 : 60;
         const clamped = Math.max(newTime, startTime + 0.5);
         setEndTime(Math.min(clamped, MAX_DURATION));
         if (videoRef.current && videoRef.current.currentTime > clamped) {
@@ -136,43 +131,126 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
     };
   }, [isDraggingStart, isDraggingEnd, duration, startTime, endTime, type]);
 
-  // --- Apply Trim & Save ---
+  // --- Trim using MediaRecorder + canvas capture (browser-native, no FFmpeg needed) ---
   const handleTrimAndSave = async () => {
-    setIsProcessing(true);
-    
     const isTrimmed = startTime > 0.1 || endTime < duration - 0.1;
     
     if (!isTrimmed) {
-      setIsProcessing(false);
       onSave(file);
       return;
     }
 
+    setIsProcessing(true);
+    setProcessingMsg('Preparing video trimmer...');
+
     try {
-      setTimeout(() => {
-        setIsProcessing(false);
-        onSave(file);
-      }, 1000);
+ const trimDuration = endTime - startTime;
+  const video = document.createElement('video');
+  video.src = objectUrl;
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = 'auto';
+
+  await new Promise<void>((resolve, reject) => {
+    video.onloadedmetadata = resolve;
+    video.onerror = () => reject(new Error('Failed to load video'));
+  });
+
+  video.currentTime = startTime;
+  await new Promise<void>(resolve => { video.onseeked = resolve; });
+
+  setProcessingMsg('Trimming video...');
+
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth || 1280;
+  canvas.height = video.videoHeight || 720;
+  const ctx = canvas.getContext('2d')!;
+
+  // Use the best available codec
+  let mimeType = 'video/webm;codecs=vp9,opus';
+  if (typeof MediaRecorder !== 'undefined' && !MediaRecorder.isTypeSupported(mimeType)) {
+    mimeType = 'video/webm;codecs=vp8,opus';
+    if (!MediaRecorder.isTypeSupported(mimeType)) {
+      mimeType = 'video/webm';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/mp4';
+      }
+    }
+  }
+
+  const stream = canvas.captureStream(30);
+
+  // Try to capture audio from the original video
+  try {
+ const audioCtx = new AudioContext();
+    const source = audioCtx.createMediaElementSource(video);
+    const dest = audioCtx.createMediaStreamDestination();
+    source.connect(dest);
+    source.connect(audioCtx.destination);
+    dest.stream.getAudioTracks().forEach(track => stream.addTrack(track));
+  } catch {
+    // Audio capture may fail (e.g. CORS) — continue without audio
+  }
+
+  const recorder = new MediaRecorder(stream, {
+    mimeType,
+    videoBitsPerSecond: 2500000,
+  });
+
+  const chunks: Blob[] = [];
+  recorder.ondataavailable = (e) => {
+    if (e.data && e.data.size > 0) chunks.push(e.data);
+  };
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    recorder.onstop = () => {
+      const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+      resolve(new Blob(chunks, { type: mimeType }));
+    };
+    recorder.onerror = () => reject(new Error('Recording failed'));
+    recorder.start(100); // collect data every 100ms
+
+    video.play();
+
+    const checkEnd = () => {
+      if (video.currentTime >= endTime || video.ended) {
+        video.pause();
+        recorder.stop();
+        stream.getTracks().forEach(t => t.stop());
+      } else {
+        requestAnimationFrame(checkEnd);
+      }
+    };
+    requestAnimationFrame(checkEnd);
+  });
+
+  const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+  const trimmedFile = new File([blob], file.name.replace(/\.[^.]+$/, `.${ext}`), { type: mimeType });
+  setIsProcessing(false);
+  setProcessingMsg('');
+  onSave(trimmedFile);
+
     } catch (err) {
       console.error('Trim processing error:', err);
+      // Fallback: pass original file through if trimming fails
       setIsProcessing(false);
+      setProcessingMsg('');
+      onSave(file);
     }
   };
 
-  // --- UI Helpers ---
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60);
     const s = Math.floor(sec % 60);
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
-  const getTrimPercentage = (time: number) => (time / duration) * 100;
+  const getTrimPercentage = (time: number) => (duration > 0 ? (time / duration) * 100 : 0);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
       <div className="w-full max-w-2xl bg-surface-elevated rounded-2xl border border-surface-border overflow-hidden shadow-2xl">
         
-        {/* Modal Header */}
         <div className="p-4 border-b border-surface-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Scissors className="h-4 w-4 text-gold" />
@@ -184,7 +262,6 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
           </button>
         </div>
 
-        {/* Video Player */}
         <div className="p-4 bg-black/40">
           <video
             ref={videoRef}
@@ -195,7 +272,6 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
           />
         </div>
 
-        {/* Video Controls & Timeline */}
         <div className="p-4 pt-0">
           <div className="flex items-center gap-3 mt-3">
             <button
@@ -209,7 +285,6 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
               {formatTime(currentTime)}
             </span>
 
-            {/* Timeline Scrubber */}
             <div 
               ref={containerRef}
               className="flex-1 relative h-8 flex items-center cursor-pointer group"
@@ -222,15 +297,11 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
                 setCurrentTime(time);
               }}
             >
-              {/* Background track */}
               <div className="w-full h-1.5 bg-surface-border rounded-full relative">
-                {/* Played progress */}
                 <div 
                   className="absolute top-0 left-0 h-full bg-gold rounded-full transition-all"
                   style={{ width: `${getTrimPercentage(currentTime)}%` }}
                 />
-                
-                {/* Trimmed selection area */}
                 <div 
                   className="absolute top-0 h-full bg-gold/20 rounded-full pointer-events-none"
                   style={{ 
@@ -238,8 +309,6 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
                     width: `${getTrimPercentage(endTime - startTime)}%` 
                   }}
                 />
-
-                {/* Start Handle */}
                 <div
                   onMouseDown={handleMouseDown('start')}
                   className={cn(
@@ -248,8 +317,6 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
                   )}
                   style={{ left: `${getTrimPercentage(startTime)}%` }}
                 />
-
-                {/* End Handle */}
                 <div
                   onMouseDown={handleMouseDown('end')}
                   className={cn(
@@ -266,7 +333,6 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
             </span>
           </div>
 
-          {/* Info banner */}
           <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground px-1">
             <div className="flex items-center gap-2">
               <span>Start: <span className="text-white font-mono">{formatTime(startTime)}</span></span>
@@ -275,15 +341,13 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
             </div>
             <div className="flex items-center gap-1 text-gold">
               <span className="h-1.5 w-1.5 rounded-full bg-gold animate-pulse" />
-              Max {type === 'spotlight' ? '30' : '60'}s
+              Max {MAX_DURATION}s
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex gap-3 mt-4">
             <button
               onClick={() => {
-                const MAX_DURATION = type === 'spotlight' ? 30 : 60;
                 setStartTime(0);
                 setEndTime(Math.min(duration, MAX_DURATION));
                 if (videoRef.current) {
@@ -305,7 +369,7 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
               {isProcessing ? (
                 <>
                   <span className="h-4 w-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                  Processing...
+                  {processingMsg || 'Processing...'}
                 </>
               ) : (
                 <>

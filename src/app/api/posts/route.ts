@@ -46,17 +46,19 @@ export async function POST(request: NextRequest) {
       };
     };
 
-    // Validate
-    if (!content || !String(content).trim()) {
-      return NextResponse.json({ error: 'Content is required.' }, { status: 400 });
-    }
-
     const validPostTypes = ['post', 'photo', 'video', 'spotlight', 'poll', 'prediction', 'highlight'];
     if (!validPostTypes.includes(postType)) {
       return NextResponse.json({ error: 'Invalid post type.' }, { status: 400 });
     }
 
-    // For media posts, require at least one media URL
+    // For text-based posts, content is required
+    if (['post', 'poll', 'prediction'].includes(postType)) {
+      if (!content || !String(content).trim()) {
+        return NextResponse.json({ error: 'Content is required.' }, { status: 400 });
+      }
+    }
+
+    // For media posts, require at least one media URL (content is optional caption)
     if ((postType === 'photo' || postType === 'video' || postType === 'spotlight') &&
         (!Array.isArray(mediaUrls) || mediaUrls.length === 0)) {
       return NextResponse.json(
@@ -87,7 +89,7 @@ export async function POST(request: NextRequest) {
     const post = await db.post.create({
       data: {
         userId,
-        content: String(content).trim(),
+        content: String(content || '').trim(),
         postType,
         mediaUrls: JSON.stringify(mediaUrls),
         teamTag: teamTag || null,
