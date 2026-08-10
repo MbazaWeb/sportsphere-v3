@@ -1,16 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import { getUserIdFromRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
+
+// Allowed MIME types for uploads
+const ALLOWED_TYPES = new Set([
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif',
+  'video/mp4', 'video/webm', 'video/quicktime',
+]);
+
+// Max file size: 10 MB
+const MAX_BYTES = 10 * 1024 * 1024;
 
 async function uploadToS3(fileName: string, buffer: Buffer, contentType: string) {
   const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
   const bucket = process.env.AWS_S3_BUCKET;
   const region = process.env.AWS_REGION;
   if (!bucket || !region) throw new Error('S3 not configured');
-  const client = new S3Client({ region, credentials: { accessKeyId: process.env.AWS_ACCESS_KEY_ID || '', secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '' } });
-  await client.send(new PutObjectCommand({ Bucket: bucket, Key: fileName, Body: buffer, ContentType: contentType, ACL: 'public-read' }));
+  const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+  if (!accessKeyId || !secretAccessKey) throw new Error('S3 credentials not configured');
+  const client = new S3Client({ region, credentials: { accessKeyId, secretAccessKey } });
+  // Note: no ACL: 'public-read' — use pre-signed URLs or bucket policy instead
+  await client.send(new PutObjectCommand({ Bucket: bucket, Key: fileName, Body: buffer, ContentType: contentType }));
   return `https://${bucket}.s3.${region}.amazonaws.com/${fileName}`;
 }
 
@@ -26,20 +40,36 @@ async function uploadToGCS(fileName: string, buffer: Buffer, contentType: string
 }
 
 export async function POST(request: NextRequest) {
+  // ── Auth check — must be signed in ──────────────────────────
+  const userId = await getUserIdFromRequest(request);
+  if (!userId) {
+    return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+  }
+
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
-    if (!file) return NextResponse.json({ error: 'No file' }, { status: 400 });
+    if (!file) return NextResponse.json({ error: 'No file provided.' }, { status: 400 });
 
-    const contentType = file.type || 'application/octet-stream';
-    const ext = contentType.split('/')[1] || 'bin';
+    // ── Validate MIME type (from declared type; magic-byte check would need a library) ──
+    const contentType = file.type || '';
+    if (!ALLOWED_TYPES.has(contentType)) {
+      return NextResponse.json({ error: 'File type not allowed.' }, { status: 400 });
+    }
+
+    // ── Validate file size ───────────────────────────────────
+    if (file.size > MAX_BYTES) {
+      return NextResponse.json({ error: 'File exceeds 10 MB limit.' }, { status: 400 });
+    }
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+    // Use extension from the allowed MIME type (not from the filename)
+    const ext = contentType.split('/')[1].replace('jpeg', 'jpg');
+    const fileName = `${userId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
-    // Try cloud providers first (S3 then GCS), fall back to local filesystem
+    // Try cloud providers first, fall back to local filesystem
     if (process.env.AWS_S3_BUCKET && process.env.AWS_REGION) {
       try {
         const url = await uploadToS3(fileName, buffer, contentType);
@@ -63,10 +93,9 @@ export async function POST(request: NextRequest) {
     const filePath = path.join(uploadsDir, fileName);
     await fs.writeFile(filePath, buffer);
 
-    const publicUrl = `/uploads/${fileName}`;
-    return NextResponse.json({ url: publicUrl });
+    return NextResponse.json({ url: `/uploads/${fileName}` });
   } catch (error) {
     console.error('Upload error:', error);
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
+    return NextResponse.json({ error: 'Upload failed.' }, { status: 500 });
   }
 }

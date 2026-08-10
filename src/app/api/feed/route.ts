@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     // Resolve the current viewer (if any) so we can return their vote
     // state and per-option counts in one round-trip.
     const viewerId =
-      request.headers.get('x-user-id') ?? (await getUserIdFromRequest(request));
+      await getUserIdFromRequest(request);
 
     const where: Record<string, unknown> = {};
 

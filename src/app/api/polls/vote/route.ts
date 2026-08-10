@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const userId =
-      request.headers.get('x-user-id') ?? (await getUserIdFromRequest(request));
+      await getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json(
         { error: 'Authentication required.' },
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const userId =
-      request.headers.get('x-user-id') ?? (await getUserIdFromRequest(request));
+      await getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json(
         { error: 'Authentication required.' },

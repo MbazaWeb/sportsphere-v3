@@ -13,7 +13,7 @@ cloudinary.config({
 
 export async function PUT(request: NextRequest) {
   try {
-    const userId = (request.headers.get('x-user-id') ?? await getUserIdFromRequest(request));
+    const userId = await getUserIdFromRequest(request);
 
     if (!userId) {
       return NextResponse.json(

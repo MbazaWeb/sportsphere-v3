@@ -70,7 +70,7 @@ export function serializePublicUser(u: {
   return {
     id: u.id,
     name: u.name,
-    email: u.email,
+    // email intentionally excluded from public responses
     handle: u.handle,
     avatar: u.avatarInitials || u.name.slice(0, 2).toUpperCase(),
     avatarUrl: u.avatarUrl || null,

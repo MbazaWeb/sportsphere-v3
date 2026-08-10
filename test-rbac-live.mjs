@@ -1,26 +1,53 @@
+/**
+ * test-rbac-live.mjs
+ *
+ * Live RBAC smoke-test against a running server.
+ *
+ * Usage:
+ *   ADMIN_EMAIL=admin@example.com \
+ *   ADMIN_PASSWORD=<from env / password manager> \
+ *   FAN_EMAIL=fan@example.com \
+ *   FAN_PASSWORD=<from env / password manager> \
+ *   BASE_URL=http://localhost:3000 \
+ *   node test-rbac-live.mjs
+ *
+ * Never commit real credentials. Store them in .env.local (gitignored)
+ * or your CI secret store and pass them via environment variables.
+ */
 import { PrismaClient } from "@prisma/client";
 
 async function runLiveRbacTests() {
   const prisma = new PrismaClient();
-  const baseUrl = "http://localhost:3000";
+
+  const baseUrl = process.env.BASE_URL ?? "http://localhost:3000";
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  const fanEmail = process.env.FAN_EMAIL;
+  const fanPassword = process.env.FAN_PASSWORD;
+
+  if (!adminEmail || !adminPassword || !fanEmail || !fanPassword) {
+    console.error(
+      "ERROR: Set ADMIN_EMAIL, ADMIN_PASSWORD, FAN_EMAIL, FAN_PASSWORD as environment variables.\n" +
+      "Never hardcode credentials in source files."
+    );
+    process.exit(1);
+  }
 
   console.log("=========================================");
   console.log("   RUNNING LIVE AUTH RBAC TEST SUITE   ");
   console.log("=========================================\n");
 
-  // 1. Obtain authentic admin session cookie via login route
   const adminRes = await fetch(`${baseUrl}/api/auth`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: "mbazzacodes@sportsphere.com", password: "Sports123!" }),
+    body: JSON.stringify({ email: adminEmail, password: adminPassword }),
   });
   const adminCookie = adminRes.headers.get("set-cookie");
 
-  // 2. Obtain authentic fan session cookie via login route
   const fanRes = await fetch(`${baseUrl}/api/auth`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: "fan_test@sportsphere.com", password: "Password123!" }),
+    body: JSON.stringify({ email: fanEmail, password: fanPassword }),
   });
   const fanCookie = fanRes.headers.get("set-cookie");
 

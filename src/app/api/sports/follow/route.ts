@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 // ─── POST /api/sports/follow ─────────────────────────────────
 export async function POST(request: NextRequest) {
   try {
-    const userId = (request.headers.get('x-user-id') ?? await getUserIdFromRequest(request));
+    const userId = await getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
 // ─── DELETE /api/sports/follow ────────────────────────────────
 export async function DELETE(request: NextRequest) {
   try {
-    const userId = (request.headers.get('x-user-id') ?? await getUserIdFromRequest(request));
+    const userId = await getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }

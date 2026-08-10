@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
     const handle = searchParams.get('handle');
-    const currentUserId = (request.headers.get('x-user-id') ?? await getUserIdFromRequest(request));
+    const currentUserId = await getUserIdFromRequest(request);
 
     // Common select with role/type/sport joins
     const selectWithRelations = {
@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
 // PUT /api/profile — update own profile (requires auth)
 export async function PUT(request: NextRequest) {
   try {
-    const userId = (request.headers.get('x-user-id') ?? await getUserIdFromRequest(request));
+    const userId = await getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }

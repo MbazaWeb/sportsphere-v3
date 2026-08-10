@@ -1,29 +1,42 @@
 /**
  * lib/serializers.ts
  *
- * FIXES APPLIED:
- *   - `serializePublicUser` no longer exposes email             (Fix #6)
- *   - `phone` and `whatsapp` explicitly excluded from public output
- *     even if they somehow reach this function via USER_SELECT  (Fix #8)
- *   - `serializePrivateUser` is the correct place for email/phone;
- *     only call it on the user's own profile endpoint.
+ * Serializers that control what user data is exposed in API responses.
  *
- * Search your codebase for `serializePublicUser` and replace the
- * implementation with the one below.  No call-sites need changing.
+ * RULES:
+ *  - serializePublicUser  → safe for any caller; NEVER includes email/phone/tokens
+ *  - serializePrivateUser → only call when session.userId === profile owner's id
+ *
+ * Field names match the actual Prisma User model:
+ *   handle (not username), name (not displayName), roleId/roleTypeId (not legacy role string)
  */
 
-// ── Types (match your Prisma schema field names) ─────────────────────────────
+// ── Types (aligned with Prisma User model fields) ─────────────────────────────
 
-interface UserRecord {
+export interface UserRecord {
   id: string;
-  username: string;
-  displayName?: string | null;
+  handle: string;           // Prisma field is `handle`, not `username`
+  name: string;             // Prisma field is `name`, not `displayName`
   bio?: string | null;
   avatarUrl?: string | null;
-  role: string;
-  createdAt: Date;
+  avatarInitials?: string | null;
+  roleId: string;
+  roleTypeId?: string | null;
+  verificationStatus?: string;
+  isVerified?: boolean;
+  emailVerified?: boolean;
+  followerCount?: number;
+  followingCount?: number;
+  postCount?: number;
+  coverGradient?: string;
+  coverUrl?: string | null;
+  location?: string | null;
+  sportsFollowing?: unknown;
+  roleData?: unknown;
+  registeredAt?: Date;
+  createdAt?: Date;
   privacySettings?: Record<string, unknown> | null;
-  // Fields intentionally excluded from public serializer:
+  // Sensitive — intentionally excluded from public serializer:
   email?: string;
   phone?: string | null;
   whatsapp?: string | null;
@@ -40,19 +53,34 @@ interface UserRecord {
  *
  * Never includes: email, phone, whatsapp, passwordHash, resetToken,
  * notifPrefs, or privacySettings.
+ *
+ * Maps Prisma field names to the API contract:
+ *   handle → handle (also aliased as username for client compatibility)
+ *   name   → name   (also aliased as displayName for client compatibility)
  */
 export function serializePublicUser(u: UserRecord) {
   return {
     id: u.id,
-    username: u.username,
-    displayName: u.displayName ?? null,
+    handle: u.handle,
+    username: u.handle,          // alias for backward-compat
+    name: u.name,
+    displayName: u.name,         // alias for backward-compat
     bio: u.bio ?? null,
     avatarUrl: u.avatarUrl ?? null,
-    role: u.role,
-    createdAt: u.createdAt,
-    // email: u.email,   ← REMOVED — was leaking all user emails
-    // phone: u.phone,   ← REMOVED — sensitive contact info
-    // whatsapp: ...     ← REMOVED
+    avatar: u.avatarInitials ?? u.name.slice(0, 2).toUpperCase(),
+    roleId: u.roleId,
+    roleTypeId: u.roleTypeId ?? null,
+    verificationStatus: u.verificationStatus ?? 'pending',
+    isVerified: u.isVerified ?? false,
+    emailVerified: u.emailVerified ?? false,
+    followerCount: u.followerCount ?? 0,
+    followingCount: u.followingCount ?? 0,
+    postCount: u.postCount ?? 0,
+    coverGradient: u.coverGradient ?? 'from-gray-800 to-gray-900',
+    coverUrl: u.coverUrl ?? null,
+    location: u.location ?? null,
+    registeredAt: (u.registeredAt ?? u.createdAt)?.toISOString() ?? null,
+    // email: — NEVER included in public responses
   };
 }
 
@@ -60,21 +88,14 @@ export function serializePublicUser(u: UserRecord) {
 
 /**
  * Extended serializer for the user viewing their own profile.
- * Apply conditional fields based on the user's privacy settings.
- *
- * Call this ONLY when the requester's session matches the profile owner:
- *   if (session.userId === profileUserId) return serializePrivateUser(user);
+ * Call this ONLY when the requester's session matches the profile owner.
  */
 export function serializePrivateUser(u: UserRecord) {
   return {
     ...serializePublicUser(u),
     email: u.email,
-    phone: u.privacySettings && (u.privacySettings as any).showPhone
-      ? u.phone
-      : undefined,
-    whatsapp: u.privacySettings && (u.privacySettings as any).showPhone
-      ? u.whatsapp
-      : undefined,
+    phone: u.privacySettings?.showPhone ? u.phone : undefined,
+    whatsapp: u.privacySettings?.showPhone ? u.whatsapp : undefined,
     notifPrefs: u.notifPrefs,
     privacySettings: u.privacySettings,
   };

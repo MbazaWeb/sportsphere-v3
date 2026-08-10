@@ -19,7 +19,7 @@ export async function PATCH(
 ) {
   try {
     const userId =
-      request.headers.get('x-user-id') ?? (await getUserIdFromRequest(request));
+      await getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json(
         { error: 'Authentication required.' },
@@ -120,7 +120,7 @@ export async function DELETE(
 ) {
   try {
     const userId =
-      request.headers.get('x-user-id') ?? (await getUserIdFromRequest(request));
+      await getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json(
         { error: 'Authentication required.' },

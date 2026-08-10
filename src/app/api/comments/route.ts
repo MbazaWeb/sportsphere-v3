@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     }
 
     const viewerId =
-      request.headers.get('x-user-id') ?? (await getUserIdFromRequest(request));
+      await getUserIdFromRequest(request);
 
     // Top-level comments only (parentId === null). Replies are nested via `replies`.
     const comments = await db.comment.findMany({
@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const userId =
-      request.headers.get('x-user-id') ?? (await getUserIdFromRequest(request));
+      await getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }

@@ -12,7 +12,7 @@ const VALID_TYPES: FavoriteTargetType[] = [
 // GET /api/profile/favorites — list current user's favorites
 export async function GET(request: NextRequest) {
   try {
-    const userId = (request.headers.get('x-user-id') ?? await getUserIdFromRequest(request));
+    const userId = await getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 // Body: { targetType, targetName, targetHandle? }
 export async function POST(request: NextRequest) {
   try {
-    const userId = (request.headers.get('x-user-id') ?? await getUserIdFromRequest(request));
+    const userId = await getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
 // DELETE /api/profile/favorites?id=xxx — remove a favorite
 export async function DELETE(request: NextRequest) {
   try {
-    const userId = (request.headers.get('x-user-id') ?? await getUserIdFromRequest(request));
+    const userId = await getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }

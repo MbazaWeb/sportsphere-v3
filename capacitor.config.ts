@@ -3,10 +3,12 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.sportsphere.app',
   appName: 'SportSphere',
-  webDir: 'out',  // Changed to match static export output
+  webDir: 'out',
   server: {
     androidScheme: 'https',
-    allowNavigation: ['*'],
+    // Restrict navigation to your own domain only.
+    // Replace with your actual production domain before building.
+    allowNavigation: ['sportsphere.app', '*.sportsphere.app'],
   },
   plugins: {
     SplashScreen: {
@@ -28,7 +30,7 @@ const config: CapacitorConfig = {
   },
   android: {
     backgroundColor: '#000000',
-    allowMixedContent: true,
+    allowMixedContent: false, // Never allow HTTP content in an HTTPS app
   },
 };
 

@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const targetUserId = (request.headers.get('x-user-id') ?? await getUserIdFromRequest(request));
+    const targetUserId = await getUserIdFromRequest(request);
 
     if (!targetUserId) {
       return NextResponse.json(
