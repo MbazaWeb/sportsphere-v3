@@ -17,9 +17,11 @@ interface AdminUser {
 }
 
 const NAV = [
+  { href: "/dashboard/admins", label: "🔑 Admin Delegation" },
   { href: '/dashboard', label: '📊 Overview', exact: true },
   { href: '/dashboard/users', label: '👥 Users Manager' },
-  { href: '/dashboard/sports', label: '🏆 Sports Manager' },
+  { href: '/dashboard/sports', label: '🏆 Sports Manager', exact: true },
+  { href: '/dashboard/sports-sync', label: '⚡ Sports Sync' },
   { href: '/dashboard/roles', label: '🛡️ Role Approvals' },
   { href: '/dashboard/posts', label: '📝 Content Moderation' },
 ];
@@ -35,7 +37,6 @@ export default function DashboardLayout({
   const [hydrated, setHydrated] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  // Hydrate admin profile from /api/auth/me (proxied to fan app)
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -92,7 +93,7 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-screen bg-[#0b0e14] text-slate-100 font-sans">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-slate-800 bg-[#0f141c] p-6 flex flex-col justify-between">
+      <aside className="w-64 border-r border-slate-800 bg-[#0f141c] p-6 flex flex-col justify-between shrink-0">
         <div>
           <div className="flex items-center gap-2 mb-8">
             <span className="text-2xl">⚽</span>
@@ -149,7 +150,7 @@ export default function DashboardLayout({
                     'flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
                     active
                       ? 'bg-amber-400/10 text-amber-400 border border-amber-400/20'
-                      : 'hover:bg-slate-800/80 hover:text-amber-400'
+                      : 'hover:bg-slate-800/80 hover:text-amber-400 text-slate-300'
                   )}
                 >
                   {label}
@@ -159,7 +160,7 @@ export default function DashboardLayout({
           </nav>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 pt-6">
           <a
             href={process.env.NEXT_PUBLIC_MAIN_APP_URL || '#'}
             target="_blank"

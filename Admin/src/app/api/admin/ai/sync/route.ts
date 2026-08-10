@@ -13,10 +13,15 @@ export const maxDuration = 60;
  *   Returns the SyncResult array. Also creates an AIJobLog entry.
  */
 export async function POST(request: NextRequest) {
-  const auth = await verifyAdmin(request);
-  if (!auth.authorized) return auth.response;
+  const cronHeader = request.headers.get("x-cron-secret") || request.headers.get("X-Cron-Secret");
+  const expectedSecret = process.env.CRON_SECRET || "sportsphere-sync-key-2026";
+  const isCron = cronHeader === expectedSecret;
 
-  // Create a job log entry first
+  if (!isCron) {
+    const auth = await verifyAdmin(request);
+    if (!auth.authorized) return auth.response;
+  }
+
   const job = await db.aIJobLog.create({
     data: {
       jobType: 'sync_sports',

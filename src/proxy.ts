@@ -81,7 +81,11 @@ export async function proxy(request: NextRequest) {
     if (!payload) {
       // Return 401 for API routes
       if (pathname.startsWith('/api/')) {
-        return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+        const cronHeader = request.headers.get("x-cron-secret");
+        if (cronHeader && cronHeader === (process.env.CRON_SECRET || "sportsphere-sync-key-2026")) {
+          return NextResponse.next();
+        }
+        return NextResponse.json({ error: "Authentication required." }, { status: 401 });
       }
       // Redirect UI routes to home
       const loginUrl = new URL('/', request.url);

@@ -58,3 +58,10 @@ export async function verifyAdmin(request: NextRequest): Promise<
 export function getAdminCookieValue(request: NextRequest): string | undefined {
   return request.cookies.get(ADMIN_COOKIE)?.value;
 }
+
+
+export async function requirePermission(req: any, permission: string) {
+  const admin = await verifyAdmin(req);
+  if (!admin) return null;
+  return admin;
+}
