@@ -11,51 +11,61 @@ interface PageProps {
 
 async function getPlayerFromDb(playerId: string): Promise<PlayerProfile | null> {
   try {
-    const rows: any[] = await db.$queryRaw`SELECT * FROM players WHERE id = ${playerId}`;
-    if (!rows || rows.length === 0) return null;
+    const user = await db.user.findUnique({
+      where: { id: playerId },
+      include: { playerProfile: true },
+    });
 
-    const row = rows[0];
+    if (!user || !user.playerProfile) return null;
+    const p = user.playerProfile;
+
     return {
-      id: row.id,
-      fullName: row.full_name,
-      photoUrl: row.photo_url || '/default-avatar.png',
-      dateOfBirth: row.date_of_birth ? new Date(row.date_of_birth).toISOString().split('T')[0] : '',
-      nationality: row.nationality || 'N/A',
-      heightCm: row.height_cm || 0,
-      weightKg: row.weight_kg || 0,
-      sport: row.sport || 'Football',
-      position: row.position || 'Athlete',
-      jerseyNumber: row.jersey_number || 0,
-      currentTeam: row.current_team || 'Free Agent',
-      dominantSide: row.dominant_side || 'Right',
-      yearsExperience: row.years_experience || 0,
-      matchesPlayed: row.matches_played || 0,
-      goalsPoints: row.goals_points || 0,
-      assists: row.assists || 0,
-      ppiScore: parseFloat(row.ppi_score || '0'),
-      efficiencyRate: parseFloat(row.efficiency_rate || '0'),
-      globalRank: row.global_rank || 0,
-      categoryRank: row.category_rank || 0,
-      percentileTier: row.percentile_tier || 'Unranked',
-      achievements: row.achievements || [],
-      skills: row.skills || [],
+      id: user.id,
+      fullName: user.name || user.username || 'Unknown',
+      photoUrl: user.avatarUrl || '/default-avatar.png',
+      dateOfBirth: p.dateOfBirth ? new Date(p.dateOfBirth).toISOString().split('T')[0] : '',
+      nationality: p.nationality || 'N/A',
+      heightCm: p.height || 0,
+      weightKg: p.weight || 0,
+      sport: 'Football',
+      position: p.position || 'Athlete',
+      jerseyNumber: parseInt(p.jerseyNumber || '0') || 0,
+      currentTeam: p.currentClub || 'Free Agent',
+      dominantSide: p.preferredFoot || 'Right',
+      yearsExperience: 0,
+      matchesPlayed: p.appearances || 0,
+      goalsPoints: p.goals || 0,
+      assists: p.assists || 0,
+      ppiScore: p.rating || 0,
+      efficiencyRate: p.savePct || p.passAccuracy || 0,
+      globalRank: p.ranking ? parseInt(p.ranking) || 0 : 0,
+      categoryRank: 0,
+      percentileTier: p.form || 'Unranked',
+      achievements: p.strengths ?? [],
+      skills: p.strengths ?? [],
       injuryHistory: [],
-      coachName: row.coach_name || 'N/A',
+      coachName: 'N/A',
       careerHistory: [
-        { teamName: row.current_team || 'Current Club', startDate: 'Jan 2025', endDate: 'Present', duration: '1 yr 7 mos', isCurrent: true },
+        {
+          teamName: p.currentClub || 'Current Club',
+          startDate: 'Jan 2025',
+          endDate: 'Present',
+          duration: '1 yr 7 mos',
+          isCurrent: true,
+        },
       ],
       spotlights: [
         {
           id: 'spot-1',
           type: 'video',
           title: 'Season Highlight Reel',
-          thumbnailUrl: row.photo_url || 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=400&q=80',
+          thumbnailUrl: user.avatarUrl || 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=400&q=80',
           caption: 'Key plays and match goals from current campaign.',
           createdAt: '3 days ago',
           likesCount: 340,
         },
       ],
-      biography: row.biography || 'No biography details recorded yet.',
+      biography: p.playingStyle || 'No biography details recorded yet.',
     };
   } catch (error) {
     console.error('Database query failed:', error);
@@ -73,7 +83,6 @@ export default async function PlayerPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-[#0F172A] text-slate-100 flex flex-col justify-between">
-      {/* Top Application Header Bar */}
       <header className="sticky top-0 z-50 bg-[#0F172A]/95 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex items-center justify-between max-w-2xl mx-auto w-full">
         <Link href="/" className="flex items-center gap-2">
           <span className="text-xl font-black tracking-italic italic text-white">
@@ -81,30 +90,20 @@ export default async function PlayerPage({ params }: PageProps) {
           </span>
         </Link>
         <div className="flex items-center gap-3">
-          <button className="w-8 h-8 rounded-full bg-[#1E293B] flex items-center justify-center text-slate-300 hover:text-white border border-slate-700/60 text-xs">
-            🔍
-          </button>
+          <button className="w-8 h-8 rounded-full bg-[#1E293B] flex items-center justify-center text-slate-300 hover:text-white border border-slate-700/60 text-xs">🔍</button>
           <button className="w-8 h-8 rounded-full bg-[#1E293B] flex items-center justify-center text-slate-300 hover:text-white border border-slate-700/60 text-xs relative">
             🛍️
-            <span className="absolute -top-1 -right-1 bg-[#FBBF24] text-black text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
-              0
-            </span>
+            <span className="absolute -top-1 -right-1 bg-[#FBBF24] text-black text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">0</span>
           </button>
-          <button className="w-8 h-8 rounded-full bg-[#1E293B] flex items-center justify-center text-slate-300 hover:text-white border border-slate-700/60 text-xs">
-            ✉️
-          </button>
-          <button className="w-8 h-8 rounded-full bg-[#1E293B] flex items-center justify-center text-slate-300 hover:text-white border border-slate-700/60 text-xs">
-            🔔
-          </button>
+          <button className="w-8 h-8 rounded-full bg-[#1E293B] flex items-center justify-center text-slate-300 hover:text-white border border-slate-700/60 text-xs">✉️</button>
+          <button className="w-8 h-8 rounded-full bg-[#1E293B] flex items-center justify-center text-slate-300 hover:text-white border border-slate-700/60 text-xs">🔔</button>
         </div>
       </header>
 
-      {/* Main Content Area */}
       <main className="flex-1 py-6 pb-24">
         <PlayerProfileCard player={player} />
       </main>
 
-      {/* Bottom Sticky Mobile Navigation Bar */}
       <nav className="fixed bottom-0 inset-x-0 z-50 bg-[#0F172A]/95 backdrop-blur-md border-t border-slate-800/80 py-2.5 px-6">
         <div className="max-w-md mx-auto flex justify-between items-center text-center">
           <Link href="/" className="flex flex-col items-center gap-1 text-slate-400 hover:text-white">
@@ -116,9 +115,7 @@ export default async function PlayerPage({ params }: PageProps) {
             <span className="text-[10px] font-medium">Scores</span>
           </Link>
           <Link href="/create" className="flex flex-col items-center gap-1 text-slate-400 hover:text-white">
-            <div className="w-7 h-7 rounded-full bg-[#1E293B] border border-slate-700 flex items-center justify-center text-slate-300 text-xs">
-              ➕
-            </div>
+            <div className="w-7 h-7 rounded-full bg-[#1E293B] border border-slate-700 flex items-center justify-center text-slate-300 text-xs">➕</div>
             <span className="text-[10px] font-medium">Create</span>
           </Link>
           <Link href="/activity" className="flex flex-col items-center gap-1 text-slate-400 hover:text-white">
