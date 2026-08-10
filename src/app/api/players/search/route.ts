@@ -11,24 +11,25 @@ export async function GET(request: Request) {
         playerProfile: { isNot: null },
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
-          { username: { contains: query, mode: 'insensitive' } },
+          { handle: { contains: query, mode: 'insensitive' } },
           { playerProfile: { position: { contains: query, mode: 'insensitive' } } },
           { playerProfile: { currentClub: { contains: query, mode: 'insensitive' } } },
         ],
       },
       include: { playerProfile: true },
       take: 10,
-      orderBy: { playerProfile: { rating: 'desc' } },
     });
 
-    const players = users.map(u => ({
-      id: u.id,
-      full_name: u.name || u.username,
-      photo_url: u.avatarUrl,
-      position: u.playerProfile?.position ?? null,
-      current_team: u.playerProfile?.currentClub ?? null,
-      ppi_score: u.playerProfile?.rating ?? 0,
-    }));
+    const players = users
+      .sort((a, b) => (b.playerProfile?.rating ?? 0) - (a.playerProfile?.rating ?? 0))
+      .map(u => ({
+        id: u.id,
+        full_name: u.name || u.handle,
+        photo_url: u.avatarUrl,
+        position: u.playerProfile?.position ?? null,
+        current_team: u.playerProfile?.currentClub ?? null,
+        ppi_score: u.playerProfile?.rating ?? 0,
+      }));
 
     return NextResponse.json({ players });
   } catch (error) {

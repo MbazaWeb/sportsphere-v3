@@ -21,7 +21,7 @@ async function getPlayerFromDb(playerId: string): Promise<PlayerProfile | null> 
 
     return {
       id: user.id,
-      fullName: user.name || user.username || 'Unknown',
+      fullName: user.name || user.handle || 'Unknown',
       photoUrl: user.avatarUrl || '/default-avatar.png',
       dateOfBirth: p.dateOfBirth ? new Date(p.dateOfBirth).toISOString().split('T')[0] : '',
       nationality: p.nationality || 'N/A',

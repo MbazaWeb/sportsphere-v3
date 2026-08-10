@@ -20,7 +20,7 @@ export async function GET(
     const p = user.playerProfile;
     const player = {
       id: user.id,
-      full_name: user.name || user.username,
+      full_name: user.name || user.handle,
       photo_url: user.avatarUrl,
       position: p.position,
       current_team: p.currentClub,
