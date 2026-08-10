@@ -1,6 +1,7 @@
 'use client';
 
-import { Search, Globe, Flag, Trophy } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FilterDropdown } from './FilterDropdown';
 import { useAppStore, type ScoresSubTab } from '@/store/useAppStore';
@@ -13,11 +14,11 @@ const SUBTABS: { id: ScoresSubTab; label: string }[] = [
   { id: 'standings', label: 'Standings' },
 ];
 
-const FILTERS = {
-  continent: ['All', 'Europe', 'Africa', 'South America', 'Asia', 'North America'],
-  country: ['All', 'England', 'Spain', 'Germany', 'France', 'Italy', 'Portugal', 'Netherlands'],
-  tournament: ['All', 'Premier League', 'La Liga', 'Bundesliga', 'Ligue 1', 'Serie A', 'Champions League', 'Europa League'],
-};
+const POPULAR_LEAGUES = [
+  'All', 'English Premier League', 'Spanish La Liga', 'German Bundesliga',
+  'Italian Serie A', 'French Ligue 1', 'UEFA Champions League',
+  'UEFA Europa League', 'English Championship',
+];
 
 interface ScoresHeaderProps {
   sport: string;
@@ -28,7 +29,6 @@ interface ScoresHeaderProps {
   setCountry: (v: string) => void;
   tournament: string;
   setTournament: (v: string) => void;
-  sportsList: Array<{ name: string }> | undefined;
 }
 
 export function ScoresHeader({
@@ -36,18 +36,39 @@ export function ScoresHeader({
   continent, setContinent,
   country, setCountry,
   tournament, setTournament,
-  sportsList
 }: ScoresHeaderProps) {
   const scoresSubTab = useAppStore((s) => s.scoresSubTab);
   const setScoresSubTab = useAppStore((s) => s.setScoresSubTab);
+
+  // Live match count indicator
+  const [liveCount, setLiveCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (scoresSubTab !== 'live') return;
+    const fetchCount = async () => {
+      try {
+        const res = await fetch('/api/matches?status=live');
+        if (res.ok) {
+          const data = await res.json();
+          setLiveCount(Array.isArray(data) ? data.length : 0);
+        }
+      } catch { /* ignore */ }
+    };
+    fetchCount();
+    const interval = setInterval(fetchCount, 60000);
+    return () => clearInterval(interval);
+  }, [scoresSubTab]);
 
   return (
     <header className="sticky top-0 z-40 border-b border-surface-border bg-background/90 backdrop-blur-xl">
       <div className="flex h-14 items-center justify-between px-4">
         <h2 className="text-lg font-bold text-foreground">Scores</h2>
-        <button className="rounded-full p-2 hover:bg-surface transition-colors">
-          <Search className="h-5 w-5 text-foreground" />
-        </button>
+        {liveCount !== null && liveCount > 0 && (
+          <span className="flex items-center gap-1.5 rounded-full bg-red-500/10 border border-red-500/20 px-2.5 py-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
+            <span className="text-[10px] font-bold text-red-400">{liveCount} LIVE</span>
+          </span>
+        )}
       </div>
 
       {/* Subtabs */}
@@ -68,39 +89,16 @@ export function ScoresHeader({
         ))}
       </div>
 
-      {/* Filters */}
-      {scoresSubTab !== 'standings' && (
-        <div className="flex flex-wrap items-center gap-2 px-4 pb-3">
-          <FilterDropdown
-            label="Sport"
-            options={['All', ...(sportsList?.map((s) => s.name) || [])]}
-            value={sport}
-            onChange={setSport}
-            icon={Globe}
-          />
-          <FilterDropdown
-            label="Continent"
-            options={FILTERS.continent}
-            value={continent}
-            onChange={setContinent}
-            icon={Globe}
-          />
-          <FilterDropdown
-            label="Country"
-            options={FILTERS.country}
-            value={country}
-            onChange={setCountry}
-            icon={Flag}
-          />
-          <FilterDropdown
-            label="Tournament"
-            options={FILTERS.tournament}
-            value={tournament}
-            onChange={setTournament}
-            icon={Trophy}
-          />
-        </div>
-      )}
+      {/* League filter — for standings and match tabs */}
+      <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
+        <FilterDropdown
+          label="League"
+          options={POPULAR_LEAGUES}
+          value={tournament}
+          onChange={(v) => { setTournament(v); if (v !== 'All') { setSport('All'); setContinent('All'); setCountry('All'); } }}
+          icon={Trophy}
+        />
+      </div>
     </header>
   );
 }

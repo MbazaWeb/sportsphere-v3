@@ -1,73 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { safeJsonParse } from '@/lib/json';
+import {
+  getLiveMatches,
+  getMatchesByDate,
+  getPastResults,
+  getUpcomingFixtures,
+  POPULAR_LEAGUE_IDS,
+} from '@/lib/sports-api';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
-    const status = searchParams.get('status');
-    const group = searchParams.get('group');
-    const continent = searchParams.get('continent');
-    const country = searchParams.get('country');
-    const league = searchParams.get('league');
+    const status = searchParams.get('status') || 'live';
+    const leagueName = searchParams.get('league');
 
-    const where: Record<string, unknown> = {};
+    let matches: any[];
 
-    if (status) {
-      if (status === 'live') {
-        where.status = { in: ['live', 'ht'] };
-      } else {
-        where.status = status;
+    switch (status) {
+      case 'live': {
+        matches = await getLiveMatches();
+        break;
       }
-    }
-
-    if (group) {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const tomorrow = new Date(today.getTime() + 24 * 3600000);
-
-      switch (group) {
-        case 'today':
-          // Show today's matches regardless of status — a match that
-          // kicked off at 17:30 and is live at 18:15 should still appear.
-          where.kickoffAt = { gte: today, lt: tomorrow };
-          where.status = { in: ['upcoming', 'live', 'ht', 'ft'] };
-          break;
-        case 'upcoming':
-          where.status = 'upcoming';
-          break;
-        case 'results':
-          where.status = 'ft';
-          break;
+      case 'today': {
+        const today = new Date().toISOString().slice(0, 10);
+        matches = await getMatchesByDate(today);
+        break;
       }
+      case 'results': {
+        // If a specific league is selected, fetch its past results
+        if (leagueName && leagueName !== 'All' && POPULAR_LEAGUE_IDS[leagueName]) {
+          matches = await getPastResults(POPULAR_LEAGUE_IDS[leagueName]);
+        } else {
+          // Fetch yesterday's matches as results
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          matches = await getMatchesByDate(yesterday.toISOString().slice(0, 10));
+        }
+        break;
+      }
+      case 'upcoming': {
+        if (leagueName && leagueName !== 'All' && POPULAR_LEAGUE_IDS[leagueName]) {
+          matches = await getUpcomingFixtures(POPULAR_LEAGUE_IDS[leagueName]);
+        } else {
+          // Fetch tomorrow's matches as upcoming
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          matches = await getMatchesByDate(tomorrow.toISOString().slice(0, 10));
+        }
+        break;
+      }
+      default:
+        matches = [];
     }
 
-    if (continent && continent !== 'All') {
-      where.continent = continent;
-    }
-    if (country && country !== 'All') {
-      where.country = country;
-    }
-    if (league && league !== 'All') {
-      where.league = league;
+    // Filter by league name if provided
+    if (leagueName && leagueName !== 'All' && Array.isArray(matches)) {
+      const lower = leagueName.toLowerCase();
+      matches = matches.filter(
+        (m: { league: string }) => m.league.toLowerCase().includes(lower)
+      );
     }
 
-    const matches = await db.match.findMany({
-      where,
-      orderBy: { kickoffAt: 'asc' },
-      take: 50,
-    });
-
-    const parsed = matches.map((m: typeof matches[number]) => ({
-      ...m,
-      events: safeJsonParse(m.events, []),
-    }));
-
-    return NextResponse.json(parsed);
+    return NextResponse.json(matches || []);
   } catch (error) {
     console.error('Matches API error:', error);
-    return NextResponse.json({ error: 'Failed to fetch matches' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch matches. The sports API may be temporarily unavailable.' },
+      { status: 502 }
+    );
   }
 }

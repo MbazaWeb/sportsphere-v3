@@ -1,31 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { getStandings, POPULAR_LEAGUE_IDS } from '@/lib/sports-api';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
-    const league = searchParams.get('league');
+    const leagueName = searchParams.get('league') || 'English Premier League';
 
-    const filePath = path.join(process.cwd(), 'prisma', 'standings.json');
-    const fileContent = await fs.readFile(filePath, 'utf-8');
-    const allStandings = JSON.parse(fileContent);
-
-    // Always return a Record<string, StandingRow[]> so the frontend can
-    // index by league name regardless of whether a filter is applied.
-    const out =
-      league && league !== 'All'
-        ? { [league]: allStandings[league] || [] }
-        : allStandings;
+    const leagueId = POPULAR_LEAGUE_IDS[leagueName] || '4328';
+    const standings = await getStandings(leagueId);
 
     return NextResponse.json({
-      standings: out,
-      available: Object.keys(allStandings),
+      standings,
+      league: leagueName,
+      available: Object.keys(POPULAR_LEAGUE_IDS),
     });
   } catch (error) {
     console.error('Standings API error:', error);
-    return NextResponse.json({ error: 'Failed to fetch standings' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch standings.' },
+      { status: 502 }
+    );
   }
 }
