@@ -49,7 +49,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
         <div className="border-t border-slate-800 pt-4">
           <Link
-            href="/"
+            href="/sportsphere"
             className="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-200 transition-colors"
           >
             ← Back to SportSphere App
