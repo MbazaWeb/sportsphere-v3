@@ -67,11 +67,24 @@ function ProfileTypeOverlay() {
 function TabContent() {
   const activeTab = useNavigationStore((s) => s.activeTab);
   const setActiveTab = useNavigationStore((s) => s.setActiveTab);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const setLoginModalOpen = useUIStore((s) => s.setLoginModalOpen);
   const touchStartX = useRef<number | null>(null);
   const touchCurrentX = useRef<number | null>(null);
   const threshold = 60;
 
-  const tabs: Array<'home'|'scores'|'create'|'activity'|'profile'> = ['home','scores','create','activity','profile'];
+  // Auth-only tabs — redirect unauthenticated users back to home
+  const AUTH_TABS: Array<'home'|'scores'|'create'|'activity'|'profile'> = ['create', 'activity', 'profile'];
+  React.useEffect(() => {
+    if (!isAuthenticated && AUTH_TABS.includes(activeTab as typeof AUTH_TABS[number])) {
+      setActiveTab('home');
+      setLoginModalOpen(true);
+    }
+  }, [activeTab, isAuthenticated, setActiveTab, setLoginModalOpen]);
+
+  const allTabs: Array<'home'|'scores'|'create'|'activity'|'profile'> = ['home','scores','create','activity','profile'];
+  // Only allow swiping within the tabs available to the current user
+  const tabs = isAuthenticated ? allTabs : (['home', 'scores'] as Array<'home'|'scores'|'create'|'activity'|'profile'>);
 
   const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; touchCurrentX.current = e.touches[0].clientX; };
   const handleTouchMove = (e: React.TouchEvent) => { touchCurrentX.current = e.touches[0].clientX; };

@@ -21,7 +21,7 @@ const PROTECTED_PREFIXES = [
   '/api/likes',
   '/api/comments',
   '/api/follows',
-  '/api/feed',
+  // '/api/feed' is intentionally public — unauthenticated users can browse the feed
   '/api/polls',
   '/api/predictions',
   '/api/profile',
