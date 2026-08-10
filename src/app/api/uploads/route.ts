@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     // Write to the REAL public/uploads (not the standalone copy).
     const uploadDir = resolveUploadDir();
     await fs.mkdir(uploadDir, { recursive: true });
-    const filePath = path.join(uploadDir, fileName);
+    const filePath = path.join(process.cwd(), "public", "uploads", path.basename(fileName));
     await fs.writeFile(filePath, buffer);
     console.log(`[upload] Written to ${filePath} (${buffer.length} bytes)`);
 
@@ -142,10 +142,10 @@ export async function GET(request: NextRequest) {
   }
 
   const uploadDir = resolveUploadDir();
-  const filePath = path.join(uploadDir, fileName);
+  const filePath = path.join(process.cwd(), "public", "uploads", path.basename(fileName));
 
   try {
-    const data = await fs.readFile(filePath);
+    const data = await fs.readFile(/* turbopackIgnore: true */ filePath);
     const ext = path.extname(fileName).toLowerCase();
     const mimeMap: Record<string, string> = {
       '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
