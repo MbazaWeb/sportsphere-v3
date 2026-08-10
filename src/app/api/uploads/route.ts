@@ -23,7 +23,6 @@ async function uploadToS3(fileName: string, buffer: Buffer, contentType: string)
   const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
   if (!accessKeyId || !secretAccessKey) throw new Error('S3 credentials not configured');
   const client = new S3Client({ region, credentials: { accessKeyId, secretAccessKey } });
-  // Note: no ACL: 'public-read' — use pre-signed URLs or bucket policy instead
   await client.send(new PutObjectCommand({ Bucket: bucket, Key: fileName, Body: buffer, ContentType: contentType }));
   return `https://${bucket}.s3.${region}.amazonaws.com/${fileName}`;
 }
@@ -39,8 +38,24 @@ async function uploadToGCS(fileName: string, buffer: Buffer, contentType: string
   return `https://storage.googleapis.com/${bucketName}/${fileName}`;
 }
 
+/**
+ * Resolve the REAL public/uploads directory.
+ * In standalone mode the cwd may vary, so we use an explicit env var
+ * (UPLOAD_DIR) or walk up from __dirname to find the project root.
+ */
+function resolveUploadDir(): string {
+  // 1) Explicit env override (most reliable for production)
+  if (process.env.UPLOAD_DIR) return process.env.UPLOAD_DIR;
+
+  // 2) Derive from the source file location:
+  //    src/app/api/uploads/route.ts  →  projectRoot/public/uploads
+  const srcDir = path.resolve(__dirname, '..', '..', '..', '..');
+  const candidate = path.join(srcDir, 'public', 'uploads');
+  return candidate;
+}
+
 export async function POST(request: NextRequest) {
-  // ── Auth check — must be signed in ──────────────────────────
+  // Auth check — must be signed in
   const userId = await getUserIdFromRequest(request);
   if (!userId) {
     return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
@@ -51,13 +66,13 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File | null;
     if (!file) return NextResponse.json({ error: 'No file provided.' }, { status: 400 });
 
-    // ── Validate MIME type (from declared type; magic-byte check would need a library) ──
+    // Validate MIME type
     const contentType = file.type || '';
     if (!ALLOWED_TYPES.has(contentType)) {
       return NextResponse.json({ error: 'File type not allowed.' }, { status: 400 });
     }
 
-    // ── Validate file size ───────────────────────────────────
+    // Validate file size
     if (file.size > MAX_BYTES) {
       return NextResponse.json({ error: 'File exceeds 100 MB limit.' }, { status: 400 });
     }
@@ -88,45 +103,64 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Local filesystem fallback — write to public/uploads/
-    // In standalone mode, .next/standalone/public must point to the real public/
-    // (the deploy script creates this symlink, but we self-heal if it's missing).
-    const realPublicDir = path.join(process.cwd(), 'public', 'uploads');
-    const standalonePublicDir = path.join(process.cwd(), '.next', 'standalone', 'public', 'uploads');
-
-    // Ensure the real public/uploads/ directory exists
-    await fs.mkdir(realPublicDir, { recursive: true });
-
-    // Self-heal: create symlink .next/standalone/public → ../../public if missing
-    // This ensures the standalone server can serve uploaded files.
-    const standalonePublic = path.join(process.cwd(), '.next', 'standalone', 'public');
-    const standalonePublicExists = await fs.access(standalonePublic).then(() => true).catch(() => false);
-    if (!standalonePublicExists) {
-      await fs.mkdir(standalonePublic, { recursive: true });
-      try {
-        await fs.symlink(path.resolve(process.cwd(), 'public'), standalonePublic, 'junction');
-      } catch (symlinkErr: unknown) {
-        // If symlink already exists (race) or other OS error, try copy as last resort
-        const code = (symlinkErr as NodeJS.ErrnoException)?.code;
-        if (code !== 'EEXIST') {
-          console.warn('Could not create standalone public symlink, falling back to copy:', symlinkErr);
-          const { execSync } = await import('child_process');
-          try { execSync('cp -rn public/* .next/standalone/public/ 2>/dev/null || true'); } catch {}
-        }
-      }
-    }
-
-    const filePath = path.join(realPublicDir, fileName);
+    // ── Local filesystem fallback ──────────────────────────────
+    // Write to the REAL public/uploads (not the standalone copy).
+    const uploadDir = resolveUploadDir();
+    await fs.mkdir(uploadDir, { recursive: true });
+    const filePath = path.join(uploadDir, fileName);
     await fs.writeFile(filePath, buffer);
+    console.log(`[upload] Written to ${filePath} (${buffer.length} bytes)`);
 
-    // Also ensure the file exists in standalone path (in case symlink failed)
-    await fs.mkdir(standalonePublicDir, { recursive: true }).catch(() => {});
-    await fs.copyFile(filePath, path.join(standalonePublicDir, fileName)).catch(() => {});
+    // Also ensure the standalone public/uploads has it (for Next.js static serving)
+    const standaloneUploadDir = path.join(
+      path.resolve(uploadDir, '..', '..', '.next', 'standalone', 'public', 'uploads')
+    );
+    await fs.mkdir(standaloneUploadDir, { recursive: true }).catch(() => {});
+    await fs.copyFile(filePath, path.join(standaloneUploadDir, fileName)).catch(() => {});
 
     const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
     return NextResponse.json({ url: `${basePath}/uploads/${fileName}` });
   } catch (error) {
     console.error('Upload error:', error);
     return NextResponse.json({ error: 'Upload failed.' }, { status: 500 });
+  }
+}
+
+/**
+ * GET /api/uploads?file=filename  — serve uploaded files as a
+ * fallback when nginx can't find them.  This ensures uploads are
+ * always accessible even if the nginx alias is misconfigured.
+ */
+export async function GET(request: NextRequest) {
+  const fileName = request.nextUrl.searchParams.get('file');
+  if (!fileName) {
+    return NextResponse.json({ error: 'Missing file param' }, { status: 400 });
+  }
+  // Prevent path traversal
+  if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
+    return NextResponse.json({ error: 'Invalid file name' }, { status: 400 });
+  }
+
+  const uploadDir = resolveUploadDir();
+  const filePath = path.join(uploadDir, fileName);
+
+  try {
+    const data = await fs.readFile(filePath);
+    const ext = path.extname(fileName).toLowerCase();
+    const mimeMap: Record<string, string> = {
+      '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+      '.gif': 'image/gif', '.webp': 'image/webp', '.avif': 'image/avif',
+      '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime',
+    };
+    const contentType = mimeMap[ext] || 'application/octet-stream';
+    return new NextResponse(data, {
+      headers: {
+        'Content-Type': contentType,
+        'Cache-Control': 'public, max-age=604800, immutable',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  } catch {
+    return NextResponse.json({ error: 'File not found' }, { status: 404 });
   }
 }
