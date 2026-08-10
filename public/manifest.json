@@ -2,59 +2,59 @@
   "name": "SportSphere",
   "short_name": "SportSphere",
   "description": "The world's biggest sports social network. Connect with fans, players, teams, and communities.",
-  "start_url": "/",
+  "start_url": "/sportsphere",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#00c853",
   "orientation": "portrait-primary",
-  "scope": "/",
+  "scope": "/sportsphere",
   "lang": "en",
   "categories": ["sports", "social", "entertainment"],
   "icons": [
     {
-      "src": "/icons/icon-72x72.svg",
+      "src": "/sportsphere/icons/icon-72x72.svg",
       "sizes": "72x72",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-96x96.svg",
+      "src": "/sportsphere/icons/icon-96x96.svg",
       "sizes": "96x96",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-128x128.svg",
+      "src": "/sportsphere/icons/icon-128x128.svg",
       "sizes": "128x128",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-144x144.svg",
+      "src": "/sportsphere/icons/icon-144x144.svg",
       "sizes": "144x144",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-152x152.svg",
+      "src": "/sportsphere/icons/icon-152x152.svg",
       "sizes": "152x152",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-192x192.svg",
+      "src": "/sportsphere/icons/icon-192x192.svg",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-384x384.svg",
+      "src": "/sportsphere/icons/icon-384x384.svg",
       "sizes": "384x384",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-512x512.svg",
+      "src": "/sportsphere/icons/icon-512x512.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
@@ -65,17 +65,17 @@
   "shortcuts": [
     {
       "name": "Home Feed",
-      "url": "/",
+      "url": "/sportsphere",
       "description": "View your home feed"
     },
     {
       "name": "Live Scores",
-      "url": "/?tab=scores",
+      "url": "/sportsphere/?tab=scores",
       "description": "View live scores and fixtures"
     },
     {
       "name": "Create Post",
-      "url": "/?tab=create",
+      "url": "/sportsphere/?tab=create",
       "description": "Create a new post"
     }
   ]

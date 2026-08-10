@@ -1,10 +1,10 @@
 // SportSphere Service Worker - PWA Offline Support
 const CACHE_NAME = 'sportsphere-v1';
 const STATIC_ASSETS = [
-  '/',
+  '/sportsphere',
   '/sportsphere/manifest.json',
-  '/icons/icon-192x192.svg',
-  '/icons/icon-512x512.svg',
+  '/sportsphere/icons/icon-192x192.svg',
+  '/sportsphere/icons/icon-512x512.svg',
 ];
 
 // Install - cache static assets
@@ -61,9 +61,9 @@ self.addEventListener('fetch', (event) => {
         // Fallback to cache
         return caches.match(event.request).then((cachedResponse) => {
           if (cachedResponse) return cachedResponse;
-          // For navigation requests, return cached index
+          // For navigation requests, return cached /sportsphere
           if (event.request.mode === 'navigate') {
-            return caches.match('/');
+            return caches.match('/sportsphere');
           }
           return new Response('Offline', { status: 503 });
         });
