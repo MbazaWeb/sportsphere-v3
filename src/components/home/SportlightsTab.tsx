@@ -202,46 +202,42 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
           <Crown className="h-4 w-4 text-gold" />
           <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Top Accounts</h3>
         </div>
-        {isAuthenticated ? (
-          leaderboard.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-2">No leaderboard data.</p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {leaderboard.slice(0, 5).map((item) => (
-                <button
-                  key={item.id}
-                  onClick={async () => {
-                    try {
-                      const res = await apiFetch(`/api/users?handle=${encodeURIComponent(item.handle)}`);
-                      if (res.ok) {
-                        const u = await res.json();
-                        setViewingUser(apiUserToViewing(u, false));
-                      }
-                    } catch { }
-                  }}
-                  className="flex items-center gap-3 rounded-xl bg-surface p-2.5 text-left hover:bg-surface-elevated transition-colors w-full"
-                >
-                  <span className={cn('w-5 text-center text-sm font-black', item.rank === 1 ? 'text-gold' : item.rank === 2 ? 'text-gray-300' : item.rank === 3 ? 'text-orange-400' : 'text-muted-foreground')}>
-                    {item.rank}
-                  </span>
-                  <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gold/10 text-xs font-bold text-gold flex-shrink-0">
-                    {item.avatarUrl ? (
-                      <img src={item.avatarUrl} alt={item.name} className="h-full w-full object-cover" />
-                    ) : (
-                      item.avatarInitials || item.name.slice(0, 2).toUpperCase()
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-white truncate">{item.name}</p>
-                    <p className="text-[10px] text-muted-foreground capitalize">{item.role}</p>
-                  </div>
-                  <span className="text-sm font-bold text-gold">{formatCount(item.points)}</span>
-                </button>
-              ))}
-            </div>
-          )
+        {leaderboard.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-2">No leaderboard data.</p>
         ) : (
-          <p className="text-xs text-muted-foreground py-2">Sign in to see top accounts.</p>
+          <div className="flex flex-col gap-2">
+            {leaderboard.slice(0, 5).map((item) => (
+              <button
+                key={item.id}
+                onClick={async () => {
+                  try {
+                    const res = await apiFetch(`/api/users?handle=${encodeURIComponent(item.handle)}`);
+                    if (res.ok) {
+                      const u = await res.json();
+                      setViewingUser(apiUserToViewing(u, false));
+                    }
+                  } catch { }
+                }}
+                className="flex items-center gap-3 rounded-xl bg-surface p-2.5 text-left hover:bg-surface-elevated transition-colors w-full"
+              >
+                <span className={cn('w-5 text-center text-sm font-black', item.rank === 1 ? 'text-gold' : item.rank === 2 ? 'text-gray-300' : item.rank === 3 ? 'text-orange-400' : 'text-muted-foreground')}>
+                  {item.rank}
+                </span>
+                <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gold/10 text-xs font-bold text-gold flex-shrink-0">
+                  {item.avatarUrl ? (
+                    <img src={item.avatarUrl} alt={item.name} className="h-full w-full object-cover" />
+                  ) : (
+                    item.avatarInitials || item.name.slice(0, 2).toUpperCase()
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">{item.name}</p>
+                  <p className="text-[10px] text-muted-foreground capitalize">{item.role}</p>
+                </div>
+                <span className="text-sm font-bold text-gold">{formatCount(item.points)}</span>
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
@@ -250,31 +246,27 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
           <Flame className="h-4 w-4 text-gold" />
           <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Choose Your Teams</h3>
         </div>
-        {isAuthenticated ? (
-          teams.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-2">No teams available.</p>
-          ) : (
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-              {teams.map((team) => (
-                <button
-                  key={team.id}
-                  onClick={() => openTeamByHandle(team.handle)}
-                  className="flex-shrink-0 flex items-center gap-2 rounded-xl bg-surface border border-surface-border px-3 py-2 text-sm font-medium text-white hover:border-gold/30 transition-colors"
-                >
-                  <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-gold/10 text-[10px] font-bold text-gold flex-shrink-0">
-                    {team.avatarUrl ? (
-                      <img src={team.avatarUrl} alt={team.name} className="h-full w-full object-cover" />
-                    ) : (
-                      team.avatarInitials || team.name.slice(0, 2).toUpperCase()
-                    )}
-                  </div>
-                  {team.name}
-                </button>
-              ))}
-            </div>
-          )
+        {teams.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-2">No teams available.</p>
         ) : (
-          <p className="text-xs text-muted-foreground py-2">Sign in to see teams.</p>
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+            {teams.map((team) => (
+              <button
+                key={team.id}
+                onClick={() => openTeamByHandle(team.handle)}
+                className="flex-shrink-0 flex items-center gap-2 rounded-xl bg-surface border border-surface-border px-3 py-2 text-sm font-medium text-white hover:border-gold/30 transition-colors"
+              >
+                <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-gold/10 text-[10px] font-bold text-gold flex-shrink-0">
+                  {team.avatarUrl ? (
+                    <img src={team.avatarUrl} alt={team.name} className="h-full w-full object-cover" />
+                  ) : (
+                    team.avatarInitials || team.name.slice(0, 2).toUpperCase()
+                  )}
+                </div>
+                {team.name}
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
