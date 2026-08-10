@@ -18,7 +18,7 @@ CREATE TABLE "Location" (
 );
 
 -- CreateIndex
-CREATE INDEX "Location_search_prefix" ON "Location" USING gin ("searchTokens" gin_trgm_ops);
+CREATE INDEX "Location_search_prefix" ON "Location" USING gin ("searchTokens");
 
 -- CreateIndex
 CREATE INDEX "Location_type_idx" ON "Location"("type");
