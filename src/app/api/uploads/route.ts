@@ -11,8 +11,8 @@ const ALLOWED_TYPES = new Set([
   'video/mp4', 'video/webm', 'video/quicktime',
 ]);
 
-// Max file size: 10 MB
-const MAX_BYTES = 10 * 1024 * 1024;
+// Max file size: 100 MB (videos can be large; S3/GCS recommended)
+const MAX_BYTES = 100 * 1024 * 1024;
 
 async function uploadToS3(fileName: string, buffer: Buffer, contentType: string) {
   const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
@@ -93,7 +93,8 @@ export async function POST(request: NextRequest) {
     const filePath = path.join(uploadsDir, fileName);
     await fs.writeFile(filePath, buffer);
 
-    return NextResponse.json({ url: `/uploads/${fileName}` });
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+    return NextResponse.json({ url: `${basePath}/uploads/${fileName}` });
   } catch (error) {
     console.error('Upload error:', error);
     return NextResponse.json({ error: 'Upload failed.' }, { status: 500 });

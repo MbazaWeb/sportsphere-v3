@@ -13,7 +13,6 @@ import { apiUserToViewing } from '@/types';
 import { FeedCard } from './FeedCard';
 import { CommentSheet } from './CommentSheet';
 import { formatTime } from '@/lib/format';
-import PullToRefresh from '@/components/layout/PullToRefresh';
 
 // Types
 interface ApiUser {
@@ -147,7 +146,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
   const [matchDetailOpen, setMatchDetailOpen] = useState(false);
 
   return (
-    <PullToRefresh onRefresh={loadData} className="min-h-screen">
+    <div className="min-h-screen">
     <div className="flex flex-col gap-4 p-4">
       {featuredMatch && (
         <div className="premium-glow-border">
@@ -334,7 +333,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
       )}
 
     </div>
-    </PullToRefresh>
+    </div>
   );
 }
 

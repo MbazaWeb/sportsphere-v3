@@ -2,7 +2,7 @@
 import { apiFetch } from '@/lib/api';
 
 import { useState, useRef } from 'react';
-import { Video as VideoIcon, X, Plus, AlertCircle } from 'lucide-react';
+import { Video as VideoIcon, X, Plus, AlertCircle, VideoOff } from 'lucide-react';
 import { MediaEditor } from '@/components/media-editor/MediaEditor';
 
 interface VideoUploadProps {
@@ -151,7 +151,11 @@ export function VideoUpload({ mediaUrls, onChange, type }: VideoUploadProps) {
           <div className="grid gap-2 grid-cols-1">
             {mediaUrls.map((url, i) => (
               <div key={i} className="relative aspect-video rounded-xl overflow-hidden bg-surface border border-surface-border">
-                <video src={url} className="h-full w-full object-cover" controls playsInline />
+                <video src={url} className="h-full w-full object-cover" controls playsInline onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; (e.target as HTMLVideoElement).nextElementSibling?.classList.remove('hidden'); }} />
+                <div className="hidden absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                  <VideoOff className="h-8 w-8" />
+                  <span className="text-xs">Failed to load video</span>
+                </div>
                 <button
                   onClick={() => removeMedia(i)}
                   className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90 transition-colors"

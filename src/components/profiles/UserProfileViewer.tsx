@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUIStore } from '@/store/uiStore';
-import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useProfileData } from './useProfileData';
 import { ProfileCover } from './ProfileCover';
 import { ProfileInfo } from './ProfileInfo';
@@ -28,7 +27,7 @@ export default function UserProfileViewer() {
   const [peopleListOpen, setPeopleListOpen] = useState<'followers' | 'following' | null>(null);
 
   const { apiUser, userPosts, loading, refresh } = useProfileData(viewingHandle);
-  const { containerRef, isRefreshing, pullProgress } = usePullToRefresh({ onRefresh: refresh, threshold: 80 });
+
 
   if (!viewingUser) return null;
 
@@ -94,10 +93,9 @@ export default function UserProfileViewer() {
         dragConstraints={{ left: 0, right: 0 }}
         onDragEnd={(_, info) => { if (info.offset.x > 80) setViewingUser(null); }}
         className="fixed inset-0 z-40 bg-background overflow-y-auto touch-pan-y"
-        ref={containerRef}
       >
         <div className="mx-auto max-w-lg min-h-screen">
-          <ProfileCover coverGradient={viewingUser.coverGradient} pullProgress={pullProgress} isRefreshing={isRefreshing} onBack={() => setViewingUser(null)} />
+          <ProfileCover coverGradient={viewingUser.coverGradient} onBack={() => setViewingUser(null)} />
           <ProfileInfo user={viewingUser} role={role} />
           <ProfileStats followers={viewingUser.followers} following={viewingUser.following} posts={viewingUser.posts} onOpenList={setPeopleListOpen} />
           <ProfileActions role={role} following={following} setFollowing={setFollowing} />

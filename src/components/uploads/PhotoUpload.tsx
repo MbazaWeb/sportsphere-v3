@@ -2,7 +2,7 @@
 import { apiFetch } from '@/lib/api';
 
 import { useState, useRef } from 'react';
-import { Camera, X, Plus, AlertCircle } from 'lucide-react';
+import { Camera, X, Plus, AlertCircle, ImageOff } from 'lucide-react';
 import { MediaEditor } from '@/components/media-editor/MediaEditor';
 
 interface PhotoUploadProps {
@@ -151,7 +151,12 @@ export function PhotoUpload({ mediaUrls, onChange }: PhotoUploadProps) {
           <div className={`grid gap-2 ${mediaUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
             {mediaUrls.map((url, i) => (
               <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-surface border border-surface-border">
-                <img src={url} alt="" className="h-full w-full object-cover" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt="" className="h-full w-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }} />
+                <div className="hidden absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                  <ImageOff className="h-8 w-8" />
+                  <span className="text-xs">Failed to load</span>
+                </div>
                 <button
                   onClick={() => removeMedia(i)}
                   className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90 transition-colors"
