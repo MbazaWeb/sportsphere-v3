@@ -1,28 +1,35 @@
 {
   "name": "sportsphere-admin",
   "private": true,
-  "version": "1.0.0",
-  "description": "Standalone admin console for SportSphere. Talks to the main fan web app over HTTP — no shared database, no shared session store.",
+  "version": "2.0.0",
+  "description": "Standalone admin console for SportSphere. Direct database access — issues its own JWT sessions, queries PostgreSQL directly via Prisma, talks to the fan web app only for shared user identity.",
   "type": "module",
   "scripts": {
     "dev": "next dev --turbopack -p 3003",
     "build": "next build",
     "start": "next start -p 3003",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "db:generate": "prisma generate",
+    "db:pull": "prisma db pull",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",
-    "jose": "^6.2.8",
+    "jose": "^5.9.6",
     "next": "16.2.12",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "tailwind-merge": "^2.5.5"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.0.0",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.10.5",
     "@types/react": "19.2.0",
     "@types/react-dom": "19.2.0",
+    "@tailwindcss/postcss": "^4.0.0",
+    "prisma": "^5.22.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.3"
   }

@@ -254,8 +254,9 @@ function LoginInner() {
           <div className="mt-8 pt-6 border-t border-slate-800 space-y-3">
             <p className="text-xs text-slate-500 leading-relaxed">
               <strong className="text-slate-400">Security notice:</strong>{' '}
-              This console forwards credentials to the fan web app for
-              verification. Authentication events are logged there.
+              This console authenticates directly against the SportSphere
+              users database. Passwords are verified with bcrypt — your
+              credentials never leave this server.
             </p>
             <a
               href={process.env.NEXT_PUBLIC_MAIN_APP_URL || '#'}

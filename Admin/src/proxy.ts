@@ -7,19 +7,14 @@ import { verifyAdminSession, ADMIN_COOKIE } from '@/lib/session';
  *
  * Routing rules:
  *   - /login             → public
- *   - /api/auth/*        → public (login, logout, me — they manage their own auth)
- *   - /api/admin/*       → public (the routes themselves check the cookie)
- *   - everything else    → requires a valid admin_session cookie; otherwise
- *                           redirect to /login?next=...
- *
- * The role check still happens inside every /api/admin/* route — the proxy
- * only does a fast "is there a cookie + does it parse" check so we don't
- * render React shells for visitors who definitely aren't allowed.
+ *   - /api/auth/*        → public (login/logout/me manage their own auth)
+ *   - /api/admin/*       → public (the routes themselves call verifyAdmin)
+ *   - everything else    → requires a valid admin_session cookie with an
+ *                           admin role claim; otherwise redirect to /login.
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Public paths
   if (
     pathname === '/login' ||
     pathname.startsWith('/login/') ||
@@ -32,13 +27,27 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Protected paths — require a parseable admin_session cookie
+  // Protected paths — verify the admin_session JWT
   const cookie = request.cookies.get(ADMIN_COOKIE)?.value;
-  const ssToken = await verifyAdminSession(cookie);
+  const payload = await verifyAdminSession(cookie);
 
-  if (!ssToken) {
+  if (!payload?.sub) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('next', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Fast pre-check: reject non-admins at the edge
+  const role = (payload.role || '').toUpperCase();
+  const isAdmin =
+    role === 'ADMINISTRATOR' ||
+    role === 'ADMIN' ||
+    role.includes('ADMIN');
+
+  if (!isAdmin) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('next', pathname);
+    loginUrl.searchParams.set('reason', 'forbidden');
     return NextResponse.redirect(loginUrl);
   }
 

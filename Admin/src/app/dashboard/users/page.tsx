@@ -6,10 +6,14 @@ interface UserItem {
   id: string;
   name: string;
   email: string;
+  handle: string;
   role: string;
-  handle?: string;
-  isBanned?: boolean;
+  isVerified: boolean;
+  verificationStatus: string;
   registeredAt?: string;
+  lastSeenAt?: string;
+  followerCount?: number;
+  postCount?: number;
 }
 
 export default function UsersPage() {
@@ -35,7 +39,7 @@ export default function UsersPage() {
         setError(data?.error || 'Failed to load users.');
         setUsers([]);
       } else {
-        setUsers(Array.isArray(data) ? data : data.users || []);
+        setUsers(Array.isArray(data) ? data : []);
       }
     } catch (err) {
       console.error('Users load error:', err);
@@ -50,31 +54,6 @@ export default function UsersPage() {
     const t = setTimeout(load, 250); // debounce
     return () => clearTimeout(t);
   }, [load]);
-
-  async function toggleBan(user: UserItem) {
-    setUpdatingId(user.id);
-    try {
-      const res = await fetch(`/api/admin/users/${user.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isBanned: !user.isBanned }),
-      });
-      if (res.ok) {
-        setUsers((prev) =>
-          prev.map((u) =>
-            u.id === user.id ? { ...u, isBanned: !u.isBanned } : u
-          )
-        );
-      } else {
-        const data = await res.json().catch(() => ({}));
-        alert(data?.error || 'Failed to update user.');
-      }
-    } catch {
-      alert('Network error.');
-    } finally {
-      setUpdatingId(null);
-    }
-  }
 
   async function changeRole(user: UserItem, newRole: string) {
     setUpdatingId(user.id);
@@ -99,13 +78,48 @@ export default function UsersPage() {
     }
   }
 
+  async function toggleVerified(user: UserItem) {
+    setUpdatingId(user.id);
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          isVerified: !user.isVerified,
+          verificationStatus: !user.isVerified ? 'verified' : 'none',
+        }),
+      });
+      if (res.ok) {
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === user.id
+              ? {
+                  ...u,
+                  isVerified: !u.isVerified,
+                  verificationStatus: !u.isVerified ? 'verified' : 'none',
+                }
+              : u
+          )
+        );
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data?.error || 'Failed to update verification.');
+      }
+    } catch {
+      alert('Network error.');
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
   return (
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-white">Users Manager</h1>
         <p className="text-sm text-slate-400 mt-1">
-          Search, ban/unban, or change roles. Changes are written through to
-          the fan web app's database.
+          Search users, change roles, and toggle verified status. Changes
+          write directly to the database and are immediately visible to the
+          fan web app and mobile app.
         </p>
       </div>
 
@@ -113,7 +127,7 @@ export default function UsersPage() {
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <input
           type="text"
-          placeholder="Search by name or email…"
+          placeholder="Search by name, email, or handle…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="flex-1 rounded-lg bg-[#0f141c] border border-slate-700 px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400/60"
@@ -140,14 +154,15 @@ export default function UsersPage() {
       )}
 
       {/* Table */}
-      <div className="rounded-xl border border-slate-800 bg-[#0f141c] overflow-hidden">
+      <div className="rounded-xl border border-slate-800 bg-[#0f141c] overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-[#141b26] border-b border-slate-800">
             <tr>
               <th className="text-left px-4 py-3 font-semibold text-slate-400 uppercase text-xs tracking-wider">User</th>
-              <th className="text-left px-4 py-3 font-semibold text-slate-400 uppercase text-xs tracking-wider">Email</th>
               <th className="text-left px-4 py-3 font-semibold text-slate-400 uppercase text-xs tracking-wider">Role</th>
-              <th className="text-left px-4 py-3 font-semibold text-slate-400 uppercase text-xs tracking-wider">Status</th>
+              <th className="text-left px-4 py-3 font-semibold text-slate-400 uppercase text-xs tracking-wider">Verified</th>
+              <th className="text-left px-4 py-3 font-semibold text-slate-400 uppercase text-xs tracking-wider">Stats</th>
+              <th className="text-left px-4 py-3 font-semibold text-slate-400 uppercase text-xs tracking-wider">Joined</th>
               <th className="text-right px-4 py-3 font-semibold text-slate-400 uppercase text-xs tracking-wider">Actions</th>
             </tr>
           </thead>
@@ -156,15 +171,16 @@ export default function UsersPage() {
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i} className="border-b border-slate-800/60">
                   <td className="px-4 py-3"><div className="skeleton h-5 w-32" /></td>
-                  <td className="px-4 py-3"><div className="skeleton h-5 w-48" /></td>
                   <td className="px-4 py-3"><div className="skeleton h-5 w-20" /></td>
                   <td className="px-4 py-3"><div className="skeleton h-5 w-16" /></td>
+                  <td className="px-4 py-3"><div className="skeleton h-5 w-20" /></td>
+                  <td className="px-4 py-3"><div className="skeleton h-5 w-24" /></td>
                   <td className="px-4 py-3"><div className="skeleton h-5 w-24 ml-auto" /></td>
                 </tr>
               ))
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-slate-500">
+                <td colSpan={6} className="px-4 py-12 text-center text-slate-500">
                   No users found.
                 </td>
               </tr>
@@ -173,9 +189,8 @@ export default function UsersPage() {
                 <tr key={u.id} className="border-b border-slate-800/60 hover:bg-slate-800/30">
                   <td className="px-4 py-3">
                     <div className="font-medium text-slate-100">{u.name}</div>
-                    <div className="text-xs text-slate-500">{u.handle}</div>
+                    <div className="text-xs text-slate-500">{u.handle} · {u.email}</div>
                   </td>
-                  <td className="px-4 py-3 text-slate-300">{u.email}</td>
                   <td className="px-4 py-3">
                     <select
                       value={u.role}
@@ -192,27 +207,34 @@ export default function UsersPage() {
                     </select>
                   </td>
                   <td className="px-4 py-3">
-                    {u.isBanned ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/15 border border-red-500/30 text-red-300 text-[11px] font-semibold uppercase tracking-wider">
-                        Banned
+                    {u.isVerified ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold uppercase tracking-wider">
+                        ✓ Verified
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold uppercase tracking-wider">
-                        Active
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-500/15 border border-slate-500/30 text-slate-400 text-[11px] font-semibold uppercase tracking-wider">
+                        Unverified
                       </span>
                     )}
                   </td>
+                  <td className="px-4 py-3 text-xs text-slate-400">
+                    <div>{u.postCount ?? 0} posts</div>
+                    <div>{u.followerCount ?? 0} followers</div>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-slate-400">
+                    {u.registeredAt ? new Date(u.registeredAt).toLocaleDateString() : '—'}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <button
-                      onClick={() => toggleBan(u)}
+                      onClick={() => toggleVerified(u)}
                       disabled={updatingId === u.id}
                       className={`px-3 py-1.5 rounded text-xs font-semibold uppercase tracking-wider transition-colors disabled:opacity-50 ${
-                        u.isBanned
-                          ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25'
-                          : 'bg-red-500/15 border border-red-500/40 text-red-300 hover:bg-red-500/25'
+                        u.isVerified
+                          ? 'bg-slate-500/15 border border-slate-500/40 text-slate-300 hover:bg-slate-500/25'
+                          : 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25'
                       }`}
                     >
-                      {u.isBanned ? 'Unban' : 'Ban'}
+                      {u.isVerified ? 'Unverify' : 'Verify'}
                     </button>
                   </td>
                 </tr>

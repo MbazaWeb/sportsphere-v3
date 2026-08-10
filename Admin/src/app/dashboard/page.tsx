@@ -59,9 +59,9 @@ export default function DashboardPage() {
             </span>
           </span>
           <span className="text-[11px] text-slate-500">
-            · Connected to fan app at{' '}
+            · Direct DB at{' '}
             <span className="text-slate-400">
-              {process.env.NEXT_PUBLIC_MAIN_APP_URL || '(not set)'}
+              {process.env.NEXT_PUBLIC_MAIN_APP_URL ? 'PostgreSQL (shared)' : '(not configured)'}
             </span>
           </span>
         </div>
@@ -147,18 +147,17 @@ export default function DashboardPage() {
       {/* Architecture notice */}
       <div className="rounded-xl border border-emerald-700/30 bg-emerald-900/10 p-5">
         <div className="flex items-start gap-3">
-          <span className="text-emerald-400 text-lg">🔗</span>
+          <span className="text-emerald-400 text-lg">🗄️</span>
           <div className="text-sm">
             <div className="font-semibold text-emerald-300">
-              Detached architecture
+              Direct database access
             </div>
             <p className="text-slate-400 mt-1 leading-relaxed">
-              This console is a standalone Next.js app on port{' '}
-              <code className="text-amber-400">3003</code>. It has no database
-              of its own — every API call is forwarded to the fan web app on
-              port <code className="text-amber-400">3002</code>, which validates
-              the admin session via <code className="text-amber-400">verifyAdminSession()</code>.
-              The mobile app continues to talk to the fan app directly.
+              This console queries the SportSphere PostgreSQL database directly
+              via Prisma — same database as the fan web app and mobile app.
+              All GET (read) and POST/PUT/DELETE (write) operations execute
+              real SQL against the shared database. Changes are immediately
+              visible to every other client.
             </p>
           </div>
         </div>

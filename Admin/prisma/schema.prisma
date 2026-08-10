@@ -1,0 +1,485 @@
+// SportSphere — Prisma Schema
+// SQLite for local dev, PostgreSQL for VPS production
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Role (Normalized — never use enums) ─────────────────────
+model Role {
+  id            String     @id @default(uuid())
+  name          String     @unique
+  slug          String     @unique
+  description   String
+  icon          String     @default("👤")
+  category      String     @default("individual")  // individual, team_entity, organization, commercial, official, support, admin
+  displayOrder  Int        @default(0)
+  isActive      Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  types         RoleType[]
+  users         User[]     @relation("UserRole")
+}
+
+// ─── RoleType (Normalized — every Role has many Types) ───────
+model RoleType {
+  id            String     @id @default(uuid())
+  roleId        String
+  name          String
+  slug          String
+  description   String?
+  requirements  Json       @default("[]")  // dynamic form fields definition
+  displayOrder  Int        @default(0)
+  isActive      Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  role          Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  users         User[]     @relation("UserRoleType")
+
+  @@unique([roleId, slug])
+  @@index([roleId])
+}
+
+// ─── Sport (Normalized — no hardcoded sports) ────────────────
+// Spec: Phase 17 — "Architecture must allow unlimited sports."
+// Every sport has rich metadata for filtering, display, and provider matching.
+model Sport {
+  id            String     @id @default(uuid())
+  name          String     @unique
+  slug          String     @unique
+  icon          String?    // emoji icon (e.g. ⚽)
+  category      String?    // team_sport, individual, combat, motorsport, racquet, water
+  sportType     String?    // indoor, outdoor, mixed
+  format        String?    // individual, team, relay, pair
+  contactType   String?    // contact, non-contact, limited-contact
+  olympicStatus String?    // olympic, paralympic, both, none
+  description   String?    // short description of the sport
+  tags          Json       @default("[]")  // e.g. ["youth", "women", "professional", "amateur"]
+  isActive      Boolean    @default(true)
+  displayOrder  Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  userSports    UserSport[]
+}
+
+// ─── UserSport (Many-to-many — users can have multiple sports) ─
+model UserSport {
+  id            String     @id @default(uuid())
+  userId        String
+  sportId       String
+  createdAt     DateTime   @default(now())
+
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sport         Sport      @relation(fields: [sportId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sportId])
+  @@index([userId])
+  @@index([sportId])
+}
+
+// ─── User ─────────────────────────────────────────────────────
+model User {
+  id                  String   @id @default(uuid())
+  name                String
+  email               String   @unique
+  handle              String   @unique
+  passwordHash        String?
+  resetToken          String?
+  resetTokenExpiry    DateTime?
+  emailVerified       Boolean  @default(false)
+  emailVerifyToken    String?
+  emailVerifyExpiry   DateTime?
+  avatarUrl           String?
+  avatarInitials      String?
+  role                String   @default("fan")  // legacy slug — kept in sync via roleId
+  verificationStatus  String   @default("none")
+  isVerified          Boolean  @default(false)
+  bio                 String?
+  location            String?
+  coverGradient       String   @default("from-emerald-600 to-emerald-900")
+  followerCount       Int      @default(0)
+  followingCount      Int      @default(0)
+  postCount           Int      @default(0)
+  roleData            Json     @default("{}")
+  sportsFollowing     Json     @default("[]")  // legacy — kept in sync via UserSport
+  preferences         Json     @default("{}")
+  registeredAt        DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  lastSeenAt          DateTime @default(now())
+
+  // ─── Normalized Role Architecture (Phase B) ────────────────
+  roleId              String   @default("fan-default-role")
+  roleTypeId          String   @default("fan-casual-type")
+
+  // ─── Extended Profile Fields ──────────────────────────────
+  coverUrl            String?
+
+  // Personal
+  aboutMe             String?
+  pronouns            String?
+  dateOfBirth         DateTime?
+  gender              String?
+  nationality         String?
+  countryOfOrigin     String?
+  currentCountry      String?
+  region              String?
+  city                String?
+  preferredLanguage   String?   @default("en")
+  timezone            String?
+
+  // Contact
+  phone               String?
+  website             String?
+  whatsapp            String?
+  socialInstagram     String?
+  socialX             String?
+  socialTikTok        String?
+  socialFacebook      String?
+  socialLinkedIn      String?
+  socialYouTube       String?
+  socialThreads       String?
+
+  // Appearance
+  theme               String?   @default("dark")
+  fontSize            String?   @default("medium")
+  reducedMotion       Boolean   @default(false)
+  highContrast        Boolean   @default(false)
+
+  // Settings (JSON)
+  privacySettings     Json      @default("{}")
+  notifPrefs          Json      @default("{}")
+  interests           Json      @default("[]")
+  roleProfile         Json      @default("{}")
+
+  // Relations
+  posts               Post[]
+  comments            Comment[]
+  likes               PostLike[]
+  sentFollows         Follow[]        @relation("Follower")
+  receivedFollows     Follow[]        @relation("Following")
+  notifications       Notification[]  @relation("NotifUser")
+  actorNotifications  Notification[]  @relation("NotifActor")
+  sentMessages        Message[]       @relation("MsgSender")
+  receivedMessages    Message[]       @relation("MsgReceiver")
+  predictions         Prediction[]
+  verificationReqs    VerificationRequest[]
+  communityMemberships CommunityMember[]
+  createdCommunities  Community[]
+  leaderboardEntries  LeaderboardEntry[]
+  favorites           UserFavorite[]  @relation("UserFavorites")
+  userRole            Role       @relation("UserRole", fields: [roleId], references: [id])
+  userRoleType        RoleType   @relation("UserRoleType", fields: [roleTypeId], references: [id])
+  userSports          UserSport[]
+
+  @@index([handle])
+  @@index([email])
+  @@index([role])
+  @@index([roleId])
+  @@index([resetToken])
+  @@index([emailVerifyToken])
+}
+
+// ─── Follow ───────────────────────────────────────────────────
+model Follow {
+  followerId   String
+  followingId  String
+  createdAt    DateTime @default(now())
+
+  follower     User @relation("Follower",  fields: [followerId],  references: [id], onDelete: Cascade)
+  following    User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+// ─── Post ─────────────────────────────────────────────────────
+model Post {
+  id           String   @id @default(uuid())
+  userId       String
+  content      String
+  postType     String   @default("post")
+  mediaUrls    Json     @default("[]")
+  teamTag      String?
+  playerTag    String?
+  hashtags     Json     @default("[]")
+  location     String?
+  isBreaking   Boolean  @default(false)
+  likeCount    Int      @default(0)
+  commentCount Int      @default(0)
+  shareCount   Int      @default(0)
+  viewCount    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments     Comment[]
+  likes        PostLike[]
+  poll         Poll?
+
+  @@index([userId])
+  @@index([createdAt(sort: Desc)])
+  @@index([postType])
+}
+
+// ─── PostLike ─────────────────────────────────────────────────
+model PostLike {
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post      Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([postId, userId])
+}
+
+// ─── Comment ─────────────────────────────────────────────────
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  content   String
+  likeCount Int      @default(0)
+  createdAt DateTime @default(now())
+
+  post      Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+}
+
+// ─── Poll ─────────────────────────────────────────────────────
+model Poll {
+  id         String    @id @default(uuid())
+  postId     String    @unique
+  question   String
+  options    Json      @default("[]")
+  totalVotes Int       @default(0)
+  endsAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  post       Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  votes      PollVote[]
+}
+
+// ─── PollVote ────────────────────────────────────────────────
+model PollVote {
+  id         String   @id @default(uuid())
+  pollId     String
+  userId     String
+  optionIdx  Int
+  createdAt  DateTime @default(now())
+
+  poll       Poll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, userId])
+}
+
+// ─── Match ───────────────────────────────────────────────────
+model Match {
+  id         String   @id @default(uuid())
+  league     String
+  continent  String   @default("Europe")
+  country    String   @default("England")
+  homeTeam   String
+  awayTeam   String
+  homeScore  Int?
+  awayScore  Int?
+  status     String   @default("upcoming")
+  minute     Int?
+  venue      String?
+  kickoffAt  DateTime
+  events     Json     @default("[]")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  predictions Prediction[]
+
+  @@index([status])
+  @@index([kickoffAt])
+  @@index([league])
+}
+
+// ─── Prediction ──────────────────────────────────────────────
+model Prediction {
+  id             String   @id @default(uuid())
+  userId         String
+  matchId        String?
+  homeTeam       String
+  awayTeam       String
+  predictedHome  Int?
+  predictedAway  Int?
+  result         String?
+  isCorrect      Boolean?
+  pointsEarned   Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  match          Match? @relation(fields: [matchId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+}
+
+// ─── Community ───────────────────────────────────────────────
+model Community {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  topic       String?
+  memberCount Int      @default(0)
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  members     CommunityMember[]
+}
+
+// ─── CommunityMember ─────────────────────────────────────────
+model CommunityMember {
+  communityId String
+  userId      String
+  role        String   @default("member")
+  joinedAt    DateTime @default(now())
+
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId],      references: [id], onDelete: Cascade)
+
+  @@id([communityId, userId])
+}
+
+// ─── Notification ────────────────────────────────────────────
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  type        String
+  title       String
+  body        String?
+  isRead      Boolean  @default(false)
+  actorId     String?
+  referenceId String?
+  createdAt   DateTime @default(now())
+
+  user        User  @relation("NotifUser",  fields: [userId],  references: [id], onDelete: Cascade)
+  actor       User? @relation("NotifActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead, createdAt(sort: Desc)])
+}
+
+// ─── Message ─────────────────────────────────────────────────
+model Message {
+  id         String   @id @default(uuid())
+  senderId   String
+  receiverId String
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  sender     User @relation("MsgSender",   fields: [senderId],   references: [id], onDelete: Cascade)
+  receiver   User @relation("MsgReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+}
+
+// ─── VerificationRequest ─────────────────────────────────────
+model VerificationRequest {
+  id          String    @id @default(uuid())
+  userId      String
+  role        String     // legacy slug
+  roleId      String?    // normalized FK
+  roleTypeId  String?    // normalized FK
+  roleData    Json      @default("{}")
+  status      String    @default("pending")
+  adminNotes  String?
+  reviewedBy  String?
+  submittedAt DateTime  @default(now())
+  reviewedAt  DateTime?
+
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([roleId])
+}
+
+// ─── LeaderboardEntry ────────────────────────────────────────
+model LeaderboardEntry {
+  id             String   @id @default(uuid())
+  userId         String
+  period         String   @default("monthly")
+  correctPredictions Int  @default(0)
+  totalPredictions   Int  @default(0)
+  points             Int  @default(0)
+  rank               Int  @default(0)
+  updatedAt      DateTime @updatedAt
+
+  user           User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, period])
+}
+
+// ─── UserFavorite ────────────────────────────────────────────
+model UserFavorite {
+  id           String   @id @default(uuid())
+
+  userId       String
+
+  // Generic favourite target
+  targetType   FavoriteTargetType
+  targetId     String
+  targetName   String
+  targetHandle String?
+
+  createdAt    DateTime @default(now())
+
+  user User @relation("UserFavorites", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetType, targetId])
+
+  @@index([userId])
+  @@index([targetType])
+  @@index([targetId])
+}
+
+
+
+enum FavoriteTargetType {
+  TEAM
+  PLAYER
+  COACH
+  COMPETITION
+  LEAGUE
+  NATIONAL_TEAM
+  STADIUM
+  SPORT
+}
+
+// ─── AuditLog (Phase F — Admin Portal) ───────────────────────
+// Spec: Phase 19 — "Every action must be logged."
+// Records all admin actions with before/after state for compliance.
+model AuditLog {
+  id              String   @id @default(uuid())
+  actorId         String   // who performed the action
+  action          String   // e.g. "user.suspend", "sport.create", "verification.approve"
+  module          String   // e.g. "users", "sports", "verifications", "roles"
+  targetId        String?  // ID of the affected entity
+  targetType      String?  // e.g. "User", "Sport", "Role", "VerificationRequest"
+  oldValue        Json?    @default("{}")  // previous state
+  newValue        Json?    @default("{}")  // new state
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime @default(now())
+
+  @@index([actorId])
+  @@index([module])
+  @@index([action])
+  @@index([createdAt(sort: Desc)])
+}
