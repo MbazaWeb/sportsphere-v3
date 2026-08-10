@@ -1,83 +1,47 @@
-/**
- * proxy.ts  — Next.js 16 edge proxy (replaces middleware.ts)
- *
- * Runs in the Edge runtime. Protects admin/dashboard routes by verifying
- * the ss_session JWT cookie (signed with SESSION_SECRET via @/lib/session).
- *
- * Why proxy.ts and not middleware.ts?
- *   Next.js 16 renamed `middleware` → `proxy`. The file must be named proxy.ts
- *   and export a `proxy` function. middleware.ts is deprecated.
- *   Source: https://next.org/blog/next-16
- */
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { verifySession } from "@/lib/session";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { verifySession, SESSION_COOKIE } from '@/lib/session';
+const STRIP_HEADERS = ['x-user-id', 'x-user-role', 'x-admin', 'x-forwarded-user'];
 
-/**
- * Routes that require an authenticated session (any role).
- */
-const PROTECTED_PREFIXES = [
-  '/sportsphere/admin',
-  '/sportsphere/dashboard',
-  '/sportsphere/profile/edit',
-  '/sportsphere/settings',
-];
-
-/**
- * Routes that additionally require an ADMIN role.
- */
-const ADMIN_PREFIXES = ['/sportsphere/admin'];
-
-/** Exact admin role values that are allowed (lowercase, exact match). */
-const ADMIN_ROLES = new Set(['admin', 'administrator']);
-
-export async function proxy(request: NextRequest): Promise<NextResponse> {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
-  if (!isProtected) return NextResponse.next();
-
-  // ── Verify the session cookie ────────────────────────────────────────────
-  const sessionCookie = request.cookies.get(SESSION_COOKIE)?.value;
-
-  if (!sessionCookie) {
-    return redirectToLogin(request);
+  const requestHeaders = new Headers(request.headers);
+  for (const header of STRIP_HEADERS) {
+    requestHeaders.delete(header);
   }
 
-  const payload = await verifySession(sessionCookie);
+  if (pathname.startsWith("/admin")) {
+    const isLoginPage = pathname === "/admin/login" || pathname.startsWith("/admin/login/");
+    if (isLoginPage) {
+      return NextResponse.next({ request: { headers: requestHeaders } });
+    }
 
-  if (!payload) {
-    // Expired, tampered, or wrong signature — treat as unauthenticated
-    return redirectToLogin(request);
-  }
+    const sessionCookie = request.cookies.get("ss_session");
+    const token = sessionCookie?.value;
 
-  // ── Admin-only routes ────────────────────────────────────────────────────
-  const isAdminRoute = ADMIN_PREFIXES.some((p) => pathname.startsWith(p));
-  if (isAdminRoute) {
-    const role = (payload.role ?? '').toLowerCase().trim();
-    if (!ADMIN_ROLES.has(role)) {
-      // Authenticated but not admin → redirect to home
-      return NextResponse.redirect(new URL('/sportsphere/home', request.url));
+    if (!token) {
+      const loginUrl = new URL("/admin/login", request.url);
+      loginUrl.searchParams.set("next", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    const payload = await verifySession(token);
+    const role = (payload?.role || "").toUpperCase();
+    const isAdmin = role === "ADMINISTRATOR" || role === "ADMIN" || role.includes("ADMIN");
+
+    if (!payload?.sub || !isAdmin) {
+      const loginUrl = new URL("/admin/login", request.url);
+      loginUrl.searchParams.set("next", pathname);
+      loginUrl.searchParams.set("reason", "forbidden");
+      return NextResponse.redirect(loginUrl);
     }
   }
 
-  return NextResponse.next();
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-function redirectToLogin(request: NextRequest): NextResponse {
-  const loginUrl = new URL('/sportsphere', request.url);
-  loginUrl.searchParams.set('from', request.nextUrl.pathname);
-  return NextResponse.redirect(loginUrl);
-}
-
-// Matcher: only run the proxy on the routes that need it.
 export const config = {
-  matcher: [
-    '/sportsphere/admin/:path*',
-    '/sportsphere/dashboard/:path*',
-    '/sportsphere/profile/edit/:path*',
-    '/sportsphere/settings/:path*',
-  ],
+  matcher: ["/admin/:path*", "/api/:path*"],
 };
