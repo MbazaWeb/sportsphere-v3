@@ -1,0 +1,895 @@
+sportsphere-nextjs/
+├── .env
+├── .env.example
+├── .github
+│   └── workflows
+│       └── rbac-tests.yml
+├── .gitignore
+├── .npmrc
+├── .session-secret
+├── ARCHITECTURE.md
+├── Admin
+│   ├── .env
+│   ├── .env.example
+│   ├── .gitignore
+│   ├── README.md
+│   ├── next-env.d.ts
+│   ├── next.config.ts
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── postcss.config.mjs
+│   ├── prisma
+│   │   ├── migrations
+│   │   │   └── 20260810_sports_data_layer
+│   │   │       └── migration.sql
+│   │   └── schema.prisma
+│   ├── public
+│   │   ├── favicon.svg
+│   │   ├── logo-wordmark.svg
+│   │   └── logo.svg
+│   ├── scripts
+│   │   ├── create-admin.mjs
+│   │   ├── deploy.sh
+│   │   └── seed-admin-roles.mjs
+│   ├── src
+│   │   ├── app
+│   │   │   ├── api
+│   │   │   │   ├── admin
+│   │   │   │   │   ├── ai
+│   │   │   │   │   │   ├── generate
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   ├── jobs
+│   │   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   └── sync
+│   │   │   │   │   │       └── route.ts
+│   │   │   │   │   ├── audit
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── claims
+│   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── coaches
+│   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── delegation
+│   │   │   │   │   │   ├── grant
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   ├── logs
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   ├── revoke
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   ├── roles
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   ├── search-users
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   └── user-roles
+│   │   │   │   │   │       └── route.ts
+│   │   │   │   │   ├── leagues
+│   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── matches
+│   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── moderation
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── news
+│   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── players
+│   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── posts
+│   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── roles
+│   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── rumors
+│   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── sports
+│   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── stats
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── teams
+│   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── users
+│   │   │   │   │   │   ├── [id]
+│   │   │   │   │   │   │   └── route.ts
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   └── verifications
+│   │   │   │   │       └── route.ts
+│   │   │   │   ├── auth
+│   │   │   │   │   ├── login
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── logout
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   └── me
+│   │   │   │   │       └── route.ts
+│   │   │   │   └── sports-sync
+│   │   │   │       └── route.ts
+│   │   │   ├── dashboard
+│   │   │   │   ├── ai-agent
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── audit
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── claims
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── delegation
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── layout.tsx
+│   │   │   │   ├── moderation
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── news
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── page.tsx
+│   │   │   │   ├── posts
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── roles
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── rumors
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── sports
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── sports-data
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── users
+│   │   │   │   │   └── page.tsx
+│   │   │   │   └── verifications
+│   │   │   │       └── page.tsx
+│   │   │   ├── globals.css
+│   │   │   ├── layout.tsx
+│   │   │   ├── login
+│   │   │   │   └── page.tsx
+│   │   │   ├── page.tsx
+│   │   │   └── sports-sync
+│   │   │       └── page.tsx
+│   │   ├── components
+│   │   │   └── SportsSyncDashboard.tsx
+│   │   ├── lib
+│   │   │   ├── adminGuard.ts
+│   │   │   ├── ai-agent.ts
+│   │   │   ├── db.ts
+│   │   │   ├── rbac.ts
+│   │   │   ├── session.ts
+│   │   │   ├── sports-providers
+│   │   │   │   ├── ergast.ts
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── openligadb.ts
+│   │   │   │   ├── provider-interface.ts
+│   │   │   │   └── thesportsdb.ts
+│   │   │   ├── sports-sync.ts
+│   │   │   └── utils.ts
+│   │   └── proxy.ts
+│   └── tsconfig.json
+├── Admin.bak-20260810-103136
+│   └── next-env.d.ts
+├── CHANGES.md
+├── Dockerfile
+├── REPORT.md
+├── SECURITY_FIXES.md
+├── SETUP.md
+├── backup_20260809.sql
+├── backups
+│   ├── backup.log
+│   ├── sportsphere_20260806_075324.sql.gz
+│   ├── sportsphere_20260807_020001.sql.gz
+│   ├── sportsphere_20260808_020001.sql.gz
+│   ├── sportsphere_20260809_020001.sql.gz
+│   └── sportsphere_20260810_020001.sql.gz
+├── capacitor.config.ts
+├── components.json
+├── ecosystem.config.cjs
+├── eslint.config.mjs
+├── fan-app.bak-20260810-103805
+│   ├── .session-secret
+│   ├── backup_20260809.sql
+│   ├── backups
+│   │   ├── backup.log
+│   │   ├── sportsphere_20260806_075324.sql.gz
+│   │   ├── sportsphere_20260807_020001.sql.gz
+│   │   ├── sportsphere_20260808_020001.sql.gz
+│   │   ├── sportsphere_20260809_020001.sql.gz
+│   │   └── sportsphere_20260810_020001.sql.gz
+│   ├── mobile
+│   │   └── expo-env.d.ts
+│   └── next-env.d.ts
+├── mobile
+│   ├── .env.example
+│   ├── .gitignore
+│   ├── README.md
+│   ├── app
+│   │   ├── (auth)
+│   │   │   ├── _layout.tsx
+│   │   │   ├── login.tsx
+│   │   │   └── register.tsx
+│   │   ├── (tabs)
+│   │   │   ├── _layout.tsx
+│   │   │   ├── activity.tsx
+│   │   │   ├── create.tsx
+│   │   │   ├── index.tsx
+│   │   │   ├── profile.tsx
+│   │   │   └── scores.tsx
+│   │   ├── +not-found.tsx
+│   │   ├── _layout.tsx
+│   │   ├── leaderboard.tsx
+│   │   └── player
+│   │       └── [id].tsx
+│   ├── app.json
+│   ├── assets
+│   │   ├── README.md
+│   │   ├── adaptive-icon.png
+│   │   ├── favicon-32.png
+│   │   ├── favicon.png
+│   │   ├── icon.png
+│   │   └── splash-icon.png
+│   ├── babel.config.js
+│   ├── components
+│   │   ├── Avatar.tsx
+│   │   ├── FeedCard.tsx
+│   │   ├── GlassCard.tsx
+│   │   ├── Header.tsx
+│   │   └── SportsphereTabBar.tsx
+│   ├── eas.json
+│   ├── expo-env.d.ts
+│   ├── global.css
+│   ├── lib
+│   │   ├── api.ts
+│   │   ├── authStore.ts
+│   │   └── fonts.ts
+│   ├── metro.config.js
+│   ├── nativewind-env.d.ts
+│   ├── package.json
+│   ├── scripts
+│   │   ├── credentials-check.sh
+│   │   └── release.sh
+│   ├── store
+│   │   ├── SCREENSHOTS.md
+│   │   ├── SUBMISSION_GUIDE.md
+│   │   ├── credentials
+│   │   │   ├── .gitignore
+│   │   │   └── README.md
+│   │   ├── listings
+│   │   │   └── en-US.json
+│   │   ├── privacy-policy.md
+│   │   ├── screenshots
+│   │   │   ├── android
+│   │   │   │   └── phone
+│   │   │   │       ├── 01-Login.png
+│   │   │   │       ├── 02-Feed-For-You.png
+│   │   │   │       ├── 03-Feed-Trending.png
+│   │   │   │       ├── 04-Scores.png
+│   │   │   │       ├── 05-Create.png
+│   │   │   │       ├── 06-Activity.png
+│   │   │   │       ├── 07-Profile.png
+│   │   │   │       ├── 08-Leaderboard.png
+│   │   │   │       ├── 09-Player-Detail.png
+│   │   │   │       └── 10-Register.png
+│   │   │   └── ios
+│   │   │       └── iphone-67
+│   │   │           ├── 01-Login.png
+│   │   │           ├── 02-Feed-For-You.png
+│   │   │           ├── 03-Feed-Trending.png
+│   │   │           ├── 04-Scores.png
+│   │   │           ├── 05-Create.png
+│   │   │           ├── 06-Activity.png
+│   │   │           ├── 07-Profile.png
+│   │   │           ├── 08-Leaderboard.png
+│   │   │           ├── 09-Player-Detail.png
+│   │   │           └── 10-Register.png
+│   │   └── terms-of-service.md
+│   ├── tailwind.config.js
+│   └── tsconfig.json
+├── next-env.d.ts
+├── next.config.ts
+├── nginx
+│   └── sportsphere.conf
+├── nginx.conf
+├── package-lock.json
+├── package.json
+├── packages
+│   ├── api-client
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   ├── auth.ts
+│   │   │   ├── feed.ts
+│   │   │   ├── follows.ts
+│   │   │   ├── index.ts
+│   │   │   ├── leaderboard.ts
+│   │   │   ├── notifications.ts
+│   │   │   ├── performance.ts
+│   │   │   ├── posts.ts
+│   │   │   ├── profile.ts
+│   │   │   └── sports.ts
+│   │   └── tsconfig.json
+│   ├── design-system
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   ├── index.ts
+│   │   │   ├── tailwind-preset.ts
+│   │   │   └── tokens.ts
+│   │   └── tsconfig.json
+│   └── types
+│       ├── package.json
+│       ├── src
+│       │   ├── auth.ts
+│       │   ├── feed.ts
+│       │   ├── index.ts
+│       │   ├── performance.ts
+│       │   ├── ranking.ts
+│       │   └── user.ts
+│       └── tsconfig.json
+├── postcss.config.mjs
+├── prisma
+│   ├── backfill-performance-profiles.ts
+│   ├── backfill-typed-profiles.ts
+│   ├── migrations
+│   │   ├── 0001_initial
+│   │   │   └── migration.sql
+│   │   ├── 20260803_favorite_target_system
+│   │   │   └── migration.sql
+│   │   ├── 20260808_comment_replies_likes
+│   │   │   └── migration.sql
+│   │   ├── 20260809_admin_security_fixes_isbanned
+│   │   │   └── migration.sql
+│   │   ├── 20260809_catchup_schema_drift
+│   │   │   └── migration.sql
+│   │   ├── 20260809_phase4_typed_role_profiles
+│   │   │   └── migration.sql
+│   │   ├── 20260809_phase5_performance_engine
+│   │   │   └── migration.sql
+│   │   ├── 20260810_location_system
+│   │   │   └── migration.sql
+│   │   └── migration_lock.toml
+│   ├── schema.prisma
+│   ├── seed-kpi-config.ts
+│   ├── seed-locations.ts
+│   ├── seed-roles.ts
+│   ├── seed.ts
+│   └── standings.json
+├── public
+│   ├── favicon.ico
+│   ├── favicon.svg
+│   ├── icon.svg
+│   ├── icons
+│   │   ├── icon-128x128.svg
+│   │   ├── icon-144x144.svg
+│   │   ├── icon-152x152.svg
+│   │   ├── icon-192x192.svg
+│   │   ├── icon-384x384.svg
+│   │   ├── icon-512x512.svg
+│   │   ├── icon-72x72.svg
+│   │   └── icon-96x96.svg
+│   ├── logo-wordmark.svg
+│   ├── logo.svg
+│   ├── manifest.json
+│   ├── mobile-ux-fixes.css
+│   ├── robots.txt
+│   ├── sw.js
+│   └── uploads
+│       ├── 09caf16c-7ba9-45eb-a859-5a549a51fe34-avatar.jpg
+│       ├── 10e5aff8-2f33-4ef9-a4e1-d312cc3dfdd4-1786350232445-a0br84.jpg
+│       ├── 10e5aff8-2f33-4ef9-a4e1-d312cc3dfdd4-1786370013622-o19h97.jpg
+│       └── 1785732655264-t77ymd.jpeg
+├── scripts
+│   ├── backup-sportsphere.sh
+│   ├── deploy-production.sh
+│   ├── deploy-vps.sh
+│   ├── fix-db.sh
+│   ├── fix-uploads.sh
+│   ├── generate-screenshots.py
+│   ├── hotfix-uploads.sh
+│   ├── https
+│   │   ├── README.md
+│   │   ├── renewal-hook.sh
+│   │   └── setup-https.sh
+│   ├── nginx-sportsphere.conf
+│   └── vps-setup.sh
+├── setup-admin.js
+├── src
+│   ├── app
+│   │   ├── admin
+│   │   │   ├── admins
+│   │   │   │   └── page.tsx
+│   │   │   ├── layout.tsx
+│   │   │   ├── page.tsx
+│   │   │   ├── performance
+│   │   │   │   └── page.tsx
+│   │   │   ├── posts
+│   │   │   │   └── page.tsx
+│   │   │   ├── roles
+│   │   │   │   └── page.tsx
+│   │   │   ├── sports
+│   │   │   │   └── page.tsx
+│   │   │   ├── sports-sync
+│   │   │   │   └── page.tsx
+│   │   │   ├── users
+│   │   │   │   └── page.tsx
+│   │   │   └── verification
+│   │   │       └── page.tsx
+│   │   ├── api
+│   │   │   ├── activity
+│   │   │   │   └── route.ts
+│   │   │   ├── admin
+│   │   │   │   ├── admins
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── performance
+│   │   │   │   │   └── kpi
+│   │   │   │   │       ├── [id]
+│   │   │   │   │       │   ├── route.ts
+│   │   │   │   │       │   └── weights
+│   │   │   │   │       │       └── route.ts
+│   │   │   │   │       └── route.ts
+│   │   │   │   ├── posts
+│   │   │   │   │   ├── [id]
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── roles
+│   │   │   │   │   ├── [id]
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── stats
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── users
+│   │   │   │   │   ├── [id]
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── verification
+│   │   │   │       └── events
+│   │   │   │           ├── [id]
+│   │   │   │           │   └── review
+│   │   │   │           │       └── route.ts
+│   │   │   │           └── route.ts
+│   │   │   ├── auth
+│   │   │   │   ├── forgot-password
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── logout
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── me
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── register
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── reset-password
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── route.ts
+│   │   │   │   └── verify-email
+│   │   │   │       ├── confirm
+│   │   │   │       │   └── route.ts
+│   │   │   │       └── request
+│   │   │   │           └── route.ts
+│   │   │   ├── comments
+│   │   │   │   ├── like
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── communities
+│   │   │   │   └── route.ts
+│   │   │   ├── feed
+│   │   │   │   └── route.ts
+│   │   │   ├── follows
+│   │   │   │   └── route.ts
+│   │   │   ├── health
+│   │   │   │   └── route.ts
+│   │   │   ├── leaderboard
+│   │   │   │   └── route.ts
+│   │   │   ├── leagues
+│   │   │   │   └── route.ts
+│   │   │   ├── likes
+│   │   │   │   └── route.ts
+│   │   │   ├── locations
+│   │   │   │   └── search
+│   │   │   │       └── route.ts
+│   │   │   ├── matches
+│   │   │   │   └── route.ts
+│   │   │   ├── messages
+│   │   │   │   └── route.ts
+│   │   │   ├── notifications
+│   │   │   │   └── route.ts
+│   │   │   ├── performance
+│   │   │   │   └── [userId]
+│   │   │   │       └── route.ts
+│   │   │   ├── players
+│   │   │   │   ├── README.md
+│   │   │   │   ├── [id]
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── search
+│   │   │   │       └── route.ts
+│   │   │   ├── polls
+│   │   │   │   └── vote
+│   │   │   │       └── route.ts
+│   │   │   ├── posts
+│   │   │   │   └── route.ts
+│   │   │   ├── predictions
+│   │   │   │   └── [id]
+│   │   │   │       └── route.ts
+│   │   │   ├── profile
+│   │   │   │   ├── avatar
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── favorites
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── profile-data
+│   │   │   │   └── route.ts
+│   │   │   ├── roles
+│   │   │   │   ├── [id]
+│   │   │   │   │   └── types
+│   │   │   │   │       └── route.ts
+│   │   │   │   ├── route.ts
+│   │   │   │   └── upgrade
+│   │   │   │       └── route.ts
+│   │   │   ├── sports
+│   │   │   │   ├── [slug]
+│   │   │   │   │   ├── competitions
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── fixtures
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── route.ts
+│   │   │   │   │   ├── standings
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── teams
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   └── top-scorers
+│   │   │   │   │       └── route.ts
+│   │   │   │   ├── follow
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── route.ts
+│   │   │   ├── sports-sync
+│   │   │   │   └── route.ts
+│   │   │   ├── spotlight
+│   │   │   │   └── route.ts
+│   │   │   ├── standings
+│   │   │   │   └── route.ts
+│   │   │   ├── uploads
+│   │   │   │   └── route.ts
+│   │   │   └── users
+│   │   │       └── route.ts
+│   │   ├── globals.css
+│   │   ├── icon.svg
+│   │   ├── layout.tsx
+│   │   ├── leaderboard
+│   │   │   └── page.tsx
+│   │   ├── page.tsx
+│   │   ├── player-demo
+│   │   │   └── page.tsx
+│   │   ├── players
+│   │   │   └── [id]
+│   │   │       └── page.tsx
+│   │   ├── privacy
+│   │   │   └── page.tsx
+│   │   └── terms
+│   │       └── page.tsx
+│   ├── components
+│   │   ├── MobileGestures.tsx
+│   │   ├── PerformanceBadge.tsx
+│   │   ├── PlayerProfileCard.tsx
+│   │   ├── PlayerSearchBar.tsx
+│   │   ├── SplashScreen.tsx
+│   │   ├── SportsSyncDashboard.tsx
+│   │   ├── SwipeGuard.tsx
+│   │   ├── activity
+│   │   │   └── ActivityTab.tsx
+│   │   ├── auth
+│   │   │   ├── AuthLogo.tsx
+│   │   │   ├── ForgotPasswordModal.tsx
+│   │   │   ├── FormField.tsx
+│   │   │   ├── LoginModal.tsx
+│   │   │   ├── RegisterModal.tsx
+│   │   │   ├── RegistrationFanStep.tsx
+│   │   │   ├── RegistrationModal.tsx
+│   │   │   ├── RegistrationRoleStep.tsx
+│   │   │   ├── RegistrationSuccessStep.tsx
+│   │   │   ├── ResetPasswordPage.tsx
+│   │   │   ├── RoleForms.tsx
+│   │   │   └── VerifyEmailModal.tsx
+│   │   ├── create
+│   │   │   ├── CreateTab.tsx
+│   │   │   ├── PollCreator.tsx
+│   │   │   ├── PostComposer.tsx
+│   │   │   └── PredictionCreator.tsx
+│   │   ├── home
+│   │   │   ├── CommentSheet.tsx
+│   │   │   ├── EditPredictionModal.tsx
+│   │   │   ├── FeedCard.tsx
+│   │   │   ├── HomeHeader.tsx
+│   │   │   ├── HomeTab.tsx
+│   │   │   ├── MatchDetailModal.tsx
+│   │   │   ├── SearchModal.tsx
+│   │   │   ├── ShareSheet.tsx
+│   │   │   ├── SportlightsTab.tsx
+│   │   │   └── TrendingTab.tsx
+│   │   ├── layout
+│   │   │   ├── BottomNav.tsx
+│   │   │   ├── PageContainer.tsx
+│   │   │   └── PullToRefresh.tsx
+│   │   ├── media-editor
+│   │   │   ├── MediaEditor.tsx
+│   │   │   ├── PhotoEditor.tsx
+│   │   │   ├── VideoTrimmer.tsx
+│   │   │   └── hooks
+│   │   │       └── useVideoTrimmer.ts
+│   │   ├── performance
+│   │   │   ├── PerformanceBreakdown.tsx
+│   │   │   ├── PerformanceCard.tsx
+│   │   │   ├── PerformanceOpportunities.tsx
+│   │   │   └── PerformanceTrend.tsx
+│   │   ├── profile
+│   │   │   ├── ProfileTab.tsx
+│   │   │   └── edit
+│   │   │       └── EditProfileModal.tsx
+│   │   ├── profiles
+│   │   │   ├── PeopleListModal.tsx
+│   │   │   ├── ProfileActions.tsx
+│   │   │   ├── ProfileCover.tsx
+│   │   │   ├── ProfileExplorer.tsx
+│   │   │   ├── ProfileHeader.tsx
+│   │   │   ├── ProfileInfo.tsx
+│   │   │   ├── ProfilePage.tsx
+│   │   │   ├── ProfileStats.tsx
+│   │   │   ├── ProfileTabs.tsx
+│   │   │   ├── TabContent.tsx
+│   │   │   ├── UserProfileViewer.tsx
+│   │   │   ├── profileConfig.ts
+│   │   │   ├── tabs
+│   │   │   │   ├── AboutTab.tsx
+│   │   │   │   ├── FeedsTab.tsx
+│   │   │   │   ├── OverviewTab.tsx
+│   │   │   │   ├── RoleContentTab.tsx
+│   │   │   │   ├── ShopTab.tsx
+│   │   │   │   └── StatsTab.tsx
+│   │   │   ├── types.ts
+│   │   │   └── useProfileData.ts
+│   │   ├── registration
+│   │   │   ├── ProUpgradeModal.tsx
+│   │   │   ├── RegistrationModal.tsx
+│   │   │   └── RoleForms.tsx
+│   │   ├── scores
+│   │   │   ├── FilterDropdown.tsx
+│   │   │   ├── MatchList.tsx
+│   │   │   ├── ScoresHeader.tsx
+│   │   │   ├── ScoresTab.tsx
+│   │   │   └── StandingsList.tsx
+│   │   ├── ui
+│   │   │   ├── AnimatedCounter.tsx
+│   │   │   ├── GoldBadge.tsx
+│   │   │   ├── LocationPicker.tsx
+│   │   │   ├── PasswordInput.tsx
+│   │   │   ├── RoleBadge.tsx
+│   │   │   ├── SkeletonLoader.tsx
+│   │   │   ├── ThemeToggle.tsx
+│   │   │   ├── accordion.tsx
+│   │   │   ├── alert-dialog.tsx
+│   │   │   ├── alert.tsx
+│   │   │   ├── aspect-ratio.tsx
+│   │   │   ├── avatar.tsx
+│   │   │   ├── badge.tsx
+│   │   │   ├── breadcrumb.tsx
+│   │   │   ├── button.tsx
+│   │   │   ├── calendar.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── carousel.tsx
+│   │   │   ├── chart.tsx
+│   │   │   ├── checkbox.tsx
+│   │   │   ├── collapsible.tsx
+│   │   │   ├── command.tsx
+│   │   │   ├── context-menu.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   ├── drawer.tsx
+│   │   │   ├── dropdown-menu.tsx
+│   │   │   ├── form.tsx
+│   │   │   ├── hover-card.tsx
+│   │   │   ├── input-otp.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── label.tsx
+│   │   │   ├── menubar.tsx
+│   │   │   ├── navigation-menu.tsx
+│   │   │   ├── pagination.tsx
+│   │   │   ├── popover.tsx
+│   │   │   ├── progress.tsx
+│   │   │   ├── radio-group.tsx
+│   │   │   ├── resizable.tsx
+│   │   │   ├── scroll-area.tsx
+│   │   │   ├── select.tsx
+│   │   │   ├── separator.tsx
+│   │   │   ├── sheet.tsx
+│   │   │   ├── sidebar.tsx
+│   │   │   ├── skeleton.tsx
+│   │   │   ├── slider.tsx
+│   │   │   ├── sonner.tsx
+│   │   │   ├── switch.tsx
+│   │   │   ├── table.tsx
+│   │   │   ├── tabs.tsx
+│   │   │   ├── textarea.tsx
+│   │   │   ├── toast.tsx
+│   │   │   ├── toaster.tsx
+│   │   │   ├── toggle-group.tsx
+│   │   │   ├── toggle.tsx
+│   │   │   └── tooltip.tsx
+│   │   └── uploads
+│   │       ├── PhotoUpload.tsx
+│   │       └── VideoUpload.tsx
+│   ├── constants
+│   │   └── index.ts
+│   ├── data
+│   │   └── feedData.ts
+│   ├── hooks
+│   │   ├── use-mobile.ts
+│   │   ├── use-toast.ts
+│   │   ├── useAuthSession.ts
+│   │   ├── useOfflinePostSync.ts
+│   │   ├── useOrientationLock.ts
+│   │   ├── usePullToRefresh.ts
+│   │   ├── useServiceWorker.ts
+│   │   ├── useSports.ts
+│   │   └── useSwipeBack.ts
+│   ├── lib
+│   │   ├── adminGuard.ts
+│   │   ├── api.ts
+│   │   ├── audit.ts
+│   │   ├── auditLogger.ts
+│   │   ├── auth-helpers.ts
+│   │   ├── auth.ts
+│   │   ├── db-selects.ts
+│   │   ├── db.ts
+│   │   ├── email.ts
+│   │   ├── format.ts
+│   │   ├── json.ts
+│   │   ├── offline-posts.ts
+│   │   ├── performance-engine
+│   │   │   ├── adapter.ts
+│   │   │   ├── calculator.ts
+│   │   │   ├── index.ts
+│   │   │   ├── kpi-weights.ts
+│   │   │   ├── persistence.ts
+│   │   │   ├── positions.ts
+│   │   │   ├── tiers.ts
+│   │   │   └── types.ts
+│   │   ├── performance.ts
+│   │   ├── rate-limit.ts
+│   │   ├── serializers.ts
+│   │   ├── session.ts
+│   │   ├── sports-api.ts
+│   │   ├── sports-providers
+│   │   │   ├── api-football.ts
+│   │   │   ├── ergast.ts
+│   │   │   ├── index.ts
+│   │   │   ├── openligadb.ts
+│   │   │   ├── provider-interface.ts
+│   │   │   └── thesportsdb.ts
+│   │   ├── sports-sync.ts
+│   │   ├── typed-profiles.ts
+│   │   └── utils.ts
+│   ├── profile-engine
+│   │   ├── ProfileCompletenessBanner.tsx
+│   │   ├── RoleTabRenderer.tsx
+│   │   ├── registry.tsx
+│   │   ├── roles
+│   │   │   ├── academy
+│   │   │   │   ├── OverviewTab.tsx
+│   │   │   │   ├── PipelineTab.tsx
+│   │   │   │   ├── config.ts
+│   │   │   │   └── index.tsx
+│   │   │   ├── agent
+│   │   │   │   ├── ClientsTab.tsx
+│   │   │   │   ├── OverviewTab.tsx
+│   │   │   │   ├── config.ts
+│   │   │   │   └── index.tsx
+│   │   │   ├── analyst
+│   │   │   │   ├── OverviewTab.tsx
+│   │   │   │   ├── PredictionsTab.tsx
+│   │   │   │   ├── config.ts
+│   │   │   │   └── index.tsx
+│   │   │   ├── business
+│   │   │   │   ├── OverviewTab.tsx
+│   │   │   │   ├── PartnershipsTab.tsx
+│   │   │   │   ├── ProductsTab.tsx
+│   │   │   │   ├── config.ts
+│   │   │   │   └── index.tsx
+│   │   │   ├── coach
+│   │   │   │   ├── CareerTab.tsx
+│   │   │   │   ├── OverviewTab.tsx
+│   │   │   │   ├── RecordTab.tsx
+│   │   │   │   ├── TacticalTab.tsx
+│   │   │   │   ├── TrophiesTab.tsx
+│   │   │   │   ├── config.ts
+│   │   │   │   └── index.tsx
+│   │   │   ├── commentator
+│   │   │   │   ├── BroadcastsTab.tsx
+│   │   │   │   ├── OverviewTab.tsx
+│   │   │   │   ├── config.ts
+│   │   │   │   └── index.tsx
+│   │   │   ├── commercial-partner
+│   │   │   │   ├── OverviewTab.tsx
+│   │   │   │   ├── PortfolioTab.tsx
+│   │   │   │   ├── config.ts
+│   │   │   │   └── index.tsx
+│   │   │   ├── community
+│   │   │   │   ├── HubTab.tsx
+│   │   │   │   ├── OverviewTab.tsx
+│   │   │   │   ├── config.ts
+│   │   │   │   └── index.tsx
+│   │   │   ├── competition
+│   │   │   │   ├── FixturesTab.tsx
+│   │   │   │   ├── HistoryTab.tsx
+│   │   │   │   ├── OverviewTab.tsx
+│   │   │   │   ├── StandingsTab.tsx
+│   │   │   │   ├── config.ts
+│   │   │   │   └── index.tsx
+│   │   │   ├── creator
+│   │   │   │   ├── MediaKitTab.tsx
+│   │   │   │   ├── OverviewTab.tsx
+│   │   │   │   ├── config.ts
+│   │   │   │   └── index.tsx
+│   │   │   ├── generic
+│   │   │   │   ├── GenericRoleTab.tsx
+│   │   │   │   └── configs.ts
+│   │   │   ├── journalist
+│   │   │   │   ├── ArticlesTab.tsx
+│   │   │   │   ├── OverviewTab.tsx
+│   │   │   │   ├── config.ts
+│   │   │   │   └── index.tsx
+│   │   │   ├── league
+│   │   │   │   ├── ChampionsTab.tsx
+│   │   │   │   ├── OverviewTab.tsx
+│   │   │   │   ├── SharedTabs.tsx
+│   │   │   │   ├── config.ts
+│   │   │   │   └── index.tsx
+│   │   │   ├── organization
+│   │   │   │   ├── GovernanceTab.tsx
+│   │   │   │   ├── OverviewTab.tsx
+│   │   │   │   ├── config.ts
+│   │   │   │   └── index.tsx
+│   │   │   ├── player
+│   │   │   │   ├── AchievementsTab.tsx
+│   │   │   │   ├── CareerTab.tsx
+│   │   │   │   ├── OverviewTab.tsx
+│   │   │   │   ├── ScoutingTab.tsx
+│   │   │   │   ├── StatsTab.tsx
+│   │   │   │   ├── config.ts
+│   │   │   │   └── index.tsx
+│   │   │   ├── scout
+│   │   │   │   ├── BoardTab.tsx
+│   │   │   │   ├── OverviewTab.tsx
+│   │   │   │   ├── config.ts
+│   │   │   │   └── index.tsx
+│   │   │   ├── team
+│   │   │   │   ├── OverviewTab.tsx
+│   │   │   │   ├── PerformanceTab.tsx
+│   │   │   │   ├── SquadTab.tsx
+│   │   │   │   ├── TrophiesTab.tsx
+│   │   │   │   ├── config.ts
+│   │   │   │   └── index.tsx
+│   │   │   └── venue
+│   │   │       ├── FacilitiesTab.tsx
+│   │   │       ├── OverviewTab.tsx
+│   │   │       ├── config.ts
+│   │   │       └── index.tsx
+│   │   ├── shared
+│   │   │   └── ui.tsx
+│   │   └── types.ts
+│   ├── proxy.ts
+│   ├── store
+│   │   ├── authStore.ts
+│   │   ├── navigationStore.ts
+│   │   ├── uiStore.ts
+│   │   └── useAppStore.ts
+│   └── types
+│       ├── index.ts
+│       └── player.ts
+├── tailwind.config.ts
+├── test-rbac-live.mjs
+├── test-rbac.mjs
+├── tsconfig.json
+├── upgrade-ui.ps1
+└── writes

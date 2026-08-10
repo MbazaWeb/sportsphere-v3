@@ -2,8 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  basePath: '/sportsphere',
-  assetPrefix: '/sportsphere',
+  basePath: "/sportsphere",
   reactStrictMode: true,
   env: {
     NEXT_PUBLIC_BASE_PATH: '/sportsphere',
@@ -34,3 +33,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
