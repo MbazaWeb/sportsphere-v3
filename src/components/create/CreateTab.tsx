@@ -96,9 +96,10 @@ export default function CreateTab() {
             return (
               <motion.button
                 key={type.id}
-                whileTap={{ scale: 0.97 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setActiveType(type.id)}
                 className="group flex flex-col items-start gap-3 rounded-2xl glass-card border border-surface-border p-4 text-left hover:border-gold/30 transition-colors glass-card-hover"
+                style={{ touchAction: 'manipulation' }}
               >
                 <div className={cn('flex h-12 w-12 items-center justify-center rounded-xl border', type.color)}>
                   <Icon className="h-6 w-6" />
@@ -265,7 +266,7 @@ function Composer({ type, onBack }: { type: string; onBack: () => void }) {
         </div>
       </header>
 
-      <div className="p-4 space-y-4 pb-24">
+      <div className="p-4 space-y-4 pb-40">
         {error && (
           <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3">
             <p className="text-xs text-red-400">{error}</p>
@@ -382,9 +383,9 @@ function Composer({ type, onBack }: { type: string; onBack: () => void }) {
           <PredictionCreator onCreate={handlePredictionCreate} submitting={submitting} />
         )}
 
-        {/* Submit button for photo/video/spotlight — sticky at bottom on mobile */}
+        {/* Submit button for photo/video/spotlight — sticky above bottom nav on mobile */}
         {(type === 'photo' || type === 'video' || type === 'spotlight') && (
-          <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-surface-border bg-background/95 backdrop-blur-xl p-3 sm:relative sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+          <div className="fixed bottom-16 left-0 right-0 z-50 border-t border-surface-border bg-background/95 backdrop-blur-xl p-3 sm:relative sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none sm:bottom-auto">
             <button
               onClick={() => handlePost(text, 'public')}
               disabled={(!text.trim() && mediaUrls.length === 0) || submitting}

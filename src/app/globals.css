@@ -323,3 +323,54 @@
 .swipe-back-container {
   touch-action: pan-y;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE TOUCH SENSITIVITY FIXES
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Prevent double-tap zoom on all interactive elements */
+button,
+a,
+[role="button"],
+input,
+select,
+textarea,
+label,
+[tabindex] {
+  touch-action: manipulation;
+}
+
+/* Global: prevent rubber-band / overscroll in both axes */
+html,
+body {
+  overscroll-behavior: none;
+}
+
+/* Prevent tap highlight flicker on iOS */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent inputs from zooming the page on iOS (Safari auto-zooms
+   when font-size < 16px) */
+input,
+select,
+textarea {
+  font-size: max(16px, 1em);
+}
+
+/* Use dynamic viewport height so content doesn't jump when
+   the mobile browser chrome shows/hides */
+body {
+  min-height: 100dvh;
+}
+
+/* Fix scrollbar-induced width shift on mobile */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* Prevent 300ms click delay on mobile webkit */
+html {
+  -webkit-touch-callout: none;
+}

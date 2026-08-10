@@ -26,7 +26,7 @@ export default function BottomNav() {
   const prefersReducedMotion = useReducedMotion();
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-50 border-t border-surface-border bg-background/95 backdrop-blur-xl">
+    <nav className="fixed bottom-0 inset-x-0 z-50 border-t border-surface-border bg-background/95 backdrop-blur-xl" style={{ touchAction: 'manipulation' }}>
       <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-2">
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
