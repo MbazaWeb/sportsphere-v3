@@ -1354,6 +1354,33 @@ model PerformanceVerification {
   @@index([verifierRole])
 }
 
+// ─── Location (World geographic hierarchy) ────────────────────────
+// Hierarchical: country → state/region → city
+// Used for location autocomplete/lookup across the app.
+model Location {
+  id            String    @id @default(uuid())
+  name          String    // "Dar es Salaam"
+  nameLower     String    // lowercase for prefix search
+  type          String    @default("city")  // country | region | city
+  parentId      String?   // self-referencing: region → country, city → region
+  parent        Location? @relation("LocationTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children      Location[] @relation("LocationTree")
+  countryCode   String?   // ISO 3166-1 alpha-2, e.g. "TZ", "US", "GB"
+  latitude      Float?
+  longitude     Float?
+  displayLabel  String    // "Dar es Salaam, Tanzania" (human-readable)
+  searchTokens  String[]  // trigram tokens for prefix search, e.g. ["dar","dars","dars ","dar e","dar es"]
+  population    Int?
+  isPopular     Boolean   @default(false) // show in quick-picks
+  createdAt     DateTime  @default(now())
+
+  @@unique([nameLower, parentId])
+  @@index([type])
+  @@index([parentId])
+  @@index([countryCode])
+  @@index([nameLower])
+}
+
 // ─── PerformanceAnomaly (anti-gaming flags) ──────────────────
 // Auto-detected suspicious patterns. Triggers review.
 model PerformanceAnomaly {
