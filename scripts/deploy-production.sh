@@ -135,7 +135,23 @@ npx tsx prisma/backfill-performance-profiles.ts || echo "  (backfill-performance
 echo "[9a/9] next build..."
 npm run build
 
-echo "[9b/9] Restarting PM2..."
+# ─── 9b. Standalone post-build: link public/ & static assets ────────
+# In standalone mode the server reads public/ from .next/standalone/public/.
+# We symlink it so uploads written at runtime to public/uploads/ are
+# immediately served without extra copies.
+echo "[9b/9] Linking public/ into standalone output..."
+mkdir -p .next/standalone/public
+# Use symlink so runtime uploads (public/uploads/) are visible to the server
+ln -sfn ../../public .next/standalone/public
+
+# Copy .next/static/ into standalone if not already present
+if [ ! -d ".next/standalone/.next/static" ]; then
+  echo "  Copying .next/static/ → .next/standalone/.next/static/"
+  mkdir -p .next/standalone/.next/static
+  cp -r .next/static/* .next/standalone/.next/static/
+fi
+
+echo "[9c/9] Restarting PM2..."
 pm2 delete sportsphere 2>/dev/null || true
 PORT=$PORT pm2 start node --name "sportsphere" -- .next/standalone/server.js
 pm2 save

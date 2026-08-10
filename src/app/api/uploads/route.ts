@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     // ── Validate file size ───────────────────────────────────
     if (file.size > MAX_BYTES) {
-      return NextResponse.json({ error: 'File exceeds 10 MB limit.' }, { status: 400 });
+      return NextResponse.json({ error: 'File exceeds 100 MB limit.' }, { status: 400 });
     }
 
     const arrayBuffer = await file.arrayBuffer();
@@ -88,10 +88,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-    await fs.mkdir(uploadsDir, { recursive: true });
-    const filePath = path.join(uploadsDir, fileName);
+    // Local filesystem fallback — write to public/uploads/
+    // In standalone mode, .next/standalone/public must point to the real public/
+    // (the deploy script creates this symlink, but we self-heal if it's missing).
+    const realPublicDir = path.join(process.cwd(), 'public', 'uploads');
+    const standalonePublicDir = path.join(process.cwd(), '.next', 'standalone', 'public', 'uploads');
+
+    // Ensure the real public/uploads/ directory exists
+    await fs.mkdir(realPublicDir, { recursive: true });
+
+    // Self-heal: create symlink .next/standalone/public → ../../public if missing
+    // This ensures the standalone server can serve uploaded files.
+    const standalonePublic = path.join(process.cwd(), '.next', 'standalone', 'public');
+    const standalonePublicExists = await fs.access(standalonePublic).then(() => true).catch(() => false);
+    if (!standalonePublicExists) {
+      await fs.mkdir(standalonePublic, { recursive: true });
+      try {
+        await fs.symlink(path.resolve(process.cwd(), 'public'), standalonePublic, 'junction');
+      } catch (symlinkErr: unknown) {
+        // If symlink already exists (race) or other OS error, try copy as last resort
+        const code = (symlinkErr as NodeJS.ErrnoException)?.code;
+        if (code !== 'EEXIST') {
+          console.warn('Could not create standalone public symlink, falling back to copy:', symlinkErr);
+          const { execSync } = await import('child_process');
+          try { execSync('cp -rn public/* .next/standalone/public/ 2>/dev/null || true'); } catch {}
+        }
+      }
+    }
+
+    const filePath = path.join(realPublicDir, fileName);
     await fs.writeFile(filePath, buffer);
+
+    // Also ensure the file exists in standalone path (in case symlink failed)
+    await fs.mkdir(standalonePublicDir, { recursive: true }).catch(() => {});
+    await fs.copyFile(filePath, path.join(standalonePublicDir, fileName)).catch(() => {});
 
     const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
     return NextResponse.json({ url: `${basePath}/uploads/${fileName}` });

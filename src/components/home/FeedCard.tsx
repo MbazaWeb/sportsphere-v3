@@ -1,7 +1,7 @@
 'use client';
 import { apiFetch } from '@/lib/api';
 
-import { Heart, MessageCircle, Share2, Bookmark, Check, RotateCcw, Pencil } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, Check, RotateCcw, Pencil, ImageOff, VideoOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BadgeStack } from '@/components/ui/RoleBadge';
 import { useAuthStore } from '@/store/authStore';
@@ -127,7 +127,25 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
         {item.postType === 'photo' && (
           <div className="mb-3 overflow-hidden rounded-xl bg-surface-elevated">
             {item.mediaUrls && item.mediaUrls.length > 0 ? (
-              <img src={item.mediaUrls[0]} alt={item.content || 'Post image'} className="h-52 w-full object-cover" loading="lazy" />
+              <div className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={item.mediaUrls[0]}
+                  alt={item.content || 'Post image'}
+                  className="h-52 w-full object-cover"
+                  loading="lazy"
+                  onError={(e) => {
+                    const img = e.target as HTMLImageElement;
+                    img.style.display = 'none';
+                    const fallback = img.nextElementSibling as HTMLElement | null;
+                    if (fallback) fallback.classList.remove('hidden');
+                  }}
+                />
+                <div className="hidden absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground bg-surface-elevated">
+                  <ImageOff className="h-8 w-8" />
+                  <span className="text-xs">Image failed to load</span>
+                </div>
+              </div>
             ) : (
               <div className="h-52 bg-gradient-to-br from-gold via-orange-600 to-red-800 flex items-end p-3">
                 <span className="rounded-lg bg-black/50 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
@@ -141,7 +159,25 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
         {item.postType === 'video' && (
           <div className="mb-3 relative h-52 overflow-hidden rounded-xl bg-surface-elevated">
             {item.mediaUrls && item.mediaUrls.length > 0 ? (
-              <video src={item.mediaUrls[0]} className="h-full w-full object-cover" controls playsInline preload="metadata" />
+              <div className="relative h-full w-full">
+                <video
+                  src={item.mediaUrls[0]}
+                  className="h-full w-full object-cover"
+                  controls
+                  playsInline
+                  preload="metadata"
+                  onError={(e) => {
+                    const vid = e.target as HTMLVideoElement;
+                    vid.style.display = 'none';
+                    const fallback = vid.nextElementSibling as HTMLElement | null;
+                    if (fallback) fallback.classList.remove('hidden');
+                  }}
+                />
+                <div className="hidden absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground bg-surface-elevated">
+                  <VideoOff className="h-8 w-8" />
+                  <span className="text-xs">Video failed to load</span>
+                </div>
+              </div>
             ) : (
               <div className="h-full bg-gradient-to-br from-gold to-red-800 flex items-center justify-center">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
