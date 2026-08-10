@@ -106,7 +106,13 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
         textAlign: 'center', marginBottom: '6vh',
         animation: 'logoFloat 3s ease-in-out infinite',
       }}>
-        <img src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/sportsphere'}/logo.svg`} alt="SportSphere Logo" style={{ width: '100%', height: 'auto', display: 'block' }} />
+        {/* Logo wordmark (lightweight) + fallback */}
+        <img 
+          src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/sportsphere'}/logo-wordmark.svg`} 
+          alt="SportSphere" 
+          onError={(e) => { const t = e.target as HTMLImageElement; if(t.dataset.retry !== '1') { t.dataset.retry = '1'; t.src = `${process.env.NEXT_PUBLIC_BASE_PATH || '/sportsphere'}/logo.svg`; }}}
+          style={{ width: '80%', height: 'auto', display: 'block', margin: '0 auto', filter: 'drop-shadow(0 0 20px rgba(255,196,0,0.3))' }} 
+        />
       </div>
 
       {/* Loading state */}

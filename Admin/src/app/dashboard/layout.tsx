@@ -95,8 +95,9 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside className="w-64 border-r border-slate-800 bg-[#0f141c] p-6 flex flex-col justify-between shrink-0">
         <div>
-          <div className="flex items-center gap-2 mb-8">
-            <span className="text-2xl">⚽</span>
+          <Link href="/dashboard" className="flex items-center gap-2 mb-8">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.svg" alt="SportSphere" className="w-9 h-9 rounded-lg" />
             <div>
               <h1 className="text-lg font-bold tracking-tight text-amber-400 leading-tight">
                 SportSphere
@@ -105,7 +106,7 @@ export default function DashboardLayout({
                 Admin Console
               </p>
             </div>
-          </div>
+          </Link>
 
           {/* Admin profile chip */}
           {admin && (
