@@ -4,6 +4,7 @@ import {
   getMatchesByDate,
   getPastResults,
   getUpcomingFixtures,
+  getStandings,
   POPULAR_LEAGUE_IDS,
 } from '@/lib/sports-api';
 
@@ -28,11 +29,9 @@ export async function GET(request: NextRequest) {
         break;
       }
       case 'results': {
-        // If a specific league is selected, fetch its past results
         if (leagueName && leagueName !== 'All' && POPULAR_LEAGUE_IDS[leagueName]) {
           matches = await getPastResults(POPULAR_LEAGUE_IDS[leagueName]);
         } else {
-          // Fetch yesterday's matches as results
           const yesterday = new Date();
           yesterday.setDate(yesterday.getDate() - 1);
           matches = await getMatchesByDate(yesterday.toISOString().slice(0, 10));
@@ -43,7 +42,6 @@ export async function GET(request: NextRequest) {
         if (leagueName && leagueName !== 'All' && POPULAR_LEAGUE_IDS[leagueName]) {
           matches = await getUpcomingFixtures(POPULAR_LEAGUE_IDS[leagueName]);
         } else {
-          // Fetch tomorrow's matches as upcoming
           const tomorrow = new Date();
           tomorrow.setDate(tomorrow.getDate() + 1);
           matches = await getMatchesByDate(tomorrow.toISOString().slice(0, 10));

@@ -67,16 +67,17 @@ interface TeamFromMatch {
 }
 
 interface StandingsTeam {
+  pos: number;
   name: string;
-  league: string;
+  badge?: string;
   played: number;
   won: number;
   drawn: number;
   lost: number;
-  goalsFor: number;
-  goalsAgainst: number;
-  points: number;
-  form: string[];
+  gf: number;
+  ga: number;
+  gd: number;
+  pts: number;
 }
 
 interface SportlightsTabProps {
@@ -92,12 +93,39 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
   const [teams, setTeams] = useState<TeamFromMatch[]>([]);
   const [seededTeams, setSeededTeams] = useState<TeamFromMatch[]>([]);
   const [standings, setStandings] = useState<StandingsTeam[]>([]);
+  const [standingsLoading, setStandingsLoading] = useState(false);
   const [leaderboard, setLeaderboard] = useState<Array<{ id: string; rank: number; name: string; handle: string; avatarUrl?: string | null; avatarInitials: string | null; points: number; isVerified: boolean; role: string }>>([]);
   const [spotlightItems, setSpotlightItems] = useState<ApiSpotlightItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [matchDetailOpen, setMatchDetailOpen] = useState(false);
   const [selectedResult, setSelectedResult] = useState<ApiMatch | null>(null);
   const setViewingUser = useUIStore((s) => s.setViewingUser);
+
+  // Fetch real PL standings from football-data.org
+  useEffect(() => {
+    setStandingsLoading(true);
+    apiFetch('/api/standings?league=English%20Premier%20League')
+      .then(res => { if (res.ok) return res.json(); return null; })
+      .then(data => {
+        if (data && Array.isArray(data.standings)) {
+          setStandings(data.standings.map((s: any) => ({
+            pos: s.pos,
+            name: s.team,
+            badge: s.badge || undefined,
+            played: s.played,
+            won: s.won,
+            drawn: s.drawn,
+            lost: s.lost,
+            gf: s.gf,
+            ga: s.ga,
+            gd: s.gd,
+            pts: s.pts,
+          })));
+        }
+        setStandingsLoading(false);
+      })
+      .catch(() => setStandingsLoading(false));
+  }, []);
 
   const loadData = useCallback(async () => {
     try {
@@ -194,47 +222,8 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
     setTeams(sorted);
   }, [liveMatches, recentResults, seededTeams]);
 
-  // Build standings from recent results
-  useEffect(() => {
-    const table = new Map<string, StandingsTeam>();
-    recentResults.forEach((m) => {
-      if (m.homeScore === null && m.homeScore !== 0) return;
-      const homeKey = m.homeTeam.toLowerCase();
-      const awayKey = m.awayTeam.toLowerCase();
-
-      if (!table.has(homeKey)) table.set(homeKey, { name: m.homeTeam, league: m.league, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, form: [] });
-      if (!table.has(awayKey)) table.set(awayKey, { name: m.awayTeam, league: m.league, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, form: [] });
-
-      const home = table.get(homeKey)!;
-      const away = table.get(awayKey)!;
-      const hs = m.homeScore ?? 0;
-      const as_ = m.awayScore ?? 0;
-
-      home.played++;
-      home.goalsFor += hs;
-      home.goalsAgainst += as_;
-
-      away.played++;
-      away.goalsFor += as_;
-      away.goalsAgainst += hs;
-
-      if (hs > as_) {
-        home.won++; home.points += 3; home.form.push('W');
-        away.lost++; away.form.push('L');
-      } else if (hs < as_) {
-        away.won++; away.points += 3; away.form.push('W');
-        home.lost++; home.form.push('L');
-      } else {
-        home.drawn++; home.points += 1; home.form.push('D');
-        away.drawn++; away.points += 1; away.form.push('D');
-      }
-    });
-
-    const sorted = Array.from(table.values())
-      .sort((a, b) => b.points - a.points || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst) || b.goalsFor - a.goalsFor)
-      .slice(0, 15);
-    setStandings(sorted);
-  }, [recentResults]);
+  // Standings now come from /api/standings (football-data.org)
+  // The old local computation from results is removed in favor of real API data
 
   const openTeamByName = async (teamName: string) => {
     const handleGuess = '@' + teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -422,25 +411,30 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                 </tr>
               </thead>
               <tbody>
-                {standings.map((team, i) => {
-                  const gd = team.goalsFor - team.goalsAgainst;
+                {standings.slice(0, 20).map((team) => {
+                  const posColor = team.pos <= 4 ? 'text-emerald-400' : team.pos <= 6 ? 'text-blue-400' : team.pos >= 18 ? 'text-red-400' : 'text-white';
                   return (
-                    <tr key={team.name} className="border-b border-surface-border/20 hover:bg-surface/50 cursor-pointer" onClick={() => openTeamByName(team.name)}>
-                      <td className="py-1.5 pr-1 text-white font-bold">{i + 1}</td>
+                    <tr key={team.pos} className="border-b border-surface-border/20 hover:bg-surface/50 cursor-pointer" onClick={() => openTeamByName(team.name)}>
+                      <td className={cn('py-1.5 pr-1 font-bold', posColor)}>{team.pos}</td>
                       <td className="py-1.5 pr-1">
                         <div className="flex items-center gap-1.5">
-                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gold/10 text-[8px] font-bold text-gold flex-shrink-0">
-                            {team.name.slice(0, 2).toUpperCase()}
-                          </div>
-                          <span className="text-[10px] font-semibold text-white truncate max-w-[70px]">{team.name}</span>
+                          {team.badge ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img src={team.badge} alt="" className="h-4 w-4 object-contain flex-shrink-0" />
+                          ) : (
+                            <div className="flex h-4 w-4 items-center justify-center rounded-full bg-gold/10 text-[7px] font-bold text-gold flex-shrink-0">
+                              {team.name.slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                          <span className="text-[10px] font-semibold text-white truncate max-w-[72px]">{team.name}</span>
                         </div>
                       </td>
                       <td className="py-1.5 px-1 text-center text-white/70">{team.played}</td>
                       <td className="py-1.5 px-1 text-center text-emerald-400 font-bold">{team.won}</td>
                       <td className="py-1.5 px-1 text-center text-yellow-400 font-bold">{team.drawn}</td>
                       <td className="py-1.5 px-1 text-center text-red-400 font-bold">{team.lost}</td>
-                      <td className="py-1.5 px-1 text-center text-white/70">{gd > 0 ? '+' : ''}{gd}</td>
-                      <td className="py-1.5 pl-1 text-right text-gold font-black">{team.points}</td>
+                      <td className="py-1.5 px-1 text-center text-white/70">{team.gd > 0 ? '+' : ''}{team.gd}</td>
+                      <td className="py-1.5 pl-1 text-right text-gold font-black">{team.pts}</td>
                     </tr>
                   );
                 })}
