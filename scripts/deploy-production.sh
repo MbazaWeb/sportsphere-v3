@@ -64,31 +64,32 @@ else
 fi
 
 # ─── 2. Write .env (Next.js reads .env in production) ────────────
-echo "[2/9] Writing .env..."
+echo "[2/9] Writing environment files..."
 DATABASE_URL="postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}"
+DOMAIN="sportsphere.app"
 
-# Cloudinary credentials — read from the server .env or set before running.
-# To set on VPS: edit /var/www/sportsphere-nextjs/.cloudinary-creds
-CLOUDINARY_CLOUD_NAME="${CLOUDINARY_CLOUD_NAME:-}"
-CLOUDINARY_API_KEY="${CLOUDINARY_API_KEY:-}"
-CLOUDINARY_API_SECRET="${CLOUDINARY_API_SECRET:-}"
-
+# Main App .env
 cat > .env << ENV
 NODE_ENV=production
 DATABASE_URL="${DATABASE_URL}"
 SESSION_SECRET="${SESSION_SECRET}"
 JWT_SECRET="${SESSION_SECRET}"
-NEXT_PUBLIC_APP_URL=http://${VPS_IP}:${PORT}
-NEXT_PUBLIC_BASE_URL=http://${VPS_IP}:${PORT}
+NEXT_PUBLIC_APP_URL=https://${DOMAIN}/sportsphere
+NEXT_PUBLIC_BASE_URL=https://${DOMAIN}/sportsphere
 NEXT_PUBLIC_APP_NAME=SportSphere
 PORT=${PORT}
-
-# Cloudinary (image uploads — avatar, cover photos)
-CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
-CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
-CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
-CLOUDINARY_URL=cloudinary://${CLOUDINARY_API_KEY}:${CLOUDINARY_API_SECRET}@${CLOUDINARY_CLOUD_NAME}
+CRON_SECRET="sportsphere-sync-key-2026"
 ENV
+
+# Admin App .env
+cat > Admin/.env << ENV
+DATABASE_URL="${DATABASE_URL}"
+ADMIN_JWT_SECRET="${SESSION_SECRET}"
+NEXT_PUBLIC_ADMIN_URL=https://${DOMAIN}/sportsphere-admin
+NEXT_PUBLIC_MAIN_APP_URL=https://${DOMAIN}/sportsphere
+PORT=3003
+ENV
+
 export DATABASE_URL="$DATABASE_URL"
 
 # ─── 3. PostgreSQL (idempotent) ──────────────────────────────────
@@ -132,40 +133,43 @@ echo "[8b/9] Backfilling PerformanceProfile rows (Phase 5)..."
 npx tsx prisma/backfill-performance-profiles.ts || echo "  (backfill-performance-profiles warning — see above)"
 
 # ─── 9. Build + restart PM2 ─────────────────────────────────────
-echo "[9a/9] next build..."
+echo "[9a/9] Building Main App..."
 npm run build
 
-# ─── 9b. Standalone post-build: link public/ & static assets ────────
-# In standalone mode the server reads public/ from .next/standalone/public/.
-# We symlink it so uploads written at runtime to public/uploads/ are
-# immediately served without extra copies.
-echo "[9b/9] Linking public/ into standalone output..."
+echo "[9b/9] Building Admin App..."
+cd Admin
+npm install --legacy-peer-deps
+npm run build
+cd ..
+
+# ─── 9c. Standalone post-build: link public/ & static assets ────────
+echo "[9c/9] Linking static assets..."
 mkdir -p .next/standalone/public
-# Use symlink so runtime uploads (public/uploads/) are visible to the server
 ln -sfn ../../public .next/standalone/public
 
-# Copy .next/static/ into standalone if not already present
 if [ ! -d ".next/standalone/.next/static" ]; then
-  echo "  Copying .next/static/ → .next/standalone/.next/static/"
   mkdir -p .next/standalone/.next/static
   cp -r .next/static/* .next/standalone/.next/static/
 fi
 
-echo "[9c/9] Restarting PM2..."
-pm2 delete sportsphere 2>/dev/null || true
-PORT=$PORT pm2 start node --name "sportsphere" -- .next/standalone/server.js
+# Admin app standalone assets
+mkdir -p Admin/.next/standalone/Admin/public
+ln -sfn ../../../public Admin/.next/standalone/Admin/public
+
+# ─── 9d. Restart PM2 (using ecosystem config) ──────────────────────
+echo "[9d/9] Restarting all services via PM2..."
+pm2 delete sportsphere sportsphere-admin sportsphere-ws 2>/dev/null || true
+pm2 start ecosystem.config.cjs
 pm2 save
 
 echo ""
 echo "======================================"
-echo "  ✅ DEPLOY COMPLETE"
+echo "  ✅ FULL STACK DEPLOY COMPLETE"
 echo "======================================"
-echo "  URL:        http://${VPS_IP}:${PORT}"
-echo "  Admin:      http://${VPS_IP}:${PORT}/admin"
-echo "  KPI cfg:    http://${VPS_IP}:${PORT}/admin/kpi"
-echo "  Verify:     http://${VPS_IP}:${PORT}/admin/verification"
-echo "  Leaderboard:http://${VPS_IP}:${PORT}/leaderboard"
+echo "  Fan App:    https://sportsphere.app/sportsphere"
+echo "  Admin:      https://sportsphere.app/sportsphere-admin"
+echo "  Real-time:  https://sportsphere.app/socket.io"
 echo ""
-echo "  Logs:       pm2 logs sportsphere"
-echo "  Status:     pm2 status"
+echo "  PM2 Status:"
+pm2 status
 echo "======================================"
