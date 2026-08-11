@@ -3,6 +3,8 @@ import { getUserIdFromRequest } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { USER_SELECT } from '@/lib/db-selects';
 import { safeJsonParse } from '@/lib/json';
+import { sendNotification } from '@/lib/notifications';
+import { realtime } from '@/lib/realtime';
 
 export const dynamic = 'force-dynamic';
 
@@ -226,10 +228,56 @@ export async function POST(request: NextRequest) {
     });
 
     // Increment post's comment count (counts top-level + replies — both are "comments" UX-wise)
-    await db.post.update({
+    const post = await db.post.update({
       where: { id: String(postId) },
       data: { commentCount: { increment: 1 } },
+      select: { id: true, userId: true, content: true }
     });
+
+    // ─── Real-time & Push Notifications ───
+    const actorName = comment.user.name;
+    const shortContent = comment.content.substring(0, 50) + (comment.content.length > 50 ? '...' : '');
+
+    // 1. WebSocket emit (room: post_<id>)
+    realtime.newComment(post.id, {
+      ...comment,
+      user: {
+        id: comment.user.id,
+        name: comment.user.name,
+        handle: comment.user.handle,
+        avatarUrl: comment.user.avatarUrl
+      }
+    });
+
+    // 2. Notify Post Author (if not the actor)
+    if (post.userId !== userId) {
+      sendNotification({
+        userId: post.userId,
+        type: 'comment',
+        title: 'New Comment',
+        body: `${actorName} commented on your post: "${shortContent}"`,
+        actorId: userId,
+        referenceId: post.id,
+      }).catch(err => console.error('Failed to send comment notification:', err));
+    }
+
+    // 3. Notify Parent Comment Author (if this is a reply)
+    if (parentId) {
+      const parent = await db.comment.findUnique({
+        where: { id: String(parentId) },
+        select: { userId: true }
+      });
+      if (parent && parent.userId !== userId && parent.userId !== post.userId) {
+        sendNotification({
+          userId: parent.userId,
+          type: 'reply',
+          title: 'New Reply',
+          body: `${actorName} replied to your comment: "${shortContent}"`,
+          actorId: userId,
+          referenceId: post.id,
+        }).catch(err => console.error('Failed to send reply notification:', err));
+      }
+    }
 
     const parsed = {
       ...comment,

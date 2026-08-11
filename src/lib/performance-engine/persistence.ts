@@ -22,6 +22,7 @@ import { computeDecay, computeImprovementOpportunities } from './calculator';
 import { resolvePositionGroup, resolveAgeGroup } from './positions';
 import { buildCategoryBucket } from './calculator';
 import type { ComputedPerformance } from './types';
+import { sendNotification } from '@/lib/notifications';
 
 // ─── Fetch cached profile ────────────────────────────────────
 export async function getPerformanceProfile(userId: string) {
@@ -172,6 +173,8 @@ export async function recalcPerformanceProfile(userId: string): Promise<void> {
   );
 
   // Upsert PerformanceProfile
+  const prevTier = existing?.tier;
+
   await db.performanceProfile.upsert({
     where: { userId },
     create: {
@@ -214,6 +217,27 @@ export async function recalcPerformanceProfile(userId: string): Promise<void> {
       improvementOpportunities: opportunities as any,
     },
   });
+
+  // Notify on tier change
+  if (prevTier && prevTier !== tierMeta.tier) {
+    const isPromotion = compareTiers(tierMeta.tier, prevTier) > 0;
+    sendNotification({
+      userId,
+      type: 'rank_change',
+      title: isPromotion ? 'Tier Promotion! 🎉' : 'Tier Update',
+      body: isPromotion
+        ? `Amazing! You've climbed to Tier ${tierMeta.tier}. Keep up the great performance!`
+        : `Your performance tier is now ${tierMeta.tier}.`,
+    }).catch(err => console.error('Failed to send tier change notification:', err));
+  }
+}
+
+/**
+ * Helper to compare tiers. Returns > 0 if tier1 is higher than tier2.
+ */
+function compareTiers(t1: string, t2: string): number {
+  const tiers = ['Unranked', 'D', 'C', 'B', 'B+', 'A', 'A+', 'S', 'S+'];
+  return tiers.indexOf(t1) - tiers.indexOf(t2);
 }
 
 // ─── Record a verified performance event ─────────────────────
@@ -343,6 +367,14 @@ async (tx: any) => {
   // Trigger recalc (only if event was verified)
   if (input.source === 'official' || input.source === 'api-provider') {
     await recalcPerformanceProfile(input.userId);
+
+    // Notify user of points earned
+    sendNotification({
+      userId: input.userId,
+      type: 'performance',
+      title: 'Performance Points Earned!',
+      body: `You earned ${finalPoints} points for: ${input.eventType}${input.opponentName ? ` vs ${input.opponentName}` : ''}.`,
+    }).catch(err => console.error('Failed to send performance notification:', err));
   }
 }
 

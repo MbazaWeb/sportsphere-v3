@@ -29,6 +29,8 @@ import {
 
 import { colors } from '@sportsphere/design-system/tokens';
 import { useAuthStore } from '../lib/authStore';
+import { usePushNotifications } from '../hooks/usePushNotifications';
+import { useRealtime } from '../hooks/useRealtime';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -49,6 +51,12 @@ export default function RootLayout() {
   const session = useAuthStore((s) => s.session);
   const initialized = useAuthStore((s) => s.initialized);
   const fetchMe = useAuthStore((s) => s.fetchMe);
+
+  // Initialize push notifications & deep linking response handling
+  usePushNotifications(session?.user?.id);
+
+  // Initialize Real-time WebSockets
+  useRealtime();
 
   // Boot: try to rehydrate the session from SecureStore.
   useEffect(() => {
@@ -96,6 +104,10 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="leaderboard" />
         <Stack.Screen name="player/[id]" />
+        <Stack.Screen name="performance/[userId]" />
+        <Stack.Screen name="messages/[partnerId]" />
+        <Stack.Screen name="p/[id]" />
+        <Stack.Screen name="u/[handle]" />
         <Stack.Screen name="+not-found" />
       </Stack>
     </SafeAreaProvider>

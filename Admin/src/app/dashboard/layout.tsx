@@ -49,6 +49,8 @@ const NAV = [
   { href: '/dashboard/sports-sync', label: '⚡ Sports Sync' },
   { href: '/dashboard/roles', label: '🛡️ Role Approvals' },
   { href: '/dashboard/verifications', label: '✅ Verifications' },
+  { href: '/dashboard/performance-verifications', label: '📊 Performance Review' },
+  { href: '/dashboard/notifications', label: '📣 Admin Broadcast' },
   { href: '/dashboard/posts', label: '📝 Content Moderation' },
   { href: '/dashboard/moderation', label: '🔍 Moderation Queue' },
   { href: '/dashboard/news', label: '📰 News Manager' },

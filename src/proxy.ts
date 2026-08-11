@@ -11,6 +11,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySession, SESSION_COOKIE } from '@/lib/session';
+import { getClientIp, apiLimiter, authLimiter, postLimiter, rateLimitResponse } from '@/lib/rate-limit';
 
 // Headers that clients must never be able to spoof
 const STRIP_HEADERS = ['x-user-id', 'x-user-role', 'x-admin', 'x-forwarded-user'];
@@ -34,6 +35,26 @@ const PROTECTED_PREFIXES = [
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const ip = getClientIp(request);
+
+  // ── 0. Global API Rate Limiting ────────────────────────────
+  if (pathname.startsWith('/api/')) {
+    // Auth routes (stricter: 5 attempts per 5 mins)
+    if (pathname.startsWith('/api/auth/login') || pathname.startsWith('/api/auth/register')) {
+      const usage = authLimiter.check(5, ip);
+      if (usage.isRateLimited) return rateLimitResponse(usage);
+    }
+    // Content creation routes (10 posts per minute)
+    else if (pathname === '/api/posts' && request.method === 'POST') {
+      const usage = postLimiter.check(10, ip);
+      if (usage.isRateLimited) return rateLimitResponse(usage);
+    }
+    // General API routes (100 requests per minute)
+    else {
+      const usage = apiLimiter.check(100, ip);
+      if (usage.isRateLimited) return rateLimitResponse(usage);
+    }
+  }
 
   // Clone headers so we can mutate
   const requestHeaders = new Headers(request.headers);

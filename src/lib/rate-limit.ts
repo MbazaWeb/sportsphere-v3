@@ -1,93 +1,71 @@
-/**
- * lib/rate-limit.ts
- *
- * Lightweight in-process rate limiter using a sliding-window counter.
- * No external dependency required for a single-instance deployment.
- *
- * For multi-instance / serverless deployments swap the Map for
- * @upstash/ratelimit + Redis — the call-site API is identical.
- *
- * Usage (inside an API route handler):
- *
- *   import { rateLimit } from "@/lib/rate-limit";
- *
- *   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
- *   const { success, remaining, resetAt } = rateLimit(ip, {
- *     maxRequests: 10,
- *     windowMs: 15 * 60 * 1000, // 15 minutes
- *   });
- *   if (!success) {
- *     return NextResponse.json(
- *       { error: "Too many requests. Try again later." },
- *       {
- *         status: 429,
- *         headers: {
- *           "Retry-After": String(Math.ceil((resetAt - Date.now()) / 1000)),
- *           "X-RateLimit-Remaining": "0",
- *         },
- *       }
- *     );
- *   }
- */
+import { LRUCache } from 'lru-cache';
+import { NextRequest, NextResponse } from 'next/server';
 
-interface Window {
-  count: number;
-  resetAt: number; // unix ms when the window expires
-}
-
-// Global store — survives across requests within the same Node.js process.
-const store = new Map<string, Window>();
-
-// Prune expired entries every 5 minutes so the Map doesn't grow unbounded.
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, win] of store) {
-    if (win.resetAt <= now) store.delete(key);
-  }
-}, 5 * 60 * 1000);
-
-export interface RateLimitOptions {
-  /** Maximum number of requests allowed per window. Default: 10 */
-  maxRequests?: number;
-  /** Window length in milliseconds. Default: 15 minutes */
-  windowMs?: number;
-}
-
-export interface RateLimitResult {
-  /** true  → request is allowed; false → limit exceeded */
-  success: boolean;
-  /** How many requests remain in the current window */
-  remaining: number;
-  /** Unix ms timestamp when the window resets */
-  resetAt: number;
+interface RateLimitOptions {
+  uniqueTokenPerInterval?: number;
+  interval?: number;
 }
 
 /**
- * Check (and increment) the rate limit counter for `key`.
- *
- * @param key       Typically the caller's IP address.
- * @param options   Override defaults.
+ * Simple in-memory rate limiter using LRU cache.
+ * Suitable for single-instance deployments (PM2 fork mode).
+ * For multi-instance, use Redis.
  */
-export function rateLimit(
-  key: string,
-  options: RateLimitOptions = {}
-): RateLimitResult {
-  const maxRequests = options.maxRequests ?? 10;
-  const windowMs = options.windowMs ?? 15 * 60 * 1000;
+export function createRateLimiter(options?: RateLimitOptions) {
+  const tokenCache = new LRUCache<string, number[]>({
+    max: options?.uniqueTokenPerInterval || 500,
+    ttl: options?.interval || 60000, // default 1 minute
+  });
 
-  const now = Date.now();
-  let win = store.get(key);
+  return {
+    check: (limit: number, token: string) => {
+      const tokenCount = tokenCache.get(token) || [0];
+      if (tokenCount[0] === 0) {
+        tokenCache.set(token, [1]);
+      } else {
+        tokenCount[0] += 1;
+        tokenCache.set(token, tokenCount);
+      }
 
-  if (!win || win.resetAt <= now) {
-    // Start a fresh window
-    win = { count: 0, resetAt: now + windowMs };
-    store.set(key, win);
-  }
+      const currentUsage = tokenCount[0];
+      const isRateLimited = currentUsage >= limit;
 
-  win.count += 1;
+      return {
+        isRateLimited,
+        usage: currentUsage,
+        limit,
+        remaining: isRateLimited ? 0 : limit - currentUsage,
+      };
+    },
+  };
+}
 
-  const success = win.count <= maxRequests;
-  const remaining = Math.max(0, maxRequests - win.count);
+// Global limiters for different purposes
+export const authLimiter = createRateLimiter({ interval: 60000 * 5, uniqueTokenPerInterval: 1000 }); // 5 min interval
+export const postLimiter = createRateLimiter({ interval: 60000, uniqueTokenPerInterval: 500 });    // 1 min interval
+export const apiLimiter  = createRateLimiter({ interval: 60000, uniqueTokenPerInterval: 2000 });   // 1 min interval
 
-  return { success, remaining, resetAt: win.resetAt };
+/**
+ * Helper to get the client IP from NextRequest.
+ */
+export function getClientIp(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0];
+  return '127.0.0.1';
+}
+
+/**
+ * Standardized Rate Limit Response
+ */
+export function rateLimitResponse(usage: any) {
+  return NextResponse.json(
+    { error: 'Too many requests. Please try again later.', code: 'RATE_LIMIT_EXCEEDED' },
+    {
+      status: 429,
+      headers: {
+        'X-RateLimit-Limit': String(usage.limit),
+        'X-RateLimit-Remaining': String(usage.remaining),
+      }
+    }
+  );
 }

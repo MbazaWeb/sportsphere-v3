@@ -6,6 +6,8 @@ import { useNavigationStore } from '@/store/navigationStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { useAuthSession } from '@/hooks/useAuthSession';
+import { useDeepLinkHandler } from '@/hooks/useDeepLinkHandler';
+import { Suspense } from 'react';
 import BottomNav from '@/components/layout/BottomNav';
 import HomeTab from '@/components/home/HomeTab';
 import ScoresTab from '@/components/scores/ScoresTab';
@@ -98,6 +100,11 @@ function NavRevealZone() {
   );
 }
 
+function DeepLinkWrapper() {
+  useDeepLinkHandler();
+  return null;
+}
+
 export default function Home() {
   const [splashDone, setSplashDone] = React.useState(false);
   const [verifyEmailOpen, setVerifyEmailOpen] = React.useState(false);
@@ -114,6 +121,9 @@ export default function Home() {
 
   return (
     <div className="app-shell mx-auto flex min-h-screen flex-col">
+      <Suspense fallback={null}>
+        <DeepLinkWrapper />
+      </Suspense>
       <Toast />
       <LoginModal />
       <RegistrationModal />

@@ -10,6 +10,7 @@ interface UIState {
   activeCreateType: string | null;
   viewingProfile: string | null;
   viewingUser: ViewingUser | null;
+  viewingPostId: string | null;
 
   showToast: (msg: string, duration?: number) => void;
   setLoginModalOpen: (o: boolean) => void;
@@ -18,6 +19,7 @@ interface UIState {
   setActiveCreateType: (t: string | null) => void;
   setViewingProfile: (id: string | null) => void;
   setViewingUser: (u: ViewingUser | null) => void;
+  setViewingPostId: (id: string | null) => void;
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -30,6 +32,7 @@ export const useUIStore = create<UIState>((set) => ({
   activeCreateType: null,
   viewingProfile: null,
   viewingUser: null,
+  viewingPostId: null,
 
   showToast: (msg, dur = 3000) => {
     if (toastTimer) clearTimeout(toastTimer);
@@ -42,6 +45,7 @@ export const useUIStore = create<UIState>((set) => ({
   setActiveCreateType: (t) => set({ activeCreateType: t }),
   setViewingProfile: (id) => set({ viewingProfile: id }),
   setViewingUser: (u) => set({ viewingUser: u }),
+  setViewingPostId: (id) => set({ viewingPostId: id }),
 }));
 
 // Keep MockUserData as alias for backward compat

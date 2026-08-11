@@ -18,7 +18,7 @@ import {
 import { useRouter } from 'expo-router';
 import {
   Trophy, Settings, LogOut, BadgeCheck, MapPin, Calendar, BarChart3,
-  ChevronRight, Crown, Camera, X,
+  ChevronRight, Crown, Camera, X, Share2,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -26,6 +26,7 @@ import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';
 import { FONT_DISPLAY, FONT_BODY, FONT_BODY_BOLD, FONT_BODY_REG } from '../../lib/fonts';
 import { useAuthStore } from '../../lib/authStore';
+import { shareProfile } from '../../lib/sharing';
 
 const GOLD = '#F5C518';
 const BG = '#0A1628';
@@ -101,6 +102,16 @@ export default function ProfileScreen() {
       }
     >
       {/* Cover photo area */}
+      <View style={styles.header}>
+        <Text style={styles.wordmark}>Profile</Text>
+        <Pressable
+          onPress={() => shareProfile(user.handle)}
+          hitSlop={12}
+          style={styles.shareAction}
+        >
+          <Share2 size={22} color={FG} />
+        </Pressable>
+      </View>
       <View style={styles.coverArea}>
         <View style={styles.coverGradient} />\n        <Pressable style={styles.coverUpload}>
           <Camera size={16} color={FG} />
@@ -195,7 +206,7 @@ export default function ProfileScreen() {
           style={styles.linkRow}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-            Alert.alert('Coming soon', 'Performance detail view is in development.');
+            router.push(`/performance/${user.id}`);
           }}
         >
           <BarChart3 size={18} color="#FF6B35" />
@@ -247,6 +258,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8,
   },
   wordmark: { fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: '700', color: FG, letterSpacing: -0.5 },
+  shareAction: { padding: 4 },
 
   // Cover area
   coverArea: {

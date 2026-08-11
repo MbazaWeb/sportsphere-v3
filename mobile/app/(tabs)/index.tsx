@@ -20,6 +20,7 @@ import FeedCard from '../../components/FeedCard';
 import GlassCard from '../../components/GlassCard';
 import { FONT_DISPLAY, FONT_BODY, FONT_BODY_BOLD, FONT_BODY_REG } from '../../lib/fonts';
 import { feedApi, postsApi } from '../../lib/api';
+import { sharePost } from '../../lib/sharing';
 import type { Post } from '@sportsphere/types/feed';
 import type { ApiError } from '@sportsphere/api-client';
 
@@ -89,6 +90,14 @@ export default function HomeScreen() {
     router.push(`/player/${post.author.id}`);
   }, [router]);
 
+  const handleShare = useCallback((post: Post) => {
+    sharePost(post.id, post.content || 'Check out this post on SportSphere!');
+  }, []);
+
+  const handleComment = useCallback((post: Post) => {
+    router.push(`/p/${post.id}`);
+  }, [router]);
+
   return (
     <View style={styles.container}>
       {/* HomeHeader — SportSphere wordmark, search, trophy */}
@@ -131,6 +140,8 @@ export default function HomeScreen() {
             post={item}
             onLike={handleLike}
             onAuthorPress={handleAuthorPress}
+            onShare={handleShare}
+            onComment={handleComment}
           />
         )}
         contentContainerStyle={styles.listContent}

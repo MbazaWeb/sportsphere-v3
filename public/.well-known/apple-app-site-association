@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "SPHR9X8W2T.com.sportsphere.app",
+        "paths": ["/p/*", "/u/*"]
+      }
+    ]
+  }
+}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { verifyAdmin } from '@/lib/adminGuard';
+import { sendNotification } from '@/lib/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -118,6 +119,25 @@ export async function POST(request: NextRequest) {
           roleTypeId: existing.roleTypeId || undefined,
         },
       });
+    }
+
+    // ─── Phase D: Push Notifications ───
+    if (newStatus === 'approved') {
+      sendNotification({
+        userId: existing.userId,
+        type: 'verification',
+        title: 'Verification Approved',
+        body: `Congratulations! Your request for the ${existing.role} role has been approved. You now have a verified badge and Pro access.`,
+        referenceId: existing.id,
+      }).catch(err => console.error('Failed to send approval notification:', err));
+    } else if (newStatus === 'rejected') {
+      sendNotification({
+        userId: existing.userId,
+        type: 'verification',
+        title: 'Verification Update',
+        body: `Your verification request for the ${existing.role} role was not approved at this time. Reason: ${body.adminNotes || 'Information provided was insufficient.'}`,
+        referenceId: existing.id,
+      }).catch(err => console.error('Failed to send rejection notification:', err));
     }
 
     // Audit log

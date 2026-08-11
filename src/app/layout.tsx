@@ -24,6 +24,27 @@ export const metadata: Metadata = {
     icon: "/sportsphere/favicon.svg",
     apple: "/sportsphere/favicon.svg",
   },
+  openGraph: {
+    title: "SportSphere",
+    description: "The World's Biggest Sports Community",
+    url: "https://sportsphere.app",
+    siteName: "SportSphere",
+    images: [
+      {
+        url: "/sportsphere/logo.svg",
+        width: 800,
+        height: 600,
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SportSphere",
+    description: "The World's Biggest Sports Community",
+    images: ["/sportsphere/logo.svg"],
+  },
 };
 
 export default function RootLayout({

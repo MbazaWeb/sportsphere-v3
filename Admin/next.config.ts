@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  basePath: '/sportsphere-admin',
   typescript: { ignoreBuildErrors: true },
   reactStrictMode: true,
   outputFileTracingRoot: "/var/www/sportsphere-nextjs/Admin",

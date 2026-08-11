@@ -227,3 +227,11 @@ export type ProfileApi = ReturnType<typeof import('./profile').createProfileApi>
 
 export { createFollowsApi } from './follows';
 export type FollowsApi = ReturnType<typeof import('./follows').createFollowsApi>;
+
+export { createCommentsApi } from './comments';
+export type CommentsApi = ReturnType<typeof import('./comments').createCommentsApi>;
+export type { Comment, CreateCommentBody } from './comments';
+
+export { createMessagesApi } from './messages';
+export type MessagesApi = ReturnType<typeof import('./messages').createMessagesApi>;
+export type { Conversation, Message as MessageDto } from './messages';

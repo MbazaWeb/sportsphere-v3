@@ -24,6 +24,8 @@ import {
   createPostsApi,
   createProfileApi,
   createFollowsApi,
+  createCommentsApi,
+  createMessagesApi,
 } from '@sportsphere/api-client';
 
 const JWT_KEY = 'sportsphere.jwt';
@@ -73,3 +75,5 @@ export const sportsApi        = createSportsApi(apiClient);
 export const postsApi         = createPostsApi(apiClient);
 export const profileApi       = createProfileApi(apiClient);
 export const followsApi       = createFollowsApi(apiClient);
+export const commentsApi      = createCommentsApi(apiClient);
+export const messagesApi      = createMessagesApi(apiClient);

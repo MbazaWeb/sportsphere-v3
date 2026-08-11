@@ -19,9 +19,9 @@ import {
 import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';
 import { FONT_DISPLAY, FONT_BODY, FONT_BODY_BOLD, FONT_BODY_REG } from '../../lib/fonts';
-import { notificationsApi } from '../../lib/api';
+import { notificationsApi, messagesApi } from '../../lib/api';
 import { useAuthStore } from '../../lib/authStore';
-import type { Notification as NotificationItem } from '@sportsphere/api-client';
+import type { Notification as NotificationItem, Conversation } from '@sportsphere/api-client';
 import type { ApiError } from '@sportsphere/api-client';
 
 const GOLD = '#F5C518';
@@ -56,12 +56,13 @@ export default function ActivityScreen() {
   const session = useAuthStore((s) => s.session);
 
   const [items, setItems] = useState<NotificationItem[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeSub, setActiveSub] = useState<ActivitySubTab>('all');
 
-  const load = useCallback(async (isRefresh = false) => {
+  const loadNotifications = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
     setError(null);
     try {
@@ -75,10 +76,27 @@ export default function ActivityScreen() {
     }
   }, []);
 
+  const loadConversations = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true); else setLoading(true);
+    setError(null);
+    try {
+      const list = await messagesApi.listConversations();
+      setConversations(list);
+    } catch (err: any) {
+      const apiErr = err as ApiError;
+      setError(apiErr?.message ?? 'Failed to load messages');
+    } finally {
+      if (isRefresh) setRefreshing(false); else setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (session) load();
+    if (session) {
+      if (activeSub === 'messages') loadConversations();
+      else loadNotifications();
+    }
     else setLoading(false);
-  }, [session, load]);
+  }, [session, activeSub, loadNotifications, loadConversations]);
 
   if (!session) {
     return (
@@ -129,25 +147,46 @@ export default function ActivityScreen() {
 
       {/* Messages tab shows conversation list */}
       {activeSub === 'messages' ? (
-        <View style={styles.listContent}>
-          {MOCK_CONVERSATIONS.map((conv) => (
-            <GlassCard key={conv.id} style={styles.convCard}>
-              <Avatar url={conv.avatarUrl} size={44} goldRing={conv.verified} />
-              <View style={styles.convMeta}>
-                <View style={styles.convTopRow}>
-                  <Text style={styles.convName} numberOfLines={1}>{conv.name}</Text>
-                  <Text style={styles.convTime}>{conv.time}</Text>
-                </View>
-                <Text style={styles.convMessage} numberOfLines={1}>{conv.lastMessage}</Text>
-              </View>
-              {conv.unread > 0 ? (
-                <View style={styles.unreadBadge}>
-                  <Text style={styles.unreadBadgeText}>{conv.unread}</Text>
-                </View>
-              ) : null}
+        <ScrollView
+          style={styles.listContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={() => loadConversations(true)} tintColor={GOLD} />
+          }
+        >
+          {loading ? (
+            <View style={styles.center}><ActivityIndicator color={GOLD} size="large" /></View>
+          ) : conversations.length === 0 ? (
+            <GlassCard style={styles.emptyCard}>
+              <Text style={styles.emptyTitle}>No messages yet</Text>
+              <Text style={styles.emptyBody}>
+                Start a conversation by visiting someone's profile.
+              </Text>
             </GlassCard>
-          ))}
-        </View>
+          ) : (
+            conversations.map((conv) => (
+              <Pressable
+                key={conv.partnerId}
+                onPress={() => router.push(`/messages/${conv.partnerId}`)}
+              >
+                <GlassCard style={styles.convCard}>
+                  <Avatar url={conv.partnerAvatar.startsWith('http') ? conv.partnerAvatar : undefined} size={44} goldRing={conv.isVerified} />
+                  <View style={styles.convMeta}>
+                    <View style={styles.convTopRow}>
+                      <Text style={styles.convName} numberOfLines={1}>{conv.partnerName}</Text>
+                      <Text style={styles.convTime}>{formatRelative(conv.lastTime)}</Text>
+                    </View>
+                    <Text style={styles.convMessage} numberOfLines={1}>{conv.lastMessage}</Text>
+                  </View>
+                  {conv.unread > 0 ? (
+                    <View style={styles.unreadBadge}>
+                      <Text style={styles.unreadBadgeText}>{conv.unread}</Text>
+                    </View>
+                  ) : null}
+                </GlassCard>
+              </Pressable>
+            ))
+          )}
+        </ScrollView>
       ) : (
         <FlatList
           data={items}
@@ -155,7 +194,7 @@ export default function ActivityScreen() {
           renderItem={({ item }) => <NotificationRow item={item} />}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={GOLD} />
+            <RefreshControl refreshing={refreshing} onRefresh={() => loadNotifications(true)} tintColor={GOLD} />
           }
           ListEmptyComponent={
             loading ? (
@@ -164,7 +203,7 @@ export default function ActivityScreen() {
               <GlassCard style={styles.emptyCard}>
                 <Text style={styles.emptyTitle}>Couldn't load notifications</Text>
                 <Text style={styles.emptyBody}>{error}</Text>
-                <Pressable style={styles.retryButton} onPress={() => load()}>
+                <Pressable style={styles.retryButton} onPress={() => loadNotifications()}>
                   <Text style={styles.retryText}>Try again</Text>
                 </Pressable>
               </GlassCard>
@@ -209,6 +248,7 @@ function NotificationRow({ item }: { item: NotificationItem }) {
 }
 
 function formatRelative(iso: string): string {
+  if (!iso) return '';
   const now = Date.now();
   const then = new Date(iso).getTime();
   const sec = Math.max(1, Math.floor((now - then) / 1000));
@@ -218,13 +258,6 @@ function formatRelative(iso: string): string {
   if (sec < 604800) return `${Math.floor(sec / 86400)}d ago`;
   return new Date(iso).toLocaleDateString();
 }
-
-const MOCK_CONVERSATIONS = [
-  { id: '1', name: 'Marcus Johnson', avatarUrl: undefined, lastMessage: 'Great prediction on the EPL final! 🔥', time: '2m', unread: 3, verified: true },
-  { id: '2', name: 'Sarah Kim', avatarUrl: undefined, lastMessage: 'Did you see the Champions League draw?', time: '15m', unread: 0, verified: false },
-  { id: '3', name: 'James Okafor', avatarUrl: undefined, lastMessage: 'Let me know when you\'re free to watch the match', time: '1h', unread: 1, verified: false },
-  { id: '4', name: 'Emma Williams', avatarUrl: undefined, lastMessage: 'That analysis was spot on 👏', time: '3h', unread: 0, verified: true },
-];
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },

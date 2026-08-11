@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { verifySession } from '@/lib/session';
+import { sendNotification } from '@/lib/notifications';
 
 // Roles that auto-approve instantly when a fan goes Pro
 const AUTO_APPROVE_CATEGORIES = ['individual', 'support'];
@@ -101,6 +102,27 @@ export async function POST(request: NextRequest) {
         roleData: roleData || {},
       },
     });
+
+    // ─── Phase D: Push Notifications ───
+    if (autoApprove) {
+      sendNotification({
+        userId: user.id,
+        type: 'verification',
+        title: 'Role Upgrade Live',
+        body: becomesPro
+          ? `Welcome to Pro! Your ${role.name} profile is now live and verified.`
+          : `Your profile has been updated to ${role.name}.`,
+        referenceId: verificationRequest.id,
+      }).catch(err => console.error('Failed to send auto-approval notification:', err));
+    } else {
+      sendNotification({
+        userId: user.id,
+        type: 'verification',
+        title: 'Upgrade Submitted',
+        body: `Your request for the ${role.name} role has been submitted for review. We'll notify you once it's approved.`,
+        referenceId: verificationRequest.id,
+      }).catch(err => console.error('Failed to send submission notification:', err));
+    }
 
     return NextResponse.json({
       ok: true,

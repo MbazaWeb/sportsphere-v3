@@ -13,6 +13,7 @@
       "bundleIdentifier": "com.sportsphere.app",
       "backgroundColor": "#0A1628",
       "buildNumber": "1",
+      "associatedDomains": ["applinks:sportsphere.app"],
       "infoPlist": {
         "CFBundleDisplayName": "Sportsphere",
         "CFBundleShortVersionString": "1.0.0",
@@ -33,6 +34,25 @@
       "package": "com.sportsphere.app",
       "backgroundColor": "#0A1628",
       "versionCode": 1,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "sportsphere.app",
+              "pathPrefix": "/p"
+            },
+            {
+              "scheme": "https",
+              "host": "sportsphere.app",
+              "pathPrefix": "/u"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",
