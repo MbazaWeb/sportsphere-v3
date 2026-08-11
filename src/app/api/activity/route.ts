@@ -122,9 +122,9 @@ export async function GET(request: NextRequest) {
     try {
       const newUsers = await db.user.findMany({
         where: { role: { in: ['player', 'team', 'coach', 'media-broadcast'] } },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { registeredAt: 'desc' },
         take: 5,
-        select: { id: true, name: true, role: true, handle: true, avatarInitials: true, isVerified: true, createdAt: true },
+        select: { id: true, name: true, role: true, handle: true, avatarInitials: true, isVerified: true, registeredAt: true },
       });
       for (const u of newUsers) {
         const roleLabel = u.role === 'media-broadcast' ? 'Media' : u.role.charAt(0).toUpperCase() + u.role.slice(1);
@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
           body: `@${u.handle}`,
           isRead: true,
           referenceId: u.id,
-          createdAt: u.createdAt.toISOString(),
+          createdAt: u.registeredAt.toISOString(),
           actor: { id: u.id, name: u.name, handle: u.handle, avatarInitials: u.avatarInitials, isVerified: u.isVerified },
         });
       }
