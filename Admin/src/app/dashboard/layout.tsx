@@ -16,14 +16,39 @@ interface AdminUser {
   isVerified: boolean;
 }
 
+// ─── Live Clock Widget (shown on every admin page) ─────
+function ClockWidget() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const date = now.toLocaleDateString('en-US', {
+    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+  });
+  const time = now.toLocaleTimeString('en-US', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true,
+  });
+
+  return (
+    <div className="flex items-center gap-3 text-xs">
+      <span className="text-slate-400">{date}</span>
+      <span className="font-mono text-amber-400 font-semibold tabular-nums">{time}</span>
+    </div>
+  );
+}
+
 const NAV = [
   { href: "/dashboard/admins", label: "🔑 Admin Delegation" },
   { href: '/dashboard', label: '📊 Overview', exact: true },
   { href: '/dashboard/users', label: '👥 Users Manager' },
   { href: '/dashboard/sports', label: '🏆 Sports Manager', exact: true },
+  { href: '/dashboard/sports-data', label: '🔗 Data Engine' },
   { href: '/dashboard/sports-sync', label: '⚡ Sports Sync' },
   { href: '/dashboard/roles', label: '🛡️ Role Approvals' },
   { href: '/dashboard/posts', label: '📝 Content Moderation' },
+  { href: '/dashboard/audit', label: '📜 Audit Log' },
 ];
 
 export default function DashboardLayout({
@@ -182,7 +207,16 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8 overflow-y-auto">{children}</main>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top Bar with live clock */}
+        <header className="shrink-0 border-b border-slate-800 bg-[#0f141c] px-6 py-3 flex items-center justify-between">
+          <div className="text-xs text-slate-500">
+            SportSphere Admin Console
+          </div>
+          <ClockWidget />
+        </header>
+        <main className="flex-1 p-8 overflow-y-auto">{children}</main>
+      </div>
     </div>
   );
 }
