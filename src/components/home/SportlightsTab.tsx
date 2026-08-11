@@ -57,7 +57,7 @@ interface ApiSpotlightItem {
 interface TeamFromMatch {
   name: string;
   league: string;
-  logo?: string;
+  matchCount: number;
 }
 
 interface StandingsTeam {
@@ -142,7 +142,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
   // Extract unique teams from live matches + recent results
   useEffect(() => {
     const allMatches = [...liveMatches, ...recentResults];
-    const teamMap = new Map<string, TeamFromMatch & { matchCount: number }>();
+    const teamMap = new Map<string, TeamFromMatch>();
     allMatches.forEach((m) => {
       [m.homeTeam, m.awayTeam].forEach((teamName) => {
         if (!teamName) return;
@@ -155,7 +155,6 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
         }
       });
     });
-    // Sort by match count descending, then alphabetically
     const sorted = Array.from(teamMap.values())
       .sort((a, b) => b.matchCount - a.matchCount || a.name.localeCompare(b.name))
       .slice(0, 20);
@@ -166,30 +165,30 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
   useEffect(() => {
     const table = new Map<string, StandingsTeam>();
     recentResults.forEach((m) => {
-      if (!m.homeScore && m.homeScore !== 0) return;
+      if (m.homeScore === null && m.homeScore !== 0) return;
       const homeKey = m.homeTeam.toLowerCase();
       const awayKey = m.awayTeam.toLowerCase();
-      
+
       if (!table.has(homeKey)) table.set(homeKey, { name: m.homeTeam, league: m.league, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, form: [] });
       if (!table.has(awayKey)) table.set(awayKey, { name: m.awayTeam, league: m.league, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, form: [] });
-      
+
       const home = table.get(homeKey)!;
       const away = table.get(awayKey)!;
       const hs = m.homeScore ?? 0;
-      const as = m.awayScore ?? 0;
-      
+      const as_ = m.awayScore ?? 0;
+
       home.played++;
       home.goalsFor += hs;
-      home.goalsAgainst += as;
-      
+      home.goalsAgainst += as_;
+
       away.played++;
-      away.goalsFor += as;
+      away.goalsFor += as_;
       away.goalsAgainst += hs;
-      
-      if (hs > as) {
+
+      if (hs > as_) {
         home.won++; home.points += 3; home.form.push('W');
         away.lost++; away.form.push('L');
-      } else if (hs < as) {
+      } else if (hs < as_) {
         away.won++; away.points += 3; away.form.push('W');
         home.lost++; home.form.push('L');
       } else {
@@ -197,7 +196,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
         away.drawn++; away.points += 1; away.form.push('D');
       }
     });
-    
+
     const sorted = Array.from(table.values())
       .sort((a, b) => b.points - a.points || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst) || b.goalsFor - a.goalsFor)
       .slice(0, 15);
@@ -207,9 +206,9 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
   const openTeamByName = async (teamName: string) => {
     const handleGuess = '@' + teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
     try {
-      const res = await apiFetch(\`/api/users?handle=\${encodeURIComponent(handleGuess)}\`);
+      const res = await apiFetch('/api/users?handle=' + encodeURIComponent(handleGuess));
       if (res.ok) { const u = await res.json(); setViewingUser(apiUserToViewing(u, false)); return; }
-    } catch { }
+    } catch { /* noop */ }
     try {
       const res = await apiFetch('/api/users');
       if (res.ok) {
@@ -217,7 +216,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
         const match = all.find((u: { name: string; role: string }) => u.role === 'team' && u.name.toLowerCase() === teamName.toLowerCase());
         if (match) setViewingUser(apiUserToViewing(match, false));
       }
-    } catch { }
+    } catch { /* noop */ }
   };
 
   const featuredMatch = liveMatches[0];
@@ -236,7 +235,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
             <div className="relative flex items-center justify-between p-3">
               <div className="flex items-center gap-1.5 rounded-full bg-red-500 px-2.5 py-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                <span className="text-[10px] font-bold text-white uppercase tracking-wider">Live &middot; {featuredMatch.minute}&apos;</span>
+                <span className="text-[10px] font-bold text-white uppercase tracking-wider">{'Live \u00b7 '}{featuredMatch.minute}&apos;</span>
               </div>
               <button onClick={(e) => { e.stopPropagation(); setMatchDetailOpen(true); }} className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 border border-white/20 hover:bg-white/20 transition-colors">
                 <Info className="h-3.5 w-3.5 text-white" />
@@ -418,7 +417,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
         </div>
       )}
 
-      {/* ===== TOP ACCOUNTS (fallback to users by followers) ===== */}
+      {/* ===== TOP ACCOUNTS ===== */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <div className="flex items-center gap-2 mb-3">
           <Crown className="h-4 w-4 text-gold" />
@@ -433,9 +432,9 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                 key={item.id}
                 onClick={async () => {
                   try {
-                    const res = await apiFetch(\`/api/users?handle=\${encodeURIComponent(item.handle)}\`);
+                    const res = await apiFetch('/api/users?handle=' + encodeURIComponent(item.handle));
                     if (res.ok) { const u = await res.json(); setViewingUser(apiUserToViewing(u, false)); }
-                  } catch { }
+                  } catch { /* noop */ }
                 }}
                 className="flex items-center gap-3 rounded-xl bg-surface p-2.5 text-left hover:bg-surface-elevated transition-colors w-full"
               >
@@ -461,7 +460,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
         )}
       </div>
 
-      {/* ===== CHOOSE YOUR TEAMS (from match data) ===== */}
+      {/* ===== CHOOSE YOUR TEAMS ===== */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <div className="flex items-center gap-2 mb-3">
           <Flame className="h-4 w-4 text-gold" />
@@ -546,8 +545,7 @@ function CardSkeleton() {
     <div className="glass-card rounded-2xl overflow-hidden">
       <div className="p-4">
         <div className="flex items-center gap-3 mb-3">
-          <div className="h-10 w-10 rounded-full bg-surface animate-pulse" />
-          <div className="flex-1"><div className="h-3 w-24 rounded bg-surface animate-pulse mb-1" /><div className="h-2 w-16 rounded bg-surface animate-pulse" /></div>
+          <div className="h-10 w-10 rounded-full bg-surface animate-pulse" />\n          <div className="flex-1"><div className="h-3 w-24 rounded bg-surface animate-pulse mb-1" /><div className="h-2 w-16 rounded bg-surface animate-pulse" /></div>
         </div>
         <div className="h-3 w-full rounded bg-surface animate-pulse mb-2" /><div className="h-3 w-3/4 rounded bg-surface animate-pulse" />
         <div className="flex items-center justify-between border-t border-surface-border pt-3 mt-3">
@@ -565,8 +563,6 @@ function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }: {
   onPlayerClick: (name: string) => void;
 }) {
   const events = (match.events || []) as Array<{ minute: number; type: string; player: string; team: string }>;
-  const homeGoals = events.filter(e => e.type === 'goal' && e.team === 'home');
-  const awayGoals = events.filter(e => e.type === 'goal' && e.team === 'away');
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
@@ -592,7 +588,7 @@ function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }: {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-bold uppercase text-white/70 tracking-wider">{match.league}</span>
                 <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold uppercase', match.status === 'live' ? 'bg-red-500 text-white' : 'bg-surface text-muted-foreground')}>
-                  {match.status === 'live' ? \`Live \${match.minute}'\` : 'Full Time'}
+                  {match.status === 'live' ? ('Live ' + match.minute + "'") : 'Full Time'}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3">
@@ -623,7 +619,7 @@ function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }: {
                     <span className="text-[10px] font-bold text-muted-foreground w-8 text-right">{e.minute}&apos;</span>
                     <span className={cn('text-[10px] font-bold uppercase w-12', e.team === 'home' ? 'text-emerald-400' : 'text-blue-400')}>{e.team === 'home' ? match.homeTeam.slice(0, 3) : match.awayTeam.slice(0, 3)}</span>
                     <span className={cn('rounded px-1.5 py-0.5 text-[9px] font-bold uppercase', e.type === 'goal' ? 'bg-gold/20 text-gold' : e.type === 'red_card' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400')}>
-                      {e.type === 'goal' ? '⚽' : e.type === 'red_card' ? '🟥' : '🟨'} {e.player}
+                      {e.type === 'goal' ? '\u26bd' : e.type === 'red_card' ? '\ud83d\uddf5' : '\ud83d\udfe8'} {e.player}
                     </span>
                   </div>
                 ))}
