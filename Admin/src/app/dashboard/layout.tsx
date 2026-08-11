@@ -40,14 +40,21 @@ function ClockWidget() {
 }
 
 const NAV = [
-  { href: "/dashboard/admins", label: "🔑 Admin Delegation" },
   { href: '/dashboard', label: '📊 Overview', exact: true },
   { href: '/dashboard/users', label: '👥 Users Manager' },
+  { href: '/dashboard/admins', label: '🔑 Admin Delegation' },
+  { href: '/dashboard/delegation', label: '🤝 Delegation Logs' },
   { href: '/dashboard/sports', label: '🏆 Sports Manager', exact: true },
   { href: '/dashboard/sports-data', label: '🔗 Data Engine' },
   { href: '/dashboard/sports-sync', label: '⚡ Sports Sync' },
   { href: '/dashboard/roles', label: '🛡️ Role Approvals' },
+  { href: '/dashboard/verifications', label: '✅ Verifications' },
   { href: '/dashboard/posts', label: '📝 Content Moderation' },
+  { href: '/dashboard/moderation', label: '🔍 Moderation Queue' },
+  { href: '/dashboard/news', label: '📰 News Manager' },
+  { href: '/dashboard/rumors', label: '💬 Rumors' },
+  { href: '/dashboard/claims', label: '🏷️ Claims' },
+  { href: '/dashboard/ai-agent', label: '🤖 AI Agent' },
   { href: '/dashboard/audit', label: '📜 Audit Log' },
 ];
 
