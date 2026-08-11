@@ -95,10 +95,8 @@ export default function UserProfileViewer() {
         initial={{ opacity: 0, x: '100%' }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: '100%' }}
-        drag="x"
-        dragConstraints={{ left: 0, right: 0 }}
-        onDragEnd={(_, info) => { if (info.offset.x > 120) setViewingUser(null); }}
-        className="fixed inset-0 z-40 bg-background overflow-y-auto touch-pan-y"
+        className="fixed inset-0 z-40 bg-background overflow-y-auto"
+        style={{ touchAction: 'pan-y' }}
       >
         <div className="mx-auto max-w-lg min-h-screen">
           <ProfileCover coverGradient={viewingUser.coverGradient} onBack={() => setViewingUser(null)} />

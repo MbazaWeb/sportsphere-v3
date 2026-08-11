@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { X, Scissors, Play, Pause, Check, Save, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -29,43 +29,52 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
   const MAX_DURATION = type === 'spotlight' ? 30 : 60;
 
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.onloadedmetadata = () => {
-        const dur = videoRef.current!.duration;
-        setDuration(dur);
-        if (dur > MAX_DURATION) {
-          setEndTime(MAX_DURATION);
-        } else {
-          setEndTime(dur);
-        }
-      };
-    }
-  }, [objectUrl, file.type, type]);
+    const video = videoRef.current;
+    if (!video) return;
+    
+    const handleMeta = () => {
+      const dur = video!.duration;
+      if (!isFinite(dur) || dur <= 0) return;
+      setDuration(dur);
+      setEndTime(dur > MAX_DURATION ? MAX_DURATION : dur);
+      setCurrentTime(0);
+      setStartTime(0);
+    };
+    
+    video.addEventListener('loadedmetadata', handleMeta);
+    // If already loaded (cached)
+    if (video.readyState >= 1) handleMeta();
+    
+    return () => video.removeEventListener('loadedmetadata', handleMeta);
+  }, [objectUrl, type]);
 
+  // Pause when reaching the trim end
   useEffect(() => {
-    if (videoRef.current && isPlaying) {
-      if (currentTime >= endTime) {
-        videoRef.current.pause();
-        setIsPlaying(false);
-        setCurrentTime(endTime);
-      }
+    if (!videoRef.current || !isPlaying) return;
+    if (currentTime >= endTime - 0.1) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+      setCurrentTime(endTime);
     }
   }, [currentTime, endTime, isPlaying]);
 
-  const togglePlay = () => {
-    if (!videoRef.current) return;
+  const togglePlay = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
     if (isPlaying) {
-      videoRef.current.pause();
+      video.pause();
       setIsPlaying(false);
     } else {
       if (currentTime >= endTime) {
-        videoRef.current.currentTime = startTime;
+        video.currentTime = startTime;
         setCurrentTime(startTime);
       }
-      videoRef.current.play();
+      video.play().catch(() => {
+        // Autoplay blocked — user needs to interact
+      });
       setIsPlaying(true);
     }
-  };
+  }, [isPlaying, currentTime, endTime, startTime]);
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value);
@@ -73,168 +82,230 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
       videoRef.current.currentTime = time;
     }
     setCurrentTime(time);
-    if (isPlaying && videoRef.current) {
-      videoRef.current.pause();
-      setIsPlaying(false);
-    }
   };
 
-  const handleTimeUpdate = () => {
+  const handleTimeUpdate = useCallback(() => {
     if (videoRef.current) {
       setCurrentTime(videoRef.current.currentTime);
     }
-  };
+  }, []);
 
   const handleMouseDown = (trimType: 'start' | 'end') => (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (trimType === 'start') setIsDraggingStart(true);
     else setIsDraggingEnd(true);
   };
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width;
-      const newTime = Math.max(0, Math.min(duration, x * duration));
+  // Touch support for trim handles
+  const handleTouchStart = (trimType: 'start' | 'end') => (e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (trimType === 'start') setIsDraggingStart(true);
+    else setIsDraggingEnd(true);
+  };
 
-      if (isDraggingStart) {
-        const clamped = Math.min(newTime, endTime - 0.5);
-        setStartTime(clamped);
-        if (videoRef.current && videoRef.current.currentTime < clamped) {
-          videoRef.current.currentTime = clamped;
-          setCurrentTime(clamped);
-        }
-      } else if (isDraggingEnd) {
-        const clamped = Math.max(newTime, startTime + 0.5);
-        setEndTime(Math.min(clamped, MAX_DURATION));
-        if (videoRef.current && videoRef.current.currentTime > clamped) {
-          videoRef.current.currentTime = clamped;
-          setCurrentTime(clamped);
-        }
+  const updateTrimFromPosition = useCallback((clientX: number) => {
+    if (!containerRef.current || !duration) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const newTime = x * duration;
+
+    if (isDraggingStart) {
+      const clamped = Math.min(newTime, endTime - 0.5);
+      setStartTime(Math.max(0, clamped));
+      if (videoRef.current && videoRef.current.currentTime < clamped) {
+        videoRef.current.currentTime = clamped;
       }
-    };
+    } else if (isDraggingEnd) {
+      const clamped = Math.max(newTime, startTime + 0.5);
+      setEndTime(Math.min(clamped, MAX_DURATION, duration));
+      if (videoRef.current && videoRef.current.currentTime > clamped) {
+        videoRef.current.currentTime = clamped;
+      }
+    }
+  }, [isDraggingStart, isDraggingEnd, duration, startTime, endTime]);
 
-    const handleMouseUp = () => {
+  useEffect(() => {
+    if (!isDraggingStart && !isDraggingEnd) return;
+
+    const handleMouseMove = (e: MouseEvent) => updateTrimFromPosition(e.clientX);
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) updateTrimFromPosition(e.touches[0].clientX);
+    };
+    const handleEnd = () => {
       setIsDraggingStart(false);
       setIsDraggingEnd(false);
     };
 
-    if (isDraggingStart || isDraggingEnd) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchend', handleEnd);
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('mouseup', handleEnd);
+      window.removeEventListener('touchend', handleEnd);
     };
-  }, [isDraggingStart, isDraggingEnd, duration, startTime, endTime, type]);
+  }, [isDraggingStart, isDraggingEnd, updateTrimFromPosition]);
 
   // --- Trim using MediaRecorder + canvas capture (browser-native, no FFmpeg needed) ---
   const handleTrimAndSave = async () => {
-    const isTrimmed = startTime > 0.1 || endTime < duration - 0.1;
+    const isTrimmed = startTime > 0.5 || endTime < duration - 0.5;
     
+    // If not meaningfully trimmed, pass original file directly (safest)
     if (!isTrimmed) {
       onSave(file);
       return;
     }
 
     setIsProcessing(true);
-    setProcessingMsg('Preparing video trimmer...');
+    setProcessingMsg('Preparing video...');
 
     try {
- const trimDuration = endTime - startTime;
-  const video = document.createElement('video');
-  video.src = objectUrl;
-  video.muted = true;
-  video.playsInline = true;
-  video.preload = 'auto';
+      // Create an offscreen video element for trimming
+      const trimVideo = document.createElement('video');
+      trimVideo.src = objectUrl;
+      trimVideo.muted = true;
+      trimVideo.playsInline = true;
+      trimVideo.preload = 'auto';
+      
+      // Cross-origin for blob URLs
+      trimVideo.crossOrigin = 'anonymous';
 
-  await new Promise<void>((resolve, reject) => {
-    video.onloadedmetadata = () => resolve();
-    video.onerror = () => reject(new Error('Failed to load video'));
-  });
+      await new Promise<void>((resolve, reject) => {
+        trimVideo.onloadedmetadata = () => resolve();
+        trimVideo.onerror = () => reject(new Error('Failed to load video for trimming'));
+        // Timeout after 15s
+        setTimeout(() => reject(new Error('Video load timeout')), 15000);
+      });
 
-  video.currentTime = startTime;
-  await new Promise<void>(resolve => { video.onseeked = () => resolve(); });
+      trimVideo.currentTime = startTime;
+      await new Promise<void>((resolve, reject) => {
+        trimVideo.onseeked = () => resolve();
+        setTimeout(() => reject(new Error('Seek timeout')), 10000);
+      });
 
-  setProcessingMsg('Trimming video...');
+      setProcessingMsg('Trimming video...');
 
-  const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth || 1280;
-  canvas.height = video.videoHeight || 720;
-  const ctx = canvas.getContext('2d')!;
-
-  // Use the best available codec
-  let mimeType = 'video/webm;codecs=vp9,opus';
-  if (typeof MediaRecorder !== 'undefined' && !MediaRecorder.isTypeSupported(mimeType)) {
-    mimeType = 'video/webm;codecs=vp8,opus';
-    if (!MediaRecorder.isTypeSupported(mimeType)) {
-      mimeType = 'video/webm';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'video/mp4';
+      // Check MediaRecorder support
+      if (typeof MediaRecorder === 'undefined') {
+        throw new Error('MediaRecorder not supported in this browser');
       }
-    }
-  }
 
-  const stream = canvas.captureStream(30);
+      const canvas = document.createElement('canvas');
+      const vw = trimVideo.videoWidth || 1280;
+      const vh = trimVideo.videoHeight || 720;
+      canvas.width = vw;
+      canvas.height = vh;
+      const ctx = canvas.getContext('2d')!;
 
-  // Try to capture audio from the original video
-  try {
- const audioCtx = new AudioContext();
-    const source = audioCtx.createMediaElementSource(video);
-    const dest = audioCtx.createMediaStreamDestination();
-    source.connect(dest);
-    source.connect(audioCtx.destination);
-    dest.stream.getAudioTracks().forEach(track => stream.addTrack(track));
-  } catch {
-    // Audio capture may fail (e.g. CORS) — continue without audio
-  }
+      // Find best supported codec
+      const codecCandidates = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm;codecs=vp9',
+        'video/webm;codecs=vp8',
+        'video/webm',
+      ];
+      let mimeType = '';
+      for (const candidate of codecCandidates) {
+        if (MediaRecorder.isTypeSupported(candidate)) {
+          mimeType = candidate;
+          break;
+        }
+      }
+      if (!mimeType) {
+        throw new Error('No supported video codec found. Try uploading without trimming.');
+      }
 
-  const recorder = new MediaRecorder(stream, {
-    mimeType,
-    videoBitsPerSecond: 2500000,
-  });
+      const stream = canvas.captureStream(30);
 
-  const chunks: Blob[] = [];
-  recorder.ondataavailable = (e) => {
-    if (e.data && e.data.size > 0) chunks.push(e.data);
-  };
+      // Try to capture audio (best-effort, fails silently)
+      try {
+        const audioCtx = new AudioContext();
+        const source = audioCtx.createMediaElementSource(trimVideo);
+        const dest = audioCtx.createMediaStreamDestination();
+        source.connect(dest);
+        source.connect(audioCtx.destination);
+        dest.stream.getAudioTracks().forEach(track => stream.addTrack(track));
+      } catch {
+        // Audio capture failed (CORS, etc.) — continue without audio
+        console.warn('Audio capture failed during trim, continuing without audio');
+      }
 
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    recorder.onstop = () => {
-      const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
-      resolve(new Blob(chunks, { type: mimeType }));
-    };
-    recorder.onerror = () => reject(new Error('Recording failed'));
-    recorder.start(100); // collect data every 100ms
+      const recorder = new MediaRecorder(stream, {
+        mimeType,
+        videoBitsPerSecond: 2500000,
+      });
 
-    video.play();
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunks.push(e.data);
+      };
 
-    const checkEnd = () => {
-      if (video.currentTime >= endTime || video.ended) {
-        video.pause();
-        recorder.stop();
-        stream.getTracks().forEach(t => t.stop());
-      } else {
+      setProcessingMsg('Recording trimmed clip...');
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          recorder.stop();
+          trimVideo.pause();
+          stream.getTracks().forEach(t => t.stop());
+          reject(new Error('Trim recording timed out'));
+        }, (endTime - startTime) * 1000 + 15000); // trim duration + 15s buffer
+
+        recorder.onstop = () => {
+          clearTimeout(timeout);
+          if (chunks.length === 0) {
+            reject(new Error('No video data was recorded'));
+            return;
+          }
+          resolve(new Blob(chunks, { type: mimeType }));
+        };
+        recorder.onerror = (e) => {
+          clearTimeout(timeout);
+          reject(new Error('Recording failed'));
+        };
+        
+        recorder.start(200);
+        trimVideo.play().catch(() => {});
+
+        const checkEnd = () => {
+          if (trimVideo.currentTime >= endTime || trimVideo.ended) {
+            trimVideo.pause();
+            // Small delay to let final frames process
+            setTimeout(() => {
+              if (recorder.state === 'recording') {
+                recorder.stop();
+              }
+              stream.getTracks().forEach(t => t.stop());
+            }, 300);
+          } else {
+            requestAnimationFrame(checkEnd);
+          }
+        };
         requestAnimationFrame(checkEnd);
-      }
-    };
-    requestAnimationFrame(checkEnd);
-  });
+      });
 
-  const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
-  const trimmedFile = new File([blob], file.name.replace(/\.[^.]+$/, `.${ext}`), { type: mimeType });
-  setIsProcessing(false);
-  setProcessingMsg('');
-  onSave(trimmedFile);
+      const ext = mimeType.includes('webm') ? 'webm' : 'mp4';
+      const trimmedFile = new File(
+        [blob],
+        file.name.replace(/\.[^.]+$/, `.${ext}`),
+        { type: mimeType }
+      );
+      
+      setIsProcessing(false);
+      setProcessingMsg('');
+      onSave(trimmedFile);
 
     } catch (err) {
       console.error('Trim processing error:', err);
-      // Fallback: pass original file through if trimming fails
+      // Fallback: pass original file through untrimmed
       setIsProcessing(false);
       setProcessingMsg('');
+      console.warn('Trim failed, uploading original video instead');
       onSave(file);
     }
   };
@@ -247,15 +318,19 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
 
   const getTrimPercentage = (time: number) => (duration > 0 ? (time / duration) * 100 : 0);
 
+  const trimDuration = Math.max(0, endTime - startTime);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-2xl bg-surface-elevated rounded-2xl border border-surface-border overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+      style={{ touchAction: 'none' }}>
+      <div className="w-full max-w-2xl bg-surface-elevated rounded-2xl border border-surface-border overflow-hidden shadow-2xl"
+        style={{ touchAction: 'pan-y' }}>
         
         <div className="p-4 border-b border-surface-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Scissors className="h-4 w-4 text-gold" />
             <h3 className="text-lg font-bold text-white">Trim Video</h3>
-            <span className="text-xs text-muted-foreground ml-1">({Math.round(endTime - startTime)}s)</span>
+            <span className="text-xs text-muted-foreground ml-1">({Math.round(trimDuration)}s)</span>
           </div>
           <button onClick={onCancel} className="p-2 hover:bg-surface rounded-full transition-colors">
             <X className="h-5 w-5 text-muted-foreground" />
@@ -269,6 +344,7 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
             className="w-full rounded-xl aspect-video bg-black object-contain"
             onTimeUpdate={handleTimeUpdate}
             onEnded={() => setIsPlaying(false)}
+            playsInline
           />
         </div>
 
@@ -289,7 +365,7 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
               ref={containerRef}
               className="flex-1 relative h-8 flex items-center cursor-pointer group"
               onClick={(e) => {
-                if (!containerRef.current) return;
+                if (!containerRef.current || !duration) return;
                 const rect = containerRef.current.getBoundingClientRect();
                 const x = (e.clientX - rect.left) / rect.width;
                 const time = Math.max(0, Math.min(duration, x * duration));
@@ -311,19 +387,21 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
                 />
                 <div
                   onMouseDown={handleMouseDown('start')}
+                  onTouchStart={handleTouchStart('start')}
                   className={cn(
-                    "absolute top-1/2 -translate-y-1/2 h-4 w-2 bg-gold rounded-sm cursor-ew-resize z-10 hover:scale-125 transition-transform",
+                    "absolute top-1/2 -translate-y-1/2 h-5 w-3 bg-gold rounded-sm cursor-ew-resize z-10 hover:scale-125 active:scale-125 transition-transform",
                     isDraggingStart && "scale-125 ring-2 ring-gold/50"
                   )}
-                  style={{ left: `${getTrimPercentage(startTime)}%` }}
+                  style={{ left: `calc(${getTrimPercentage(startTime)}% - 6px)` }}
                 />
                 <div
                   onMouseDown={handleMouseDown('end')}
+                  onTouchStart={handleTouchStart('end')}
                   className={cn(
-                    "absolute top-1/2 -translate-y-1/2 h-4 w-2 bg-gold rounded-sm cursor-ew-resize z-10 hover:scale-125 transition-transform",
+                    "absolute top-1/2 -translate-y-1/2 h-5 w-3 bg-gold rounded-sm cursor-ew-resize z-10 hover:scale-125 active:scale-125 transition-transform",
                     isDraggingEnd && "scale-125 ring-2 ring-gold/50"
                   )}
-                  style={{ left: `${getTrimPercentage(endTime)}%` }}
+                  style={{ left: `calc(${getTrimPercentage(endTime)}% - 6px)` }}
                 />
               </div>
             </div>
@@ -374,7 +452,7 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
               ) : (
                 <>
                   <Save className="h-4 w-4" />
-                  Apply & Continue
+                  {trimDuration < duration - 0.5 ? 'Apply Trim & Continue' : 'Use Original & Continue'}
                 </>
               )}
             </button>

@@ -319,8 +319,15 @@
   transform: translateX(-50%) translateY(0%);
 }
 
-/* ── Swipe back gesture — touch action ──────────────────────── */
+/* ── Swipe navigation completely disabled ──────────────────────── */
 .swipe-back-container {
+  touch-action: pan-y;
+}
+
+/* Block ALL horizontal swipe navigation on the main app container */
+#__next,
+main,
+[min-h-screen] {
   touch-action: pan-y;
 }
 

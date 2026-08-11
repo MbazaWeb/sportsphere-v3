@@ -1,12 +1,12 @@
 'use client';
 import SplashScreen from '@/components/SplashScreen';
-import React, { useRef } from 'react';
+import React from 'react';
 
 import { useNavigationStore } from '@/store/navigationStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { useAuthSession } from '@/hooks/useAuthSession';
-import { useSwipeBack } from '@/hooks/useSwipeBack';
+// useSwipeBack intentionally NOT imported — all swipe-to-navigate disabled for mobile UX
 import BottomNav from '@/components/layout/BottomNav';
 import HomeTab from '@/components/home/HomeTab';
 import ScoresTab from '@/components/scores/ScoresTab';
@@ -39,7 +39,7 @@ function Toast() {
 function ProfileTypeOverlay() {
   const viewingProfile    = useUIStore((s) => s.viewingProfile);
   const setViewingProfile = useUIStore((s) => s.setViewingProfile);
-  useSwipeBack({ onBack: () => setViewingProfile(null), enabled: !!viewingProfile });
+  // Swipe-to-dismiss intentionally disabled — users navigate via back button only
   if (!viewingProfile) return null;
   const config = PROFILE_TYPES[viewingProfile as ProfileTypeId];
   if (!config) return null;
@@ -49,15 +49,8 @@ function ProfileTypeOverlay() {
       animate={{ x: 0 }}
       exit={{ x: '100%' }}
       transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-      drag="x"
-      dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={{ left: 0, right: 0.3 }}
-      onDragEnd={(_, info) => {
-        if (info.offset.x > 80 || info.velocity.x > 500) {
-          setViewingProfile(null);
-        }
-      }}
-      className="fixed inset-0 z-40 bg-background overflow-y-auto touch-pan-y"
+      className="fixed inset-0 z-40 bg-background overflow-y-auto"
+      style={{ touchAction: 'pan-y' }}
     >
       <ProfilePage config={config} onBack={() => setViewingProfile(null)} />
     </motion.div>
@@ -69,9 +62,6 @@ function TabContent() {
   const setActiveTab = useNavigationStore((s) => s.setActiveTab);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const setLoginModalOpen = useUIStore((s) => s.setLoginModalOpen);
-  const touchStartX = useRef<number | null>(null);
-  const touchCurrentX = useRef<number | null>(null);
-  const threshold = 60;
 
   // Auth-only tabs — redirect unauthenticated users back to home
   const AUTH_TABS: Array<'home'|'scores'|'create'|'activity'|'profile'> = ['create', 'activity', 'profile'];
@@ -85,26 +75,14 @@ function TabContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
-  const allTabs: Array<'home'|'scores'|'create'|'activity'|'profile'> = ['home','scores','create','activity','profile'];
-  // Only allow swiping within the tabs available to the current user
-  const tabs = isAuthenticated ? allTabs : (['home', 'scores'] as Array<'home'|'scores'|'create'|'activity'|'profile'>);
-
-  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; touchCurrentX.current = e.touches[0].clientX; };
-  const handleTouchMove = (e: React.TouchEvent) => { touchCurrentX.current = e.touches[0].clientX; };
-  const handleTouchEnd = () => {
-    if (touchStartX.current == null || touchCurrentX.current == null) return;
-    const diff = touchCurrentX.current - touchStartX.current;
-    if (Math.abs(diff) < threshold) { touchStartX.current = null; touchCurrentX.current = null; return; }
-    const currentIndex = tabs.indexOf(activeTab as any);
-    if (diff < 0 && currentIndex < tabs.length - 1) setActiveTab(tabs[currentIndex + 1]);
-    if (diff > 0 && currentIndex > 0) setActiveTab(tabs[currentIndex - 1]);
-    touchStartX.current = null; touchCurrentX.current = null;
-  };
+  // All swipe-to-navigate gestures are COMPLETELY DISABLED.
+  // Users navigate only via the bottom nav bar. This prevents accidental
+  // page switches when scrolling or touching the screen on mobile.
   return (
     <AnimatePresence mode="wait">
-      <motion.div key={activeTab} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.15 }} className="mx-auto min-h-screen max-w-lg"
-        onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
+      <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }} transition={{ duration: 0.12 }} className="mx-auto min-h-screen max-w-lg"
+        style={{ touchAction: 'pan-y' }}>
         {activeTab === 'home'     && <HomeTab />}
         {activeTab === 'scores'   && <ScoresTab />}
         {activeTab === 'create'   && <CreateTab />}

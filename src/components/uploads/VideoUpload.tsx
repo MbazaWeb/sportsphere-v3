@@ -1,8 +1,8 @@
 'use client';
 import { apiFetch } from '@/lib/api';
 
-import { useState, useRef } from 'react';
-import { Video as VideoIcon, X, Plus, AlertCircle, VideoOff } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
+import { Video as VideoIcon, X, Plus, AlertCircle, VideoOff, Check } from 'lucide-react';
 import { MediaEditor } from '@/components/media-editor/MediaEditor';
 
 interface VideoUploadProps {
@@ -11,8 +11,8 @@ interface VideoUploadProps {
   type: 'video' | 'spotlight';
 }
 
-const MAX_FILE_SIZE_MB = 100;        // 100 MB hard limit
-const MAX_VIDEOS = 1;                 // one video per post for now
+const MAX_FILE_SIZE_MB = 100;
+const MAX_VIDEOS = 1;
 
 export function VideoUpload({ mediaUrls, onChange, type }: VideoUploadProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -22,26 +22,103 @@ export function VideoUpload({ mediaUrls, onChange, type }: VideoUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState('');
-  const createdUrls = useRef<string[]>([]);
+  const [successMsg, setSuccessMsg] = useState('');
 
   const maxSeconds = type === 'spotlight' ? 30 : 60;
+
+  // ── Get base URL for XHR uploads ──
+  const getBaseUrl = useCallback(() => {
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}${basePath}`;
+    }
+    return basePath;
+  }, []);
+
+  // ── Upload via XMLHttpRequest for real progress tracking ──
+  const uploadFile = useCallback((file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const baseUrl = getBaseUrl();
+      const xhr = new XMLHttpRequest();
+      
+      // Get auth token from cookies (same auth the API route expects)
+      const formData = new FormData();
+      formData.append('file', file);
+
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          setUploadProgress(pct);
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (xhr.status >= 200 && xhr.status < 300 && data.url) {
+            resolve(data.url);
+          } else {
+            reject(new Error(data.error || `Upload failed (HTTP ${xhr.status})`));
+          }
+        } catch {
+          reject(new Error('Invalid server response'));
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        reject(new Error('Network error — check your connection'));
+      });
+
+      xhr.addEventListener('abort', () => {
+        reject(new Error('Upload cancelled'));
+      });
+
+      xhr.open('POST', `${baseUrl}/api/uploads`);
+      // Include credentials (cookies) for auth
+      xhr.withCredentials = true;
+      xhr.send(formData);
+    });
+  }, [getBaseUrl]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     const file = files[0];
     setError('');
+    setSuccessMsg('');
 
+    // Validate type
     if (!file.type.startsWith('video/')) {
       setError('Please select a video file (MP4, WebM, MOV).');
       e.target.value = '';
       return;
     }
-    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-      setError(`Video is too large. Max ${MAX_FILE_SIZE_MB} MB.`);
+
+    // Check iOS MOV type which sometimes reports as empty
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (!file.type.startsWith('video/') && !['mp4', 'webm', 'mov', '3gp'].includes(ext || '')) {
+      setError('File format not recognized. Use MP4, WebM, or MOV.');
       e.target.value = '';
       return;
     }
+
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      setError(`Video is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max ${MAX_FILE_SIZE_MB} MB.`);
+      e.target.value = '';
+      return;
+    }
+
+    // Warn for very large files on slow connections
+    if (file.size > 20 * 1024 * 1024) {
+      const isSlow = typeof navigator !== 'undefined' && 
+        (navigator as any).connection && 
+        (navigator as any).connection.effectiveType && 
+        ['slow-2g', '2g', '3g'].includes((navigator as any).connection.effectiveType);
+      if (isSlow) {
+        setError('Your connection seems slow. For best results, use WiFi or compress the video first.');
+      }
+    }
+
     if (mediaUrls.length >= MAX_VIDEOS) {
       setError(`Maximum ${MAX_VIDEOS} video per post.`);
       e.target.value = '';
@@ -57,43 +134,27 @@ export function VideoUpload({ mediaUrls, onChange, type }: VideoUploadProps) {
 
   const handleEditorSave = async (file: File) => {
     setUploading(true);
-    setUploadProgress(10);
+    setUploadProgress(0);
     setError('');
+    setSuccessMsg('');
+
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const progressTimer = setInterval(() => {
-        setUploadProgress(p => (p < 90 ? p + 3 : p));
-      }, 300);
-
-      const res = await apiFetch('/api/uploads', {
-        method: 'POST',
-        body: formData,
-      });
-
-      clearInterval(progressTimer);
+      const url = await uploadFile(file);
       setUploadProgress(100);
-
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data?.error || 'Upload failed. Please try again.');
-      } else if (data.url) {
-        onChange([...mediaUrls, data.url]);
-      } else {
-        setError('Upload succeeded but no URL was returned.');
-      }
-    } catch (err) {
+      onChange([...mediaUrls, url]);
+      setSuccessMsg('Video uploaded!');
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err: any) {
       console.error('Video upload error:', err);
       const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
       setError(
         offline
-          ? "You're offline. Reconnect and try again — your video wasn't uploaded."
-          : 'Network error. Please check your connection and try again.'
+          ? "You're offline. Reconnect and try again."
+          : (err?.message || 'Upload failed. Try a smaller video or check your connection.')
       );
     } finally {
-      setTimeout(() => setUploadProgress(0), 500);
       setUploading(false);
+      setTimeout(() => setUploadProgress(0), 1000);
       setShowEditor(false);
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       setSelectedFile(null);
@@ -109,11 +170,6 @@ export function VideoUpload({ mediaUrls, onChange, type }: VideoUploadProps) {
   };
 
   const removeMedia = (index: number) => {
-    const removed = mediaUrls[index];
-    if (createdUrls.current.includes(removed)) {
-      URL.revokeObjectURL(removed);
-      createdUrls.current = createdUrls.current.filter(u => u !== removed);
-    }
     onChange(mediaUrls.filter((_, i) => i !== index));
   };
 
@@ -128,6 +184,14 @@ export function VideoUpload({ mediaUrls, onChange, type }: VideoUploadProps) {
           </div>
         )}
 
+        {/* Success banner */}
+        {successMsg && (
+          <div className="flex items-center gap-2 rounded-xl bg-green-500/10 border border-green-500/20 p-3">
+            <Check className="h-4 w-4 text-green-400 flex-shrink-0" />
+            <p className="text-xs text-green-400">{successMsg}</p>
+          </div>
+        )}
+
         {/* Upload progress bar */}
         {uploading && (
           <div className="space-y-1.5">
@@ -137,12 +201,12 @@ export function VideoUpload({ mediaUrls, onChange, type }: VideoUploadProps) {
             </div>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
               <div
-                className="h-full bg-gold transition-all duration-200"
+                className="h-full bg-gold transition-all duration-300 ease-out"
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Keep this page open — large videos can take a minute.
+              Keep this page open — large videos may take a moment.
             </p>
           </div>
         )}
@@ -151,7 +215,18 @@ export function VideoUpload({ mediaUrls, onChange, type }: VideoUploadProps) {
           <div className="grid gap-2 grid-cols-1">
             {mediaUrls.map((url, i) => (
               <div key={i} className="relative aspect-video rounded-xl overflow-hidden bg-surface border border-surface-border">
-                <video src={url} className="h-full w-full object-cover" controls playsInline onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; (e.target as HTMLVideoElement).nextElementSibling?.classList.remove('hidden'); }} />
+                <video 
+                  src={url} 
+                  className="h-full w-full object-cover" 
+                  controls 
+                  playsInline 
+                  preload="metadata"
+                  onError={(e) => { 
+                    const target = e.target as HTMLVideoElement;
+                    target.style.display = 'none'; 
+                    target.nextElementSibling?.classList.remove('hidden'); 
+                  }} 
+                />
                 <div className="hidden absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
                   <VideoOff className="h-8 w-8" />
                   <span className="text-xs">Failed to load video</span>
@@ -186,7 +261,13 @@ export function VideoUpload({ mediaUrls, onChange, type }: VideoUploadProps) {
                 </p>
               )}
             </div>
-            <input ref={fileInputRef} type="file" accept="video/*" onChange={handleFileSelect} className="hidden" />
+            <input 
+              ref={fileInputRef} 
+              type="file" 
+              accept="video/mp4,video/webm,video/quicktime,video/3gpp,video/*" 
+              onChange={handleFileSelect} 
+              className="hidden" 
+            />
           </label>
         )}
       </div>

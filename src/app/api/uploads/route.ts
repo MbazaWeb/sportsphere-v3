@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
+import fsSync from 'fs';
 import path from 'path';
 import { getUserIdFromRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 120; // Up to 2 min for large video uploads on serverless
 
 // Allowed MIME types for uploads
 const ALLOWED_TYPES = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif',
-  'video/mp4', 'video/webm', 'video/quicktime',
+  'video/mp4', 'video/webm', 'video/quicktime', 'video/3gpp',
 ]);
 
-// Max file size: 100 MB (videos can be large; S3/GCS recommended)
+// Also allow by extension for mobile browsers that send empty MIME
+const ALLOWED_EXT = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'mp4', 'webm', 'mov', '3gp']);
+
+// Max file size: 100 MB
 const MAX_BYTES = 100 * 1024 * 1024;
 
 async function uploadToS3(fileName: string, buffer: Buffer, contentType: string) {
@@ -38,24 +43,48 @@ async function uploadToGCS(fileName: string, buffer: Buffer, contentType: string
   return `https://storage.googleapis.com/${bucketName}/${fileName}`;
 }
 
-/**
- * Resolve the REAL public/uploads directory.
- * In standalone mode the cwd may vary, so we use an explicit env var
- * (UPLOAD_DIR) or walk up from __dirname to find the project root.
- */
+/** Resolve the public/uploads directory */
 function resolveUploadDir(): string {
-  // 1) Explicit env override (most reliable for production)
   if (process.env.UPLOAD_DIR) return process.env.UPLOAD_DIR;
-
-  // 2) Derive from the source file location:
-  //    src/app/api/uploads/route.ts  →  projectRoot/public/uploads
   const srcDir = path.resolve(__dirname, '..', '..', '..', '..');
-  const candidate = path.join(srcDir, 'public', 'uploads');
-  return candidate;
+  return path.join(srcDir, 'public', 'uploads');
+}
+
+/** Stream file to disk using Node.js write stream (avoids OOM on large videos) */
+function streamFileToDisk(file: File, filePath: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const dir = path.dirname(filePath);
+    fsSync.mkdirSync(dir, { recursive: true });
+
+    const writeStream = fsSync.createWriteStream(filePath);
+    const webStream = file.stream() as unknown as NodeJS.ReadableStream;
+    const nodeStream = fsSync.Readable.fromWeb(webStream as any);
+
+    let totalBytes = 0;
+
+    nodeStream.on('data', (chunk: Buffer) => {
+      totalBytes += chunk.length;
+      if (totalBytes > MAX_BYTES) {
+        nodeStream.destroy();
+        writeStream.destroy();
+        fsSync.unlinkSync(filePath);
+        reject(new Error(`File exceeds ${MAX_BYTES / 1024 / 1024} MB limit`));
+      }
+    });
+
+    nodeStream.pipe(writeStream);
+
+    writeStream.on('finish', () => resolve(totalBytes));
+    writeStream.on('error', reject);
+    nodeStream.on('error', (err: Error) => {
+      writeStream.destroy();
+      fsSync.unlinkSync(filePath).catch(() => {});
+      reject(err);
+    });
+  });
 }
 
 export async function POST(request: NextRequest) {
-  // Auth check — must be signed in
   const userId = await getUserIdFromRequest(request);
   if (!userId) {
     return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
@@ -66,28 +95,41 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File | null;
     if (!file) return NextResponse.json({ error: 'No file provided.' }, { status: 400 });
 
-    // Validate MIME type
+    // Validate MIME type (allow empty MIME if extension is valid — common on iOS)
     const contentType = file.type || '';
-    if (!ALLOWED_TYPES.has(contentType)) {
-      return NextResponse.json({ error: 'File type not allowed.' }, { status: 400 });
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+
+    if (contentType && !ALLOWED_TYPES.has(contentType)) {
+      return NextResponse.json({
+        error: `File type "${contentType}" not allowed. Use MP4, WebM, MOV, JPEG, PNG, or GIF.`
+      }, { status: 400 });
     }
 
-    // Validate file size
+    if (!contentType && !ALLOWED_EXT.has(ext)) {
+      return NextResponse.json({ error: 'Cannot determine file type. Please use MP4, WebM, MOV format.' }, { status: 400 });
+    }
+
+    // Check size from File metadata (quick reject)
     if (file.size > MAX_BYTES) {
-      return NextResponse.json({ error: 'File exceeds 100 MB limit.' }, { status: 400 });
+      return NextResponse.json({ error: `File is ${(file.size / 1024 / 1024).toFixed(1)} MB. Max is ${MAX_BYTES / 1024 / 1024} MB.` }, { status: 400 });
     }
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // Determine extension from MIME type, falling back to filename
+    const extMap: Record<string, string> = {
+      'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif',
+      'image/webp': 'webp', 'image/avif': 'avif',
+      'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov',
+      'video/3gpp': '3gp',
+    };
+    const finalExt = extMap[contentType] || (ALLOWED_EXT.has(ext) ? ext : 'mp4');
+    const fileName = `${userId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${finalExt}`;
+    const finalContentType = contentType || `video/${finalExt === 'mov' ? 'quicktime' : finalExt}`;
 
-    // Use extension from the allowed MIME type (not from the filename)
-    const ext = contentType.split('/')[1].replace('jpeg', 'jpg');
-    const fileName = `${userId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-
-    // Try cloud providers first, fall back to local filesystem
+    // Try cloud providers first
     if (process.env.AWS_S3_BUCKET && process.env.AWS_REGION) {
       try {
-        const url = await uploadToS3(fileName, buffer, contentType);
+        const arrayBuffer = await file.arrayBuffer();
+        const url = await uploadToS3(fileName, Buffer.from(arrayBuffer), finalContentType);
         return NextResponse.json({ url });
       } catch (err) {
         console.error('S3 upload failed, falling back to local', err);
@@ -96,66 +138,96 @@ export async function POST(request: NextRequest) {
 
     if (process.env.GCS_BUCKET) {
       try {
-        const url = await uploadToGCS(fileName, buffer, contentType);
+        const arrayBuffer = await file.arrayBuffer();
+        const url = await uploadToGCS(fileName, Buffer.from(arrayBuffer), finalContentType);
         return NextResponse.json({ url });
       } catch (err) {
         console.error('GCS upload failed, falling back to local', err);
       }
     }
 
-    // ── Local filesystem fallback ──────────────────────────────
-    // Write to the REAL public/uploads (not the standalone copy).
-    const uploadDir = resolveUploadDir();
-    await fs.mkdir(uploadDir, { recursive: true });
-    const filePath = path.join(process.cwd(), "public", "uploads", path.basename(fileName));
-    await fs.writeFile(filePath, buffer);
-    console.log(`[upload] Written to ${filePath} (${buffer.length} bytes)`);
+    // ── Local filesystem: stream to disk ──
+    const filePath = path.join(process.cwd(), 'public', 'uploads', fileName);
+    const bytesWritten = await streamFileToDisk(file, filePath);
+    console.log(`[upload] Written ${bytesWritten} bytes to ${filePath} (type: ${finalContentType})`);
 
-    // Also ensure the standalone public/uploads has it (for Next.js static serving)
-    const standaloneUploadDir = path.join(
-      path.resolve(uploadDir, '..', '..', '.next', 'standalone', 'public', 'uploads')
+    // Also copy to standalone public/uploads
+    const standaloneDir = path.join(
+      path.resolve(resolveUploadDir(), '..', '..', '.next', 'standalone', 'public', 'uploads')
     );
-    await fs.mkdir(standaloneUploadDir, { recursive: true }).catch(() => {});
-    await fs.copyFile(filePath, path.join(standaloneUploadDir, fileName)).catch(() => {});
+    await fs.mkdir(standaloneDir, { recursive: true }).catch(() => {});
+    await fs.copyFile(filePath, path.join(standaloneDir, fileName)).catch(() => {});
 
     const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
     return NextResponse.json({ url: `${basePath}/uploads/${fileName}` });
-  } catch (error) {
-    console.error('Upload error:', error);
-    return NextResponse.json({ error: 'Upload failed.' }, { status: 500 });
+  } catch (error: any) {
+    console.error('[upload] Error:', error);
+    const msg = error?.message || '';
+    if (msg.includes('exceeds')) {
+      return NextResponse.json({ error: msg }, { status: 400 });
+    }
+    return NextResponse.json({ error: 'Upload failed. Try a smaller file or check your connection.' }, { status: 500 });
   }
 }
 
 /**
- * GET /api/uploads?file=filename  — serve uploaded files as a
- * fallback when nginx can't find them.  This ensures uploads are
- * always accessible even if the nginx alias is misconfigured.
+ * GET /api/uploads?file=filename — serve uploaded files with range request support
+ * for video seeking on mobile browsers.
  */
 export async function GET(request: NextRequest) {
   const fileName = request.nextUrl.searchParams.get('file');
   if (!fileName) {
     return NextResponse.json({ error: 'Missing file param' }, { status: 400 });
   }
-  // Prevent path traversal
   if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
     return NextResponse.json({ error: 'Invalid file name' }, { status: 400 });
   }
 
-  const uploadDir = resolveUploadDir();
-  const filePath = path.join(process.cwd(), "public", "uploads", path.basename(fileName));
+  const filePath = path.join(process.cwd(), 'public', 'uploads', path.basename(fileName));
 
   try {
-    const data = await fs.readFile(/* turbopackIgnore: true */ filePath);
+    const stat = await fs.stat(filePath);
     const ext = path.extname(fileName).toLowerCase();
     const mimeMap: Record<string, string> = {
       '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
       '.gif': 'image/gif', '.webp': 'image/webp', '.avif': 'image/avif',
       '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime',
+      '.3gp': 'video/3gpp',
     };
     const contentType = mimeMap[ext] || 'application/octet-stream';
+
+    // Handle Range requests (essential for video seeking on mobile)
+    const rangeHeader = request.headers.get('range');
+
+    if (rangeHeader) {
+      const parts = rangeHeader.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10) || 0;
+      const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;
+      const chunkSize = end - start + 1;
+
+      const fileBuffer = await fs.readFile(filePath);
+      const chunk = fileBuffer.slice(start, end + 1);
+
+      return new NextResponse(chunk, {
+        status: 206,
+        headers: {
+          'Content-Range': `bytes ${start}-${end}/${stat.size}`,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': String(chunkSize),
+          'Content-Type': contentType,
+          'Cache-Control': 'public, max-age=604800, immutable',
+          'X-Content-Type-Options': 'nosniff',
+        },
+      });
+    }
+
+    // Full file response
+    const data = await fs.readFile(filePath);
     return new NextResponse(data, {
       headers: {
         'Content-Type': contentType,
+        'Content-Length': String(stat.size),
+        'Accept-Ranges': 'bytes',
         'Cache-Control': 'public, max-age=604800, immutable',
         'X-Content-Type-Options': 'nosniff',
       },

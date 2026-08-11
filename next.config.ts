@@ -4,6 +4,12 @@ const nextConfig: NextConfig = {
   output: "standalone",
   basePath: "/sportsphere",
   reactStrictMode: true,
+  serverExternalPackages: ['@aws-sdk/client-s3', '@google-cloud/storage'],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '200mb',
+    },
+  },
   env: {
     NEXT_PUBLIC_BASE_PATH: '/sportsphere',
   },
