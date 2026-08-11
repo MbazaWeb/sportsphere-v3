@@ -380,7 +380,7 @@ html {
    ══════════════════════════════════════════════════════════════════════════ */
 
 /* Crisp rendering on high-DPI displays */
-@supports (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+@supports (-webkit-min-device-pixel-ratio: 2) {
   img, video, canvas, svg {
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;

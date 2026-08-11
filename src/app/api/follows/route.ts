@@ -68,7 +68,7 @@ export async function PATCH() {
     for (const user of allUsers) {
       const followerCount = await db.follow.count({ where: { followingId: user.id } });
       const followingCount = await db.follow.count({ where: { followerId: user.id } });
-      const postCount = await db.post.count({ where: { userId: user.id, isDeleted: false } });
+      const postCount = await db.post.count({ where: { userId: user.id } });
       
       await db.user.update({
         where: { id: user.id },
