@@ -7,7 +7,6 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // Animate progress from 0 → 100 over ~3.6s
     const duration = 3600;
     const interval = 40;
     const steps = duration / interval;
@@ -15,7 +14,6 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
 
     const timer = setInterval(() => {
       current += 1;
-      // Ease-out curve — fast at start, slow near 100
       const pct = Math.round(100 * (1 - Math.pow(1 - current / steps, 2.5)));
       setProgress(Math.min(pct, 100));
       if (current >= steps) clearInterval(timer);
@@ -32,19 +30,17 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
     return () => { clearInterval(timer); clearTimeout(t1); clearTimeout(t2); };
   }, [onDone]);
 
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '/sportsphere';
+
   return (
     <div
       ref={splashRef}
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
-        // 100dvh = dynamic viewport height (adjusts to mobile URL bar show/hide).
-        // 100vh fallback for older browsers (pre-2022).
-        // 100svh = small viewport (always URL-bar-visible) — most conservative fallback.
         width: '100vw',
         height: '100dvh',
         display: 'flex', flexDirection: 'column',
         justifyContent: 'center', alignItems: 'center',
-        // respect the notch / home-indicator safe areas (viewport-fit=cover is set in layout.tsx)
         paddingTop: 'env(safe-area-inset-top)',
         paddingBottom: 'env(safe-area-inset-bottom)',
         paddingLeft: 'env(safe-area-inset-left)',
@@ -59,15 +55,8 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
       <div style={{
         position: 'absolute', bottom: 0, left: 0,
         width: '100%', height: '40%',
-        backgroundImage: `
-          linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(3,8,18,0) 40%, rgba(3,8,18,1) 100%),
-          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 300'%3E%3Cpath d='M0 300 L0 180 Q150 100 300 140 Q450 180 600 120 Q750 60 900 100 Q1050 140 1200 80 L1200 300 Z' fill='%23334466' opacity='0.3'/%3E%3Cpath d='M0 300 L0 220 Q200 160 400 190 Q600 220 800 170 Q1000 120 1200 150 L1200 300 Z' fill='%23223355' opacity='0.25'/%3E%3Ccircle cx='200' cy='60' r='4' fill='%23ffffff' opacity='0.3'/%3E%3Ccircle cx='350' cy='40' r='3' fill='%23ffffff' opacity='0.2'/%3E%3Ccircle cx='500' cy='55' r='4' fill='%23ffffff' opacity='0.25'/%3E%3Ccircle cx='700' cy='35' r='3' fill='%23ffffff' opacity='0.2'/%3E%3Ccircle cx='900' cy='50' r='4' fill='%23ffffff' opacity='0.3'/%3E%3Ccircle cx='1050' cy='40' r='3' fill='%23ffffff' opacity='0.2'/%3E%3C/svg%3E")
-        `,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center bottom',
-        opacity: 0.5,
-        zIndex: 1,
-        pointerEvents: 'none',
+        background: 'linear-gradient(to top, rgba(3,8,18,1) 0%, transparent 100%)',
+        opacity: 0.5, zIndex: 1, pointerEvents: 'none',
       }} />
 
       {/* Giant watermark S */}
@@ -80,7 +69,6 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
         lineHeight: 1,
       }}>S</div>
 
-      {/* Keyframes */}
       <style>{`
         @keyframes logoFloat {
           0%, 100% { transform: translateY(0px); }
@@ -94,24 +82,27 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.6; }
         }
-        /* Older browsers that don't support dvh — fall back to vh via @supports */
         @supports not (height: 100dvh) {
           .splash-root { height: 100vh !important; }
         }
       `}</style>
 
-      {/* Logo */}
+      {/* Logo from public/ folder */}
       <div style={{
         zIndex: 10, width: '60%', maxWidth: 350,
         textAlign: 'center', marginBottom: '6vh',
         animation: 'logoFloat 3s ease-in-out infinite',
       }}>
-        {/* Logo wordmark (lightweight) + fallback */}
-        <img 
-          src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/sportsphere'}/logo-wordmark.svg`} 
-          alt="SportSphere" 
-          onError={(e) => { const t = e.target as HTMLImageElement; if(t.dataset.retry !== '1') { t.dataset.retry = '1'; t.src = `${process.env.NEXT_PUBLIC_BASE_PATH || '/sportsphere'}/logo.svg`; }}}
-          style={{ width: '80%', height: 'auto', display: 'block', margin: '0 auto', filter: 'drop-shadow(0 0 20px rgba(255,196,0,0.3))' }} 
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={basePath + '/logo.svg'}
+          alt="SportSphere Logo"
+          style={{
+            width: '100%',
+            height: 'auto',
+            display: 'block',
+            objectFit: 'contain',
+          }}
         />
       </div>
 
@@ -146,7 +137,7 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
           }} />
         </div>
 
-        {/* Percentage + label — made larger and clearer for mobile legibility */}
+        {/* Percentage + label */}
         <div style={{
           display: 'flex', alignItems: 'center',
           justifyContent: 'space-between', width: '100%',
@@ -168,9 +159,7 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
         </div>
       </div>
 
-      {/* Footer — LIVE. PLAY. CONNECT. + copyright
-          Positioned with safe-area-inset so it never sits behind the iOS home indicator
-          or Android nav bar. Uses dvh-aware bottom so the URL bar can't cover it. */}
+      {/* Footer */}
       <div style={{
         position: 'absolute',
         bottom: 'calc(env(safe-area-inset-bottom, 0px) + 3vh)',
@@ -189,7 +178,7 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
           fontSize: '0.7rem', letterSpacing: '1px',
           marginTop: 10, fontWeight: 500,
         }}>
-          © {new Date().getFullYear()} MbazzaCodes Inc.
+          &copy; {new Date().getFullYear()} MbazzaCodes Inc.
         </div>
       </div>
     </div>
