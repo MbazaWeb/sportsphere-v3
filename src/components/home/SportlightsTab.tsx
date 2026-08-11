@@ -54,6 +54,25 @@ interface ApiSpotlightItem {
   user: ApiUser;
 }
 
+interface TeamFromMatch {
+  name: string;
+  league: string;
+  logo?: string;
+}
+
+interface StandingsTeam {
+  name: string;
+  league: string;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  points: number;
+  form: string[];
+}
+
 interface SportlightsTabProps {
   onShare: (id: string) => void;
   onComment: (id: string) => void;
@@ -64,7 +83,8 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
   const [liveMatches, setLiveMatches] = useState<ApiMatch[]>([]);
   const [recentResults, setRecentResults] = useState<ApiMatch[]>([]);
   const [posts, setPosts] = useState<ApiPost[]>([]);
-  const [teams, setTeams] = useState<Array<{ id: string; name: string; handle: string; avatarUrl?: string | null; avatarInitials: string | null; coverGradient: string }>>([]);
+  const [teams, setTeams] = useState<TeamFromMatch[]>([]);
+  const [standings, setStandings] = useState<StandingsTeam[]>([]);
   const [leaderboard, setLeaderboard] = useState<Array<{ id: string; rank: number; name: string; handle: string; avatarUrl?: string | null; avatarInitials: string | null; points: number; isVerified: boolean; role: string }>>([]);
   const [spotlightItems, setSpotlightItems] = useState<ApiSpotlightItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,13 +106,32 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
       if (feedRes.ok) setPosts(await feedRes.json());
       if (usersRes.ok) {
         const allUsers = await usersRes.json();
-        setTeams(allUsers.filter((u: { role: string }) => u.role === 'team').slice(0, 10));
+        setLeaderboard(allUsers
+          .sort((a: { followerCount: number }, b: { followerCount: number }) => (b.followerCount || 0) - (a.followerCount || 0))
+          .slice(0, 10)
+          .map((u: any, i: number) => ({
+            rank: i + 1,
+            id: u.id,
+            name: u.name,
+            handle: u.handle,
+            avatarUrl: u.avatarUrl,
+            avatarInitials: u.avatarInitials,
+            points: u.followerCount || 0,
+            isVerified: u.isVerified,
+            role: u.role,
+          })));
       }
-      if (leaderboardRes.ok) setLeaderboard(await leaderboardRes.json());
+      if (leaderboardRes.ok) {
+        const lbData = await leaderboardRes.json();
+        if (Array.isArray(lbData) && lbData.length > 0) {
+          setLeaderboard(lbData.slice(0, 10));
+        }
+      }
       if (spotlightRes.ok) setSpotlightItems(await spotlightRes.json());
       if (resultsRes.ok) {
         const results = await resultsRes.json();
-        setRecentResults(Array.isArray(results) ? results.slice(0, 8) : []);
+        const resultsArr = Array.isArray(results) ? results : [];
+        setRecentResults(resultsArr.slice(0, 8));
       }
     } catch (e) { console.error('Feed load error', e); }
     setLoading(false);
@@ -100,10 +139,75 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Extract unique teams from live matches + recent results
+  useEffect(() => {
+    const allMatches = [...liveMatches, ...recentResults];
+    const teamMap = new Map<string, TeamFromMatch & { matchCount: number }>();
+    allMatches.forEach((m) => {
+      [m.homeTeam, m.awayTeam].forEach((teamName) => {
+        if (!teamName) return;
+        const key = teamName.toLowerCase();
+        const existing = teamMap.get(key);
+        if (existing) {
+          existing.matchCount++;
+        } else {
+          teamMap.set(key, { name: teamName, league: m.league, matchCount: 1 });
+        }
+      });
+    });
+    // Sort by match count descending, then alphabetically
+    const sorted = Array.from(teamMap.values())
+      .sort((a, b) => b.matchCount - a.matchCount || a.name.localeCompare(b.name))
+      .slice(0, 20);
+    setTeams(sorted);
+  }, [liveMatches, recentResults]);
+
+  // Build standings from recent results
+  useEffect(() => {
+    const table = new Map<string, StandingsTeam>();
+    recentResults.forEach((m) => {
+      if (!m.homeScore && m.homeScore !== 0) return;
+      const homeKey = m.homeTeam.toLowerCase();
+      const awayKey = m.awayTeam.toLowerCase();
+      
+      if (!table.has(homeKey)) table.set(homeKey, { name: m.homeTeam, league: m.league, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, form: [] });
+      if (!table.has(awayKey)) table.set(awayKey, { name: m.awayTeam, league: m.league, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, form: [] });
+      
+      const home = table.get(homeKey)!;
+      const away = table.get(awayKey)!;
+      const hs = m.homeScore ?? 0;
+      const as = m.awayScore ?? 0;
+      
+      home.played++;
+      home.goalsFor += hs;
+      home.goalsAgainst += as;
+      
+      away.played++;
+      away.goalsFor += as;
+      away.goalsAgainst += hs;
+      
+      if (hs > as) {
+        home.won++; home.points += 3; home.form.push('W');
+        away.lost++; away.form.push('L');
+      } else if (hs < as) {
+        away.won++; away.points += 3; away.form.push('W');
+        home.lost++; home.form.push('L');
+      } else {
+        home.drawn++; home.points += 1; home.form.push('D');
+        away.drawn++; away.points += 1; away.form.push('D');
+      }
+    });
+    
+    const sorted = Array.from(table.values())
+      .sort((a, b) => b.points - a.points || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst) || b.goalsFor - a.goalsFor)
+      .slice(0, 15);
+    setStandings(sorted);
+  }, [recentResults]);
+
   const openTeamByName = async (teamName: string) => {
     const handleGuess = '@' + teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
     try {
-      const res = await apiFetch(`/api/users?handle=${encodeURIComponent(handleGuess)}`);
+      const res = await apiFetch(\`/api/users?handle=\${encodeURIComponent(handleGuess)}\`);
       if (res.ok) { const u = await res.json(); setViewingUser(apiUserToViewing(u, false)); return; }
     } catch { }
     try {
@@ -132,7 +236,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
             <div className="relative flex items-center justify-between p-3">
               <div className="flex items-center gap-1.5 rounded-full bg-red-500 px-2.5 py-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                <span className="text-[10px] font-bold text-white uppercase tracking-wider">Live · {featuredMatch.minute}&apos;</span>
+                <span className="text-[10px] font-bold text-white uppercase tracking-wider">Live &middot; {featuredMatch.minute}&apos;</span>
               </div>
               <button onClick={(e) => { e.stopPropagation(); setMatchDetailOpen(true); }} className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 border border-white/20 hover:bg-white/20 transition-colors">
                 <Info className="h-3.5 w-3.5 text-white" />
@@ -173,7 +277,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
         <MatchDetailModal match={featuredMatch} onClose={() => setMatchDetailOpen(false)} onTeamClick={openTeamByName} onPlayerClick={() => {}} />
       )}
 
-      {/* ===== BIG MATCH RESULT (first result highlighted) ===== */}
+      {/* ===== BIG MATCH RESULT ===== */}
       {bigResult && (
         <div className="relative overflow-hidden rounded-[14px] bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] border border-gold/20 shadow-lg shadow-gold/5">
           <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full blur-3xl" />
@@ -208,7 +312,6 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                 <p className="text-[11px] font-bold text-white text-center leading-tight">{bigResult.awayTeam}</p>
               </div>
             </div>
-            {/* Goal scorers from events */}
             {bigResult.events && bigResult.events.length > 0 && (
               <div className="border-t border-white/10 pt-2.5 mt-1">
                 <div className="flex flex-wrap gap-x-3 gap-y-1">
@@ -264,14 +367,65 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
         <MatchDetailModal match={selectedResult} onClose={() => setSelectedResult(null)} onTeamClick={openTeamByName} onPlayerClick={() => {}} />
       )}
 
-      {/* ===== LEADERBOARD ===== */}
+      {/* ===== STANDINGS TABLE (from match results) ===== */}
+      {standings.length > 0 && (
+        <div className="glass-card rounded-2xl p-4 glass-card-hover">
+          <div className="flex items-center gap-2 mb-3">
+            <BarChart3 className="h-4 w-4 text-gold" />
+            <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Standings</h3>
+            <span className="text-[10px] text-muted-foreground ml-auto">{standings.length} teams</span>
+          </div>
+          <div className="overflow-x-auto scrollbar-hide -mx-1">
+            <table className="w-full text-[10px]">
+              <thead>
+                <tr className="text-muted-foreground uppercase tracking-wider border-b border-surface-border/50">
+                  <th className="py-1.5 pr-1 text-left w-5">#</th>
+                  <th className="py-1.5 pr-1 text-left">Team</th>
+                  <th className="py-1.5 px-1 text-center w-6">P</th>
+                  <th className="py-1.5 px-1 text-center w-6">W</th>
+                  <th className="py-1.5 px-1 text-center w-6">D</th>
+                  <th className="py-1.5 px-1 text-center w-6">L</th>
+                  <th className="py-1.5 px-1 text-center w-8">GD</th>
+                  <th className="py-1.5 pl-1 text-right w-7 font-bold">Pts</th>
+                </tr>
+              </thead>
+              <tbody>
+                {standings.map((team, i) => {
+                  const gd = team.goalsFor - team.goalsAgainst;
+                  return (
+                    <tr key={team.name} className="border-b border-surface-border/20 hover:bg-surface/50 cursor-pointer" onClick={() => openTeamByName(team.name)}>
+                      <td className="py-1.5 pr-1 text-white font-bold">{i + 1}</td>
+                      <td className="py-1.5 pr-1">
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gold/10 text-[8px] font-bold text-gold flex-shrink-0">
+                            {team.name.slice(0, 2).toUpperCase()}
+                          </div>
+                          <span className="text-[10px] font-semibold text-white truncate max-w-[70px]">{team.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-1.5 px-1 text-center text-white/70">{team.played}</td>
+                      <td className="py-1.5 px-1 text-center text-emerald-400 font-bold">{team.won}</td>
+                      <td className="py-1.5 px-1 text-center text-yellow-400 font-bold">{team.drawn}</td>
+                      <td className="py-1.5 px-1 text-center text-red-400 font-bold">{team.lost}</td>
+                      <td className="py-1.5 px-1 text-center text-white/70">{gd > 0 ? '+' : ''}{gd}</td>
+                      <td className="py-1.5 pl-1 text-right text-gold font-black">{team.points}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ===== TOP ACCOUNTS (fallback to users by followers) ===== */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <div className="flex items-center gap-2 mb-3">
           <Crown className="h-4 w-4 text-gold" />
           <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Top Accounts</h3>
         </div>
         {leaderboard.length === 0 ? (
-          <p className="text-xs text-muted-foreground py-2">No leaderboard data.</p>
+          <p className="text-xs text-muted-foreground py-2">No leaderboard data yet.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {leaderboard.slice(0, 5).map((item) => (
@@ -279,7 +433,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                 key={item.id}
                 onClick={async () => {
                   try {
-                    const res = await apiFetch(`/api/users?handle=${encodeURIComponent(item.handle)}`);
+                    const res = await apiFetch(\`/api/users?handle=\${encodeURIComponent(item.handle)}\`);
                     if (res.ok) { const u = await res.json(); setViewingUser(apiUserToViewing(u, false)); }
                   } catch { }
                 }}
@@ -307,7 +461,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
         )}
       </div>
 
-      {/* ===== TEAMS ===== */}
+      {/* ===== CHOOSE YOUR TEAMS (from match data) ===== */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <div className="flex items-center gap-2 mb-3">
           <Flame className="h-4 w-4 text-gold" />
@@ -316,28 +470,17 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
         {teams.length === 0 ? (
           <p className="text-xs text-muted-foreground py-2">No teams available.</p>
         ) : (
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+          <div className="flex flex-wrap gap-2">
             {teams.map((team) => (
               <button
-                key={team.id}
-                onClick={() => {
-                  try {
-                    apiFetch(`/api/users?handle=${encodeURIComponent(team.handle)}`).then(res => {
-                      if (res.ok) res.json().then(u => setViewingUser(apiUserToViewing(u, false)));
-                    });
-                  } catch { }
-                }}
-                className="flex-shrink-0 flex items-center gap-2 rounded-xl bg-surface border border-surface-border px-3 py-2 text-sm font-medium text-white hover:border-gold/30 transition-colors"
+                key={team.name}
+                onClick={() => openTeamByName(team.name)}
+                className="flex-shrink-0 flex items-center gap-2 rounded-xl bg-surface border border-surface-border px-3 py-2 text-sm font-medium text-white hover:border-gold/30 hover:bg-surface-elevated transition-colors"
               >
-                <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-gold/10 text-[10px] font-bold text-gold flex-shrink-0">
-                  {team.avatarUrl ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={team.avatarUrl} alt={team.name} className="h-full w-full object-cover" />
-                  ) : (
-                    team.avatarInitials || team.name.slice(0, 2).toUpperCase()
-                  )}
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gold/10 text-[10px] font-bold text-gold flex-shrink-0">
+                  {team.name.slice(0, 2).toUpperCase()}
                 </div>
-                {team.name}
+                <span className="text-[11px] font-semibold">{team.name}</span>
               </button>
             ))}
           </div>
@@ -449,7 +592,7 @@ function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }: {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-bold uppercase text-white/70 tracking-wider">{match.league}</span>
                 <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold uppercase', match.status === 'live' ? 'bg-red-500 text-white' : 'bg-surface text-muted-foreground')}>
-                  {match.status === 'live' ? `Live ${match.minute}'` : 'Full Time'}
+                  {match.status === 'live' ? \`Live \${match.minute}'\` : 'Full Time'}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3">
@@ -471,7 +614,6 @@ function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }: {
               </div>
             </div>
           </div>
-          {/* Goal events */}
           {events.length > 0 && (
             <div className="glass-card rounded-xl p-3">
               <h4 className="text-xs font-bold text-gold uppercase tracking-wider mb-2">Match Events</h4>
