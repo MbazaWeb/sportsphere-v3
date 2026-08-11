@@ -214,6 +214,9 @@ model User {
   commercialPartnerProfile CommercialPartnerProfile?
   communityProfile         CommunityProfile?
 
+  // ─── Phase D: Push Notifications ────────────────────────────
+  pushTokens               PushToken[]
+
   // ─── Phase 5: Performance Engine relations ───────────────────
   performanceProfile       PerformanceProfile?
   performanceEvents        PerformanceEvent[]
@@ -1400,5 +1403,19 @@ model PerformanceAnomaly {
 
   @@index([status])
   @@index([anomalyType])
+  @@index([userId])
+}
+
+// ─── Phase D: Push Notifications ─────────────────────────────
+model PushToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  platform  String?  // 'ios' | 'android'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
 }
