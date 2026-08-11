@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
-import fsSync from 'fs';
+import fsSync, { Readable } from 'fs';
 import path from 'path';
 import { getUserIdFromRequest } from '@/lib/auth';
 
@@ -57,8 +57,8 @@ function streamFileToDisk(file: File, filePath: string): Promise<number> {
     fsSync.mkdirSync(dir, { recursive: true });
 
     const writeStream = fsSync.createWriteStream(filePath);
-    const webStream = file.stream() as unknown as NodeJS.ReadableStream;
-    const nodeStream = fsSync.Readable.fromWeb(webStream as any);
+    const webStream = file.stream();
+    const nodeStream = Readable.fromWeb(webStream as any);
 
     let totalBytes = 0;
 
@@ -78,7 +78,7 @@ function streamFileToDisk(file: File, filePath: string): Promise<number> {
     writeStream.on('error', reject);
     nodeStream.on('error', (err: Error) => {
       writeStream.destroy();
-      fsSync.unlinkSync(filePath).catch(() => {});
+      try { fsSync.unlinkSync(filePath); } catch {}
       reject(err);
     });
   });
