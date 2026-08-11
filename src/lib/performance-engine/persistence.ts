@@ -15,14 +15,14 @@
 // All point changes go through PerformancePointTransaction — never
 // direct UPDATE on PerformanceProfile.totalPoints.
 
-import { db } from '@/lib/db';
-import { safeJsonParse } from '@/lib/json';
+import { db } from '../db';
+import { safeJsonParse } from '../json';
 import { computePerformanceFromTypedProfile } from './adapter';
 import { computeDecay, computeImprovementOpportunities } from './calculator';
 import { resolvePositionGroup, resolveAgeGroup } from './positions';
 import { buildCategoryBucket } from './calculator';
 import type { ComputedPerformance } from './types';
-import { sendNotification } from '@/lib/notifications';
+import { sendNotification } from '../notifications';
 
 // ─── Fetch cached profile ────────────────────────────────────
 export async function getPerformanceProfile(userId: string) {

@@ -69,3 +69,31 @@ export function rateLimitResponse(usage: any) {
     }
   );
 }
+
+/**
+ * Legacy rateLimit function for backward compatibility.
+ * (Simple implementation for auth routes)
+ */
+const legacyCache = new LRUCache<string, { count: number; resetAt: number }>({
+  max: 5000,
+  ttl: 15 * 60 * 1000, // 15 mins default
+});
+
+export function rateLimit(ip: string, options: { maxRequests: number; windowMs: number }) {
+  const key = `${ip}:${options.maxRequests}:${options.windowMs}`;
+  const now = Date.now();
+  let entry = legacyCache.get(key);
+
+  if (!entry || now > entry.resetAt) {
+    entry = { count: 1, resetAt: now + options.windowMs };
+  } else {
+    entry.count += 1;
+  }
+
+  legacyCache.set(key, entry);
+
+  return {
+    success: entry.count <= options.maxRequests,
+    resetAt: entry.resetAt,
+  };
+}
