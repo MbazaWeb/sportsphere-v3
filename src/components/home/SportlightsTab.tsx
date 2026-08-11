@@ -58,6 +58,12 @@ interface TeamFromMatch {
   name: string;
   league: string;
   matchCount: number;
+  id?: string;
+  handle?: string;
+  avatarUrl?: string | null;
+  avatarInitials?: string | null;
+  isVerified?: boolean;
+  isSeeded?: boolean;
 }
 
 interface StandingsTeam {
@@ -84,6 +90,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
   const [recentResults, setRecentResults] = useState<ApiMatch[]>([]);
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [teams, setTeams] = useState<TeamFromMatch[]>([]);
+  const [seededTeams, setSeededTeams] = useState<TeamFromMatch[]>([]);
   const [standings, setStandings] = useState<StandingsTeam[]>([]);
   const [leaderboard, setLeaderboard] = useState<Array<{ id: string; rank: number; name: string; handle: string; avatarUrl?: string | null; avatarInitials: string | null; points: number; isVerified: boolean; role: string }>>([]);
   const [spotlightItems, setSpotlightItems] = useState<ApiSpotlightItem[]>([]);
@@ -106,6 +113,22 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
       if (feedRes.ok) setPosts(await feedRes.json());
       if (usersRes.ok) {
         const allUsers = await usersRes.json();
+        // Extract team accounts for Choose Your Teams
+        const teamAccounts = allUsers
+          .filter((u: { role: string }) => u.role === 'team')
+          .map((u: any) => ({
+            id: u.id,
+            name: u.name,
+            league: (u.roleData && typeof u.roleData === 'object' ? u.roleData.league : null) || u.roleProfile?.league || 'Premier League',
+            matchCount: 0,
+            handle: u.handle,
+            avatarUrl: u.avatarUrl,
+            avatarInitials: u.avatarInitials,
+            isVerified: u.isVerified,
+            isSeeded: true,
+          }))
+          .sort((a: TeamFromMatch, b: TeamFromMatch) => a.name.localeCompare(b.name));
+        setSeededTeams(teamAccounts);
         setLeaderboard(allUsers
           .sort((a: { followerCount: number }, b: { followerCount: number }) => (b.followerCount || 0) - (a.followerCount || 0))
           .slice(0, 10)
@@ -139,10 +162,15 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Extract unique teams from live matches + recent results
+  // Build teams list: seeded team accounts + teams from live/recent matches
   useEffect(() => {
-    const allMatches = [...liveMatches, ...recentResults];
     const teamMap = new Map<string, TeamFromMatch>();
+    // Start with seeded team accounts (from DB)
+    seededTeams.forEach((t) => {
+      teamMap.set(t.name.toLowerCase(), t);
+    });
+    // Merge in teams from match data (add matchCount)
+    const allMatches = [...liveMatches, ...recentResults];
     allMatches.forEach((m) => {
       [m.homeTeam, m.awayTeam].forEach((teamName) => {
         if (!teamName) return;
@@ -156,10 +184,15 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
       });
     });
     const sorted = Array.from(teamMap.values())
-      .sort((a, b) => b.matchCount - a.matchCount || a.name.localeCompare(b.name))
+      .sort((a, b) => {
+        // Seeded teams first, then by match count, then alphabetical
+        if (a.isSeeded && !b.isSeeded) return -1;
+        if (!a.isSeeded && b.isSeeded) return 1;
+        return b.matchCount - a.matchCount || a.name.localeCompare(b.name);
+      })
       .slice(0, 20);
     setTeams(sorted);
-  }, [liveMatches, recentResults]);
+  }, [liveMatches, recentResults, seededTeams]);
 
   // Build standings from recent results
   useEffect(() => {
@@ -460,11 +493,12 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
         )}
       </div>
 
-      {/* ===== CHOOSE YOUR TEAMS ===== */}
+      {/* ===== CHOOSE YOUR TEAMS (seeded accounts + match data) ===== */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <div className="flex items-center gap-2 mb-3">
           <Flame className="h-4 w-4 text-gold" />
           <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Choose Your Teams</h3>
+          <span className="text-[10px] text-muted-foreground ml-auto">{teams.length} teams</span>
         </div>
         {teams.length === 0 ? (
           <p className="text-xs text-muted-foreground py-2">No teams available.</p>
@@ -472,14 +506,30 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
           <div className="flex flex-wrap gap-2">
             {teams.map((team) => (
               <button
-                key={team.name}
-                onClick={() => openTeamByName(team.name)}
-                className="flex-shrink-0 flex items-center gap-2 rounded-xl bg-surface border border-surface-border px-3 py-2 text-sm font-medium text-white hover:border-gold/30 hover:bg-surface-elevated transition-colors"
+                key={team.id || team.name}
+                onClick={() => {
+                  if (team.handle) {
+                    apiFetch('/api/users?handle=' + encodeURIComponent(team.handle)).then(res => {
+                      if (res.ok) res.json().then(u => setViewingUser(apiUserToViewing(u, false)));
+                    });
+                  } else {
+                    openTeamByName(team.name);
+                  }
+                }}
+                className="flex-shrink-0 flex items-center gap-2 rounded-xl bg-surface border border-surface-border px-3 py-2 hover:border-gold/30 hover:bg-surface-elevated transition-colors"
               >
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gold/10 text-[10px] font-bold text-gold flex-shrink-0">
-                  {team.name.slice(0, 2).toUpperCase()}
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gold/10 text-[10px] font-bold text-gold flex-shrink-0">
+                  {team.avatarUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={team.avatarUrl} alt={team.name} className="h-full w-full object-cover rounded-full" />
+                  ) : (
+                    team.avatarInitials || team.name.slice(0, 2).toUpperCase()
+                  )}
                 </div>
-                <span className="text-[11px] font-semibold">{team.name}</span>
+                <div className="flex flex-col items-start">
+                  <span className="text-[11px] font-semibold text-white leading-tight">{team.name}</span>
+                  <span className="text-[9px] text-muted-foreground">{team.league}</span>
+                </div>
               </button>
             ))}
           </div>
