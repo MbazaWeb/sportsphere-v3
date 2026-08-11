@@ -2,9 +2,9 @@
 import { apiFetch } from '@/lib/api';
 const FALLBACK_SPORTS = ["Football", "Basketball", "Tennis", "Cricket", "Rugby", "Athletics", "Swimming", "Boxing", "Volleyball", "Formula 1"];
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { X, Sparkles, Search, ShieldCheck, Loader2 } from 'lucide-react';
+import { X, Sparkles, Search, ShieldCheck, Loader2, Check, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 
@@ -22,14 +22,41 @@ interface RegistrationFanStepProps {
   onComplete: (data: RegistrationData) => void;
 }
 
+/**
+ * Generate a handle from a full name.
+ * "David Mbazza" → "davidmbazza"
+ * Strips accents, lowers case, removes non-alphanumeric, joins parts.
+ */
+function handleFromName(fullName: string): string {
+  return fullName
+    .trim()
+    .toLowerCase()
+    // Normalize accented characters (é → e, ñ → n, etc.)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    // Split on any non-letter/number character
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+    .join('')
+    .slice(0, 30);
+}
+
+type HandleStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
+
 export function RegistrationFanStep({ onBack, onComplete }: RegistrationFanStepProps) {
   // Common fields
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [handle, setHandle] = useState('');
+  const [handleManuallyEdited, setHandleManuallyEdited] = useState(false);
+  const [handleStatus, setHandleStatus] = useState<HandleStatus>('idle');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [sports, setSports] = useState<string[]>([]);
+  const [submitError, setSubmitError] = useState('');
+
+  // Debounce timer for handle check
+  const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Role selection
   const [mode, setMode] = useState<'fan' | 'pro'>('fan');
@@ -59,6 +86,67 @@ export function RegistrationFanStep({ onBack, onComplete }: RegistrationFanStepP
     return () => { cancelled = true; };
   }, []);
 
+  // ─── Auto-generate handle from name ───────────────────────
+  useEffect(() => {
+    if (handleManuallyEdited) return; // Don't overwrite user edits
+    const generated = handleFromName(name);
+    if (generated.length >= 2) {
+      setHandle('@' + generated);
+    } else if (name.trim() === '') {
+      setHandle('');
+      setHandleStatus('idle');
+    }
+  }, [name, handleManuallyEdited]);
+
+  // ─── Check handle availability (debounced) ────────────────
+  useEffect(() => {
+    if (checkTimer.current) clearTimeout(checkTimer.current);
+
+    const raw = handle.replace(/^@/, '').trim();
+
+    // Validate format first
+    if (!raw) {
+      setHandleStatus('idle');
+      return;
+    }
+    if (!/^[a-zA-Z0-9_-]{3,30}$/.test(raw)) {
+      setHandleStatus('invalid');
+      return;
+    }
+
+    setHandleStatus('checking');
+
+    checkTimer.current = setTimeout(async () => {
+      try {
+        const res = await apiFetch(`/api/auth/check-handle?handle=${encodeURIComponent(raw)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setHandleStatus(data.available ? 'available' : 'taken');
+        } else {
+          setHandleStatus('idle'); // API error, don't block
+        }
+      } catch {
+        setHandleStatus('idle');
+      }
+    }, 400);
+
+    return () => { if (checkTimer.current) clearTimeout(checkTimer.current); };
+  }, [handle]);
+
+  // Handle user manually editing the handle
+  const handleHandleChange = useCallback((v: string) => {
+ setHandleManuallyEdited(true);
+    const cleaned = v.startsWith('@') ? v : '@' + v;
+    setHandle(cleaned);
+  }, []);
+
+  // Reset manual edit flag when name changes (allow re-generation)
+  useEffect(() => {
+    if (name.trim().length > 0) {
+      setHandleManuallyEdited(false);
+    }
+  }, [name]);
+
   // Fetch roles when PRO mode selected
   const fetchRoles = useCallback(async () => {
     setRolesLoading(true);
@@ -78,7 +166,8 @@ export function RegistrationFanStep({ onBack, onComplete }: RegistrationFanStepP
 
   const toggleSport = (s: string) => setSports(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
   const passwordsMatch = password && confirm && password === confirm;
-  const formValid = name.trim() && email.trim() && handle.trim() && password.length >= 8 && passwordsMatch;
+  const handleValid = handleStatus === 'available';
+  const formValid = name.trim() && email.trim() && handleValid && password.length >= 8 && passwordsMatch;
   const proValid = formValid && selectedRole && selectedType;
   const canSubmit = mode === 'fan' ? formValid : proValid;
 
@@ -107,8 +196,9 @@ export function RegistrationFanStep({ onBack, onComplete }: RegistrationFanStepP
     return m;
   }, [filteredRoles]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!canSubmit) return;
+    setSubmitError('');
     onComplete({
       name, email, handle, password, sports,
       roleId: selectedRole?.id,
@@ -122,6 +212,24 @@ export function RegistrationFanStep({ onBack, onComplete }: RegistrationFanStepP
     setSelectedRole(r);
     setSelectedType(null); // reset type when role changes
   };
+
+  // Handle status UI
+  const handleRaw = handle.replace(/^@/, '').trim();
+  const handleStatusUI = useMemo(() => {
+    if (!handleRaw) return null;
+    switch (handleStatus) {
+      case 'checking':
+        return <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Checking...</div>;
+      case 'available':
+        return <div className="flex items-center gap-1.5 text-xs text-emerald-400"><Check className="h-3 w-3" /> Available</div>;
+      case 'taken':
+        return <div className="flex items-center gap-1.5 text-xs text-red-400"><XCircle className="h-3 w-3" /> Taken — try another</div>;
+      case 'invalid':
+        return <div className="flex items-center gap-1.5 text-xs text-amber-400"><XCircle className="h-3 w-3" /> 3-30 chars, letters, numbers, _ or -</div>;
+      default:
+        return null;
+    }
+  }, [handleStatus, handleRaw]);
 
   return (
     <div className="flex flex-col">
@@ -155,25 +263,56 @@ export function RegistrationFanStep({ onBack, onComplete }: RegistrationFanStepP
 
       {/* ─── Common Fields ───────────────────────────── */}
       <div className="flex flex-col gap-2.5 sm:gap-3 mb-3 sm:mb-4">
-        {[
-          { label: 'Full Name', value: name, onChange: setName, placeholder: 'Your full name' },
-          { label: 'Email', value: email, onChange: setEmail, placeholder: 'your@email.com', type: 'email' },
-          { label: 'Handle', value: handle, onChange: (v: string) => setHandle(v.startsWith('@') ? v : '@' + v), placeholder: '@yourhandle' },
-        ].map(({ label, value, onChange, placeholder, type }) => (
-          <div key={label}>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">{label}</label>
-            <input
-              type={type || 'text'}
-              value={value} onChange={e => onChange(e.target.value)}
-              placeholder={placeholder}
-              className="w-full rounded-xl bg-surface border border-surface-border px-4 py-2.5 sm:py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold transition-colors"
-            />
-          </div>
-        ))}
+        {/* Full Name */}
+        <div>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">Full Name</label>
+          <input
+            type="text"
+            value={name} onChange={e => setName(e.target.value)}
+            placeholder="Your full name"
+            className="w-full rounded-xl bg-surface border border-surface-border px-4 py-2.5 sm:py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold transition-colors"
+          />
+        </div>
+
+        {/* Email */}
+        <div>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">Email</label>
+          <input
+            type="email"
+            value={email} onChange={e => setEmail(e.target.value)}
+            placeholder="your@email.com"
+            className="w-full rounded-xl bg-surface border border-surface-border px-4 py-2.5 sm:py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold transition-colors"
+          />
+        </div>
+
+        {/* Handle — auto-generated from name, editable */}
+        <div>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">Handle</label>
+          <input
+            type="text"
+            value={handle} onChange={e => handleHandleChange(e.target.value)}
+            placeholder="@yourhandle"
+            className={cn(
+              'w-full rounded-xl bg-surface border px-4 py-2.5 sm:py-3 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 transition-colors',
+              handleStatus === 'available' ? 'border-emerald-500/50 focus:ring-emerald-400' :
+              handleStatus === 'taken' ? 'border-red-500/50 focus:ring-red-400' :
+              handleStatus === 'invalid' ? 'border-amber-500/50 focus:ring-amber-400' :
+              'border-surface-border focus:ring-gold'
+            )}
+          />
+          {handleStatusUI}
+          {!handleManuallyEdited && handleRaw.length >= 3 && (
+            <p className="mt-1 text-[10px] text-muted-foreground/60">Auto-generated from your name — tap to edit</p>
+          )}
+        </div>
+
+        {/* Password */}
         <div>
           <label className="mb-1 block text-xs font-medium text-muted-foreground">Password <span className="text-muted-foreground/70">(min 8 chars)</span></label>
           <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" placeholder="At least 8 characters" />
         </div>
+
+        {/* Confirm Password */}
         <div>
           <label className="mb-1 block text-xs font-medium text-muted-foreground">Confirm Password</label>
           <PasswordInput
@@ -278,6 +417,11 @@ export function RegistrationFanStep({ onBack, onComplete }: RegistrationFanStepP
           <p className="mt-2 text-[11px] text-muted-foreground">{sports.length} sport{sports.length !== 1 ? 's' : ''} selected</p>
         )}
       </div>
+
+      {/* ─── Error message ────────────────────────────── */}
+      {submitError && (
+        <p className="mb-3 text-xs text-red-400 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2">{submitError}</p>
+      )}
 
       {/* ─── Submit ───────────────────────────────────── */}
       <button onClick={handleSubmit} disabled={!canSubmit}

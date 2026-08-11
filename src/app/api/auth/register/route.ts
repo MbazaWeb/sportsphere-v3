@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     'unknown';
 
   const { success, resetAt } = rateLimit(ip, {
-    maxRequests: 5,
+    maxRequests: 10,
     windowMs: 60 * 60 * 1000,
   });
 
