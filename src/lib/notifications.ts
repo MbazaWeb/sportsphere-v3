@@ -1,77 +1,73 @@
-import { Expo, ExpoPushMessage } from 'expo-server-sdk';
 import { db } from './db';
 
-const expo = new Expo();
+async function getExpoClient() {
+  if (typeof window !== 'undefined') return null;
+  const { Expo } = await import('expo-server-sdk');
+  return new Expo();
+}
 
-export interface SendPushNotificationOptions {
+export interface NotificationOptions {
   userId: string;
   title: string;
   body: string;
-  data?: any;
-  type: string;
-  referenceId?: string;
-  actorId?: string;
+  type?: string;
+  data?: Record<string, any>;
+  [key: string]: any;
 }
 
-/**
- * Creates a notification in the database AND sends a push notification
- * to all registered devices for that user.
- */
-export async function sendNotification(options: SendPushNotificationOptions) {
-  const { userId, title, body, data, type, referenceId, actorId } = options;
+export async function sendNotification(
+  userIdOrOptions: string | NotificationOptions,
+  title?: string,
+  body?: string,
+  data?: Record<string, any>
+) {
+  if (typeof window !== 'undefined') return;
+
+  let targetUserId: string;
+  let notifTitle: string;
+  let notifBody: string;
+  let notifData: Record<string, any> | undefined = data;
+
+  if (typeof userIdOrOptions === 'object' && userIdOrOptions !== null) {
+    targetUserId = userIdOrOptions.userId;
+    notifTitle = userIdOrOptions.title;
+    notifBody = userIdOrOptions.body;
+    notifData = userIdOrOptions.data || (userIdOrOptions.type ? { type: userIdOrOptions.type, ...userIdOrOptions } : undefined);
+  } else {
+    targetUserId = userIdOrOptions;
+    notifTitle = title || 'Notification';
+    notifBody = body || '';
+  }
 
   try {
-    // 1. Create the database record
-    const notification = await db.notification.create({
-      data: {
-        userId,
-        type,
-        title,
-        body,
-        actorId,
-        referenceId,
-      },
+    const expo = await getExpoClient();
+    if (!expo) return;
+
+    const user = await db.user.findUnique({
+      where: { id: targetUserId },
+      select: { pushTokens: true },
     });
 
-    // 2. Fetch all push tokens for this user
-    const pushTokens = await db.pushToken.findMany({
-      where: { userId },
-    });
+    if (!user?.pushTokens) return;
 
-    if (pushTokens.length === 0) {
-      return notification;
-    }
+    // Handle string, token object, or array of token objects/strings
+    const rawTokens = Array.isArray(user.pushTokens) ? user.pushTokens : [user.pushTokens];
+    const validTokens: string[] = rawTokens
+      .map((t: any) => (typeof t === 'string' ? t : t?.token))
+      .filter((token): token is string => typeof token === 'string' && token.trim().length > 0);
 
-    // 3. Prepare messages
-    const messages: ExpoPushMessage[] = [];
-    for (const pushToken of pushTokens) {
-      if (!Expo.isExpoPushToken(pushToken.token)) {
-        console.error(`Push token ${pushToken.token} is not a valid Expo push token`);
-        continue;
-      }
+    if (validTokens.length === 0) return;
 
-      messages.push({
-        to: pushToken.token,
-        sound: 'default',
-        title,
-        body,
-        data: { ...data, type, referenceId, notificationId: notification.id },
-      });
-    }
+    const messages = validTokens.map((to) => ({
+      to,
+      sound: 'default' as const,
+      title: notifTitle,
+      body: notifBody,
+      data: notifData,
+    }));
 
-    // 4. Send messages in chunks
-    const chunks = expo.chunkPushNotifications(messages);
-    for (const chunk of chunks) {
-      try {
-        await expo.sendPushNotificationsAsync(chunk);
-      } catch (error) {
-        console.error('Error sending push notification chunk:', error);
-      }
-    }
-
-    return notification;
+    await expo.sendPushNotificationsAsync(messages);
   } catch (error) {
-    console.error('Error in sendNotification:', error);
-    throw error;
+    console.error('Error sending push notification:', error);
   }
 }

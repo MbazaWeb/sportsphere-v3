@@ -1,3 +1,5 @@
+
+
 'use client';
 import SplashScreen from '@/components/SplashScreen';
 import React, { useCallback, useRef } from 'react';
@@ -58,19 +60,21 @@ function ProfileTypeOverlay() {
   );
 }
 
+const AUTH_TABS = ['create', 'activity', 'profile'] as const;
+
 function TabContent() {
   const activeTab = useNavigationStore((s) => s.activeTab);
   const setActiveTab = useNavigationStore((s) => s.setActiveTab);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const setLoginModalOpen = useUIStore((s) => s.setLoginModalOpen);
 
-  const AUTH_TABS: Array<'home'|'scores'|'create'|'activity'|'profile'> = ['create', 'activity', 'profile'];
+  
   React.useEffect(() => {
-    if (!isAuthenticated && AUTH_TABS.includes(activeTab as typeof AUTH_TABS[number])) {
+    if (!isAuthenticated && (AUTH_TABS as readonly string[]).includes(activeTab)) {
       setActiveTab('home');
       setLoginModalOpen(true);
     }
-  }, [activeTab]);
+  }, [activeTab, isAuthenticated, setActiveTab, setLoginModalOpen]);
 
   return (
     <AnimatePresence mode="wait">

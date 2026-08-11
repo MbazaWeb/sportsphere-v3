@@ -1,3 +1,15 @@
+
+// Helper to call sendNotification dynamically on the server only
+async function safeSendNotification(...args: any[]) {
+  if (typeof window === 'undefined') {
+    try {
+      const { sendNotification } = await import('../notifications');
+      await safeSendNotification(...args as [any, any, any]);
+    } catch (err: unknown) {
+      console.error('Failed to send dynamic notification:', err);
+    }
+  }
+}
 // ─── Performance Engine — Persistence Layer ───────────────────────
 //
 // Prisma-backed functions. The pure calculator (calculator.ts) does
@@ -22,7 +34,7 @@ import { computeDecay, computeImprovementOpportunities } from './calculator';
 import { resolvePositionGroup, resolveAgeGroup } from './positions';
 import { buildCategoryBucket } from './calculator';
 import type { ComputedPerformance } from './types';
-import { sendNotification } from '../notifications';
+// 
 
 // ─── Fetch cached profile ────────────────────────────────────
 export async function getPerformanceProfile(userId: string) {
@@ -221,7 +233,7 @@ export async function recalcPerformanceProfile(userId: string): Promise<void> {
   // Notify on tier change
   if (prevTier && prevTier !== tierMeta.tier) {
     const isPromotion = compareTiers(tierMeta.tier, prevTier) > 0;
-    sendNotification({
+    safeSendNotification({
       userId,
       type: 'rank_change',
       title: isPromotion ? 'Tier Promotion! 🎉' : 'Tier Update',
@@ -369,7 +381,7 @@ async (tx: any) => {
     await recalcPerformanceProfile(input.userId);
 
     // Notify user of points earned
-    sendNotification({
+    safeSendNotification({
       userId: input.userId,
       type: 'performance',
       title: 'Performance Points Earned!',
