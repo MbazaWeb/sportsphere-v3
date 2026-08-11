@@ -1,6 +1,6 @@
 'use client';
 import SplashScreen from '@/components/SplashScreen';
-import React from 'react';
+import React, { useCallback, useRef } from 'react';
 
 import { useNavigationStore } from '@/store/navigationStore';
 import { useAuthStore } from '@/store/authStore';
@@ -21,6 +21,7 @@ import ProfilePage from '@/components/profiles/ProfilePage';
 import UserProfileViewer from '@/components/profiles/UserProfileViewer';
 import { PROFILE_TYPES, type ProfileTypeId } from '@/components/profiles/profileConfig';
 import { AnimatePresence, motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import { useServiceWorker } from '@/hooks/useServiceWorker';
 import { useOfflinePostSync } from '@/hooks/useOfflinePostSync';
 
@@ -93,11 +94,32 @@ function TabContent() {
   );
 }
 
+/**
+ * Invisible touch zone at the very bottom of the screen.
+ * Tapping it reveals the hidden bottom navigation bar.
+ */
+function NavRevealZone() {
+  const showNav = useNavigationStore((s) => s.showNav);
+  const handleTouch = useCallback(() => {
+    showNav();
+  }, [showNav]);
+
+  return (
+    <div
+      className="fixed bottom-0 inset-x-0 z-[45] h-8 cursor-pointer"
+      onTouchStart={handleTouch}
+      onMouseDown={handleTouch}
+      aria-hidden="true"
+    />
+  );
+}
+
 export default function Home() {
   const [splashDone, setSplashDone] = React.useState(false);
   const [verifyEmailOpen, setVerifyEmailOpen] = React.useState(false);
   const viewingProfile = useUIStore((s) => s.viewingProfile);
   const viewingUser    = useUIStore((s) => s.viewingUser);
+  const navVisible     = useNavigationStore((s) => s.navVisible);
 
   const setActiveTab = useNavigationStore((s) => s.setActiveTab);
 
@@ -116,7 +138,13 @@ export default function Home() {
       <ProfileTypeOverlay />
       <UserProfileViewer />
 
-      <div className="flex-1 pb-16"><TabContent /></div>
+      {/* Content — full screen, padding only when nav is visible */}
+      <div className={cn('flex-1 transition-[padding-bottom] duration-300', navVisible ? 'pb-16' : 'pb-0')}><TabContent /></div>
+
+      {/* Invisible bottom touch zone to reveal nav */}
+      {!viewingProfile && !viewingUser && <NavRevealZone />}
+
+      {/* The nav itself (auto-hides) */}
       {!viewingProfile && !viewingUser && <BottomNav />}
     </div>
   );

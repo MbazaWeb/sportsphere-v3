@@ -9,6 +9,12 @@ interface NavigationState {
   activeTab: TabId; homeSubTab: HomeSubTab; scoresSubTab: ScoresSubTab; activitySubTab: ActivitySubTab;
   profileSection: "main"|"settings"|"saved"|"achievements"|"predictions"|"communities"|"followers"|"following"|"explore";
   settingsSection: string;
+  /** Whether the bottom nav bar is currently visible */
+  navVisible: boolean;
+  /** Request the nav to show (resets hide timer) */
+  showNav: () => void;
+  /** Request the nav to hide */
+  hideNav: () => void;
   setActiveTab: (t: TabId) => void; setHomeSubTab: (t: HomeSubTab) => void;
   setScoresSubTab: (t: ScoresSubTab) => void; setActivitySubTab: (t: ActivitySubTab) => void;
   setProfileSection: (s: NavigationState["profileSection"]) => void; setSettingsSection: (s: string) => void;
@@ -17,6 +23,9 @@ interface NavigationState {
 export const useNavigationStore = create<NavigationState>((set) => ({
   activeTab: "home", homeSubTab: "for-you", scoresSubTab: "live",
   activitySubTab: "all", profileSection: "main", settingsSection: "account",
+  navVisible: false,
+  showNav: () => set({ navVisible: true }),
+  hideNav: () => set({ navVisible: false }),
   setActiveTab: (t) => set({ activeTab: t }),
   setHomeSubTab: (t) => set({ homeSubTab: t }),
   setScoresSubTab: (t) => set({ scoresSubTab: t }),
