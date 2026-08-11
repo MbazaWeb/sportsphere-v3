@@ -42,8 +42,8 @@ if [ -d "$APP_DIR/.git" ]; then
   git fetch origin main
   git reset --hard origin/main
   # Also remove untracked junk that may have come back via stray shell redirects.
-  # `-` and `72` and `ipconfig` etc. are never legitimate source files.
-  git clean -fd -- '-' ipconfig next sudo sportsphere@2.0.0 tsc-errors.txt tsconfig.tsbuildinfo 72 seed.sql 2>/dev/null || true
+  git clean -fd
+  rm -rf .next
   # proxy.ts at src/ is the Next.js 16 edge auth guard — do NOT delete it.
   # Next.js 16 renamed middleware.ts → proxy.ts with export function proxy().
   # Remove any stale middleware.ts that may linger from pre-v16 deploys.
