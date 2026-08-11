@@ -1,28 +1,32 @@
 /**
- * FeedCard — sports feed post card
- * --------------------------------
- * Mirrors the web FeedCard component:
- *   - author avatar + name + handle + verified badge
- *   - optional text content
- *   - optional media (image)
- *   - poll + prediction payloads
- *   - action row: like, comment, share, bookmark
- *
- * Consumes the live `Post` type from @sportsphere/types/feed (no mock).
+ * FeedCard — matches web FeedCard exactly
+ * ----------------------------------------
+ * - Author row: avatar, name, verified badge, PRO badge, handle, relative time, post type pill
+ * - Text content (selectable)
+ * - Media image (expo-image, 220px height, cover fit)
+ * - For predictions: match label, predicted score, confidence %
+ * - For polls: question, options with vote %, voted highlight
+ * - Action row: like (heart, filled when liked), comment, share, bookmark (filled when bookmarked)
  */
 
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import {
   Heart, MessageCircle, Share2, Bookmark, BadgeCheck,
-  BarChart3, Vote, Image as ImageIcon,
+  BarChart3, Vote, Crown,
 } from 'lucide-react-native';
 
 import GlassCard from './GlassCard';
 import Avatar from './Avatar';
-import { colors } from '@sportsphere/design-system/tokens';
 import { FONT_DISPLAY, FONT_BODY, FONT_BODY_REG, FONT_BODY_BOLD } from '../lib/fonts';
 import type { Post } from '@sportsphere/types/feed';
+
+const GOLD = '#F5C518';
+const BG_SECONDARY = '#0F1D3A';
+const FG = '#ffffff';
+const MUTED = 'rgba(255, 255, 255, 0.5)';
+const SURFACE = 'rgba(255, 255, 255, 0.05)';
+const BORDER = 'rgba(255, 255, 255, 0.08)';
 
 interface FeedCardProps {
   post: Post;
@@ -47,14 +51,17 @@ export default function FeedCard({
         <View style={styles.authorMeta}>
           <View style={styles.nameRow}>
             <Text style={styles.name} numberOfLines={1}>{author.displayName}</Text>
-            {author.isVerified ? <BadgeCheck size={14} color={colors.primary} /> : null}
+            {author.isVerified ? <BadgeCheck size={14} color={GOLD} /> : null}
             {author.isPro ? (
               <View style={styles.proBadge}>
+                <Crown size={8} color="#0A1628" />
                 <Text style={styles.proBadgeText}>PRO</Text>
               </View>
             ) : null}
           </View>
-          <Text style={styles.handle} numberOfLines={1}>@{author.handle} · {formatRelative(post.createdAt)}</Text>
+          <Text style={styles.handle} numberOfLines={1}>
+            @{author.handle} · {formatRelative(post.createdAt)}
+          </Text>
         </View>
         <TypePill type={post.type} />
       </Pressable>
@@ -81,36 +88,45 @@ export default function FeedCard({
       {post.prediction ? (
         <View style={styles.prediction}>
           <View style={styles.predictionHeader}>
-            <BarChart3 size={14} color={colors.accent} />
+            <BarChart3 size={14} color="#FF6B35" />
             <Text style={styles.predictionLabel}>PREDICTION</Text>
           </View>
           <Text style={styles.predictionMatch} numberOfLines={1}>{post.prediction.matchLabel}</Text>
-          <Text style={styles.predictionScore}>
-            {post.prediction.predictedScoreHome} - {post.prediction.predictedScoreAway}
-            {'  ·  '}
-            <Text style={styles.predictionConfidence}>
-              {Math.round(post.prediction.confidence * 100)}% confidence
-            </Text>
-          </Text>
+          <View style={styles.predictionScoreRow}>
+            <View style={styles.scoreBox}>
+              <Text style={styles.scoreNumber}>{post.prediction.predictedScoreHome}</Text>
+            </View>
+            <Text style={styles.scoreDash}>-</Text>
+            <View style={styles.scoreBox}>
+              <Text style={styles.scoreNumber}>{post.prediction.predictedScoreAway}</Text>
+            </View>
+            <View style={styles.confidenceBox}>
+              <Text style={styles.confidenceValue}>{Math.round(post.prediction.confidence * 100)}%</Text>
+              <Text style={styles.confidenceLabel}>confidence</Text>
+            </View>
+          </View>
         </View>
       ) : null}
 
       {/* ── Poll payload ───────────────────────────────── */}
       {post.poll ? (
         <View style={styles.poll}>
-          <View style={styles.predictionHeader}>
-            <Vote size={14} color={colors.primary} />
-            <Text style={styles.predictionLabel}>POLL</Text>
+          <View style={styles.pollHeader}>
+            <Vote size={14} color={GOLD} />
+            <Text style={styles.pollLabel}>POLL</Text>
           </View>
           <Text style={styles.pollQuestion}>{post.poll.question}</Text>
-          {post.poll.options.map((opt, idx) => {
+          {post.poll.options.map((opt) => {
             const votes = post.poll?.totalVotes || 0;
             const pct = votes > 0 ? Math.round((opt.voteCount / votes) * 100) : 0;
             const voted = post.poll?.votedOptionId === opt.id;
             return (
               <View key={opt.id} style={[styles.pollOption, voted && styles.pollOptionVoted]}>
-                <Text style={styles.pollOptionLabel}>{opt.label}</Text>
-                <Text style={styles.pollOptionPct}>{pct}%</Text>
+                {voted && <View style={[styles.pollOptionBar, { width: `${pct}%` }]} />}
+                <View style={styles.pollOptionInner}>
+                  <Text style={[styles.pollOptionLabel, voted && styles.pollOptionLabelVoted]}>{opt.label}</Text>
+                  <Text style={styles.pollOptionPct}>{pct}%</Text>
+                </View>
               </View>
             );
           })}
@@ -121,23 +137,23 @@ export default function FeedCard({
       {/* ── Actions ────────────────────────────────────── */}
       <View style={styles.actions}>
         <ActionPill
-          icon={
+          icon={(
             <Heart
               size={18}
-              color={post.likedByMe ? colors.destructive : colors.mutedForeground}
-              fill={post.likedByMe ? colors.destructive : 'none'}
+              color={post.likedByMe ? '#FF453A' : MUTED}
+              fill={post.likedByMe ? '#FF453A' : 'none'}
             />
-          }
+          )}
           label={formatCount(post.likeCount)}
           onPress={() => onLike?.(post)}
         />
         <ActionPill
-          icon={<MessageCircle size={18} color={colors.mutedForeground} />}
+          icon={<MessageCircle size={18} color={MUTED} />}
           label={formatCount(post.commentCount)}
           onPress={() => onComment?.(post)}
         />
         <ActionPill
-          icon={<Share2 size={18} color={colors.mutedForeground} />}
+          icon={<Share2 size={18} color={MUTED} />}
           label={formatCount(post.shareCount)}
           onPress={() => onShare?.(post)}
         />
@@ -145,8 +161,8 @@ export default function FeedCard({
         <Pressable onPress={() => onBookmark?.(post)} hitSlop={12} accessibilityLabel="Bookmark">
           <Bookmark
             size={18}
-            color={post.bookmarkedByMe ? colors.primary : colors.mutedForeground}
-            fill={post.bookmarkedByMe ? colors.primary : 'none'}
+            color={post.bookmarkedByMe ? GOLD : MUTED}
+            fill={post.bookmarkedByMe ? GOLD : 'none'}
           />
         </Pressable>
       </View>
@@ -171,6 +187,7 @@ function TypePill({ type }: { type: Post['type'] }) {
     PREDICTION: 'PREDICTION',
     POLL: 'POLL',
     HIGHLIGHT: 'HIGHLIGHT',
+    SPOTLIGHT: 'SPOTLIGHT',
   };
   return (
     <View style={styles.typePill}>
@@ -198,23 +215,23 @@ function formatRelative(iso: string): string {
 
 const styles = StyleSheet.create({
   card: { padding: 16, gap: 12 },
+  // Author row
   authorRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   authorMeta: { flex: 1, gap: 2 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   name: {
     fontFamily: FONT_BODY_BOLD, fontWeight: '700', fontSize: 15,
-    color: colors.foreground, maxWidth: 200,
+    color: FG, maxWidth: 200,
   },
-  handle: {
-    fontFamily: FONT_BODY_REG, fontSize: 12, color: colors.mutedForeground,
-  },
+  handle: { fontFamily: FONT_BODY_REG, fontSize: 12, color: MUTED },
   proBadge: {
-    backgroundColor: colors.accent, borderRadius: 4,
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    backgroundColor: '#FF6B35', borderRadius: 4,
     paddingHorizontal: 4, paddingVertical: 1,
   },
   proBadgeText: {
     fontFamily: FONT_BODY_BOLD, fontSize: 9, fontWeight: '700',
-    color: colors.accentForeground, letterSpacing: 0.5,
+    color: '#0A1628', letterSpacing: 0.5,
   },
   typePill: {
     backgroundColor: 'rgba(245, 197, 24, 0.10)',
@@ -223,67 +240,69 @@ const styles = StyleSheet.create({
   },
   typePillText: {
     fontFamily: FONT_BODY_BOLD, fontSize: 9, fontWeight: '700',
-    color: colors.primary, letterSpacing: 0.5,
+    color: GOLD, letterSpacing: 0.5,
   },
-  content: {
-    fontFamily: FONT_BODY, fontSize: 15, lineHeight: 22,
-    color: colors.foreground,
-  },
-  mediaWrap: {
-    borderRadius: 12, overflow: 'hidden',
-    backgroundColor: colors.backgroundSecondary,
-  },
+  // Content
+  content: { fontFamily: FONT_BODY, fontSize: 15, lineHeight: 22, color: FG },
+  // Media
+  mediaWrap: { borderRadius: 12, overflow: 'hidden', backgroundColor: BG_SECONDARY },
   media: { width: '100%', height: 220 },
+  // Prediction
   prediction: {
     backgroundColor: 'rgba(255, 107, 53, 0.08)',
     borderWidth: 1, borderColor: 'rgba(255, 107, 53, 0.25)',
-    borderRadius: 12, padding: 12, gap: 4,
+    borderRadius: 12, padding: 12, gap: 8,
   },
   predictionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   predictionLabel: {
     fontFamily: FONT_BODY_BOLD, fontSize: 10, fontWeight: '700',
-    color: colors.accent, letterSpacing: 0.5,
+    color: '#FF6B35', letterSpacing: 0.5,
   },
-  predictionMatch: {
-    fontFamily: FONT_BODY_BOLD, fontSize: 14, fontWeight: '700',
-    color: colors.foreground,
+  predictionMatch: { fontFamily: FONT_BODY_BOLD, fontSize: 14, fontWeight: '700', color: FG },
+  predictionScoreRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4,
   },
-  predictionScore: {
-    fontFamily: FONT_BODY, fontSize: 13, color: colors.mutedForeground,
+  scoreBox: { flex: 1, alignItems: 'center', gap: 2 },
+  scoreNumber: { fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: '700', color: FG },
+  scoreDash: { fontFamily: FONT_BODY_REG, fontSize: 18, color: MUTED },
+  confidenceBox: {
+    alignItems: 'center', gap: 2, paddingVertical: 6, paddingHorizontal: 10,
+    backgroundColor: 'rgba(255, 107, 53, 0.15)', borderRadius: 8,
   },
-  predictionConfidence: {
-    fontFamily: FONT_BODY_BOLD, fontWeight: '700', color: colors.accent,
-  },
+  confidenceValue: { fontFamily: FONT_BODY_BOLD, fontSize: 16, fontWeight: '700', color: '#FF6B35' },
+  confidenceLabel: { fontFamily: FONT_BODY_REG, fontSize: 9, color: MUTED },
+  // Poll
   poll: {
     backgroundColor: 'rgba(245, 197, 24, 0.08)',
     borderWidth: 1, borderColor: 'rgba(245, 197, 24, 0.25)',
     borderRadius: 12, padding: 12, gap: 8,
   },
-  pollQuestion: {
-    fontFamily: FONT_BODY_BOLD, fontSize: 14, fontWeight: '700',
-    color: colors.foreground,
+  pollHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  pollLabel: {
+    fontFamily: FONT_BODY_BOLD, fontSize: 10, fontWeight: '700',
+    color: GOLD, letterSpacing: 0.5,
   },
+  pollQuestion: { fontFamily: FONT_BODY_BOLD, fontSize: 14, fontWeight: '700', color: FG },
   pollOption: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8,
-    borderWidth: 1, borderColor: 'transparent',
+    flexDirection: 'row', borderRadius: 8, overflow: 'hidden',
+    backgroundColor: SURFACE, borderWidth: 1, borderColor: 'transparent',
+    height: 40,
   },
-  pollOptionVoted: { borderColor: colors.primary },
-  pollOptionLabel: {
-    fontFamily: FONT_BODY, fontSize: 13, color: colors.foreground,
+  pollOptionVoted: { borderColor: GOLD },
+  pollOptionBar: {
+    position: 'absolute', left: 0, top: 0, bottom: 0,
+    backgroundColor: 'rgba(245, 197, 24, 0.15)',
   },
-  pollOptionPct: {
-    fontFamily: FONT_BODY_BOLD, fontSize: 13, fontWeight: '700',
-    color: colors.primary,
+  pollOptionInner: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 12,
   },
-  pollTotalVotes: {
-    fontFamily: FONT_BODY_REG, fontSize: 11, color: colors.mutedForeground,
-  },
+  pollOptionLabel: { fontFamily: FONT_BODY, fontSize: 13, color: FG },
+  pollOptionLabelVoted: { fontFamily: FONT_BODY_BOLD, fontWeight: '700' as const, color: FG },
+  pollOptionPct: { fontFamily: FONT_BODY_BOLD, fontSize: 13, fontWeight: '700', color: GOLD },
+  pollTotalVotes: { fontFamily: FONT_BODY_REG, fontSize: 11, color: MUTED },
+  // Actions
   actions: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   actionPill: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  actionLabel: {
-    fontFamily: FONT_BODY, fontSize: 13, color: colors.mutedForeground,
-    fontWeight: '500',
-  },
+  actionLabel: { fontFamily: FONT_BODY, fontSize: 13, color: MUTED, fontWeight: '500' as const },
 });

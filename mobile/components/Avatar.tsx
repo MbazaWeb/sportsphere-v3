@@ -1,11 +1,12 @@
 /**
- * Avatar — circular avatar with sports badge support
+ * Avatar — circular avatar matching the web implementation
  * Uses expo-image for fast, cached, blur-up loading.
+ * Gold ring: 2px solid #F5C518 for verified/pro users.
+ * Fallback background: #0F1D3A
  */
 
 import { View, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import { colors } from '@sportsphere/design-system/tokens';
 
 interface AvatarProps {
   url?: string | null;
@@ -21,7 +22,7 @@ export default function Avatar({ url, size = 44, goldRing = false }: AvatarProps
       style={[
         resolvedSize,
         goldRing && styles.goldRing,
-        { backgroundColor: colors.backgroundSecondary },
+        { backgroundColor: '#0F1D3A' },
       ]}
     >
       {url ? (
@@ -40,6 +41,6 @@ export default function Avatar({ url, size = 44, goldRing = false }: AvatarProps
 const styles = StyleSheet.create({
   goldRing: {
     borderWidth: 2,
-    borderColor: colors.primary,
+    borderColor: '#F5C518',
   },
 });

@@ -1,20 +1,18 @@
 /**
- * GlassCard — the signature Sportsphere card surface
+ * GlassCard — matches the web .glass-card exactly
  * ---------------------------------------------------
- * Mirrors the web `.glass-card` look:
- *   - translucent white overlay (5% opacity)
- *   - 1px subtle white border (8% opacity)
- *   - 12px radius
- *   - drop shadow for depth
- *
- * On RN we use elevation (Android) + shadowColor/Offset/Opacity (iOS).
+ *   - bg: rgba(255, 255, 255, 0.05)
+ *   - border: 1px solid rgba(255, 255, 255, 0.08)
+ *   - rounded-2xl (16px radius)
+ *   - subtle shadow for depth
+ *   - Optional elevated mode (brighter surface + gold-tinted border)
+ *   - Optional premium mode (animated gold glow border approximation)
  */
 
 import { View, type ViewProps, StyleSheet } from 'react-native';
-import { colors, radii, shadows } from '@sportsphere/design-system/tokens';
 
 interface GlassCardProps extends ViewProps {
-  /** Adds a hover-style elevated shadow + gold-tinted border */
+  /** Adds elevated shadow + gold-tinted border */
   elevated?: boolean;
   /** Adds the rotating gradient border (.premium-glow-border on web) */
   premium?: boolean;
@@ -44,31 +42,26 @@ export default function GlassCard({
 
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: colors.card,
-    borderRadius: radii.lg,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.cardBorder,
-    // iOS shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.20,
-    shadowRadius: 32,
-    // Android shadow
-    elevation: 4,
-    overflow: 'hidden',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 3,
   },
   elevated: {
-    backgroundColor: colors.cardHover,
+    backgroundColor: 'rgba(255, 255, 255, 0.07)',
     borderColor: 'rgba(245, 197, 24, 0.20)',
-    shadowOpacity: 0.30,
-    shadowRadius: 40,
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
     elevation: 6,
   },
   premium: {
-    // Approximation of the web premium-glow-border.
-    // On web it's an animated rotating gradient; on RN we use a static gold-tinted border.
     borderColor: 'rgba(245, 197, 24, 0.40)',
-    shadowColor: colors.primary,
+    shadowColor: '#F5C518',
     shadowOpacity: 0.15,
     shadowRadius: 25,
     elevation: 8,

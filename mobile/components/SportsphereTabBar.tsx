@@ -1,14 +1,12 @@
 /**
- * SportsphereTabBar — branded bottom navigation
+ * SportsphereTabBar — matches web BottomNav exactly
  * ---------------------------------------------
- * Replicates the web BottomNav look:
- *   - dark navy translucent background with blur
- *   - gold active tint, muted-foreground inactive
- *   - 5 evenly-spaced icon + label buttons
- *   - active tab gets a gold top border indicator
- *
- * Built directly on top of @react-navigation/bottom-tabs so we get full
- * accessibility + keyboard handling for free.
+ *   - Dark background #0A1628 with top border rgba(255,255,255,0.08)
+ *   - Gold (#F5C518) active tint, rgba(255,255,255,0.5) inactive
+ *   - 5 tabs: Home, Scores, Create (+PlusCircle bigger), Activity, Profile
+ *   - Active tab gets a gold top indicator line (2px height)
+ *   - Labels shown below icons in 10px font
+ *   - Height 64px + safe area padding
  */
 
 import { Pressable, View, Text, Platform, StyleSheet } from 'react-native';
@@ -16,8 +14,6 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import type { LucideIcon } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
-
-import { colors, typography } from '@sportsphere/design-system/tokens';
 
 type TabConfig = {
   name: string;
@@ -73,21 +69,19 @@ export default function SportsphereTabBar({ state, descriptors, navigation, tabs
               style={styles.tab}
             >
               <View style={styles.tabInner}>
-                <View style={{ position: 'relative' }}>
-                  <Icon
-                    color={isFocused ? colors.primary : colors.mutedForeground}
-                    size={route.name === 'create' ? 26 : 22}
-                  />
-                </View>
+                <ActiveIndicator visible={isFocused} />
+                <Icon
+                  color={isFocused ? '#F5C518' : 'rgba(255, 255, 255, 0.5)'}
+                  size={route.name === 'create' ? 26 : 22}
+                />
                 <Text
                   style={[
                     styles.label,
-                    { color: isFocused ? colors.primary : colors.mutedForeground },
+                    { color: isFocused ? '#F5C518' : 'rgba(255, 255, 255, 0.5)' },
                   ]}
                 >
                   {title}
                 </Text>
-                <ActiveIndicator visible={isFocused} />
               </View>
             </Pressable>
           );
@@ -111,17 +105,20 @@ function ActiveIndicator({ visible }: { visible: boolean }) {
   );
 }
 
+const GOLD = '#F5C518';
+const BG = '#0A1628';
+const MUTED = 'rgba(255, 255, 255, 0.5)';
+const BORDER = 'rgba(255, 255, 255, 0.08)';
+
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(10, 22, 40, 0.95)',
-    borderTopColor: colors.cardBorder,
+    backgroundColor: BG,
+    borderTopColor: BORDER,
     borderTopWidth: 1,
-    // RN does not support backdrop-filter; on iOS we could use a BlurView,
-    // but the 95%-opaque background reads as the same brand surface.
   },
   row: {
     flex: 1,
@@ -146,17 +143,17 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   label: {
-    fontFamily: typography.fontFamily.body.split(',')[0].replace(/'/g, ''),
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   indicator: {
     position: 'absolute',
-    top: -10,
+    top: -12,
     left: 8,
     right: 8,
     height: 2,
     borderRadius: 1,
-    backgroundColor: colors.primary,
+    backgroundColor: GOLD,
   },
 });

@@ -4,12 +4,17 @@ module.exports = {
     './app/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
   ],
-  // NativeWind v4 requires its preset to be declared first so the metro
-  // transformer can detect the NativeWind/Tailwind integration.
   presets: [require('nativewind/preset'), require('@sportsphere/design-system/tailwind-preset')],
   theme: {
     extend: {
-      // Brand-specific extras not covered by the shared preset
+      colors: {
+        background: '#0A1628',
+        foreground: '#ffffff',
+        gold: '#F5C518',
+        surface: 'rgba(255,255,255,0.05)',
+        surfaceBorder: 'rgba(255,255,255,0.08)',
+        mutedForeground: 'rgba(255,255,255,0.5)',
+      },
       backgroundImage: {
         'gold-gradient': 'linear-gradient(135deg, #F5C518 0%, #FF6B35 100%)',
         'hero-gradient': 'linear-gradient(135deg, #1A2A4A 0%, #0A1628 100%)',

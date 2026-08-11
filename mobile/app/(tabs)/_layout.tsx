@@ -1,15 +1,16 @@
 /**
- * Sportsphere Mobile — Tab Layout
- * -------------------------------
- * 5 tabs mirroring the web BottomNav: Home, Scores, Create, Activity, Profile.
- * Uses a custom tab bar component (SportsphereTabBar) for brand styling.
+ * Tab Layout — 5 tabs matching web BottomNav exactly
+ * Home (Home icon), Scores (Trophy), Create (PlusCircle), Activity (Bell), Profile (User)
+ * Active tab is gold (#F5C518) with a gold top indicator line.
+ * Inactive is muted rgba(255,255,255,0.5).
+ * Tab bar has dark background (#0A1628) with top border.
+ * Height 64px. Create icon slightly bigger.
  */
 
 import { Tabs } from 'expo-router';
 import { Platform, View } from 'react-native';
 import { Home, Trophy, PlusCircle, Bell, User } from 'lucide-react-native';
 
-import { colors } from '@sportsphere/design-system/tokens';
 import SportsphereTabBar from '../../components/SportsphereTabBar';
 
 const TABS = [
@@ -27,18 +28,18 @@ export default function TabLayout() {
         headerShown: false,
         tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: 'rgba(10, 22, 40, 0.95)',
-          borderTopColor: colors.cardBorder,
+          backgroundColor: '#0A1628',
+          borderTopColor: 'rgba(255, 255, 255, 0.08)',
           borderTopWidth: 1,
           height: Platform.OS === 'ios' ? 84 : 64,
           position: 'absolute',
           elevation: 0,
         },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.mutedForeground,
+        tabBarActiveTintColor: '#F5C518',
+        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.5)',
         tabBarBadgeStyle: {
-          backgroundColor: colors.primary,
-          color: colors.primaryForeground,
+          backgroundColor: '#F5C518',
+          color: '#0A1628',
         },
       }}
       tabBar={(props) => <SportsphereTabBar {...props} tabs={TABS} />}
@@ -49,7 +50,6 @@ export default function TabLayout() {
           name={name}
           options={{
             title,
-            // Icon is rendered by our custom tab bar; we still provide fallback
             tabBarIcon: ({ color, size }) => <Icon color={color} size={size} />,
           }}
         />
