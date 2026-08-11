@@ -3,7 +3,7 @@ import { apiFetch } from '@/lib/api';
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Crown, Zap, Sparkles, Heart, MessageCircle, Flame, ChevronDown, Shield, Crown as CrownIcon, Info, BarChart3, X } from 'lucide-react';
+import { Crown, Zap, Sparkles, Heart, MessageCircle, Flame, ChevronDown, Shield, Crown as CrownIcon, Info, BarChart3, X, Trophy, Clock, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/store/uiStore';
 import { formatCount } from '@/store/useAppStore';
@@ -62,21 +62,25 @@ interface SportlightsTabProps {
 export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [liveMatches, setLiveMatches] = useState<ApiMatch[]>([]);
+  const [recentResults, setRecentResults] = useState<ApiMatch[]>([]);
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [teams, setTeams] = useState<Array<{ id: string; name: string; handle: string; avatarUrl?: string | null; avatarInitials: string | null; coverGradient: string }>>([]);
   const [leaderboard, setLeaderboard] = useState<Array<{ id: string; rank: number; name: string; handle: string; avatarUrl?: string | null; avatarInitials: string | null; points: number; isVerified: boolean; role: string }>>([]);
   const [spotlightItems, setSpotlightItems] = useState<ApiSpotlightItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [matchDetailOpen, setMatchDetailOpen] = useState(false);
+  const [selectedResult, setSelectedResult] = useState<ApiMatch | null>(null);
   const setViewingUser = useUIStore((s) => s.setViewingUser);
 
   const loadData = useCallback(async () => {
     try {
-      const [matchesRes, feedRes, usersRes, leaderboardRes, spotlightRes] = await Promise.all([
+      const [matchesRes, feedRes, usersRes, leaderboardRes, spotlightRes, resultsRes] = await Promise.all([
         apiFetch('/api/matches?status=live'),
         apiFetch('/api/feed?type=for-you'),
         apiFetch('/api/users'),
         apiFetch('/api/leaderboard'),
         apiFetch('/api/spotlight'),
+        apiFetch('/api/matches?status=results'),
       ]);
       if (matchesRes.ok) setLiveMatches(await matchesRes.json());
       if (feedRes.ok) setPosts(await feedRes.json());
@@ -86,68 +90,40 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
       }
       if (leaderboardRes.ok) setLeaderboard(await leaderboardRes.json());
       if (spotlightRes.ok) setSpotlightItems(await spotlightRes.json());
-    } catch (e) { }
+      if (resultsRes.ok) {
+        const results = await resultsRes.json();
+        setRecentResults(Array.isArray(results) ? results.slice(0, 8) : []);
+      }
+    } catch (e) { console.error('Feed load error', e); }
     setLoading(false);
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   const openTeamByName = async (teamName: string) => {
     const handleGuess = '@' + teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
     try {
       const res = await apiFetch(`/api/users?handle=${encodeURIComponent(handleGuess)}`);
-      if (res.ok) {
-        const u = await res.json();
-        setViewingUser(apiUserToViewing(u, false));
-        return;
-      }
+      if (res.ok) { const u = await res.json(); setViewingUser(apiUserToViewing(u, false)); return; }
     } catch { }
     try {
       const res = await apiFetch('/api/users');
       if (res.ok) {
         const all = await res.json();
-        const match = all.find((u: { name: string; role: string }) =>
-          u.role === 'team' && u.name.toLowerCase() === teamName.toLowerCase()
-        );
+        const match = all.find((u: { name: string; role: string }) => u.role === 'team' && u.name.toLowerCase() === teamName.toLowerCase());
         if (match) setViewingUser(apiUserToViewing(match, false));
-      }
-    } catch { }
-  };
-
-  const openPlayerByName = async (playerName: string) => {
-    try {
-      const res = await apiFetch('/api/users');
-      if (res.ok) {
-        const all = await res.json();
-        const match = all.find((u: { name: string; role: string }) =>
-          u.role === 'player' && (
-            u.name.toLowerCase().includes(playerName.toLowerCase()) ||
-            playerName.toLowerCase().includes(u.name.toLowerCase().split(' ')[0])
-          )
-        );
-        if (match) setViewingUser(apiUserToViewing(match, false));
-      }
-    } catch { }
-  };
-
-  const openTeamByHandle = async (handle: string) => {
-    try {
-      const res = await apiFetch(`/api/users?handle=${encodeURIComponent(handle)}`);
-      if (res.ok) {
-        const u = await res.json();
-        setViewingUser(apiUserToViewing(u, false));
       }
     } catch { }
   };
 
   const featuredMatch = liveMatches[0];
-  const [matchDetailOpen, setMatchDetailOpen] = useState(false);
+  const bigResult = recentResults[0];
 
   return (
     <div className="min-h-screen">
     <div className="flex flex-col gap-4 p-4">
+
+      {/* ===== FEATURED LIVE MATCH ===== */}
       {featuredMatch && (
         <div className="premium-glow-border">
           <div className="relative overflow-hidden rounded-[14px] bg-gradient-to-br from-emerald-700 via-green-800 to-emerald-900">
@@ -194,9 +170,101 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
       )}
 
       {matchDetailOpen && featuredMatch && (
-        <MatchDetailModal match={featuredMatch} onClose={() => setMatchDetailOpen(false)} onTeamClick={openTeamByName} onPlayerClick={openPlayerByName} />
+        <MatchDetailModal match={featuredMatch} onClose={() => setMatchDetailOpen(false)} onTeamClick={openTeamByName} onPlayerClick={() => {}} />
       )}
 
+      {/* ===== BIG MATCH RESULT (first result highlighted) ===== */}
+      {bigResult && (
+        <div className="relative overflow-hidden rounded-[14px] bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] border border-gold/20 shadow-lg shadow-gold/5">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full blur-3xl" />
+          <div className="relative p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-gold" />
+                <span className="text-[10px] font-bold uppercase text-gold tracking-wider">Full Time Result</span>
+              </div>
+              <span className="text-[10px] font-medium text-white/50 uppercase tracking-wider">{bigResult.league}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="flex flex-col items-center gap-1.5 flex-1">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 border-2 border-gold/30 text-sm font-black text-white">
+                  {bigResult.homeTeam.slice(0, 2).toUpperCase()}
+                </div>
+                <p className="text-[11px] font-bold text-white text-center leading-tight">{bigResult.homeTeam}</p>
+              </div>
+              <div className="text-center px-3">
+                <p className="text-3xl font-black text-white tracking-tight">
+                  {bigResult.homeScore ?? '-'} <span className="text-white/30 mx-1">-</span> {bigResult.awayScore ?? '-'}
+                </p>
+                <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-gold/10 border border-gold/20 px-2.5 py-0.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  <span className="text-[9px] font-bold text-emerald-400 uppercase">FT</span>
+                </div>
+              </div>
+              <div className="flex flex-col items-center gap-1.5 flex-1">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 border-2 border-gold/30 text-sm font-black text-white">
+                  {bigResult.awayTeam.slice(0, 2).toUpperCase()}
+                </div>
+                <p className="text-[11px] font-bold text-white text-center leading-tight">{bigResult.awayTeam}</p>
+              </div>
+            </div>
+            {/* Goal scorers from events */}
+            {bigResult.events && bigResult.events.length > 0 && (
+              <div className="border-t border-white/10 pt-2.5 mt-1">
+                <div className="flex flex-wrap gap-x-3 gap-y-1">
+                  {bigResult.events
+                    .filter((e: { type: string }) => e.type === 'goal')
+                    .slice(0, 6)
+                    .map((e: { minute: number; player: string; team: string }, i: number) => (
+                      <span key={i} className="text-[10px] text-white/60">
+                        <span className="text-gold font-bold">{e.minute}&apos;</span> {e.player}
+                      </span>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ===== MORE RECENT RESULTS ===== */}
+      {recentResults.length > 1 && (
+        <div className="glass-card rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Clock className="h-4 w-4 text-gold" />
+            <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Recent Results</h3>
+            <span className="text-[10px] text-muted-foreground ml-auto">{recentResults.length - 1} matches</span>
+          </div>
+          <div className="flex flex-col gap-2">
+            {recentResults.slice(1, 7).map((m, i) => (
+              <div
+                key={m.id || i}
+                className="flex items-center gap-2 rounded-xl bg-surface/50 border border-surface-border/50 px-3 py-2.5 cursor-pointer hover:bg-surface hover:border-gold/20 transition-all"
+                onClick={() => { setSelectedResult(m); }}
+              >
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className="text-[10px] font-bold text-white truncate max-w-[80px]">{m.homeTeam}</span>
+                  <span className="text-sm font-black text-gold flex-shrink-0">
+                    {m.homeScore ?? '-'} - {m.awayScore ?? '-'}
+                  </span>
+                  <span className="text-[10px] font-bold text-white truncate max-w-[80px]">{m.awayTeam}</span>
+                </div>
+                <div className="flex-shrink-0">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-1.5 py-0.5">
+                    <span className="text-[8px] font-bold text-emerald-400 uppercase">FT</span>
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {selectedResult && (
+        <MatchDetailModal match={selectedResult} onClose={() => setSelectedResult(null)} onTeamClick={openTeamByName} onPlayerClick={() => {}} />
+      )}
+
+      {/* ===== LEADERBOARD ===== */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <div className="flex items-center gap-2 mb-3">
           <Crown className="h-4 w-4 text-gold" />
@@ -212,10 +280,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                 onClick={async () => {
                   try {
                     const res = await apiFetch(`/api/users?handle=${encodeURIComponent(item.handle)}`);
-                    if (res.ok) {
-                      const u = await res.json();
-                      setViewingUser(apiUserToViewing(u, false));
-                    }
+                    if (res.ok) { const u = await res.json(); setViewingUser(apiUserToViewing(u, false)); }
                   } catch { }
                 }}
                 className="flex items-center gap-3 rounded-xl bg-surface p-2.5 text-left hover:bg-surface-elevated transition-colors w-full"
@@ -225,6 +290,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                 </span>
                 <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gold/10 text-xs font-bold text-gold flex-shrink-0">
                   {item.avatarUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={item.avatarUrl} alt={item.name} className="h-full w-full object-cover" />
                   ) : (
                     item.avatarInitials || item.name.slice(0, 2).toUpperCase()
@@ -241,6 +307,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
         )}
       </div>
 
+      {/* ===== TEAMS ===== */}
       <div className="glass-card rounded-2xl p-4 glass-card-hover">
         <div className="flex items-center gap-2 mb-3">
           <Flame className="h-4 w-4 text-gold" />
@@ -253,11 +320,18 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
             {teams.map((team) => (
               <button
                 key={team.id}
-                onClick={() => openTeamByHandle(team.handle)}
+                onClick={() => {
+                  try {
+                    apiFetch(`/api/users?handle=${encodeURIComponent(team.handle)}`).then(res => {
+                      if (res.ok) res.json().then(u => setViewingUser(apiUserToViewing(u, false)));
+                    });
+                  } catch { }
+                }}
                 className="flex-shrink-0 flex items-center gap-2 rounded-xl bg-surface border border-surface-border px-3 py-2 text-sm font-medium text-white hover:border-gold/30 transition-colors"
               >
                 <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-gold/10 text-[10px] font-bold text-gold flex-shrink-0">
                   {team.avatarUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={team.avatarUrl} alt={team.name} className="h-full w-full object-cover" />
                   ) : (
                     team.avatarInitials || team.name.slice(0, 2).toUpperCase()
@@ -270,11 +344,10 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
         )}
       </div>
 
+      {/* ===== FEED POSTS ===== */}
       {loading ? (
         <div className="flex flex-col gap-3">
-          <CardSkeleton />
-          <CardSkeleton />
-          <CardSkeleton />
+          <CardSkeleton /><CardSkeleton /><CardSkeleton />
         </div>
       ) : posts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8">
@@ -285,6 +358,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
         posts.map((item) => <FeedCard key={item.id} item={item} onShare={onShare} onComment={onComment} formatTime={formatTime} />)
       )}
 
+      {/* ===== SPOTLIGHT VIDEOS ===== */}
       {spotlightItems.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-3 mt-2">
@@ -294,14 +368,13 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
           <div className="flex flex-col gap-3">
             {spotlightItems.map((item) => (
               <div key={item.id} className="bg-[#1e2126] rounded-2xl p-4 mb-3 border border-surface-border">
-                <div className="mb-3">
-                  <p className="text-white text-sm font-medium">{item.content}</p>
-                </div>
+                <div className="mb-3"><p className="text-white text-sm font-medium">{item.content}</p></div>
                 <div className="relative aspect-video rounded-xl overflow-hidden bg-black">
                   {item.mediaUrls && item.mediaUrls.length > 0 ? (
                     (item.postType === 'video' || item.postType === 'spotlight') ? (
                       <video src={item.mediaUrls[0]} className="w-full h-full object-cover" controls playsInline preload="metadata" />
                     ) : (
+                      /* eslint-disable-next-line @next/next/no-img-element */
                       <img src={item.mediaUrls[0]} alt={item.content || ''} className="w-full h-full object-cover" />
                     )
                   ) : (
@@ -311,12 +384,8 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                   )}
                 </div>
                 <div className="flex items-center gap-4 mt-3 pt-2 border-t border-surface-border/50">
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Heart className="h-3 w-3" />{formatCount(item.likeCount)}
-                  </span>
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <MessageCircle className="h-3 w-3" />{formatCount(item.commentCount)}
-                  </span>
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground"><Heart className="h-3 w-3" />{formatCount(item.likeCount)}</span>
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground"><MessageCircle className="h-3 w-3" />{formatCount(item.commentCount)}</span>
                 </div>
               </div>
             ))}
@@ -335,19 +404,11 @@ function CardSkeleton() {
       <div className="p-4">
         <div className="flex items-center gap-3 mb-3">
           <div className="h-10 w-10 rounded-full bg-surface animate-pulse" />
-          <div className="flex-1">
-            <div className="h-3 w-24 rounded bg-surface animate-pulse mb-1" />
-            <div className="h-2 w-16 rounded bg-surface animate-pulse" />
-          </div>
+          <div className="flex-1"><div className="h-3 w-24 rounded bg-surface animate-pulse mb-1" /><div className="h-2 w-16 rounded bg-surface animate-pulse" /></div>
         </div>
-        <div className="h-3 w-full rounded bg-surface animate-pulse mb-2" />
-        <div className="h-3 w-3/4 rounded bg-surface animate-pulse" />
+        <div className="h-3 w-full rounded bg-surface animate-pulse mb-2" /><div className="h-3 w-3/4 rounded bg-surface animate-pulse" />
         <div className="flex items-center justify-between border-t border-surface-border pt-3 mt-3">
-          <div className="flex gap-4">
-            <div className="h-3 w-8 rounded bg-surface animate-pulse" />
-            <div className="h-3 w-8 rounded bg-surface animate-pulse" />
-            <div className="h-3 w-8 rounded bg-surface animate-pulse" />
-          </div>
+          <div className="flex gap-4"><div className="h-3 w-8 rounded bg-surface animate-pulse" /><div className="h-3 w-8 rounded bg-surface animate-pulse" /><div className="h-3 w-8 rounded bg-surface animate-pulse" /></div>
         </div>
       </div>
     </div>
@@ -388,6 +449,7 @@ function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }: {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-bold uppercase text-white/70 tracking-wider">{match.league}</span>
                 <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold uppercase', match.status === 'live' ? 'bg-red-500 text-white' : 'bg-surface text-muted-foreground')}>
+                  {match.status === 'live' ? `Live ${match.minute}'` : 'Full Time'}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3">
@@ -409,6 +471,23 @@ function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }: {
               </div>
             </div>
           </div>
+          {/* Goal events */}
+          {events.length > 0 && (
+            <div className="glass-card rounded-xl p-3">
+              <h4 className="text-xs font-bold text-gold uppercase tracking-wider mb-2">Match Events</h4>
+              <div className="flex flex-col gap-1.5">
+                {events.map((e, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs">
+                    <span className="text-[10px] font-bold text-muted-foreground w-8 text-right">{e.minute}&apos;</span>
+                    <span className={cn('text-[10px] font-bold uppercase w-12', e.team === 'home' ? 'text-emerald-400' : 'text-blue-400')}>{e.team === 'home' ? match.homeTeam.slice(0, 3) : match.awayTeam.slice(0, 3)}</span>
+                    <span className={cn('rounded px-1.5 py-0.5 text-[9px] font-bold uppercase', e.type === 'goal' ? 'bg-gold/20 text-gold' : e.type === 'red_card' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400')}>
+                      {e.type === 'goal' ? '⚽' : e.type === 'red_card' ? '🟥' : '🟨'} {e.player}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-xl bg-surface border border-surface-border p-3">
               <p className="text-[10px] text-muted-foreground uppercase">Venue</p>
