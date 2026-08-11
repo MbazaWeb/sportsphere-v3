@@ -374,3 +374,63 @@ html {
 html {
   -webkit-touch-callout: none;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ULTRA-HD MOBILE RESPONSIVENESS
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Crisp rendering on high-DPI displays */
+@supports (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  img, video, canvas, svg {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Ensure sharp text on mobile */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'kern' 1;
+}
+
+/* Tighter containers on mobile - no overflow */
+@media (max-width: 430px) {
+  .mx-auto.max-w-lg {
+    padding-left: 0;
+    padding-right: 0;
+    max-width: 100%;
+  }
+  
+  /* Glass cards - tighter padding on small phones */
+  .glass-card {
+    border-radius: 1rem;
+  }
+}
+
+/* Better touch targets on mobile */
+@media (max-width: 640px) {
+  button, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Profile tab bar - compact on mobile */
+@media (max-width: 380px) {
+  [class*="tab"] button {
+    font-size: 0.75rem;
+    padding-left: 0.625rem;
+    padding-right: 0.625rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+}
+
+/* Safe area insets for notch phones */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

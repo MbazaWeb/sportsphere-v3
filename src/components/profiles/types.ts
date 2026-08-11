@@ -3,7 +3,10 @@ export interface ApiUser {
   name: string;
   handle: string;
   avatarInitials: string;
+  avatarUrl?: string | null;
   isVerified: boolean;
+  isPro?: boolean;
+  proSince?: string | null;
   coverGradient: string;
   bio: string;
   role: string;
@@ -16,6 +19,7 @@ export interface ApiUser {
   city?: string | null;
   aboutMe?: string | null;
   roleProfile?: Record<string, unknown>;
+  roleData?: Record<string, unknown>;
   verificationStatus: string;
 }
 

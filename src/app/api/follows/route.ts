@@ -46,11 +46,40 @@ export async function POST(request: NextRequest) {
       await db.follow.create({ data: { followerId: userId, followingId: String(targetUserId) } });
       await db.user.update({ where: { id: userId }, data: { followingCount: { increment: 1 } } });
       await db.user.update({ where: { id: String(targetUserId) }, data: { followerCount: { increment: 1 } } });
+      // Verify the count is accurate
+      const actualCount = await db.follow.count({ where: { followingId: String(targetUserId) } });
+      if (actualCount !== (target.followerCount || 0) + 1) {
+        await db.user.update({ where: { id: String(targetUserId) }, data: { followerCount: actualCount } });
+      }
       return NextResponse.json({ following: true });
     }
   } catch (error) {
     console.error('Follow error:', error);
     return NextResponse.json({ error: 'Failed to toggle follow' }, { status: 500 });
+  }
+}
+
+// PATCH — recalculate follow counts (admin/maintenance)
+export async function PATCH() {
+  try {
+    // Recalculate all follower/following counts from actual Follow records
+    const allUsers = await db.user.findMany({ select: { id: true } });
+    
+    for (const user of allUsers) {
+      const followerCount = await db.follow.count({ where: { followingId: user.id } });
+      const followingCount = await db.follow.count({ where: { followerId: user.id } });
+      const postCount = await db.post.count({ where: { userId: user.id, isDeleted: false } });
+      
+      await db.user.update({
+        where: { id: user.id },
+        data: { followerCount, followingCount, postCount },
+      });
+    }
+    
+    return NextResponse.json({ success: true, recalculated: allUsers.length });
+  } catch (error) {
+    console.error('Follow count recalculation error:', error);
+    return NextResponse.json({ error: 'Failed to recalculate' }, { status: 500 });
   }
 }
 
@@ -96,4 +125,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to fetch follow list' }, { status: 500 });
   }
 }
-

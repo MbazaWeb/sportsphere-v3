@@ -1,29 +1,56 @@
-﻿'use client';
+'use client';
 
+import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { UserPlus, UserMinus, MessageCircle, ShoppingBag } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
+import { useUIStore } from '@/store/uiStore';
+import { useState } from 'react';
 
 interface ProfileActionsProps {
   role: string;
   following: boolean;
   setFollowing: (val: boolean) => void;
+  targetUserId?: string;
 }
 
-export function ProfileActions({ role, following, setFollowing }: ProfileActionsProps) {
+export function ProfileActions({ role, following, setFollowing, targetUserId }: ProfileActionsProps) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const setLoginModalOpen = useUIStore((s) => s.setLoginModalOpen);
+  const [busy, setBusy] = useState(false);
+
+  const handleFollow = async () => {
+    if (!isAuthenticated) { setLoginModalOpen(true); return; }
+    if (!targetUserId || busy) return;
+    setBusy(true);
+    try {
+      const res = await apiFetch('/api/follows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setFollowing(data.following);
+      }
+    } catch { /* ignore */ }
+    setBusy(false);
+  };
+
   return (
-    <div className="mt-4 px-4 flex gap-2">
-      <button onClick={() => setFollowing(!following)}
-        className={cn('flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-bold transition-all',
-          following ? 'glass-card text-muted-foreground' : 'bg-gold text-black hover:bg-gold/90 shadow-[0_4px_20px_rgba(245,197,24,0.2)]')}>
+    <div className="mt-3 px-3 sm:px-4 flex gap-2">
+      <button onClick={handleFollow} disabled={busy}
+        className={cn('flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 sm:py-3 text-sm font-bold transition-all active:scale-[0.98]',
+          following ? 'glass-card text-muted-foreground' : 'bg-gold text-black hover:bg-gold/90 shadow-[0_4px_20px_rgba(245,197,24,0.2)]',
+          busy && 'opacity-50 cursor-wait')}>
         {following ? <><UserMinus className="h-4 w-4" /> Following</> : <><UserPlus className="h-4 w-4" /> Follow</>}
       </button>
-      <button className="flex items-center justify-center rounded-xl glass-card px-4 hover:bg-surface-elevated transition-colors">
+      <button className="flex items-center justify-center rounded-xl glass-card px-4 hover:bg-surface-elevated transition-colors active:scale-95">
         <MessageCircle className="h-4 w-4 text-muted-foreground" />
       </button>
-      {(role === 'team' || role === 'business' || role === 'stadium') && (
-        <button className="relative flex items-center justify-center rounded-xl glass-card px-4 hover:bg-surface-elevated transition-colors">
+      {(role === 'team' || role === 'business' || role === 'stadium' || role === 'venue') && (
+        <button className="relative flex items-center justify-center rounded-xl glass-card px-4 hover:bg-surface-elevated transition-colors active:scale-95">
           <ShoppingBag className="h-4 w-4 text-gold" />
-          <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[8px] font-bold text-black">0</span>
         </button>
       )}
     </div>

@@ -3,7 +3,7 @@ import { apiFetch } from '@/lib/api';
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Crown, Zap, Sparkles, Heart, MessageCircle, Flame, ChevronDown, Shield, Crown as CrownIcon, Info, BarChart3, X, Trophy, Clock, Star } from 'lucide-react';
+import { Crown, Zap, Sparkles, Heart, MessageCircle, Flame, ChevronDown, Shield, Crown as CrownIcon, Info, BarChart3, X, Trophy, Clock, Star, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/store/uiStore';
 import { formatCount } from '@/store/useAppStore';
@@ -100,6 +100,8 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
   const [matchDetailOpen, setMatchDetailOpen] = useState(false);
   const [teamsDismissed, setTeamsDismissed] = useState(false);
   const [selectedResult, setSelectedResult] = useState<ApiMatch | null>(null);
+  const [suggestedAccounts, setSuggestedAccounts] = useState<Array<any>>([]);
+  const [suggestedDismissed, setSuggestedDismissed] = useState(false);
   const setViewingUser = useUIStore((s) => s.setViewingUser);
 
   // Auto-dismiss "Choose Your Teams" after 10 seconds
@@ -178,6 +180,27 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
             isVerified: u.isVerified,
             role: u.role,
           })));
+        // Build suggested accounts (team, player, coach, journalist, media-broadcast accounts the user doesn't follow)
+        if (isAuthenticated) {
+          try {
+            const followingRes = await apiFetch('/api/follows?userId=' + 'me' + '&type=following');
+            let followingIds: Set<string> = new Set();
+            if (followingRes.ok) {
+              const followingList = await followingRes.json();
+              followingIds = new Set((followingList || []).map((u: any) => u.id));
+            }
+            const suggestions = allUsers
+              .filter((u: any) => !followingIds.has(u.id) && ['team', 'player', 'coach', 'journalist', 'media-broadcast', 'competition', 'league'].includes(u.role))
+              .slice(0, 6);
+            setSuggestedAccounts(suggestions);
+          } catch { /* ignore */ }
+        } else {
+          // For non-auth users, just show some interesting accounts
+          const suggestions = allUsers
+            .filter((u: any) => ['team', 'player', 'coach', 'journalist', 'media-broadcast'].includes(u.role))
+            .slice(0, 6);
+          setSuggestedAccounts(suggestions);
+        }
       }
       if (leaderboardRes.ok) {
         const lbData = await leaderboardRes.json();
@@ -544,6 +567,57 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
           </div>
         )}
       </div>
+      )}
+
+      {/* ===== SUGGESTED ACCOUNTS ===== */}
+      {!suggestedDismissed && suggestedAccounts.length > 0 && (
+        <div className="glass-card rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-gold" />
+              <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Suggested For You</h3>
+            </div>
+            <button onClick={() => setSuggestedDismissed(true)} className="text-[10px] text-muted-foreground hover:text-white">
+              Dismiss
+            </button>
+          </div>
+          <div className="flex flex-col gap-2">
+            {suggestedAccounts.slice(0, 4).map((account: any) => (
+              <div key={account.id} className="flex items-center gap-3 rounded-xl bg-surface/50 border border-surface-border/50 px-3 py-2.5">
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await apiFetch('/api/users?handle=' + encodeURIComponent(account.handle));
+                      if (res.ok) { const u = await res.json(); setViewingUser(apiUserToViewing(u, false)); }
+                    } catch { /* noop */ }
+                  }}
+                  className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gold/10 text-xs font-bold text-gold"
+                >
+                  {account.avatarUrl ? (
+                    <img src={account.avatarUrl} alt={account.name} className="h-full w-full object-cover rounded-full" />
+                  ) : (
+                    account.avatarInitials || account.name.slice(0, 2).toUpperCase()
+                  )}
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await apiFetch('/api/users?handle=' + encodeURIComponent(account.handle));
+                      if (res.ok) { const u = await res.json(); setViewingUser(apiUserToViewing(u, false)); }
+                    } catch { /* noop */ }
+                  }}
+                  className="flex-1 min-w-0 text-left"
+                >
+                  <div className="flex items-center gap-1">
+                    <p className="text-sm font-semibold text-white truncate">{account.name}</p>
+                    {account.isVerified && <ShieldCheck className="h-3 w-3 text-gold flex-shrink-0" />}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground capitalize">{account.role} · @{account.handle}</p>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* ===== FEED POSTS ===== */}

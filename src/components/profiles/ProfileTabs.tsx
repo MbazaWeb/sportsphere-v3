@@ -14,11 +14,11 @@ interface ProfileTabsProps {
 
 export function ProfileTabs({ tabs, activeTab, onTabChange }: ProfileTabsProps) {
   return (
-    <div className="sticky top-0 z-30 mt-4 bg-background/95 backdrop-blur-xl border-b border-surface-border">
-      <div className="flex gap-1 px-4 py-2 overflow-x-auto scrollbar-hide">
+    <div className="sticky top-0 z-30 mt-3 bg-background/95 backdrop-blur-xl border-b border-surface-border">
+      <div className="flex gap-1.5 px-3 py-2 overflow-x-auto scrollbar-hide">
         {tabs.map((tab) => (
           <button key={tab.id} onClick={() => onTabChange(tab.id)}
-            className={cn('flex-shrink-0 rounded-lg px-3 py-2 text-sm font-bold transition-colors',
+            className={cn('flex-shrink-0 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-bold transition-colors whitespace-nowrap',
               activeTab === tab.id ? 'bg-gold text-black' : 'bg-surface text-muted-foreground hover:text-foreground')}>
             {tab.label}
           </button>

@@ -1,6 +1,5 @@
-﻿'use client';
+'use client';
 
-import { cn } from '@/lib/utils';
 import { formatCount } from '@/store/useAppStore';
 
 interface ProfileStatsProps {
@@ -12,18 +11,18 @@ interface ProfileStatsProps {
 
 export function ProfileStats({ followers, following, posts, onOpenList }: ProfileStatsProps) {
   return (
-    <div className="mt-4 px-4 grid grid-cols-3 gap-3">
-      <button onClick={() => onOpenList('followers')} className="glass-card rounded-xl p-3 text-center glass-card-hover hover:border-gold/30 transition-colors">
-        <p className="text-sm font-black text-gold">{formatCount(followers)}</p>
-        <p className="text-[10px] font-medium uppercase text-muted-foreground">Followers</p>
+    <div className="mt-3 px-3 sm:px-4 grid grid-cols-3 gap-2 sm:gap-3">
+      <button onClick={() => onOpenList('followers')} className="glass-card rounded-xl p-2.5 sm:p-3 text-center glass-card-hover hover:border-gold/30 transition-colors active:scale-95">
+        <p className="text-sm sm:text-base font-black text-gold">{formatCount(followers)}</p>
+        <p className="text-[9px] sm:text-[10px] font-medium uppercase text-muted-foreground">Followers</p>
       </button>
-      <button onClick={() => onOpenList('following')} className="glass-card rounded-xl p-3 text-center glass-card-hover hover:border-gold/30 transition-colors">
-        <p className="text-sm font-black text-gold">{formatCount(following)}</p>
-        <p className="text-[10px] font-medium uppercase text-muted-foreground">Following</p>
+      <button onClick={() => onOpenList('following')} className="glass-card rounded-xl p-2.5 sm:p-3 text-center glass-card-hover hover:border-gold/30 transition-colors active:scale-95">
+        <p className="text-sm sm:text-base font-black text-gold">{formatCount(following)}</p>
+        <p className="text-[9px] sm:text-[10px] font-medium uppercase text-muted-foreground">Following</p>
       </button>
-      <div className="glass-card rounded-xl p-3 text-center glass-card-hover">
-        <p className="text-sm font-black text-gold">{formatCount(posts)}</p>
-        <p className="text-[10px] font-medium uppercase text-muted-foreground">Posts</p>
+      <div className="glass-card rounded-xl p-2.5 sm:p-3 text-center glass-card-hover">
+        <p className="text-sm sm:text-base font-black text-gold">{formatCount(posts)}</p>
+        <p className="text-[9px] sm:text-[10px] font-medium uppercase text-muted-foreground">Posts</p>
       </div>
     </div>
   );
