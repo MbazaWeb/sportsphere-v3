@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   const raw = request.nextUrl.searchParams.get('handle')?.trim();
 
-  if (!raw || !/^[a-zA-Z0-9_-]{3,30}$/.test(raw)) {
+  if (!raw || raw.length < 3 || raw.length > 30) {
     return NextResponse.json({ available: false, reason: 'invalid' });
   }
 

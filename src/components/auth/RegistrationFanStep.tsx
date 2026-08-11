@@ -109,7 +109,7 @@ export function RegistrationFanStep({ onBack, onComplete }: RegistrationFanStepP
       setHandleStatus('idle');
       return;
     }
-    if (!/^[a-zA-Z0-9_-]{3,30}$/.test(raw)) {
+    if (raw.length < 3 || raw.length > 30) {
       setHandleStatus('invalid');
       return;
     }
@@ -225,7 +225,7 @@ export function RegistrationFanStep({ onBack, onComplete }: RegistrationFanStepP
       case 'taken':
         return <div className="flex items-center gap-1.5 text-xs text-red-400"><XCircle className="h-3 w-3" /> Taken — try another</div>;
       case 'invalid':
-        return <div className="flex items-center gap-1.5 text-xs text-amber-400"><XCircle className="h-3 w-3" /> 3-30 chars, letters, numbers, _ or -</div>;
+        return <div className="flex items-center gap-1.5 text-xs text-amber-400"><XCircle className="h-3 w-3" /> 3-30 characters</div>;
       default:
         return null;
     }

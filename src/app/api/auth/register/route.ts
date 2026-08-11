@@ -78,9 +78,9 @@ export async function POST(request: NextRequest) {
   const cleanEmail = email.toLowerCase().trim();
   const cleanHandle = handle.trim();
 
-  if (!/^[a-zA-Z0-9_-]{3,30}$/.test(cleanHandle)) {
+  if (cleanHandle.length < 3 || cleanHandle.length > 30) {
     return NextResponse.json(
-      { error: 'Handle must be 3-30 characters: letters, numbers, _ or - only.' }, { status: 400 },
+      { error: 'Handle must be 3-30 characters.' }, { status: 400 },
     );
   }
 
