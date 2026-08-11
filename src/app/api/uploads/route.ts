@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
-import fsSync, { Readable } from 'fs';
+import fsSync from 'fs';
+import { Readable } from 'stream';
 import path from 'path';
 import { getUserIdFromRequest } from '@/lib/auth';
 
@@ -58,7 +59,16 @@ function streamFileToDisk(file: File, filePath: string): Promise<number> {
 
     const writeStream = fsSync.createWriteStream(filePath);
     const webStream = file.stream();
-    const nodeStream = Readable.fromWeb(webStream as any);
+    // Convert Web ReadableStream to Node.js Readable for piping to disk
+    const reader = webStream.getReader();
+    const nodeStream = new Readable({
+      read() {
+        reader.read().then(({ done, value }) => {
+          if (done) { this.push(null); return; }
+          this.push(Buffer.from(value));
+        }).catch((err: Error) => this.destroy(err));
+      },
+    });
 
     let totalBytes = 0;
 
