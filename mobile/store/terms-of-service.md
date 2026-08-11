@@ -3,7 +3,7 @@
 **Last updated:** 2026-08-09
 **Effective date:** 2026-08-09
 
-These Terms of Service ("Terms") govern your use of the Sportsphere mobile application, the sportsphere.app website, and any related services (collectively, the "Service"). By creating an account or using the Service, you agree to these Terms. If you do not agree, do not use the Service.
+These Terms of Service ("Terms") govern your use of the Sportsphere mobile application, the sportssphere.fun website, and any related services (collectively, the "Service"). By creating an account or using the Service, you agree to these Terms. If you do not agree, do not use the Service.
 
 ## 1. Eligibility
 
@@ -80,7 +80,7 @@ These Terms are governed by the laws of the jurisdiction in which Sportsphere is
 
 ## 14. Dispute Resolution
 
-Before filing a claim, you agree to attempt informal resolution by emailing **legal@sportsphere.app** with a description of the dispute. If we cannot resolve the dispute within 30 days, either party may proceed to formal resolution.
+Before filing a claim, you agree to attempt informal resolution by emailing **legal@sportssphere.fun** with a description of the dispute. If we cannot resolve the dispute within 30 days, either party may proceed to formal resolution.
 
 ## 15. Changes to these Terms
 
@@ -89,7 +89,7 @@ We may update these Terms from time to time. We will notify you of material chan
 ## 16. Contact
 
 **Sportsphere — Legal**
-Email: **legal@sportsphere.app**
-Web: **https://sportsphere.app/terms**
+Email: **legal@sportssphere.fun**
+Web: **https://sportssphere.fun/terms**
 
 If you have a question about these Terms, an account issue, or a content takedown request, include your registered email and a clear description of the issue.

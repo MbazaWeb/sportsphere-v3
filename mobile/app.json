@@ -13,7 +13,7 @@
       "bundleIdentifier": "com.sportsphere.app",
       "backgroundColor": "#0A1628",
       "buildNumber": "1",
-      "associatedDomains": ["applinks:sportsphere.app"],
+      "associatedDomains": ["applinks:sportssphere.fun"],
       "infoPlist": {
         "CFBundleDisplayName": "Sportsphere",
         "CFBundleShortVersionString": "1.0.0",
@@ -41,12 +41,12 @@
           "data": [
             {
               "scheme": "https",
-              "host": "sportsphere.app",
+              "host": "sportssphere.fun",
               "pathPrefix": "/p"
             },
             {
               "scheme": "https",
-              "host": "sportsphere.app",
+              "host": "sportssphere.fun",
               "pathPrefix": "/u"
             }
           ],

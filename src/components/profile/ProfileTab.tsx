@@ -833,7 +833,7 @@ function SettingsSection({ onBack, onLogout }: { onBack: () => void; onLogout: (
                   onClick={() => {
                     if (item.section) openEditAt(item.section);
                     else if (item.id === 'help') {
-                      window.open('mailto:hello@sportsphere.app?subject=SportSphere%20Help', '_self');
+                      window.open('mailto:hello@sportssphere.fun?subject=SportSphere%20Help', '_self');
                     } else if (item.id === 'about') {
                       alert('SportSphere — The World\'s Biggest Sports Community. Version 3.0. Built with ❤️ for sports fans everywhere.');
                     }

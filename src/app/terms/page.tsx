@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Terms of Service — Sportsphere",
   description:
-    "The terms and conditions that govern your use of the Sportsphere mobile app and sportsphere.app website.",
+    "The terms and conditions that govern your use of the Sportsphere mobile app and sportssphere.fun website.",
   robots: { index: true, follow: true },
 };
 
@@ -20,7 +20,7 @@ export default function TermsOfServicePage() {
           </p>
           <p className="mt-6 text-base leading-relaxed text-white/80">
             These Terms of Service (&ldquo;Terms&rdquo;) govern your use of the
-            Sportsphere mobile application, the sportsphere.app website, and any
+            Sportsphere mobile application, the sportssphere.fun website, and any
             related services (collectively, the &ldquo;Service&rdquo;). By
             creating an account or using the Service, you agree to these Terms.
             If you do not agree, do not use the Service.
@@ -285,10 +285,10 @@ export default function TermsOfServicePage() {
               Before filing a claim, you agree to attempt informal resolution by
               emailing{" "}
               <a
-                href="mailto:legal@sportsphere.app"
+                href="mailto:legal@sportssphere.fun"
                 className="text-[#F5C518] underline underline-offset-4 hover:text-[#FF6B35]"
               >
-                legal@sportsphere.app
+                legal@sportssphere.fun
               </a>{" "}
               with a description of the dispute. If we cannot resolve the
               dispute within 30 days, either party may proceed to formal
@@ -316,10 +316,10 @@ export default function TermsOfServicePage() {
               <br />
               Email:{" "}
               <a
-                href="mailto:legal@sportsphere.app"
+                href="mailto:legal@sportssphere.fun"
                 className="text-[#F5C518] underline underline-offset-4 hover:text-[#FF6B35]"
               >
-                legal@sportsphere.app
+                legal@sportssphere.fun
               </a>
               <br />
               Web:{" "}
@@ -327,7 +327,7 @@ export default function TermsOfServicePage() {
                 href="/sportsphere/terms"
                 className="text-[#F5C518] underline underline-offset-4 hover:text-[#FF6B35]"
               >
-                https://sportsphere.app/sportsphere/terms
+                https://sportssphere.fun/sportsphere/terms
               </a>
             </p>
             <p className="mt-4">

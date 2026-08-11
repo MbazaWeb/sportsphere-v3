@@ -66,7 +66,7 @@ fi
 # ─── 2. Write .env (Next.js reads .env in production) ────────────
 echo "[2/9] Writing environment files..."
 DATABASE_URL="postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}"
-DOMAIN="sportsphere.app"
+DOMAIN="sportssphere.fun"
 
 # Main App .env
 cat > .env << ENV
@@ -166,9 +166,9 @@ echo ""
 echo "======================================"
 echo "  ✅ FULL STACK DEPLOY COMPLETE"
 echo "======================================"
-echo "  Fan App:    https://sportsphere.app/sportsphere"
-echo "  Admin:      https://sportsphere.app/sportsphere-admin"
-echo "  Real-time:  https://sportsphere.app/socket.io"
+echo "  Fan App:    https://sportssphere.fun/sportsphere"
+echo "  Admin:      https://sportssphere.fun/sportsphere-admin"
+echo "  Real-time:  https://sportssphere.fun/socket.io"
 echo ""
 echo "  PM2 Status:"
 pm2 status

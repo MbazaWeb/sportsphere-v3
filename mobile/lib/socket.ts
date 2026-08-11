@@ -10,7 +10,7 @@ import { API_BASE_URL } from './api';
 
 // If API_BASE_URL is 'http://104.152.50.173:3002/sportsphere',
 // we want the socket to connect to 'http://104.152.50.173:3002' (or the proxy port).
-// Actually, in production it's 'https://sportsphere.app/socket.io'
+// Actually, in production it's 'https://sportssphere.fun/socket.io'
 const getSocketUrl = () => {
   if (!API_BASE_URL) return '';
   try {

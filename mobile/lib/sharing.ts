@@ -1,6 +1,6 @@
 import { Share, Platform } from 'react-native';
 
-const BASE_URL = 'https://sportsphere.app';
+const BASE_URL = 'https://sportssphere.fun';
 
 export async function sharePost(postId: string, content: string) {
   try {

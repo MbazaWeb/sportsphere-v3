@@ -8,7 +8,7 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
     // Restrict navigation to your own domain only.
     // Replace with your actual production domain before building.
-    allowNavigation: ['sportsphere.app', '*.sportsphere.app'],
+    allowNavigation: ['sportssphere.fun', '*.sportssphere.fun'],
   },
   plugins: {
     SplashScreen: {

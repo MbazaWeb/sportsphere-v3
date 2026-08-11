@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Privacy Policy — Sportsphere",
   description:
-    "How Sportsphere collects, uses, and protects your information when you use the mobile app and sportsphere.app website.",
+    "How Sportsphere collects, uses, and protects your information when you use the mobile app and sportssphere.fun website.",
   robots: { index: true, follow: true },
 };
 
@@ -22,7 +22,7 @@ export default function PrivacyPolicyPage() {
             This Privacy Policy describes how Sportsphere (&ldquo;we&rdquo;,
             &ldquo;us&rdquo;, &ldquo;our&rdquo;) collects, uses, and protects your
             information when you use the Sportsphere mobile application and the
-            sportsphere.app website (collectively, the &ldquo;Service&rdquo;). By
+            sportssphere.fun website (collectively, the &ldquo;Service&rdquo;). By
             creating an account or using the Service, you agree to the practices
             described below.
           </p>
@@ -301,10 +301,10 @@ export default function PrivacyPolicyPage() {
             <p className="mt-4">
               To exercise any of these rights, email{" "}
               <a
-                href="mailto:privacy@sportsphere.app"
+                href="mailto:privacy@sportssphere.fun"
                 className="text-[#F5C518] underline underline-offset-4 hover:text-[#FF6B35]"
               >
-                privacy@sportsphere.app
+                privacy@sportssphere.fun
               </a>{" "}
               from the email address registered on your account. We respond
               within 30 days.
@@ -353,10 +353,10 @@ export default function PrivacyPolicyPage() {
               EU). We do not knowingly collect personal data from children. If
               you believe we have collected information from a child, contact{" "}
               <a
-                href="mailto:privacy@sportsphere.app"
+                href="mailto:privacy@sportssphere.fun"
                 className="text-[#F5C518] underline underline-offset-4 hover:text-[#FF6B35]"
               >
-                privacy@sportsphere.app
+                privacy@sportssphere.fun
               </a>{" "}
               and we will delete it.
             </p>
@@ -406,10 +406,10 @@ export default function PrivacyPolicyPage() {
               <br />
               Email:{" "}
               <a
-                href="mailto:privacy@sportsphere.app"
+                href="mailto:privacy@sportssphere.fun"
                 className="text-[#F5C518] underline underline-offset-4 hover:text-[#FF6B35]"
               >
-                privacy@sportsphere.app
+                privacy@sportssphere.fun
               </a>
               <br />
               Web:{" "}
@@ -417,7 +417,7 @@ export default function PrivacyPolicyPage() {
                 href="/sportsphere/privacy"
                 className="text-[#F5C518] underline underline-offset-4 hover:text-[#FF6B35]"
               >
-                https://sportsphere.app/sportsphere/privacy
+                https://sportssphere.fun/sportsphere/privacy
               </a>
             </p>
             <p className="mt-4">

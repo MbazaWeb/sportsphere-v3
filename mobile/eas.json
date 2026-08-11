@@ -47,14 +47,14 @@
         "image": "latest"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://sportsphere.app/sportsphere"
+        "EXPO_PUBLIC_API_URL": "https://sportssphere.fun/sportsphere"
       }
     }
   },
   "submit": {
     "development": {
       "ios": {
-        "appleId": "dev@sportsphere.app",
+        "appleId": "dev@sportssphere.fun",
         "ascAppId": "1660123456",
         "appleTeamId": "SPHR9X8W2T"
       },
@@ -66,7 +66,7 @@
     },
     "preview": {
       "ios": {
-        "appleId": "dev@sportsphere.app",
+        "appleId": "dev@sportssphere.fun",
         "ascAppId": "1660123456",
         "appleTeamId": "SPHR9X8W2T"
       },
@@ -78,7 +78,7 @@
     },
     "production": {
       "ios": {
-        "appleId": "dev@sportsphere.app",
+        "appleId": "dev@sportssphere.fun",
         "ascAppId": "1660123456",
         "appleTeamId": "SPHR9X8W2T",
         "ascApiKeyPath": "./store/credentials/AuthKey_7KQ3X9P2HJ.p8",

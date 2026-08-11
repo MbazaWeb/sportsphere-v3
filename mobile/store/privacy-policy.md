@@ -3,7 +3,7 @@
 **Last updated:** 2026-08-09
 **Effective date:** 2026-08-09
 
-This Privacy Policy describes how Sportsphere ("we", "us", "our") collects, uses, and protects your information when you use the Sportsphere mobile application and the sportsphere.app website (collectively, the "Service"). By creating an account or using the Service, you agree to the practices described below.
+This Privacy Policy describes how Sportsphere ("we", "us", "our") collects, uses, and protects your information when you use the Sportsphere mobile application and the sportssphere.fun website (collectively, the "Service"). By creating an account or using the Service, you agree to the practices described below.
 
 ## 1. Information We Collect
 
@@ -70,7 +70,7 @@ Depending on your jurisdiction, you may have the right to:
 - **Withdraw consent** at any time (for consent-based processing)
 - **Lodge a complaint** with your supervisory authority
 
-To exercise any of these rights, email **privacy@sportsphere.app** from the email address registered on your account. We respond within 30 days.
+To exercise any of these rights, email **privacy@sportssphere.fun** from the email address registered on your account. We respond within 30 days.
 
 ## 7. Security
 
@@ -82,7 +82,7 @@ To exercise any of these rights, email **privacy@sportsphere.app** from the emai
 
 ## 8. Children's Privacy
 
-The Service is not directed at children under 13 (under 16 in the EU). We do not knowingly collect personal data from children. If you believe we have collected information from a child, contact **privacy@sportsphere.app** and we will delete it.
+The Service is not directed at children under 13 (under 16 in the EU). We do not knowingly collect personal data from children. If you believe we have collected information from a child, contact **privacy@sportssphere.fun** and we will delete it.
 
 ## 9. International Transfers
 
@@ -99,7 +99,7 @@ We may update this Privacy Policy from time to time. We will notify you of mater
 ## 12. Contact
 
 **Sportsphere — Data Protection**
-Email: **privacy@sportsphere.app**
-Web: **https://sportsphere.app/privacy**
+Email: **privacy@sportssphere.fun**
+Web: **https://sportssphere.fun/privacy**
 
 For verification requests, account deletion, or data export, include your registered email address and a description of your request.

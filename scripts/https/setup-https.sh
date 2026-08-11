@@ -14,18 +14,18 @@
 #
 # PREREQUISITES:
 #   - Ubuntu 22.04 / 24.04 VPS with root or sudo access
-#   - DNS A record for sportsphere.app → your VPS IP (104.152.50.173)
-#   - DNS A record for www.sportsphere.app → same IP (optional but recommended)
+#   - DNS A record for sportssphere.fun → your VPS IP (104.152.50.173)
+#   - DNS A record for www.sportssphere.fun → same IP (optional but recommended)
 #   - Ports 80 + 443 open in your VPS firewall (ufw allow 80,443/tcp)
 #   - Next.js PM2 process running on 127.0.0.1:3002 (verify: curl http://localhost:3002/sportsphere/api/health)
 #
 # USAGE:
-#   sudo bash scripts/https/setup-https.sh sportsphere.app
-#   sudo bash scripts/https/setup-https.sh sportsphere.app www.sportsphere.app
+#   sudo bash scripts/https/setup-https.sh sportssphere.fun
+#   sudo bash scripts/https/setup-https.sh sportssphere.fun www.sportssphere.fun
 #
 # After successful run, verify:
-#   curl -I https://sportsphere.app/sportsphere/api/health
-#   curl -I https://sportsphere.app/privacy     # → 301 → /sportsphere/privacy
+#   curl -I https://sportssphere.fun/sportsphere/api/health
+#   curl -I https://sportssphere.fun/privacy     # → 301 → /sportsphere/privacy
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
@@ -44,7 +44,7 @@ fi
 
 if [[ $# -lt 1 ]]; then
   echo "Usage: sudo bash $0 <primary-domain> [secondary-domain ...]"
-  echo "Example: sudo bash $0 sportsphere.app www.sportsphere.app"
+  echo "Example: sudo bash $0 sportssphere.fun www.sportssphere.fun"
   exit 1
 fi
 
@@ -374,7 +374,7 @@ Nginx:
   • Logs:   sudo tail -f /var/log/nginx/access.log /var/log/nginx/error.log
 
 Next steps:
-  1. Update mobile/eas.json production env URL (already points to https://sportsphere.app/sportsphere)
+  1. Update mobile/eas.json production env URL (already points to https://sportssphere.fun/sportsphere)
   2. Run mobile/scripts/credentials-check.sh to verify the production URL is HTTPS
   3. Update mobile/app.json iOS NSAppTransportSecurity — you can now REMOVE the
      NSExceptionDomains entry for 104.152.50.173 (no longer needed once HTTPS works)

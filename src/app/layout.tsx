@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "SportSphere",
     description: "The World's Biggest Sports Community",
-    url: "https://sportsphere.app",
+    url: "https://sportssphere.fun",
     siteName: "SportSphere",
     images: [
       {

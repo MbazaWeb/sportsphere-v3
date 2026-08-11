@@ -14,10 +14,10 @@ This directory contains the scripts and Nginx config to terminate TLS at Nginx a
 
 Before running `setup-https.sh`, make sure:
 
-1. **DNS is configured** — **plain A records** (not CNAME, not a CDN proxy) for `sportsphere.app` and `www.sportsphere.app` both pointing directly at your VPS IP (`104.152.50.173`). Verify with:
+1. **DNS is configured** — **plain A records** (not CNAME, not a CDN proxy) for `sportssphere.fun` and `www.sportssphere.fun` both pointing directly at your VPS IP (`104.152.50.173`). Verify with:
    ```bash
-   getent hosts sportsphere.app
-   getent hosts www.sportsphere.app
+   getent hosts sportssphere.fun
+   getent hosts www.sportssphere.fun
    # Expected: both lines should show 104.152.50.173
    ```
    **If the resolved IP is anything else** (e.g. `13.248.x.x` or `76.223.x.x` — AWS Global Accelerator IPs, which appear if the domain is set up as an AWS-managed endpoint), Let's Encrypt's HTTP-01 challenge will be routed to AWS instead of your VPS and verification will fail. The setup script auto-detects this and aborts before calling certbot.
@@ -46,13 +46,13 @@ Before running `setup-https.sh`, make sure:
 ssh deploy@104.152.50.173
 cd /var/www/sportsphere-nextjs
 git pull origin main
-sudo bash scripts/https/setup-https.sh sportsphere.app www.sportsphere.app
+sudo bash scripts/https/setup-https.sh sportssphere.fun www.sportssphere.fun
 ```
 
 ### Staging test (use Let's Encrypt staging to avoid rate limits)
 
 ```bash
-sudo STAGING=1 bash scripts/https/setup-https.sh sportsphere.app
+sudo STAGING=1 bash scripts/https/setup-https.sh sportssphere.fun
 # Staging certs are not trusted by browsers — only for testing the flow.
 # Once the staging run succeeds, re-run without STAGING=1 for real certs.
 ```
@@ -75,7 +75,7 @@ sudo certbot renew --dry-run    # verify hook fires
 4. **Installs HTTP-only Nginx config** — temporary, just so certbot can verify domain ownership
 5. **Obtains Let's Encrypt cert** via `certbot --nginx` with HSTS + OCSP stapling auto-enabled
 6. **Replaces with full HTTPS config** — overwrites the temp config with the canonical `nginx/sportsphere.conf` from the repo, which has all security headers + reverse-proxy + short-URL redirects
-7. **Verifies HTTPS endpoints** — `curl https://sportsphere.app/sportsphere/api/health` and `/privacy` redirect
+7. **Verifies HTTPS endpoints** — `curl https://sportssphere.fun/sportsphere/api/health` and `/privacy` redirect
 
 ## Security headers included
 
@@ -102,7 +102,7 @@ This scores **A+ on SSL Labs**.
 
 ## Short URLs
 
-Apple and Google store listings expect `https://sportsphere.app/privacy` (no `/sportsphere` prefix). The Next.js app uses `basePath: /sportsphere`, so the actual route is `/sportsphere/privacy`. The Nginx config bridges this with 301 redirects:
+Apple and Google store listings expect `https://sportssphere.fun/privacy` (no `/sportsphere` prefix). The Next.js app uses `basePath: /sportsphere`, so the actual route is `/sportsphere/privacy`. The Nginx config bridges this with 301 redirects:
 
 ```nginx
 location = /privacy { return 301 https://$host/sportsphere/privacy; }
@@ -140,7 +140,7 @@ The `usesCleartextTraffic: true` in the Android section can also be removed.
 
 ### "DNS for X does not resolve"
 - Wait for DNS propagation (can take up to 48 hours, usually 5–15 minutes).
-- Verify with `dig sportsphere.app +short` from a different network.
+- Verify with `dig sportssphere.fun +short` from a different network.
 
 ### "Next.js API not reachable at localhost:3002"
 - `pm2 list` to confirm the process is online.
@@ -160,7 +160,7 @@ This happens on older certbot (< 1.24, e.g. Ubuntu 22.04 ships certbot 1.21.0). 
 ```bash
 cd /var/www/sportsphere-nextjs
 git pull origin main
-sudo bash scripts/https/setup-https.sh sportsphere.app www.sportsphere.app
+sudo bash scripts/https/setup-https.sh sportssphere.fun www.sportssphere.fun
 ```
 
 ### "Aborting: DNS does not point at this VPS"
@@ -173,17 +173,17 @@ The script's preflight check resolved your domain and found that none of its IPs
 4. If your VPS also has IPv6 connectivity, you can additionally create an **AAAA record** (IPv6) → the VPS's IPv6. Optional but recommended for v6-capable clients.
 5. **Important:** if the record is currently a CNAME pointing at an AWS endpoint, **do not just edit the value — delete the CNAME and create a plain A record**. Let's Encrypt's HTTP-01 challenge cannot traverse through AWS Global Accelerator or Cloudflare's orange-cloud proxy
 6. If using Cloudflare, set proxy status to **DNS only** (grey cloud, not orange cloud)
-7. Wait for DNS propagation (typically 5–15 min — verify with `dig +short sportsphere.app @1.1.1.1` from a different network)
-8. Re-run the script. If you want to proceed anyway despite the mismatch (NOT recommended — Let's Encrypt will still fail):
+7. Wait for DNS propagation (typically 5–15 min — verify with `dig +short sportssphere.fun @1.1.1.1` from a different network)
+8. Re-run the script. If you want to proceed anyway despite the mismatch (NOT recommended — Let's EncLocal certs will still fail):
    ```bash
-   sudo SKIP_DNS_CHECK=1 bash scripts/https/setup-https.sh sportsphere.app www.sportsphere.app
+   sudo SKIP_DNS_CHECK=1 bash scripts/https/setup-https.sh sportssphere.fun www.sportssphere.fun
    ```
 
 If you want to override the auto-detected VPS IP (e.g. the auto-detection picked IPv6 but you want to verify against IPv4):
 ```bash
-sudo VPS_PUBLIC_IPV4=104.152.50.173 bash scripts/https/setup-https.sh sportsphere.app www.sportsphere.app
+sudo VPS_PUBLIC_IPV4=104.152.50.173 bash scripts/https/setup-https.sh sportssphere.fun www.sportssphere.fun
 # Or both:
-sudo VPS_PUBLIC_IPV4=104.152.50.173 VPS_PUBLIC_IPV6=2602:fc16:6:4::bd8c bash scripts/https/setup-https.sh sportsphere.app www.sportsphere.app
+sudo VPS_PUBLIC_IPV4=104.152.50.173 VPS_PUBLIC_IPV6=2602:fc16:6:4::bd8c bash scripts/https/setup-https.sh sportssphere.fun www.sportssphere.fun
 ```
 
 ### "nginx: configuration test failed"
@@ -197,4 +197,4 @@ sudo VPS_PUBLIC_IPV4=104.152.50.173 VPS_PUBLIC_IPV6=2602:fc16:6:4::bd8c bash scr
 
 ### iOS app still rejects HTTPS
 - Apple caches ATS exceptions; do a clean build of the iOS app after removing the `NSAppTransportSecurity` block from `app.json`.
-- Verify with `curl -vI https://sportsphere.app/sportsphere/api/health` — should show TLS 1.3 + a valid cert chain.
+- Verify with `curl -vI https://sportssphere.fun/sportsphere/api/health` — should show TLS 1.3 + a valid cert chain.

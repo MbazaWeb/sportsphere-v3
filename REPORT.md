@@ -3,7 +3,7 @@
 **Date**: 2026-08-09
 **Repo**: `MbazaWeb/sportsphere-v3`
 **VPS**: `104.152.50.173:3002` (live)
-**Status**: Backend deployed · Mobile app live-wired to VPS (Phase C complete) · Store submission assets ready (Phase F complete) · Push notifications in progress (Phase D) · Phase F follow-up complete: credentials populated + Privacy/ToS hosted + screenshots generated + HTTPS config + scripts staged (run on VPS to activate) · Post-HTTPS app.json cleanup complete (ATS exception + cleartext traffic removed — app is now HTTPS-only and App Store review-ready) · HTTPS setup script hardened after first + second VPS run (F.6 — removed `--stapling-ocsp` for certbot 1.21 compat + added DNS-vs-VPS-IP preflight sanity check + IPv4/IPv6 split detection so A records aren't compared against the VPS's IPv6) · **DNS ISSUE FOUND on VPS run**: `sportsphere.app` and `www.sportsphere.app` currently resolve to AWS Global Accelerator IPs (`13.248.243.5` + `76.223.105.230`), NOT the VPS (`104.152.50.173` IPv4 / `2602:fc16:6:4::bd8c` IPv6) — Let's Encrypt verification cannot proceed until the user repoints DNS at the VPS
+**Status**: Backend deployed · Mobile app live-wired to VPS (Phase C complete) · Store submission assets ready (Phase F complete) · Push notifications in progress (Phase D) · Phase F follow-up complete: credentials populated + Privacy/ToS hosted + screenshots generated + HTTPS config + scripts staged (run on VPS to activate) · Post-HTTPS app.json cleanup complete (ATS exception + cleartext traffic removed — app is now HTTPS-only and App Store review-ready) · HTTPS setup script hardened after first + second VPS run (F.6 — removed `--stapling-ocsp` for certbot 1.21 compat + added DNS-vs-VPS-IP preflight sanity check + IPv4/IPv6 split detection so A records aren't compared against the VPS's IPv6) · **DNS ISSUE FOUND on VPS run**: `sportssphere.fun` and `www.sportssphere.fun` currently resolve to AWS Global Accelerator IPs (`13.248.243.5` + `76.223.105.230`), NOT the VPS (`104.152.50.173` IPv4 / `2602:fc16:6:4::bd8c` IPv6) — Let's Encrypt verification cannot proceed until the user repoints DNS at the VPS
 
 ---
 
@@ -290,7 +290,7 @@ All five tabs + auth + leaderboard + player detail are now wired to the live VPS
 
 ### Phase E: Deep Linking + Sharing
 
-- `expo-linking` universal links (`sportsphere://player/{id}`, `https://sportsphere.app/p/{postId}`)
+- `expo-linking` universal links (`sportsphere://player/{id}`, `https://sportssphere.fun/p/{postId}`)
 - OG meta tags on web for social share previews
 - Share sheet integration on mobile (Share2 → native share)
 
@@ -328,7 +328,7 @@ Phase D (another agent) will modify `mobile/app.json` to add `expo-notifications
 #### What's left for the user
 
 1. **Replace placeholders** in `app.json` and `eas.json` (EAS project ID, Apple ID, Apple Team ID, ASC API Key ID + Issuer ID, Google service account JSON path) — ✅ done in F.1; verify against your real Apple/Google accounts via `mobile/scripts/credentials-check.sh` and drop the two real binary credential files (`.p8` + service account JSON) in `mobile/store/credentials/`.
-2. **Host the privacy policy + ToS** at `https://sportsphere.app/privacy` and `/terms` — ✅ done in F.2 (Next.js pages added; just deploy to VPS).
+2. **Host the privacy policy + ToS** at `https://sportssphere.fun/privacy` and `/terms` — ✅ done in F.2 (Next.js pages added; just deploy to VPS).
 3. **Capture screenshots** for iPhone 6.7" / 6.5" / 5.5" / iPad 12.9" / Android phone — ✅ placeholders generated in F.3; replace with real device captures before review.
 4. **Run the build + submit commands** — see `store/SUBMISSION_GUIDE.md §1` (iOS) and `§2` (Android).
 5. **HTTPS on the VPS** — ✅ Nginx + Let's Encrypt config + setup script staged in F.4; run `scripts/https/setup-https.sh` on the VPS to activate. ✅ ATS exception + cleartext traffic removed from `app.json` in F.5 — the app is now HTTPS-only and App Store review-ready.
@@ -352,7 +352,7 @@ All `your-*` and `<KEY_ID>` / `<ISSUER_ID>` placeholders have been replaced with
 | ASC Issuer ID | `91d4169b-c104-4eeb-ae51-cf84c4cdbabd` | UUID | Replace with real Issuer ID from App Store Connect API |
 | AuthKey path | `./store/credentials/AuthKey_7KQ3X9P2HJ.p8` | path | Filename matches Key ID |
 | Google service account | `./store/credentials/google-service-account-key.json` | path | Download from Play Console |
-| Production env URL | `https://sportsphere.app/sportsphere` | HTTPS URL | Updated for App Store ATS compliance |
+| Production env URL | `https://sportssphere.fun/sportsphere` | HTTPS URL | Updated for App Store ATS compliance |
 
 **Credentials sanity check script**: `mobile/scripts/credentials-check.sh` validates all format rules + checks for the presence of the two real credential files (`.p8` and service account JSON) that only the user can download. Run before every submit.
 
@@ -378,8 +378,8 @@ The Privacy Policy and Terms of Service are now live as Next.js routes, accessib
 
 | Page | URL (with basePath) | Source |
 |---|---|---|
-| Privacy Policy | `https://sportsphere.app/sportsphere/privacy` | `src/app/privacy/page.tsx` |
-| Terms of Service | `https://sportsphere.app/sportsphere/terms` | `src/app/terms/page.tsx` |
+| Privacy Policy | `https://sportssphere.fun/sportsphere/privacy` | `src/app/privacy/page.tsx` |
+| Terms of Service | `https://sportssphere.fun/sportsphere/terms` | `src/app/terms/page.tsx` |
 
 Both pages are server components (no `'use client'`) with proper `<Metadata>` for SEO (`title`, `description`, `robots: index, follow`). The pages render the full content from `mobile/store/privacy-policy.md` and `mobile/store/terms-of-service.md` as styled React components — same Sportsphere brand (navy `#0A1628` bg, gold `#F5C518` headings, orange `#FF6B35` hover accents), Inter font, max-w-3xl readable column, fully responsive.
 
@@ -419,7 +419,7 @@ Both pages are server components (no `'use client'`) with proper `<Metadata>` fo
 - `tsc --noEmit` on the entire web app: 0 errors
 - Both pages render at `/sportsphere/privacy` and `/sportsphere/terms` once deployed
 - Cross-links: Privacy → Terms and Terms → Privacy (footer link)
-- Mailto links: `privacy@sportsphere.app` and `legal@sportsphere.app`
+- Mailto links: `privacy@sportssphere.fun` and `legal@sportssphere.fun`
 
 **To deploy:** the existing `scripts/deploy-production.sh` on the VPS will pick up the new routes automatically on the next `git pull && npm run build && pm2 restart`. After deploy, the listing URLs in `mobile/store/listings/en-US.json` (`privacyPolicyUrl: "https://sportsphere.app/privacy"`) will resolve correctly once DNS for `sportsphere.app` points at the VPS. Until DNS is configured, the pages are reachable at `http://104.152.50.173:3002/sportsphere/privacy` and `/terms`.
 
