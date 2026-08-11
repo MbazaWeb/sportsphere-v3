@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Trophy, Radio } from 'lucide-react';
+import { Trophy, Radio, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type MatchStatus = 'live' | 'ht' | 'ft' | 'upcoming' | 'postponed' | 'cancelled';
@@ -29,7 +29,7 @@ interface MatchListProps {
   label: string;
 }
 
-// ─── Status badge ──────────────────────────────────────────────
+// ─── Status badge ────────────────────────────────────────────────────────────────────────────────────────────
 function StatusBadge({ status, minute }: { status: MatchStatus; minute: number | null }) {
   switch (status) {
     case 'live':
@@ -68,7 +68,7 @@ function StatusBadge({ status, minute }: { status: MatchStatus; minute: number |
   }
 }
 
-// ─── Team badge with fallback ──────────────────────────────────
+// ─── Team badge with fallback ───────────────────────────────────────────────────────────────────────────────────────────────────────
 function TeamBadge({ src, name }: { src?: string; name: string }) {
   const initials = name
     .split(' ')
@@ -100,7 +100,7 @@ function TeamBadge({ src, name }: { src?: string; name: string }) {
   );
 }
 
-// ─── Kickoff time formatter ───────────────────────────────────
+// ─── Kickoff time formatter ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 function formatKickoff(isoStr: string): string {
   if (!isoStr) return '';
   const d = new Date(isoStr);
@@ -108,7 +108,68 @@ function formatKickoff(isoStr: string): string {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-// ─── League-grouped match card ─────────────────────────────────
+// ─── Match row ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+function MatchRow({ m }: { m: ApiMatch }) {
+  const isLive = m.status === 'live' || m.status === 'ht';
+
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-3 px-4 py-3 transition-all duration-200',
+        isLive && 'bg-red-500/[0.04] border-l-2 border-l-red-500/40',
+        !isLive && 'hover:bg-surface-elevated/50',
+      )}
+    >
+      {/* Home */}
+      <div className="flex items-center gap-2.5 flex-1 min-w-0">
+        <TeamBadge src={m.homeBadge} name={m.homeTeam} />
+        <span className="text-[13px] font-semibold text-foreground truncate">{m.homeTeam}</span>
+      </div>
+
+      {/* Score / Time */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {m.status === 'upcoming' ? (
+          <div className="flex flex-col items-center">
+            <span className="text-xs font-bold text-gold">
+              {formatKickoff(m.kickoffAt)}
+            </span>
+            {m.venue && (
+              <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground mt-0.5">
+                <MapPin className="h-2.5 w-2.5" />
+                {m.venue.length > 18 ? m.venue.slice(0, 18) + '...' : m.venue}
+              </span>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 min-w-[52px] justify-center">
+            <span className={cn(
+              'text-lg font-extrabold tabular-nums tracking-tight',
+              isLive ? 'text-white' : 'text-foreground'
+            )}>
+              {m.homeScore ?? 0}
+            </span>
+            <span className="text-[10px] text-muted-foreground font-medium">-</span>
+            <span className={cn(
+              'text-lg font-extrabold tabular-nums tracking-tight',
+              isLive ? 'text-white' : 'text-foreground'
+            )}>
+              {m.awayScore ?? 0}
+            </span>
+          </div>
+        )}
+        <StatusBadge status={m.status} minute={m.minute} />
+      </div>
+
+      {/* Away */}
+      <div className="flex items-center gap-2.5 flex-1 min-w-0 justify-end">
+        <span className="text-[13px] font-semibold text-foreground truncate text-right">{m.awayTeam}</span>
+        <TeamBadge src={m.awayBadge} name={m.awayTeam} />
+      </div>
+    </div>
+  );
+}
+
+// ─── League-grouped match card ────────────────────────────────────────────────────────────────────────────────────────────
 function LeagueGroup({
   league,
   badge,
@@ -118,77 +179,40 @@ function LeagueGroup({
   badge?: string;
   matches: ApiMatch[];
 }) {
+  const hasLive = matches.some((m) => m.status === 'live' || m.status === 'ht');
+
   return (
-    <div className="rounded-2xl border border-surface-border bg-surface/50 overflow-hidden">
+    <div className="rounded-2xl border border-surface-border bg-surface/40 overflow-hidden shadow-sm">
       {/* League header */}
-      <div className="flex items-center gap-2.5 px-4 py-2.5 bg-surface-border/30 border-b border-surface-border">
+      <div className={cn(
+        'flex items-center gap-2.5 px-4 py-2.5 border-b border-surface-border/60',
+        hasLive ? 'bg-red-500/[0.06]' : 'bg-surface-border/20'
+      )}>
         {badge ? (
           <img src={badge} alt="" className="h-4 w-4 object-contain" />
         ) : (
           <Trophy className="h-3.5 w-3.5 text-gold" />
         )}
-        <span className="text-xs font-bold text-foreground truncate">{league}</span>
-        {matches.some((m) => m.status === 'live' || m.status === 'ht') && (
-          <Radio className="h-3 w-3 text-red-400 animate-pulse ml-auto flex-shrink-0" />
+        <span className="text-xs font-bold text-foreground truncate flex-1">{league}</span>
+        {hasLive && (
+          <span className="flex items-center gap-1 text-[10px] font-bold text-red-400">
+            <Radio className="h-3 w-3 animate-pulse" />
+            LIVE
+          </span>
         )}
       </div>
 
       {/* Match rows */}
-      <div className="divide-y divide-surface-border/50">
+      <div className="divide-y divide-surface-border/30">
         {matches.map((m) => (
-          <div
-            key={m.id}
-            className={cn(
-              'flex items-center gap-3 px-4 py-3 transition-colors',
-              m.status === 'live' && 'bg-red-500/[0.03]',
-              'hover:bg-surface-elevated/50'
-            )}
-          >
-            {/* Home */}
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <TeamBadge src={m.homeBadge} name={m.homeTeam} />
-              <span className="text-sm font-medium text-foreground truncate">{m.homeTeam}</span>
-            </div>
-
-            {/* Score / Time */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {m.status === 'upcoming' ? (
-                <span className="text-xs font-semibold text-gold min-w-[40px] text-center">
-                  {formatKickoff(m.kickoffAt)}
-                </span>
-              ) : (
-                <div className="flex items-center gap-1.5 min-w-[50px] justify-center">
-                  <span className={cn(
-                    'text-base font-bold tabular-nums',
-                    m.status === 'live' ? 'text-white' : 'text-gold'
-                  )}>
-                    {m.homeScore ?? 0}
-                  </span>
-                  <span className="text-xs text-muted-foreground">-</span>
-                  <span className={cn(
-                    'text-base font-bold tabular-nums',
-                    m.status === 'live' ? 'text-white' : 'text-gold'
-                  )}>
-                    {m.awayScore ?? 0}
-                  </span>
-                </div>
-              )}
-              <StatusBadge status={m.status} minute={m.minute} />
-            </div>
-
-            {/* Away */}
-            <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-              <span className="text-sm font-medium text-foreground truncate text-right">{m.awayTeam}</span>
-              <TeamBadge src={m.awayBadge} name={m.awayTeam} />
-            </div>
-          </div>
+          <MatchRow key={m.id} m={m} />
         ))}
       </div>
     </div>
   );
 }
 
-// ─── Main MatchList ─────────────────────────────────────────────
+// ─── Main MatchList ───────────────────────────────────────────────────────────────────────────────────────────────────────
 export function MatchList({ matches, loading, label }: MatchListProps) {
   // Group matches by league
   const grouped = useMemo(() => {

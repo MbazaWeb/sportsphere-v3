@@ -441,3 +441,51 @@ body {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+/* ══════════════════════════════════════════════════════════════
+   CROSS-PLATFORM CONSISTENCY — same feel on PWA mobile + desktop web
+   ══════════════════════════════════════════════════════════════ */
+
+/* App shell — single source of truth for max-width on all screens */
+.app-shell {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 100dvh;
+  margin: 0 auto;
+  background: var(--background);
+  padding-left: max(env(safe-area-inset-left, 0px), 0px);
+  padding-right: max(env(safe-area-inset-right, 0px), 0px);
+}
+
+/* Tablet+: center with subtle frame borders */
+@media (min-width: 640px) {
+  .app-shell {
+    max-width: 500px;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 100px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* Desktop: subtle gold ambient glow behind the app to fill the void */
+@media (min-width: 768px) {
+  body::after {
+    content: '';
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(245, 197, 24, 0.015) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+/* Large desktop: keep the phone-like column, cap slightly tighter */
+@media (min-width: 1280px) {
+  .app-shell {
+    max-width: 480px;
+  }
+}

@@ -1,6 +1,6 @@
 'use client';
 import type { HomeSubTab } from '@/store/navigationStore';
-import { Search, Bell, Inbox, ShoppingBag, Trophy } from 'lucide-react';
+import { Search, Bell, Trophy, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useNavigationStore } from '@/store/navigationStore';
@@ -16,11 +16,9 @@ const SUBTABS = [
 interface HomeHeaderProps {
   isSearchOpen: boolean;
   setIsSearchOpen: (val: boolean) => void;
-  isCartOpen: boolean;
-  setIsCartOpen: (val: boolean) => void;
 }
 
-export function HomeHeader({ isSearchOpen, setIsSearchOpen, isCartOpen, setIsCartOpen }: HomeHeaderProps) {
+export function HomeHeader({ isSearchOpen, setIsSearchOpen }: HomeHeaderProps) {
   const homeSubTab = useNavigationStore((s) => s.homeSubTab);
   const setHomeSubTab = useNavigationStore((s) => s.setHomeSubTab);
   const setActiveTab = useNavigationStore((s) => s.setActiveTab);
@@ -29,62 +27,59 @@ export function HomeHeader({ isSearchOpen, setIsSearchOpen, isCartOpen, setIsCar
 
   return (
     <>
-      {/* Upgraded Search Modal */}
+      {/* Search Modal */}
       <SearchModal open={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 
-      {/* Cart Modal (unchanged) */}
-      {isCartOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={() => setIsCartOpen(false)}>
-          <div className="w-full max-w-md rounded-xl bg-surface-elevated p-6 border border-gold/30 shadow-2xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mb-4 text-xl font-bold text-gold">Your Cart</h2>
-            <div className="mb-4 rounded-lg border border-surface-border bg-surface p-4 text-center">
-              <p className="text-muted-foreground text-sm py-4">Your cart is empty.</p>
-            </div>
-            <button onClick={() => setIsCartOpen(false)} className="w-full rounded-lg bg-surface py-2 hover:bg-surface-elevated transition-colors">Close</button>
-          </div>
-        </div>
-      )}
-
-      <header className="sticky top-0 z-40 border-b border-surface-border bg-background/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-surface-border/60 bg-background/80 backdrop-blur-2xl">
         <div className="flex h-14 items-center justify-between px-4">
-          <button onClick={() => window.scrollTo(0, 0)} className="flex items-center">
-            <img src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/sportsphere'}/logo-wordmark.svg`} alt="SportSphere" style={{ height: '28px', width: 'auto' }} />
+          {/* Logo */}
+          <button onClick={() => window.scrollTo(0, 0)} className="flex items-center gap-2">
+            <img src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/sportsphere'}/logo-wordmark.svg`} alt="SportSphere" style={{ height: '26px', width: 'auto' }} />
           </button>
-          <div className="flex items-center gap-2">
+
+          {/* Actions */}
+          <div className="flex items-center gap-1.5">
             <Link
               href="/leaderboard"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors"
-              aria-label="Performance Rankings"
-              title="Performance Rankings"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface/80 hover:bg-surface-elevated transition-all duration-200"
+              aria-label="Rankings"
+              title="Rankings"
             >
-              <Trophy className="h-4 w-4 text-amber-400" />
+              <Trophy className="h-[18px] w-[18px] text-amber-400" />
             </Link>
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface/80 hover:bg-surface-elevated transition-all duration-200"
             >
-              <Search className="h-4 w-4 text-muted-foreground" />
+              <Search className="h-[18px] w-[18px] text-muted-foreground" />
             </button>
-            <button onClick={() => setIsCartOpen(true)} className="relative flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
-              <ShoppingBag className="h-4 w-4 text-gold" />
-              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[8px] font-bold text-black">0</span>
-            </button>
-            <button onClick={() => { if (!isAuthenticated) setLoginModalOpen(true); else setActiveTab('activity'); }} className="relative flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
-              <Inbox className="h-4 w-4 text-muted-foreground" />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-blue-400 animate-pulse" />
-            </button>
-            <button onClick={() => { if (!isAuthenticated) setLoginModalOpen(true); else setActiveTab('activity'); }} className="relative flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated transition-colors">
-              <Bell className="h-4 w-4 text-muted-foreground" />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-gold animate-pulse" />
+            <button
+              onClick={() => { if (!isAuthenticated) setLoginModalOpen(true); else setActiveTab('activity'); }}
+              className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-surface/80 hover:bg-surface-elevated transition-all duration-200"
+            >
+              <Bell className="h-[18px] w-[18px] text-muted-foreground" />
+              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-gold ring-2 ring-background" />
             </button>
           </div>
         </div>
-        <div className="flex gap-1 px-4 pb-2">
+
+        {/* Sub-tabs */}
+        <div className="flex gap-1 px-4 pb-2.5">
           {SUBTABS.map((tab) => (
-            <button key={tab.id} onClick={() => setHomeSubTab(tab.id as HomeSubTab)}
-              className={cn('rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors',
-                homeSubTab === tab.id ? 'bg-gold text-black' : 'bg-surface text-muted-foreground hover:text-foreground')}>
+            <button
+              key={tab.id}
+              onClick={() => setHomeSubTab(tab.id as HomeSubTab)}
+              className={cn(
+                'relative rounded-lg px-4 py-1.5 text-[13px] font-bold transition-all duration-200',
+                homeSubTab === tab.id
+                  ? 'bg-gold text-black shadow-sm shadow-gold/20'
+                  : 'text-muted-foreground hover:text-foreground active:scale-95'
+              )}
+            >
               {tab.label}
+              {homeSubTab === tab.id && (
+                <div className="absolute inset-0 rounded-lg ring-1 ring-gold/30" />
+              )}
             </button>
           ))}
         </div>

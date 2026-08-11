@@ -1,11 +1,15 @@
 'use client';
 import { apiFetch } from '@/lib/api';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { ScoresHeader } from './ScoresHeader';
 import { MatchList } from './MatchList';
 import { StandingsList } from './StandingsList';
+
+function getTodayStr(): string {
+  return new Date().toISOString().split('T')[0];
+}
 
 export default function ScoresTab() {
   const scoresSubTab = useAppStore((s) => s.scoresSubTab);
@@ -14,7 +18,7 @@ export default function ScoresTab() {
   const [sport, setSport] = useState('All');
   const [continent, setContinent] = useState('All');
   const [country, setCountry] = useState('All');
-
+  const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [matches, setMatches] = useState<any[]>([]);
   const [standings, setStandings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -28,6 +32,9 @@ export default function ScoresTab() {
       try {
         const params = new URLSearchParams({ status: scoresSubTab });
         if (tournament !== 'All') params.append('league', tournament);
+        if ((scoresSubTab === 'upcoming' || scoresSubTab === 'results') && selectedDate) {
+          params.append('date', selectedDate);
+        }
 
         const res = await apiFetch(`/api/matches?${params.toString()}`);
         if (res.ok) {
@@ -51,7 +58,7 @@ export default function ScoresTab() {
       const interval = setInterval(fetchMatches, 30000);
       return () => clearInterval(interval);
     }
-  }, [scoresSubTab, tournament]);
+  }, [scoresSubTab, tournament, selectedDate]);
 
   // Fetch standings
   useEffect(() => {
@@ -81,6 +88,10 @@ export default function ScoresTab() {
     fetchStandings();
   }, [scoresSubTab, tournament]);
 
+  const handleDateChange = useCallback((date: string) => {
+    setSelectedDate(date);
+  }, []);
+
   const labelMap = {
     live: 'live matches',
     today: "today's matches",
@@ -89,12 +100,14 @@ export default function ScoresTab() {
   };
 
   return (
-    <div className="mx-auto max-w-lg">
+    <div>
       <ScoresHeader
         sport={sport} setSport={setSport}
         continent={continent} setContinent={setContinent}
         country={country} setCountry={setCountry}
         tournament={tournament} setTournament={setTournament}
+        selectedDate={selectedDate}
+        onDateChange={handleDateChange}
       />
 
       <div className="divide-y divide-surface-border">

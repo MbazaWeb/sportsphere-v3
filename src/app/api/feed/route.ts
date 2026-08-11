@@ -16,6 +16,7 @@ const POST_SELECT = {
   teamTag: true,
   playerTag: true,
   isBreaking: true,
+  hashtags: true,
   likeCount: true,
   commentCount: true,
   shareCount: true,

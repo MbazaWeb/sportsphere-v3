@@ -1,305 +1,479 @@
 /**
- * Scores Screen — matches web ScoresTab exactly
- * -----------------------------------------------
- * - ScoresHeader with sport/continent/country/tournament filters
- * - Sub-tabs: Live, Today, Upcoming, Results, Standings
- * - MatchList component showing matches in glass cards
- * - StandingsList for league tables
+ * Scores Screen — FULL REWRITE
+ * ----------------------------
+ * Tab-based: Live | Today | Upcoming | Results | Standings
+ * League filter via horizontal scroll chips.
+ * Pull-to-refresh. Auto-refresh live every 30s.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, RefreshControl, FlatList, Pressable, ActivityIndicator,
-  ScrollView,
+  View, Text, StyleSheet, RefreshControl, FlatList,
+  Pressable, ActivityIndicator, ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Search, Trophy, ChevronDown } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
-import GlassCard from '../../components/GlassCard';
+import Header from '../../components/Header';
+import MatchCard from '../../components/MatchCard';
+import { colors, radii } from '@sportsphere/design-system/tokens';
 import { FONT_DISPLAY, FONT_BODY, FONT_BODY_BOLD, FONT_BODY_REG } from '../../lib/fonts';
-import { sportsApi } from '../../lib/api';
-import type { Sport } from '@sportsphere/api-client';
-import type { ApiError } from '@sportsphere/api-client';
+import { useAuthStore } from '../../lib/authStore';
+import type { Match, Standing, MatchStatus } from './match-types';
+import { POPULAR_LEAGUES } from './match-types';
 
-const GOLD = '#F5C518';
-const BG = '#0A1628';
-const BG_SECONDARY = '#0F1D3A';
-const FG = '#ffffff';
-const MUTED = 'rgba(255, 255, 255, 0.5)';
-const SURFACE = 'rgba(255, 255, 255, 0.05)';
-const BORDER = 'rgba(255, 255, 255, 0.08)';
+const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://sportssphere.fun/sportsphere';
 
-type ScoreSubTab = 'live' | 'today' | 'upcoming' | 'results' | 'standings';
-
-const SUB_TABS: { id: ScoreSubTab; label: string }[] = [
-  { id: 'live',      label: 'Live' },
-  { id: 'today',     label: 'Today' },
-  { id: 'upcoming',  label: 'Upcoming' },
-  { id: 'results',   label: 'Results' },
+const TABS: { id: MatchStatus; label: string }[] = [
+  { id: 'live',     label: 'Live' },
+  { id: 'today',    label: 'Today' },
+  { id: 'upcoming', label: 'Upcoming' },
+  { id: 'results',  label: 'Results' },
   { id: 'standings', label: 'Standings' },
 ];
 
 export default function ScoresScreen() {
   const router = useRouter();
-  const [sports, setSports] = useState<Sport[]>([]);
+  const token = useAuthStore((s) => s.token);
+
+  const [activeTab, setActiveTab] = useState<MatchStatus>('live');
+  const [selectedLeague, setSelectedLeague] = useState('All');
+  const [leaguePickerOpen, setLeaguePickerOpen] = useState(false);
+
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [standings, setStandings] = useState<Standing[]>([]);
+  const [standingsLeague, setStandingsLeague] = useState('English Premier League');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeSub, setActiveSub] = useState<ScoreSubTab>('live');
+  const [liveCount, setLiveCount] = useState(0);
 
-  const load = useCallback(async (isRefresh = false) => {
+  const liveInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ─── Fetch matches ──────────────────────────────────────
+  const fetchMatches = useCallback(async (status: MatchStatus, isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
     setError(null);
     try {
-      const list = await sportsApi.list();
-      setSports(list);
+      const sp = new URLSearchParams({ status });
+      if (selectedLeague !== 'All') sp.set('league', selectedLeague);
+      const res = await fetch(`${API_BASE}/api/matches?${sp.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setMatches(Array.isArray(data) ? data : []);
     } catch (err: any) {
-      const apiErr = err as ApiError;
-      setError(apiErr?.message ?? 'Failed to load sports');
+      setError(err?.message ?? 'Failed to load matches');
+      setMatches([]);
     } finally {
       if (isRefresh) setRefreshing(false); else setLoading(false);
     }
+  }, [selectedLeague, token]);
+
+  // ─── Fetch standings ─────────────────────────────────────
+  const fetchStandings = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true); else setLoading(true);
+    setError(null);
+    try {
+      const sp = new URLSearchParams();
+      if (standingsLeague !== 'All') sp.set('league', standingsLeague);
+      const res = await fetch(`${API_BASE}/api/standings?${sp.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setStandings(Array.isArray(data?.standings) ? data.standings : []);
+    } catch (err: any) {
+      setError(err?.message ?? 'Failed to load standings');
+      setStandings([]);
+    } finally {
+      if (isRefresh) setRefreshing(false); else setLoading(false);
+    }
+  }, [standingsLeague, token]);
+
+  // ─── Fetch live count for badge ──────────────────────────
+  const fetchLiveCount = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/matches?status=live`);
+      if (res.ok) {
+        const data = await res.json();
+        setLiveCount(Array.isArray(data) ? data.length : 0);
+      }
+    } catch { /* silent */ }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // ─── Effects ─────────────────────────────────────────────
+  useEffect(() => {
+    if (activeTab === 'standings') {
+      fetchStandings();
+    } else {
+      fetchMatches(activeTab);
+    }
+    fetchLiveCount();
+  }, [activeTab, fetchMatches, fetchStandings, fetchLiveCount]);
 
-  const renderItem = ({ item }: { item: Sport }) => (
-    <Pressable
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-      }}
-    >
-      <GlassCard style={styles.sportCard}>
-        <View style={styles.sportHeader}>
-          <View style={styles.iconWrap}>
-            <Text style={styles.iconText}>{item.icon ?? '🏆'}</Text>
-          </View>
-          <View style={styles.sportMeta}>
-            <Text style={styles.sportName}>{item.name}</Text>
-            <View style={styles.badgeRow}>
-              <Badge>{item.category?.replace('_', ' ') ?? 'sport'}</Badge>
-              {item.format ? <Badge>{item.format}</Badge> : null}
-              {item.olympicStatus === 'olympic' ? (
-                <Badge tone="gold">Olympic</Badge>
-              ) : null}
-            </View>
-          </View>
-        </View>
-        {item.description ? (
-          <Text style={styles.sportDescription} numberOfLines={2}>{item.description}</Text>
-        ) : null}
-        {item.tags && item.tags.length > 0 ? (
-          <View style={styles.tagsRow}>
-            {item.tags.slice(0, 4).map((tag, idx) => (
-              <View key={idx} style={styles.tag}>
-                <Text style={styles.tagText}>#{tag}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
-      </GlassCard>
-    </Pressable>
-  );
+  // Auto-refresh live every 30s
+  useEffect(() => {
+    if (liveInterval.current) clearInterval(liveInterval.current);
+    if (activeTab === 'live') {
+      liveInterval.current = setInterval(() => {
+        fetchMatches('live', true);
+        fetchLiveCount();
+      }, 30000);
+    }
+    return () => { if (liveInterval.current) clearInterval(liveInterval.current); };
+  }, [activeTab, fetchMatches, fetchLiveCount]);
 
+  const onRefresh = useCallback(() => {
+    if (activeTab === 'standings') fetchStandings(true);
+    else fetchMatches(activeTab, true);
+    fetchLiveCount();
+  }, [activeTab, fetchMatches, fetchStandings, fetchLiveCount]);
+
+  const handleLeagueSelect = (league: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    setSelectedLeague(league);
+    setLeaguePickerOpen(false);
+  };
+
+  // ─── Render ──────────────────────────────────────────────
   return (
     <View style={styles.container}>
-      {/* ScoresHeader */}
-      <View style={styles.header}>
-        <Text style={styles.wordmark}>Scores</Text>
-        <View style={styles.headerActions}>
-          <Pressable hitSlop={12} accessibilityLabel="Search">
-            <Search color={FG} size={22} />
-          </Pressable>
-          <Pressable onPress={() => router.push('/leaderboard')} hitSlop={12} accessibilityLabel="Leaderboard">
-            <Trophy color={GOLD} size={22} />
-          </Pressable>
-        </View>
-      </View>
+      <Header
+        title="Scores"
+        showSearch={false}
+        onTrophyPress={() => router.push('/leaderboard')}
+      />
 
-      {/* Filter row: Sport / Continent / Country / Tournament */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow}>
-        {['All Sports', 'Football', 'Basketball', 'Tennis', 'Cricket'].map((label, idx) => (
-          <Pressable key={label} style={[styles.filterChip, idx === 0 && styles.filterChipActive]}>
-            <Text style={[styles.filterChipText, idx === 0 && styles.filterChipTextActive]}>
-              {label}
-            </Text>
-            <ChevronDown size={14} color={idx === 0 ? '#0A1628' : MUTED} />
-          </Pressable>
-        ))}
-      </ScrollView>
-
-      {/* Sub-tabs: Live, Today, Upcoming, Results, Standings */}
-      <View style={styles.tabsRow}>
-        {SUB_TABS.map((tab) => {
-          const isActive = activeSub === tab.id;
-          return (
+      {/* Status tabs */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
+        <View style={styles.tabsRow}>
+          {TABS.map((tab) => (
             <Pressable
               key={tab.id}
-              onPress={() => setActiveSub(tab.id)}
-              style={[styles.tabChip, isActive && styles.tabChipActive]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                setActiveTab(tab.id);
+              }}
+              style={[styles.tabChip, activeTab === tab.id && styles.tabChipActive]}
             >
-              <Text style={[styles.tabChipText, isActive && styles.tabChipTextActive]}>
+              <Text style={[styles.tabChipText, activeTab === tab.id && styles.tabChipTextActive]}>
                 {tab.label}
               </Text>
+              {tab.id === 'live' && liveCount > 0 ? (
+                <View style={styles.liveBadge}>
+                  <Text style={styles.liveBadgeText}>{liveCount}</Text>
+                </View>
+              ) : null}
             </Pressable>
-          );
-        })}
-      </View>
+          ))}
+        </View>
+      </ScrollView>
 
-      {/* Content area */}
-      {activeSub === 'standings' ? (
-        <StandingsList />
+      {/* League filter (not for standings) */}
+      {activeTab !== 'standings' && (
+        <View style={styles.filterRow}>
+          <Pressable
+            style={styles.leagueSelector}
+            onPress={() => setLeaguePickerOpen(!leaguePickerOpen)}
+          >
+            <Text style={styles.leagueSelectorText} numberOfLines={1}>
+              {selectedLeague}
+            </Text>
+            <ChevronDown
+              size={14}
+              color={colors.mutedForeground}
+              style={{ transform: [{ rotate: leaguePickerOpen ? '180deg' : '0deg' }] }}
+            />
+          </Pressable>
+        </View>
+      )}
+
+      {/* League picker dropdown */}
+      {leaguePickerOpen && (
+        <View style={styles.pickerContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.pickerRow}>
+              <Pressable style={[styles.pickerChip, selectedLeague === 'All' && styles.pickerChipActive]} onPress={() => handleLeagueSelect('All')}>
+                <Text style={[styles.pickerChipText, selectedLeague === 'All' && styles.pickerChipTextActive]}>All</Text>
+              </Pressable>
+              {POPULAR_LEAGUES.map((lg) => (
+                <Pressable key={lg} style={[styles.pickerChip, selectedLeague === lg && styles.pickerChipActive]} onPress={() => handleLeagueSelect(lg)}>
+                  <Text style={[styles.pickerChipText, selectedLeague === lg && styles.pickerChipTextActive]} numberOfLines={1}>{lg}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Standings league selector */}
+      {activeTab === 'standings' && (
+        <View style={styles.filterRow}>
+          <Pressable style={styles.leagueSelector} onPress={() => setLeaguePickerOpen(!leaguePickerOpen)}>
+            <Text style={styles.leagueSelectorText} numberOfLines={1}>{standingsLeague}</Text>
+            <ChevronDown size={14} color={colors.mutedForeground} style={{ transform: [{ rotate: leaguePickerOpen ? '180deg' : '0deg' }] }} />
+          </Pressable>
+        </View>
+      )}
+
+      {leaguePickerOpen && activeTab === 'standings' && (
+        <View style={styles.pickerContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.pickerRow}>
+              {POPULAR_LEAGUES.map((lg) => (
+                <Pressable key={lg} style={[styles.pickerChip, standingsLeague === lg && styles.pickerChipActive]} onPress={() => { setStandingsLeague(lg); setLeaguePickerOpen(false); }}>
+                  <Text style={[styles.pickerChipText, standingsLeague === lg && styles.pickerChipTextActive]} numberOfLines={1}>{lg}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Content */}
+      {activeTab === 'standings' ? (
+        <StandingsList standings={standings} loading={loading} />
       ) : (
         <FlatList
-          data={sports}
+          data={matches}
           keyExtractor={(item) => item.id}
-          renderItem={renderItem}
+          renderItem={({ item }) => (
+            <MatchCard match={item} />
+          )}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={GOLD} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
           }
           ListEmptyComponent={
             loading ? (
-              <View style={styles.center}><ActivityIndicator color={GOLD} size="large" /></View>
+              <View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></View>
             ) : error ? (
-              <GlassCard style={styles.emptyCard}>
-                <Text style={styles.emptyTitle}>Couldn't load scores</Text>
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyTitle}>Couldn&apos;t load data</Text>
                 <Text style={styles.emptyBody}>{error}</Text>
-                <Pressable style={styles.retryButton} onPress={() => load()}>
+                <Pressable style={styles.retryButton} onPress={onRefresh}>
                   <Text style={styles.retryText}>Try again</Text>
                 </Pressable>
-              </GlassCard>
+              </View>
             ) : (
-              <GlassCard style={styles.emptyCard}>
-                <Text style={styles.emptyTitle}>No matches available</Text>
-                <Text style={styles.emptyBody}>Check back later for live scores and results.</Text>
-              </GlassCard>
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyTitle}>
+                  {activeTab === 'live' ? 'No live matches right now' : 'No matches found'}
+                </Text>
+                <Text style={styles.emptyBody}>
+                  {activeTab === 'live'
+                    ? 'Check back soon or browse upcoming fixtures.'
+                    : 'Try selecting a different league or tab.'}
+                </Text>
+              </View>
             )
           }
-          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
         />
       )}
     </View>
   );
 }
 
-function StandingsList() {
-  const mockStandings = [
-    { pos: 1, team: 'Manchester City', p: 28, w: 22, d: 3, l: 3, pts: 69 },
-    { pos: 2, team: 'Arsenal', p: 28, w: 21, d: 4, l: 3, pts: 67 },
-    { pos: 3, team: 'Liverpool', p: 28, w: 20, d: 5, l: 3, pts: 65 },
-    { pos: 4, team: 'Aston Villa', p: 28, w: 16, d: 4, l: 8, pts: 52 },
-    { pos: 5, team: 'Tottenham', p: 28, w: 15, d: 4, l: 9, pts: 49 },
-  ];
+// ─── Standings sub-component ────────────────────────────────
+
+function StandingsList({ standings, loading }: { standings: Standing[]; loading: boolean }) {
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
+
+  if (standings.length === 0) {
+    return (
+      <View style={styles.emptyCard}>
+        <Text style={styles.emptyTitle}>No standings available</Text>
+        <Text style={styles.emptyBody}>Select a league to view the table.</Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.listContent}>
-      <GlassCard style={styles.standingsCard}>
-        <Text style={styles.standingsTitle}>Premier League</Text>
-        <Text style={styles.standingsSubtitle}>2024/25 Season</Text>
-
-        {/* Header row */}
-        <View style={styles.tableHeader}>
-          <Text style={[styles.th, { width: 28 }]}>#</Text>
-          <Text style={[styles.th, { flex: 1 }]}>Team</Text>
-          <Text style={[styles.th, styles.thCenter]}>P</Text>
-          <Text style={[styles.th, styles.thCenter]}>W</Text>
-          <Text style={[styles.th, styles.thCenter]}>D</Text>
-          <Text style={[styles.th, styles.thCenter]}>L</Text>
-          <Text style={[styles.th, styles.thCenter, { color: GOLD }]}>Pts</Text>
-        </View>
-
-        {mockStandings.map((row) => (
-          <View key={row.pos} style={styles.tableRow}>
-            <Text style={[styles.td, { width: 28, color: row.pos <= 4 ? GOLD : FG }]}>{row.pos}</Text>
-            <Text style={[styles.td, { flex: 1, fontFamily: FONT_BODY_BOLD, fontWeight: '700' }]}>{row.team}</Text>
-            <Text style={[styles.td, styles.tdCenter]}>{row.p}</Text>
-            <Text style={[styles.td, styles.tdCenter]}>{row.w}</Text>
-            <Text style={[styles.td, styles.tdCenter]}>{row.d}</Text>
-            <Text style={[styles.td, styles.tdCenter]}>{row.l}</Text>
-            <Text style={[styles.td, styles.tdCenter, { color: GOLD, fontFamily: FONT_BODY_BOLD, fontWeight: '700' }]}>{row.pts}</Text>
+    <View style={styles.standingsWrap}>
+      {/* Header row */}
+      <View style={[styles.standingRow, styles.standingHeader]}>
+        <Text style={[styles.stPos, styles.standingHeaderText]}>#</Text>
+        <Text style={[styles.stTeam, styles.standingHeaderText]}>Team</Text>
+        <Text style={[styles.stSmall, styles.standingHeaderText]}>P</Text>
+        <Text style={[styles.stSmall, styles.standingHeaderText]}>W</Text>
+        <Text style={[styles.stSmall, styles.standingHeaderText]}>D</Text>
+        <Text style={[styles.stSmall, styles.standingHeaderText]}>L</Text>
+        <Text style={[styles.stSmall, styles.standingHeaderText]}>GD</Text>
+        <Text style={[styles.stPts, styles.standingHeaderText]}>Pts</Text>
+      </View>
+      {standings.map((s, i) => {
+        const isTop4 = i < 4;
+        const isRelZone = i >= standings.length - 3;
+        return (
+          <View
+            key={s.position}
+            style={[styles.standingRow, isTop4 && styles.standingRowTop4, isRelZone && styles.standingRowRel]}
+          >
+            <Text style={[styles.stPos, isTop4 && { color: colors.primary }]}>{s.position}</Text>
+            <Text style={styles.stTeam} numberOfLines={1}>{s.team}</Text>
+            <Text style={styles.stSmall}>{s.played}</Text>
+            <Text style={styles.stSmall}>{s.won}</Text>
+            <Text style={styles.stSmall}>{s.drawn}</Text>
+            <Text style={styles.stSmall}>{s.lost}</Text>
+            <Text style={[styles.stSmall, s.goalDifference > 0 && { color: '#10B981' }, s.goalDifference < 0 && { color: colors.destructive }]}>
+              {s.goalDifference > 0 ? '+' : ''}{s.goalDifference}
+            </Text>
+            <Text style={[styles.stPts, isTop4 && { color: colors.primary }]}>{s.points}</Text>
           </View>
-        ))}
-      </GlassCard>
+        );
+      })}
     </View>
   );
 }
 
-function Badge({ children, tone = 'default' }: { children: React.ReactNode; tone?: 'default' | 'gold' }) {
-  return (
-    <View style={[styles.badge, tone === 'gold' && styles.badgeGold]}>
-      <Text style={[styles.badgeText, tone === 'gold' && styles.badgeTextGold]}>
-        {typeof children === 'string' ? children.toUpperCase() : children}
-      </Text>
-    </View>
-  );
-}
+// ─── Styles ─────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4,
+  container: { flex: 1, backgroundColor: colors.background },
+  tabsScroll: { flexGrow: 0 },
+  tabsRow: {
+    flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 8, gap: 8,
   },
-  wordmark: {
-    fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: '700',
-    color: FG, letterSpacing: -0.5,
-  },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  filterRow: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 4, gap: 8 },
-  filterChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 12, paddingVertical: 6,
-    borderRadius: 999, backgroundColor: SURFACE,
-    borderWidth: 1, borderColor: BORDER,
-  },
-  filterChipActive: { backgroundColor: GOLD, borderColor: GOLD },
-  filterChipText: { fontFamily: FONT_BODY, fontSize: 12, color: MUTED, fontWeight: '600' },
-  filterChipTextActive: { fontFamily: FONT_BODY_BOLD, fontSize: 12, color: '#0A1628', fontWeight: '700' },
-  tabsRow: { flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 8, gap: 8 },
   tabChip: {
-    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999,
-    backgroundColor: SURFACE, borderWidth: 1, borderColor: BORDER,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 14, paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
   },
-  tabChipActive: { backgroundColor: GOLD, borderColor: GOLD },
-  tabChipText: { fontFamily: FONT_BODY, fontSize: 13, color: MUTED, fontWeight: '600' },
-  tabChipTextActive: { fontFamily: FONT_BODY_BOLD, fontSize: 13, color: '#0A1628', fontWeight: '700' },
-  listContent: { paddingHorizontal: 16, paddingBottom: 100 },
-  sportCard: { padding: 16, gap: 12 },
-  sportHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  iconWrap: {
-    width: 48, height: 48, borderRadius: 12,
-    backgroundColor: BG_SECONDARY, alignItems: 'center', justifyContent: 'center',
+  tabChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
-  iconText: { fontSize: 28 },
-  sportMeta: { flex: 1, gap: 6 },
-  sportName: { fontFamily: FONT_BODY_BOLD, fontSize: 16, fontWeight: '700', color: FG },
-  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  badge: {
-    backgroundColor: SURFACE, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2,
-    borderWidth: 1, borderColor: BORDER,
+  tabChipText: {
+    fontFamily: FONT_BODY_BOLD, fontSize: 13, fontWeight: '600',
+    color: colors.mutedForeground,
   },
-  badgeGold: { backgroundColor: 'rgba(245, 197, 24, 0.10)', borderColor: 'rgba(245, 197, 24, 0.30)' },
-  badgeText: { fontFamily: FONT_BODY_BOLD, fontSize: 9, fontWeight: '700', color: MUTED, letterSpacing: 0.5 },
-  badgeTextGold: { color: GOLD },
-  sportDescription: { fontFamily: FONT_BODY_REG, fontSize: 13, lineHeight: 18, color: MUTED },
-  tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  tag: { backgroundColor: 'rgba(255, 107, 53, 0.10)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  tagText: { fontFamily: FONT_BODY_REG, fontSize: 11, color: '#FF6B35' },
+  tabChipTextActive: {
+    color: colors.primaryForeground, fontWeight: '700',
+  },
+  liveBadge: {
+    backgroundColor: colors.destructive,
+    borderRadius: 999, minWidth: 16, height: 16,
+    alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  liveBadgeText: {
+    fontFamily: FONT_BODY_BOLD, fontSize: 9, fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  filterRow: {
+    paddingHorizontal: 16, paddingBottom: 8,
+  },
+  leagueSelector: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: radii.md, paddingHorizontal: 12, paddingVertical: 8,
+  },
+  leagueSelectorText: {
+    fontFamily: FONT_BODY_BOLD, fontSize: 13, fontWeight: '600',
+    color: colors.foreground, flex: 1,
+  },
+  pickerContainer: {
+    paddingHorizontal: 16, paddingBottom: 8,
+  },
+  pickerRow: {
+    flexDirection: 'row', gap: 8,
+  },
+  pickerChip: {
+    paddingHorizontal: 12, paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+  },
+  pickerChipActive: {
+    backgroundColor: 'rgba(245, 197, 24, 0.15)',
+    borderColor: 'rgba(245, 197, 24, 0.40)',
+  },
+  pickerChipText: {
+    fontFamily: FONT_BODY, fontSize: 12,
+    color: colors.mutedForeground, maxWidth: 140,
+  },
+  pickerChipTextActive: {
+    color: colors.primary, fontWeight: '600',
+  },
+  listContent: {
+    paddingHorizontal: 16, paddingBottom: 100, paddingTop: 4,
+  },
   center: { paddingVertical: 80, alignItems: 'center' },
-  emptyCard: { padding: 24, gap: 8, marginTop: 24 },
-  emptyTitle: { fontFamily: FONT_DISPLAY, fontSize: 18, fontWeight: '700', color: FG },
-  emptyBody: { fontFamily: FONT_BODY_REG, fontSize: 14, lineHeight: 20, color: MUTED },
-  retryButton: { marginTop: 8, alignSelf: 'flex-start', backgroundColor: GOLD, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
-  retryText: { fontFamily: FONT_BODY_BOLD, fontSize: 13, fontWeight: '700', color: '#0A1628' },
-  standingsCard: { padding: 16, gap: 12 },
-  standingsTitle: { fontFamily: FONT_DISPLAY, fontSize: 18, fontWeight: '700', color: FG },
-  standingsSubtitle: { fontFamily: FONT_BODY_REG, fontSize: 13, color: MUTED },
-  tableHeader: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: BORDER },
-  th: { fontFamily: FONT_BODY_BOLD, fontSize: 11, fontWeight: '700', color: MUTED, letterSpacing: 0.5 },
-  thCenter: { textAlign: 'center', width: 28 },
-  tableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: BORDER },
-  td: { fontFamily: FONT_BODY_REG, fontSize: 13, color: FG },
-  tdCenter: { textAlign: 'center', width: 28 },
+  emptyCard: {
+    padding: 24, gap: 8, marginTop: 24, marginHorizontal: 16,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+    borderRadius: radii.lg,
+  },
+  emptyTitle: {
+    fontFamily: FONT_DISPLAY, fontSize: 18, fontWeight: '700',
+    color: colors.foreground,
+  },
+  emptyBody: {
+    fontFamily: FONT_BODY_REG, fontSize: 14, lineHeight: 20,
+    color: colors.mutedForeground,
+  },
+  retryButton: {
+    marginTop: 8, alignSelf: 'flex-start',
+    backgroundColor: colors.primary,
+    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8,
+  },
+  retryText: {
+    fontFamily: FONT_BODY_BOLD, fontSize: 13, fontWeight: '700',
+    color: colors.primaryForeground,
+  },
+  // Standings
+  standingsWrap: {
+    paddingHorizontal: 16, paddingBottom: 100, paddingTop: 4,
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderRadius: radii.lg, marginHorizontal: 16,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+    overflow: 'hidden',
+  },
+  standingRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 12, paddingVertical: 10,
+    borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)',
+  },
+  standingHeader: {
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  standingHeaderText: {
+    color: colors.mutedForeground, fontSize: 10, fontWeight: '700',
+  },
+  standingRowTop4: {
+    borderLeftWidth: 2, borderLeftColor: colors.primary,
+  },
+  standingRowRel: {
+    borderLeftWidth: 2, borderLeftColor: colors.destructive,
+  },
+  stPos: {
+    width: 24, fontFamily: FONT_BODY_BOLD, fontSize: 12, fontWeight: '700',
+    color: colors.mutedForeground, textAlign: 'center',
+  },
+  stTeam: {
+    flex: 1, fontFamily: FONT_BODY_BOLD, fontSize: 13, fontWeight: '600',
+    color: colors.foreground, paddingHorizontal: 8,
+  },
+  stSmall: {
+    width: 28, fontFamily: FONT_BODY, fontSize: 12,
+    color: colors.mutedForeground, textAlign: 'center',
+  },
+  stPts: {
+    width: 32, fontFamily: FONT_BODY_BOLD, fontSize: 13, fontWeight: '800',
+    color: colors.foreground, textAlign: 'center',
+  },
 });

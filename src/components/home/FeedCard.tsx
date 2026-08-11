@@ -1,7 +1,7 @@
 'use client';
 import { apiFetch } from '@/lib/api';
 
-import { Heart, MessageCircle, Share2, Bookmark, Check, RotateCcw, Pencil, ImageOff, VideoOff } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, Check, RotateCcw, Pencil, ImageOff, VideoOff, Eye, TrendingUp, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BadgeStack } from '@/components/ui/RoleBadge';
 import { useAuthStore } from '@/store/authStore';
@@ -23,8 +23,8 @@ interface ApiPoll {
   question: string;
   options: string[];
   totalVotes: number;
-  optionCounts?: number[];        // per-option counts (from feed API)
-  userVotedOption?: number | null; // 0..n-1 if the viewer already voted, else null
+  optionCounts?: number[];
+  userVotedOption?: number | null;
   endsAt?: string | null;
 }
 
@@ -85,67 +85,90 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
 
   if (hidden) return null;
 
+  let welcomeMeta: { type?: string; gradient?: string; accentColor?: string; emoji?: string; roleLabel?: string } | null = null;
+  if (item.postType === 'welcome' && item.mediaUrls && item.mediaUrls.length > 0) {
+    try { welcomeMeta = JSON.parse(item.mediaUrls[0]); } catch {}
+  }
+  const contentHashtags = (item as any).hashtags || [];
+
   return (
-    <article className="glass-card premium-card rounded-2xl overflow-hidden glass-card-hover">
+    <article className="glass-card premium-card rounded-2xl overflow-hidden">
+      {/* Breaking news banner */}
       {item.isBreaking && (
         <div className="flex items-center gap-2 border-b border-gold/20 bg-gold/5 px-4 py-2">
           <span className="flex h-1.5 w-1.5 rounded-full bg-gold animate-pulse" />
-          <span className="text-[10px] font-bold uppercase text-gold">Breaking</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-gold">Breaking</span>
         </div>
       )}
+
+      {/* Welcome post banner */}
+      {welcomeMeta && welcomeMeta.gradient && (
+        <div className={cn('relative overflow-hidden px-5 py-6 bg-gradient-to-br', welcomeMeta.gradient)}>
+          <div className="absolute inset-0 bg-black/20" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-2xl">{welcomeMeta.emoji || '⚽'}</span>
+              <span className="px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider text-white">{welcomeMeta.roleLabel || 'Welcome'}</span>
+            </div>
+            <p className="text-sm leading-relaxed text-white/95">{item.content}</p>
+            {contentHashtags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                {contentHashtags.map((tag: string) => (
+                  <span key={tag} className="px-2 py-0.5 rounded-md bg-white/10 backdrop-blur-sm text-[10px] font-medium text-white/80">#{tag}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="p-4">
+        {/* Author header */}
         <button onClick={handleViewUser} className="mb-3 flex items-center gap-3 text-left w-full">
           <div className={cn(
-            'flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold',
-            user.isVerified ? 'bg-gold text-black' : 'bg-surface text-white'
+            'flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold ring-2 ring-transparent transition-all',
+            user.isVerified ? 'bg-gold text-black ring-gold/20' : 'bg-surface-elevated text-white'
           )}>
             {user.avatarUrl ? (
-              <img
-                src={user.avatarUrl}
-                alt={user.name}
-                className="h-full w-full object-cover"
-              />
+              <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
             ) : (
               user.avatarInitials
             )}
           </div>
-          <div>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-sm font-semibold text-white">{user.name}</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[13px] font-bold text-white truncate">{user.name}</span>
               <BadgeStack role={user.role} isVerified={user.isVerified} isPro={user.isPro} size="xs" />
             </div>
-            <span className="text-xs text-muted-foreground">{user.handle} · {formatTime(item.createdAt)}</span>
+            <span className="text-[11px] text-muted-foreground">{user.handle} · {formatTime(item.createdAt)}</span>
           </div>
         </button>
 
+        {/* Content */}
         {isLongPost && !expanded ? (
           <div className="mb-3">
-            <p className="text-sm leading-relaxed text-foreground/90">{item.content.slice(0, 200)}...</p>
-            <button
-              onClick={() => setExpanded(true)}
-              className="text-xs font-semibold text-gold hover:text-gold/80 transition-colors"
-            >
+            <p className="text-[13px] leading-relaxed text-foreground/90">{item.content.slice(0, 200)}...</p>
+            <button onClick={() => setExpanded(true)} className="text-xs font-bold text-gold hover:text-gold/80 transition-colors mt-1">
               See more
             </button>
           </div>
         ) : (
-          <p className="mb-3 text-sm leading-relaxed text-foreground/90">{item.content}</p>
+          <p className="mb-3 text-[13px] leading-relaxed text-foreground/90 whitespace-pre-wrap">{item.content}</p>
         )}
         {isLongPost && expanded && (
-          <button
-            onClick={() => setExpanded(false)}
-            className="mb-3 text-xs font-semibold text-muted-foreground hover:text-gold transition-colors"
-          >
+          <button onClick={() => setExpanded(false)} className="mb-3 text-xs font-semibold text-muted-foreground hover:text-gold transition-colors">
             Show less
           </button>
         )}
 
+        {/* Team tag */}
         {item.teamTag && (
-          <span className="mb-3 inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-medium border bg-gold/10 text-gold border-gold/20">
+          <span className="mb-3 inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold border bg-gold/10 text-gold border-gold/20">
             {item.teamTag}
           </span>
         )}
 
+        {/* Photo */}
         {item.postType === 'photo' && (
           <div className="mb-3 overflow-hidden rounded-xl bg-surface-elevated">
             {item.mediaUrls && item.mediaUrls.length > 0 ? (
@@ -154,7 +177,7 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
                 <img
                   src={item.mediaUrls[0]}
                   alt={item.content || 'Post image'}
-                  className="h-52 w-full object-cover"
+                  className="w-full max-h-80 object-cover"
                   loading="lazy"
                   onError={(e) => {
                     const img = e.target as HTMLImageElement;
@@ -178,6 +201,7 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
           </div>
         )}
 
+        {/* Video */}
         {item.postType === 'video' && (
           <div className="mb-3 relative h-52 overflow-hidden rounded-xl bg-surface-elevated">
             {item.mediaUrls && item.mediaUrls.length > 0 ? (
@@ -210,6 +234,7 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
           </div>
         )}
 
+        {/* Poll */}
         {item.poll && item.poll.options && item.poll.options.length > 0 && (
           <PollBlock
             postId={item.id}
@@ -219,6 +244,7 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
           />
         )}
 
+        {/* Prediction */}
         {item.prediction && (
           <PredictionBlock
             prediction={item.prediction}
@@ -227,37 +253,54 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
           />
         )}
 
-        <div className="flex items-center justify-between border-t border-surface-border pt-3 mt-1">
-          <button
-            onClick={async () => {
-              if (!isAuthenticated) { setLoginModalOpen(true); return; }
-              setLiked(!liked);
-              try {
-                await apiFetch('/api/likes', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ postId: item.id }),
-                });
-              } catch { }
-            }}
-            className={cn('flex items-center gap-1.5 transition-colors p-2 min-h-[44px] min-w-[44px] rounded-md', liked ? 'text-pink-400' : 'text-muted-foreground hover:text-pink-400')}>
-            <Heart className={cn('h-4 w-4', liked && 'fill-current')} />
-            <span className="text-xs">{formatCount(item.likeCount + (liked ? 1 : 0))}</span>
-          </button>
-          <button onClick={() => onComment(item.id)}
-            className="flex items-center gap-1.5 text-muted-foreground hover:text-gold transition-colors p-2 min-h-[44px] min-w-[44px] rounded-md">
-            <MessageCircle className="h-4 w-4" />
-            <span className="text-xs">{formatCount(item.commentCount)}</span>
-          </button>
-          <button onClick={() => onShare(item.id)}
-            className="flex items-center gap-1.5 text-muted-foreground hover:text-gold transition-colors p-2 min-h-[44px] min-w-[44px] rounded-md">
-            <Share2 className="h-4 w-4" />
-            <span className="text-xs">{formatCount(item.shareCount)}</span>
-          </button>
-          <button onClick={handleSave}
-            className={cn('transition-colors p-2 min-h-[44px] min-w-[44px] rounded-md', saved ? 'text-gold' : 'text-muted-foreground hover:text-gold')}>
-            <Bookmark className={cn('h-4 w-4', saved && 'fill-current')} />
-          </button>
+        {/* Action bar */}
+        <div className="flex items-center justify-between pt-3 mt-1 border-t border-surface-border/60">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={async () => {
+                if (!isAuthenticated) { setLoginModalOpen(true); return; }
+                setLiked(!liked);
+                try {
+                  await apiFetch('/api/likes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ postId: item.id }),
+                  });
+                } catch { }
+              }}
+              className={cn(
+                'flex items-center gap-1.5 transition-all duration-200 p-2.5 rounded-xl min-h-[44px]',
+                liked ? 'text-pink-400 bg-pink-400/10' : 'text-muted-foreground hover:text-pink-400 hover:bg-surface'
+              )}>
+              <Heart className={cn('h-[18px] w-[18px]', liked && 'fill-current scale-110')} />
+              <span className="text-xs font-semibold">{formatCount(item.likeCount + (liked ? 1 : 0))}</span>
+            </button>
+            <button onClick={() => onComment(item.id)}
+              className="flex items-center gap-1.5 text-muted-foreground hover:text-gold hover:bg-surface transition-all duration-200 p-2.5 rounded-xl min-h-[44px]">
+              <MessageCircle className="h-[18px] w-[18px]" />
+              <span className="text-xs font-semibold">{formatCount(item.commentCount)}</span>
+            </button>
+            <button onClick={() => onShare(item.id)}
+              className="flex items-center gap-1.5 text-muted-foreground hover:text-gold hover:bg-surface transition-all duration-200 p-2.5 rounded-xl min-h-[44px]">
+              <Share2 className="h-[18px] w-[18px]" />
+              <span className="text-xs font-semibold">{formatCount(item.shareCount)}</span>
+            </button>
+          </div>
+          <div className="flex items-center gap-1">
+            {item.viewCount > 0 && (
+              <span className="flex items-center gap-1 text-[11px] text-muted-foreground/60 mr-1">
+                <Eye className="h-3.5 w-3.5" />
+                {formatCount(item.viewCount)}
+              </span>
+            )}
+            <button onClick={handleSave}
+              className={cn(
+                'transition-all duration-200 p-2.5 rounded-xl min-h-[44px]',
+                saved ? 'text-gold bg-gold/10' : 'text-muted-foreground hover:text-gold hover:bg-surface'
+              )}>
+              <Bookmark className={cn('h-[18px] w-[18px]', saved && 'fill-current')} />
+            </button>
+          </div>
         </div>
       </div>
     </article>
@@ -265,9 +308,6 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
 }
 
 // ─── Poll Block ───────────────────────────────────────────────
-// Allows the user to vote, change vote, or unvote. Vote state is
-// hydrated from the API (post.poll.userVotedOption) so reloads
-// show the user's actual choice instead of resetting to "not voted".
 function PollBlock({
   poll,
   isAuthenticated,
@@ -278,13 +318,8 @@ function PollBlock({
   isAuthenticated: boolean;
   onRequireAuth: () => void;
 }) {
-  // Local state mirrors what the API told us, then updates optimistically.
-  const [votedOption, setVotedOption] = useState<number | null>(
-    poll.userVotedOption ?? null
-  );
-  const [optionCounts, setOptionCounts] = useState<number[]>(
-    poll.optionCounts ?? poll.options.map(() => 0)
-  );
+  const [votedOption, setVotedOption] = useState<number | null>(poll.userVotedOption ?? null);
+  const [optionCounts, setOptionCounts] = useState<number[]>(poll.optionCounts ?? poll.options.map(() => 0));
   const [busy, setBusy] = useState(false);
 
   const totalVotes = optionCounts.reduce((a, b) => a + b, 0);
@@ -295,74 +330,49 @@ function PollBlock({
   const handleVote = async (i: number) => {
     if (!isAuthenticated) { onRequireAuth(); return; }
     if (busy || pollClosed) return;
-    if (votedOption === i) return; // no-op on same choice
-
+    if (votedOption === i) return;
     const prevVoted = votedOption;
     const prevCounts = optionCounts;
-
-    // Optimistic update
     const nextCounts = [...optionCounts];
     if (prevVoted !== null) {
-      // Switching vote: decrement old, increment new (total unchanged)
       if (nextCounts[prevVoted] > 0) nextCounts[prevVoted] -= 1;
       nextCounts[i] += 1;
     } else {
-      // First vote: increment new (total +1)
       nextCounts[i] += 1;
     }
     setOptionCounts(nextCounts);
     setVotedOption(i);
     setBusy(true);
-
     try {
       const res = await apiFetch('/api/polls/vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pollId: poll.id, optionIndex: i }),
       });
-      if (!res.ok) {
-        // Revert on failure
-        setVotedOption(prevVoted);
-        setOptionCounts(prevCounts);
-      }
-    } catch {
-      setVotedOption(prevVoted);
-      setOptionCounts(prevCounts);
-    } finally {
-      setBusy(false);
-    }
+      if (!res.ok) { setVotedOption(prevVoted); setOptionCounts(prevCounts); }
+    } catch { setVotedOption(prevVoted); setOptionCounts(prevCounts); }
+    finally { setBusy(false); }
   };
 
   const handleUnvote = async () => {
     if (!isAuthenticated) { onRequireAuth(); return; }
     if (busy || pollClosed || votedOption === null) return;
-
     const prevVoted = votedOption;
     const prevCounts = optionCounts;
-
-    // Optimistic
     const nextCounts = [...optionCounts];
     if (nextCounts[prevVoted] > 0) nextCounts[prevVoted] -= 1;
     setOptionCounts(nextCounts);
     setVotedOption(null);
     setBusy(true);
-
     try {
       const res = await apiFetch('/api/polls/vote', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pollId: poll.id }),
       });
-      if (!res.ok) {
-        setVotedOption(prevVoted);
-        setOptionCounts(prevCounts);
-      }
-    } catch {
-      setVotedOption(prevVoted);
-      setOptionCounts(prevCounts);
-    } finally {
-      setBusy(false);
-    }
+      if (!res.ok) { setVotedOption(prevVoted); setOptionCounts(prevCounts); }
+    } catch { setVotedOption(prevVoted); setOptionCounts(prevCounts); }
+    finally { setBusy(false); }
   };
 
   return (
@@ -370,12 +380,9 @@ function PollBlock({
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-bold text-white">{poll.question}</p>
         {pollClosed && (
-          <span className="rounded-full bg-surface px-2 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">
-            Closed
-          </span>
+          <span className="rounded-full bg-surface px-2 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">Closed</span>
         )}
       </div>
-
       {poll.options.map((opt: string, i: number) => {
         const count = optionCounts[i] ?? 0;
         const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
@@ -386,36 +393,32 @@ function PollBlock({
             onClick={() => handleVote(i)}
             disabled={busy || pollClosed}
             className={cn(
-              'relative overflow-hidden rounded-lg p-3 text-left transition-all',
-              isMyChoice ? 'bg-gold/20 border border-gold/40' : 'bg-surface border border-surface-border',
-              showResults && !isMyChoice && 'opacity-70',
-              busy ? 'cursor-wait' : 'cursor-pointer hover:border-gold/30'
-            )}
-          >
+              'relative overflow-hidden rounded-xl p-3 text-left transition-all duration-200',
+              isMyChoice ? 'bg-gold/15 border border-gold/30' : 'bg-surface border border-surface-border',
+              showResults && !isMyChoice && 'opacity-60',
+              busy ? 'cursor-wait' : 'cursor-pointer hover:border-gold/20'
+            )}>
             {showResults && (
               <div
                 className={cn(
-                  'absolute inset-y-0 left-0 rounded-lg transition-all duration-500',
-                  isMyChoice ? 'bg-gold/25' : 'bg-surface-elevated/60'
+                  'absolute inset-y-0 left-0 rounded-xl transition-all duration-700 ease-out',
+                  isMyChoice ? 'bg-gold/20' : 'bg-surface-elevated/50'
                 )}
                 style={{ width: `${pct}%` }}
               />
             )}
             <div className="relative flex items-center justify-between">
-              <span className="text-sm font-medium text-white">{opt}</span>
+              <span className="text-[13px] font-medium text-white">{opt}</span>
               <div className="flex items-center gap-1.5">
                 {isMyChoice && <Check className="h-3.5 w-3.5 text-gold" />}
-                {showResults && (
-                  <span className="text-xs font-bold text-muted-foreground">{pct}%</span>
-                )}
+                {showResults && <span className="text-xs font-bold text-muted-foreground tabular-nums">{pct}%</span>}
               </div>
             </div>
           </button>
         );
       })}
-
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[11px] text-muted-foreground">
           {totalVotes.toLocaleString()} vote{totalVotes === 1 ? '' : 's'}
           {hasVoted && !pollClosed && ' · You voted'}
           {pollClosed && hasVoted && ' · Your final vote'}
@@ -428,7 +431,7 @@ function PollBlock({
             title="Remove your vote"
           >
             <RotateCcw className="h-3 w-3" />
-            {busy ? 'Updating…' : 'Change vote'}
+            {busy ? 'Updating...' : 'Change vote'}
           </button>
         )}
       </div>
@@ -437,8 +440,6 @@ function PollBlock({
 }
 
 // ─── Prediction Block ─────────────────────────────────────────
-// Renders the structured prediction data (was previously invisible
-// in the feed — only the content text showed).
 function PredictionBlock({
   prediction,
   isOwner,
@@ -448,8 +449,6 @@ function PredictionBlock({
   isOwner: boolean;
   onDeleted?: () => void;
 }) {
-  // Local state lets the owner edit and see updates immediately
-  // without refetching the whole feed.
   const [current, setCurrent] = useState(prediction);
   const [editing, setEditing] = useState(false);
 
@@ -458,10 +457,8 @@ function PredictionBlock({
   const resultLabel =
     hScore === null || aScore === null
       ? null
-      : hScore > aScore
-      ? `${current.homeTeam} wins`
-      : aScore > hScore
-      ? `${current.awayTeam} wins`
+      : hScore > aScore ? `${current.homeTeam} wins`
+      : aScore > hScore ? `${current.awayTeam} wins`
       : 'Draw';
 
   const confidenceColors: Record<string, string> = {
@@ -470,9 +467,7 @@ function PredictionBlock({
     high: 'text-green-400 bg-green-500/10 border-green-500/30',
   };
   const confidenceLabels: Record<string, string> = {
-    low: 'Low confidence',
-    medium: 'Medium confidence',
-    high: 'High confidence',
+    low: 'Low confidence', medium: 'Medium confidence', high: 'High confidence',
   };
   const conf = current.confidence ?? 'medium';
   const resolved = typeof current.isCorrect === 'boolean';
@@ -480,23 +475,18 @@ function PredictionBlock({
   return (
     <div className="mb-3 rounded-xl border border-gold/20 bg-gold/5 overflow-hidden">
       <div className="flex items-center justify-between border-b border-gold/15 bg-gold/5 px-3 py-1.5">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-gold">
-          Prediction
-        </span>
+        <span className="text-[10px] font-bold uppercase tracking-wider text-gold">Prediction</span>
         {isOwner && !resolved && (
           <button
             onClick={() => setEditing(true)}
             className="flex items-center gap-1 rounded-full bg-surface/80 px-2 py-0.5 text-[10px] font-bold uppercase text-muted-foreground hover:text-gold transition-colors"
             title="Edit your prediction"
           >
-            <Pencil className="h-3 w-3" />
-            Edit
+            <Pencil className="h-3 w-3" /> Edit
           </button>
         )}
         {isOwner && resolved && (
-          <span className="rounded-full bg-surface/80 px-1.5 py-0.5 text-[9px] font-bold uppercase text-muted-foreground">
-            Yours
-          </span>
+          <span className="rounded-full bg-surface/80 px-1.5 py-0.5 text-[9px] font-bold uppercase text-muted-foreground">Yours</span>
         )}
       </div>
       <div className="px-3 py-3">
@@ -505,22 +495,16 @@ function PredictionBlock({
             <p className="text-sm font-bold text-white truncate">{current.homeTeam}</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="rounded-lg bg-surface px-3 py-1.5 text-2xl font-black text-gold">
-              {hScore ?? '–'}
-            </span>
-            <span className="text-muted-foreground">-</span>
-            <span className="rounded-lg bg-surface px-3 py-1.5 text-2xl font-black text-gold">
-              {aScore ?? '–'}
-            </span>
+            <span className="rounded-lg bg-surface px-3 py-1.5 text-2xl font-black text-gold tabular-nums">{hScore ?? '–'}</span>
+            <span className="text-muted-foreground text-sm">-</span>
+            <span className="rounded-lg bg-surface px-3 py-1.5 text-2xl font-black text-gold tabular-nums">{aScore ?? '–'}</span>
           </div>
           <div className="flex-1 text-center min-w-0">
             <p className="text-sm font-bold text-white truncate">{current.awayTeam}</p>
           </div>
         </div>
         <div className="mt-2 flex items-center justify-center gap-2">
-          {resultLabel && (
-            <span className="text-xs text-muted-foreground">{resultLabel}</span>
-          )}
+          {resultLabel && <span className="text-xs text-muted-foreground">{resultLabel}</span>}
           <span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-bold', confidenceColors[conf] ?? confidenceColors.medium)}>
             {confidenceLabels[conf] ?? 'Medium confidence'}
           </span>
@@ -531,26 +515,15 @@ function PredictionBlock({
           </p>
         )}
       </div>
-
       {isOwner && !resolved && (
         <EditPredictionModal
           open={editing}
           onOpenChange={setEditing}
           prediction={current}
           onUpdated={(data) => {
-            setCurrent({
-              ...current,
-              homeTeam: data.homeTeam,
-              awayTeam: data.awayTeam,
-              predictedHome: data.predictedHome,
-              predictedAway: data.predictedAway,
-              confidence: data.confidence,
-            });
+            setCurrent({ ...current, homeTeam: data.homeTeam, awayTeam: data.awayTeam, predictedHome: data.predictedHome, predictedAway: data.predictedAway, confidence: data.confidence });
           }}
-          onDeleted={() => {
-            // Hide the entire FeedCard from the feed.
-            onDeleted?.();
-          }}
+          onDeleted={() => { onDeleted?.(); }}
         />
       )}
     </div>

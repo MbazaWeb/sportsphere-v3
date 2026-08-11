@@ -2,8 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
-  turbopack: { root: "../" },
   reactStrictMode: true,
+  outputFileTracingRoot: "/var/www/sportsphere-nextjs/Admin",
   images: {
     unoptimized: true,
     remotePatterns: [

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useNavigationStore, type TabId } from '@/store/navigationStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
-import { Home, Trophy, PlusCircle, Bell, User, LogIn } from 'lucide-react';
+import { Home, Trophy, PlusCircle, Bell, User, LogIn, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
@@ -12,7 +12,6 @@ type TabConfig = {
   id: TabId;
   label: string;
   Icon: React.ElementType;
-  badge?: string;
   authRequired?: boolean;
 };
 
@@ -24,8 +23,7 @@ const ALL_TABS: TabConfig[] = [
   { id: 'profile',  label: 'Profile',  Icon: User,       authRequired: true },
 ];
 
-/** How long the nav stays visible after last interaction (ms) */
-const AUTO_HIDE_DELAY = 3000;
+const AUTO_HIDE_DELAY = 5000;
 
 export default function BottomNav() {
   const activeTab         = useNavigationStore((s) => s.activeTab);
@@ -39,13 +37,11 @@ export default function BottomNav() {
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Reset the auto-hide timer whenever the nav is shown
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => hideNav(), AUTO_HIDE_DELAY);
   }, [hideNav]);
 
-  // When nav becomes visible, start the auto-hide countdown
   useEffect(() => {
     if (navVisible) {
       resetTimer();
@@ -55,19 +51,16 @@ export default function BottomNav() {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [navVisible, resetTimer]);
 
-  // Handle tab tap: switch tab then restart hide timer
   const handleTabTap = useCallback((tabId: TabId) => {
     setActiveTab(tabId);
     resetTimer();
   }, [setActiveTab, resetTimer]);
 
-  // Handle login tap
   const handleLoginTap = useCallback(() => {
     setLoginModalOpen(true);
     resetTimer();
   }, [setLoginModalOpen, resetTimer]);
 
-  // Unauthenticated: only show Home + Scores, plus a Login button
   const visibleTabs = isAuthenticated
     ? ALL_TABS
     : ALL_TABS.filter((t) => !t.authRequired);
@@ -80,13 +73,18 @@ export default function BottomNav() {
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', damping: 30, stiffness: 400 }}
-          className="fixed bottom-0 inset-x-0 z-50 border-t border-surface-border bg-background/95 backdrop-blur-xl"
-          style={{ touchAction: 'manipulation' }}
+          className="fixed bottom-0 inset-x-0 z-50 bg-background/95 backdrop-blur-2xl"
+          style={{ touchAction: 'manipulation', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
-          <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-2">
+          {/* Top glow line */}
+          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+
+          <div className="mx-auto flex h-[60px] max-w-lg items-center justify-around px-1">
             {visibleTabs.map((tab) => {
               const isActive = activeTab === tab.id;
-              const { Icon, label, badge } = tab;
+              const { Icon, label } = tab;
+              const isCreate = tab.id === 'create';
+
               return (
                 <button
                   key={tab.id}
@@ -94,40 +92,68 @@ export default function BottomNav() {
                   aria-label={label}
                   aria-current={isActive ? 'page' : undefined}
                   className={cn(
-                    'relative flex flex-col items-center justify-center gap-[3px] px-3 py-2 min-w-[56px] transition-colors duration-150 cursor-pointer',
-                    isActive ? 'text-gold' : 'text-muted-foreground'
+                    'relative flex flex-col items-center justify-center gap-[2px] py-2 min-w-[56px] transition-all duration-200 cursor-pointer',
+                    isCreate ? 'min-w-[48px]' : 'min-w-[56px]',
                   )}
                 >
-                  <div className="relative">
-                    <Icon className={cn('h-5 w-5', tab.id === 'create' && 'h-6 w-6')} />
-                    {badge && (
-                      <span className="absolute -top-1.5 -right-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">
-                        {badge}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-[10px] font-semibold">{label}</span>
+                  {/* Active background pill */}
                   {isActive && (
                     <motion.div
-                      layoutId="activeTab"
-                      className="absolute -top-px left-2 right-2 h-0.5 rounded-full bg-gold"
-                      transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 30 }}
+                      layoutId="activeTabBg"
+                      className={cn(
+                        'absolute -top-1 rounded-2xl',
+                        isCreate ? 'w-12 h-12' : 'w-14 h-10',
+                        isCreate ? 'bg-gold/10' : 'bg-gold/5',
+                      )}
+                      transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 30 }}
                     />
+                  )}
+
+                  {/* Icon */}
+                  <div className={cn(
+                    'relative z-10 transition-all duration-200',
+                    isActive ? (isCreate ? 'text-black' : 'text-gold') : 'text-muted-foreground',
+                  )}>
+                    {isCreate ? (
+                      <div className={cn(
+                        'h-11 w-11 rounded-2xl flex items-center justify-center transition-all duration-200',
+                        isActive
+                          ? 'bg-gold shadow-lg shadow-gold/30 scale-105'
+                          : 'bg-gold/10 border border-gold/20'
+                      )}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                    ) : (
+                      <Icon className={cn(
+                        'transition-all duration-200',
+                        isActive ? 'h-[22px] w-[22px]' : 'h-5 w-5'
+                      )} />
+                    )}
+                  </div>
+
+                  {/* Label */}
+                  {!isCreate && (
+                    <span className={cn(
+                      'text-[10px] font-bold transition-colors duration-200 z-10 relative',
+                      isActive ? 'text-gold' : 'text-muted-foreground'
+                    )}>
+                      {label}
+                    </span>
                   )}
                 </button>
               );
             })}
 
-            {/* Login button — only visible when NOT authenticated */}
+            {/* Login button */}
             {!isAuthenticated && (
               <button
                 onClick={handleLoginTap}
                 aria-label="Log in"
-                className="relative flex flex-col items-center justify-center gap-[3px] px-3 py-2 min-w-[56px] transition-colors duration-150 cursor-pointer text-muted-foreground hover:text-gold"
+                className="relative flex items-center justify-center px-3 py-2 cursor-pointer"
               >
-                <div className="relative flex h-7 items-center gap-1 rounded-full border border-gold/40 bg-gold/10 px-3 py-1">
-                  <LogIn className="h-3.5 w-3.5 text-gold" />
-                  <span className="text-[11px] font-bold text-gold">Login</span>
+                <div className="flex h-8 items-center gap-1.5 rounded-full bg-gold px-4 shadow-lg shadow-gold/20">
+                  <LogIn className="h-3.5 w-3.5 text-black" />
+                  <span className="text-[11px] font-extrabold text-black">Login</span>
                 </div>
               </button>
             )}
