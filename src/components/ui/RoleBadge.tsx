@@ -50,6 +50,7 @@ const ROLE_CONFIG: Record<string, { icon: React.ElementType; label: string; colo
   match:         { icon: Flag,          label: 'Match',         color: 'bg-red-500/15 text-red-400 border-red-500/30' },
   medical:       { icon: Stethoscope,   label: 'Support Staff', color: 'bg-red-500/15 text-red-400 border-red-500/30' },
   media:         { icon: Monitor,       label: 'Media',         color: 'bg-orange-500/15 text-orange-400 border-orange-500/30' },
+  'media-broadcast': { icon: Megaphone,  label: 'Media',  color: 'bg-red-500/15 text-red-400 border-red-500/30' },
   developer:     { icon: Cpu,           label: 'Developer',     color: 'bg-green-500/15 text-green-400 border-green-500/30' },
 };
 
@@ -166,14 +167,45 @@ export function ProBadge({ size = 'sm', className }: { size?: 'xs' | 'sm' | 'md'
 }
 
 /**
+ * MediaBadge — shows the journalist's media affiliation (e.g., "BBC Sport").
+ * Only shown when the user has a mediaName in their role profile.
+ */
+export function MediaBadge({ mediaName, size = 'sm', className }: {
+  mediaName: string;
+  size?: 'xs' | 'sm' | 'md';
+  className?: string;
+}) {
+  if (!mediaName) return null;
+  const sizeClasses = {
+    xs: 'px-1.5 py-0.5 text-[9px] gap-0.5',
+    sm: 'px-2 py-0.5 text-[10px] gap-1',
+    md: 'px-2.5 py-1 text-xs gap-1',
+  };
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full border font-semibold uppercase tracking-wider',
+        'bg-red-500/15 text-red-400 border-red-500/30',
+        sizeClasses[size],
+        className
+      )}
+    >
+      <Megaphone className={size === 'xs' ? 'h-2.5 w-2.5' : size === 'md' ? 'h-3.5 w-3.5' : 'h-3 w-3'} />
+      {mediaName}
+    </span>
+  );
+}
+
+/**
  * BadgeStack — renders Pro + verified + role + type badges together.
  * Spec: Phase 6 — "Profile must always display Role badge, Type badge."
  */
-export function BadgeStack({ role, isVerified, isPro, typeName, size = 'sm' }: {
+export function BadgeStack({ role, isVerified, isPro, typeName, mediaName, size = 'sm' }: {
   role: string;
   isVerified?: boolean;
   isPro?: boolean;
   typeName?: string;
+  mediaName?: string;
   size?: 'xs' | 'sm' | 'md';
 }) {
   return (
@@ -181,6 +213,7 @@ export function BadgeStack({ role, isVerified, isPro, typeName, size = 'sm' }: {
       {isPro && <ProBadge size={size} />}
       {isVerified && <VerifiedBadge size={size} />}
       <RoleBadge role={role} size={size} />
+      {mediaName && <MediaBadge mediaName={mediaName} size={size} />}
       {typeName && <TypeBadge typeName={typeName} size={size} />}
     </div>
   );

@@ -150,7 +150,8 @@ export function renderTab(role: string, tabId: TabId, props: TabRenderProps): Re
 
 export function computeCompleteness(
   role: string,
-  roleProfile: Record<string, unknown> | null | undefined
+  roleProfile: Record<string, unknown> | null | undefined,
+  baseProfile?: { name?: string; handle?: string; bio?: string; avatarUrl?: string | null; location?: string | null } | null
 ): CompletenessResult {
   const cfg = getRoleConfig(role);
   if (!cfg) return { pct: 0, missing: [], filled: [] };
@@ -160,6 +161,18 @@ export function computeCompleteness(
   // have the same shape (FieldDef keys → values), so the logic below
   // works for either source.
   const rp = roleProfile || {};
+
+  // Count base profile fields filled during registration
+  const bp = baseProfile || {};
+  const baseFields = [
+    { key: 'name', label: 'Name', filled: !!bp.name && bp.name.trim().length > 0 },
+    { key: 'handle', label: 'Handle', filled: !!bp.handle && bp.handle.trim().length > 0 },
+    { key: 'bio', label: 'Bio', filled: !!bp.bio && bp.bio.trim().length > 0 },
+    { key: 'avatar', label: 'Avatar', filled: !!bp.avatarUrl },
+    { key: 'location', label: 'Location', filled: !!bp.location && bp.location.trim().length > 0 },
+  ];
+  const filledBase = baseFields.filter(f => f.filled);
+  const missingBase = baseFields.filter(f => !f.filled);
   const required = cfg.fields.filter(f => f.required);
   const optional = cfg.fields.filter(f => !f.required);
 
@@ -178,18 +191,20 @@ export function computeCompleteness(
   const missingRequired = required.filter(f => !isFilled(f.key));
   const missingOptional = optional.filter(f => !isFilled(f.key));
 
-  // Weighted: required fields = 3 points each, optional = 1 point each
-  const totalPoints = required.length * 3 + optional.length * 1;
-  const filledPoints = filledRequired.length * 3 + filledOptional.length * 1;
+  // Weighted: required fields = 3 points each, optional = 1 point each, base fields = 2 points each
+  const totalPoints = required.length * 3 + optional.length * 1 + baseFields.length * 2;
+  const filledPoints = filledRequired.length * 3 + filledOptional.length * 1 + filledBase.length * 2;
   const pct = totalPoints > 0 ? Math.round((filledPoints / totalPoints) * 100) : 0;
 
   return {
     pct,
     missing: [
+      ...missingBase.map(f => ({ key: f.key, label: f.label })),
       ...missingRequired.map(f => ({ key: f.key, label: f.label })),
       ...missingOptional.map(f => ({ key: f.key, label: f.label })),
     ],
     filled: [
+      ...filledBase.map(f => ({ key: f.key, label: f.label })),
       ...filledRequired.map(f => ({ key: f.key, label: f.label })),
       ...filledOptional.map(f => ({ key: f.key, label: f.label })),
     ],

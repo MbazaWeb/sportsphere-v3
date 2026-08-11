@@ -22,6 +22,7 @@ export const JOURNALIST_TABS: Array<{ id: TabId; label: string }> = [
 export const JOURNALIST_FIELDS: RoleConfig['fields'] = [
   // ── Identity ──
   { key: 'publication',  label: 'Publication',         type: 'text',   section: 'identity', group: 'Identity', required: true },
+  { key: 'mediaName',    label: 'Media Name (Badge)',    type: 'text',   section: 'identity', group: 'Identity', required: false, placeholder: 'BBC Sport, ESPN, Sky Sports...' },
   { key: 'beat',         label: 'Beat',                type: 'text',   section: 'identity', group: 'Identity', placeholder: 'Transfers, National team...' },
   { key: 'location',     label: 'Location',            type: 'text',   section: 'identity', group: 'Identity' },
   { key: 'yearsActive',  label: 'Years Active',        type: 'number', section: 'identity', group: 'Identity' },

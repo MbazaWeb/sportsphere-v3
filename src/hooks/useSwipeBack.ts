@@ -4,15 +4,15 @@ import { useEffect, useRef, useCallback } from 'react';
 
 interface SwipeBackOptions {
   onBack: () => void;
-  threshold?: number;   // px to trigger (default 80)
-  edgeZone?: number;    // px from left edge to start (default 30)
+  threshold?: number;   // px to trigger (default 200)
+  edgeZone?: number;    // px from left edge to start (default 15)
   enabled?: boolean;
 }
 
 export function useSwipeBack({
   onBack,
-  threshold = 80,
-  edgeZone = 30,
+  threshold = 200,
+  edgeZone = 15,
   enabled = true,
 }: SwipeBackOptions) {
   const startX = useRef<number | null>(null);

@@ -64,6 +64,8 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [expanded, setExpanded] = useState(true);
+  const isLongPost = item.content.length > 200;
   const user = item.user;
 
   const handleViewUser = useCallback(() => {
@@ -116,7 +118,27 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
           </div>
         </button>
 
-        <p className="mb-3 text-sm leading-relaxed text-foreground/90">{item.content}</p>
+        {isLongPost && !expanded ? (
+          <div className="mb-3">
+            <p className="text-sm leading-relaxed text-foreground/90">{item.content.slice(0, 200)}...</p>
+            <button
+              onClick={() => setExpanded(true)}
+              className="text-xs font-semibold text-gold hover:text-gold/80 transition-colors"
+            >
+              See more
+            </button>
+          </div>
+        ) : (
+          <p className="mb-3 text-sm leading-relaxed text-foreground/90">{item.content}</p>
+        )}
+        {isLongPost && expanded && (
+          <button
+            onClick={() => setExpanded(false)}
+            className="mb-3 text-xs font-semibold text-muted-foreground hover:text-gold transition-colors"
+          >
+            Show less
+          </button>
+        )}
 
         {item.teamTag && (
           <span className="mb-3 inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-medium border bg-gold/10 text-gold border-gold/20">

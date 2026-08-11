@@ -262,11 +262,7 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
             <div className="flex items-start gap-3"><div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-yellow-500/10"><Clock className="h-5 w-5 text-yellow-400" /></div><div className="flex-1"><h3 className="text-sm font-semibold text-yellow-400">Verification In Progress</h3><p className="mt-1 text-xs text-muted-foreground leading-relaxed">Your {userProfile?.role} profile is under review.</p><div className="mt-3 flex items-center gap-2"><span className="rounded-full bg-yellow-500/10 px-2.5 py-1 text-[10px] font-medium text-yellow-400 border border-yellow-500/20"><Clock className="mr-1 inline h-2.5 w-2.5" /> Pending</span><span className="rounded-full bg-surface px-2.5 py-1 text-[10px] font-medium text-muted-foreground border border-surface-border">Submitted {userProfile?.registeredAt ? new Date(userProfile.registeredAt).toLocaleDateString() : 'recently'}</span></div></div></div>
           </motion.div>
         )}
-        {isVerified && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 rounded-2xl bg-gold/5 border border-gold/20 p-4">
-            <div className="flex items-start gap-3"><div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gold/10"><ShieldCheck className="h-5 w-5 text-gold" /></div><div className="flex-1"><h3 className="text-sm font-semibold text-gold">Verified Profile</h3><p className="mt-1 text-xs text-muted-foreground">Your verified badge is active.</p></div></div>
-          </motion.div>
-        )}
+
         {!isVerified && !isPending && userProfile?.role !== 'fan' && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 rounded-2xl bg-gold/5 border border-gold/20 p-4">
             <div className="flex items-start gap-3"><div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gold/10"><Sparkles className="h-5 w-5 text-gold" /></div><div className="flex-1"><h3 className="text-sm font-semibold text-gold">Get Verified</h3><p className="mt-1 text-xs text-muted-foreground">Verify your professional credentials to earn a verified badge.</p><button onClick={() => setUpgradeOpen(true)} className="mt-2 rounded-lg bg-gold px-3 py-1.5 text-xs font-bold text-black">Upgrade to PRO</button></div></div>
@@ -374,6 +370,13 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
           roleProfile={(userProfile?.typedProfile as Record<string, unknown> | undefined)
             || (userProfile?.roleProfile as Record<string, unknown> | undefined)
             || {}}
+          baseProfile={{
+            name: userProfile?.name,
+            handle: userProfile?.handle,
+            bio: userProfile?.bio,
+            avatarUrl: userProfile?.avatarUrl,
+            location: userProfile?.location,
+          }}
           onEdit={() => setEditOpen(true)}
         />
 

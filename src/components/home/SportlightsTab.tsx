@@ -98,8 +98,15 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
   const [spotlightItems, setSpotlightItems] = useState<ApiSpotlightItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [matchDetailOpen, setMatchDetailOpen] = useState(false);
+  const [teamsDismissed, setTeamsDismissed] = useState(false);
   const [selectedResult, setSelectedResult] = useState<ApiMatch | null>(null);
   const setViewingUser = useUIStore((s) => s.setViewingUser);
+
+  // Auto-dismiss "Choose Your Teams" after 10 seconds
+  useEffect(() => {
+    const t = setTimeout(() => setTeamsDismissed(true), 10000);
+    return () => clearTimeout(t);
+  }, []);
 
   // Fetch real PL standings from football-data.org
   useEffect(() => {
@@ -488,7 +495,15 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
       </div>
 
       {/* ===== CHOOSE YOUR TEAMS (seeded accounts + match data) ===== */}
-      <div className="glass-card rounded-2xl p-4 glass-card-hover">
+      {!teamsDismissed && (
+      <div className="glass-card rounded-2xl p-4 glass-card-hover relative">
+        <button
+          onClick={() => setTeamsDismissed(true)}
+          className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated z-10"
+          aria-label="Dismiss"
+        >
+          <X className="h-3 w-3 text-muted-foreground" />
+        </button>
         <div className="flex items-center gap-2 mb-3">
           <Flame className="h-4 w-4 text-gold" />
           <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Choose Your Teams</h3>
@@ -529,6 +544,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
           </div>
         )}
       </div>
+      )}
 
       {/* ===== FEED POSTS ===== */}
       {loading ? (

@@ -93,7 +93,81 @@ export async function GET(request: NextRequest) {
       } : null,
     }));
 
-    return NextResponse.json({ notifications: safeNotifications, messages });
+    // Generate system notifications for recent sports activity
+    const systemNotifs = [];
+
+    // Check for recent matches (results)
+    try {
+      const recentMatches = await db.match.findMany({
+        where: { status: 'finished' },
+        orderBy: { updatedAt: 'desc' },
+        take: 5,
+        select: { id: true, homeTeam: true, awayTeam: true, homeScore: true, awayScore: true, league: true, updatedAt: true },
+      });
+      for (const m of recentMatches) {
+        systemNotifs.push({
+          id: `sys-match-${m.id}`,
+          type: 'result',
+          title: `Full Time: ${m.homeTeam} ${m.homeScore} - ${m.awayScore} ${m.awayTeam}`,
+          body: m.league,
+          isRead: true,
+          referenceId: m.id,
+          createdAt: m.updatedAt.toISOString(),
+          actor: null,
+        });
+      }
+    } catch { /* ignore if match table doesn't exist */ }
+
+    // Check for new users (players/teams joined recently)
+    try {
+      const newUsers = await db.user.findMany({
+        where: { role: { in: ['player', 'team', 'coach', 'media-broadcast'] } },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: { id: true, name: true, role: true, handle: true, avatarInitials: true, isVerified: true, createdAt: true },
+      });
+      for (const u of newUsers) {
+        const roleLabel = u.role === 'media-broadcast' ? 'Media' : u.role.charAt(0).toUpperCase() + u.role.slice(1);
+        systemNotifs.push({
+          id: `sys-user-${u.id}`,
+          type: 'community',
+          title: `New ${roleLabel}: ${u.name} joined SportSphere`,
+          body: `@${u.handle}`,
+          isRead: true,
+          referenceId: u.id,
+          createdAt: u.createdAt.toISOString(),
+          actor: { id: u.id, name: u.name, handle: u.handle, avatarInitials: u.avatarInitials, isVerified: u.isVerified },
+        });
+      }
+    } catch { /* ignore */ }
+
+    // Check for live matches
+    try {
+      const liveMatches = await db.match.findMany({
+        where: { status: 'live' },
+        take: 5,
+        select: { id: true, homeTeam: true, awayTeam: true, homeScore: true, awayScore: true, league: true, minute: true, updatedAt: true },
+      });
+      for (const m of liveMatches) {
+        systemNotifs.push({
+          id: `sys-live-${m.id}`,
+          type: 'goal',
+          title: `LIVE: ${m.homeTeam} ${m.homeScore ?? 0} - ${m.awayScore ?? 0} ${m.awayTeam} (${m.minute}')`,
+          body: m.league,
+          isRead: false,
+          referenceId: m.id,
+          createdAt: m.updatedAt.toISOString(),
+          actor: null,
+        });
+      }
+    } catch { /* ignore */ }
+
+    // Merge user notifications with system notifications, sort by date
+    const allNotifications = [...safeNotifications, ...systemNotifs]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 30);
+
+    return NextResponse.json({ notifications: allNotifications, messages });
   } catch (error) {
     console.error('Activity API error:', error);
     return NextResponse.json({ error: 'Failed to fetch activity' }, { status: 500 });

@@ -263,9 +263,20 @@ const ROLES = [
     ],
   },
   {
+    slug: 'media-broadcast', name: 'Media Broadcast', icon: '📺', category: 'individual',
+    description: 'Media broadcast organizations like BBC Sports, ESPN, Sky Sports etc.',
+    displayOrder: 21,
+    types: [
+      { slug: 'tv-network', name: 'TV Network', description: 'Television sports broadcasting network', displayOrder: 1 },
+      { slug: 'radio-network', name: 'Radio Network', description: 'Radio sports broadcasting network', displayOrder: 2 },
+      { slug: 'digital-platform', name: 'Digital Platform', description: 'Digital/streaming sports media platform', displayOrder: 3 },
+      { slug: 'news-agency', name: 'News Agency', description: 'Sports news agency wire service', displayOrder: 4 },
+    ],
+  },
+  {
     slug: 'moderator', name: 'Moderator', icon: '🛡️', category: 'admin',
     description: 'Moderates content and community interactions',
-    displayOrder: 21,
+    displayOrder: 22,
     types: [
       { slug: 'content-moderator', name: 'Content Moderator', description: 'Reviews and moderates user-generated content', displayOrder: 1 },
       { slug: 'community-moderator', name: 'Community Moderator', description: 'Moderates community discussions', displayOrder: 2 },
@@ -274,7 +285,7 @@ const ROLES = [
   {
     slug: 'administrator', name: 'Administrator', icon: '👑', category: 'admin',
     description: 'Platform administrators with management privileges',
-    displayOrder: 22,
+    displayOrder: 23,
     types: [
       { slug: 'super-admin', name: 'Super Administrator', description: 'Full platform access and control', displayOrder: 1 },
       { slug: 'platform-admin', name: 'Platform Administrator', description: 'Manages platform configuration', displayOrder: 2 },

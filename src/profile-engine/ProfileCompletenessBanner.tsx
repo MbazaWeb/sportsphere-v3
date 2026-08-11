@@ -15,14 +15,16 @@ import { cn } from '@/lib/utils';
 export function ProfileCompletenessBanner({
   role,
   roleProfile,
+  baseProfile,
   onEdit,
 }: {
   role: string;
   roleProfile: Record<string, unknown> | null | undefined;
+  baseProfile?: { name?: string; handle?: string; bio?: string; avatarUrl?: string | null; location?: string | null } | null;
   onEdit: () => void;
 }) {
   const [dismissed, setDismissed] = useState(false);
-  const result = computeCompleteness(role, roleProfile);
+  const result = computeCompleteness(role, roleProfile, baseProfile);
 
   if (dismissed) return null;
   if (result.pct >= 100) {
