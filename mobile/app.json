@@ -13,7 +13,9 @@
       "bundleIdentifier": "com.sportsphere.app",
       "backgroundColor": "#0A1628",
       "buildNumber": "1",
-      "associatedDomains": ["applinks:sportssphere.fun"],
+      "associatedDomains": [
+        "applinks:sportssphere.fun"
+      ],
       "infoPlist": {
         "CFBundleDisplayName": "Sportsphere",
         "CFBundleShortVersionString": "1.0.0",
@@ -50,7 +52,10 @@
               "pathPrefix": "/u"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ],
       "permissions": [
@@ -65,7 +70,8 @@
       ],
       "blockedPermissions": [
         "com.google.android.gms.permission.AD_ID"
-      ]
+      ],
+      "usesCleartextTraffic": true
     },
     "web": {
       "bundler": "metro",
@@ -75,7 +81,7 @@
     "updates": {
       "url": "https://u.expo.dev/f649f294-ee92-4e7f-a85e-716534fa4adb",
       "enabled": true,
-      "checkAutomatically": "ON_LOAD",
+      "checkAutomatically": "ON_ERROR_RECOVERY",
       "fallbackToCacheTimeout": 0
     },
     "runtimeVersion": {
