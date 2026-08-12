@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { verifyAdmin } from "@/lib/adminGuard";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await verifyAdmin(request);
+  if (!auth.authorized) return auth.response;
   try {
     const claims = await db.claimRequest.findMany({
       orderBy: { submittedAt: "desc" },
@@ -41,6 +44,8 @@ export async function GET() {
 }
 
 export async function PATCH(request: NextRequest) {
+  const auth = await verifyAdmin(request);
+  if (!auth.authorized) return auth.response;
   try {
     const { id, status, reviewNotes } = await request.json();
     if (!id || !status) {

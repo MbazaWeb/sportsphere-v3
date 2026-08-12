@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { verifyAdmin } from "@/lib/adminGuard";
 import { randomUUID } from "crypto";
 
 export const dynamic = "force-dynamic";
 
 // GET /api/admin/rumors
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await verifyAdmin(request);
+  if (!auth.authorized) return auth.response;
   try {
     const rumors = await db.rumor.findMany({
       orderBy: { publishedAt: "desc" },
@@ -35,6 +38,8 @@ export async function GET() {
 
 // POST /api/admin/rumors
 export async function POST(request: NextRequest) {
+  const auth = await verifyAdmin(request);
+  if (!auth.authorized) return auth.response;
   try {
     const body = await request.json();
     const { player, fromClub, toClub, credibility, status, isAiGenerated, title, content } =

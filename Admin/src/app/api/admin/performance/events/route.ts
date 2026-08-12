@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'crypto';
 import { db } from '@/lib/db';
 import { verifyAdmin } from '@/lib/adminGuard';
 import { sendNotification } from '@/lib/notifications';
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
 
         await tx.performancePointTransaction.create({
           data: {
+            id: randomUUID(),
             userId: event.userId,
             eventId: event.id,
             transactionType: 'event',
