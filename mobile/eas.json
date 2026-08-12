@@ -15,23 +15,33 @@
       "android": {
         "buildType": "apk",
         "resourceClass": "medium",
+        "withoutCredentials": true,
         "cache": {
-          "key": "gradle-v1",
+          "disabled": false,
+          "key": "gradle-v2-no-newarch",
           "paths": [
             "~/.gradle/caches",
-            "~/.gradle/wrapper"
+            "~/.gradle/wrapper",
+            "android/.gradle",
+            "android/app/build"
           ]
         }
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://sportssphere.fun/api"
-      }
+      },
+      "node": "20.18.0"
     },
     "production": {
       "channel": "production",
+      "android": {
+        "buildType": "app-bundle",
+        "resourceClass": "medium"
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://sportssphere.fun/api"
-      }
+      },
+      "node": "20.18.0"
     }
   }
 }
