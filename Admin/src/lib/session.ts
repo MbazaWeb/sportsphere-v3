@@ -89,9 +89,8 @@ export function buildAdminCookie(token: string): string {
     `Max-Age=${TTL_SECONDS}`,
     'HttpOnly',
     'SameSite=Lax',
+    'Secure',
   ];
-  const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL ?? '';
-  if (adminUrl.startsWith('https://')) flags.push('Secure');
   return flags.join('; ');
 }
 

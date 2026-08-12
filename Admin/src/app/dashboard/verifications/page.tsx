@@ -1,279 +1,202 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { CheckCircle2, XCircle, Clock, ShieldCheck, RefreshCw, UserCheck, Search } from 'lucide-react';
 
-interface VerificationRequest {
+interface VerificationItem {
   id: string;
-  userId: string;
-  role: string;
-  roleId: string | null;
-  roleTypeId: string | null;
-  roleData: any;
-  status: string;
-  adminNotes: string | null;
-  reviewedBy: string | null;
-  submittedAt: string;
-  reviewedAt: string | null;
+  status: 'pending' | 'verified' | 'rejected';
+  createdAt: string;
   user: {
     id: string;
     name: string;
     email: string;
     handle: string;
-    avatarUrl: string | null;
-    avatarInitials: string | null;
-    currentCountry: string | null;
     role: string;
-    isVerified: boolean;
   };
+  matchDetails: string;
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-export default function VerificationsPage() {
-  const [data, setData] = useState<{ requests: VerificationRequest[]; counts: any }>({
-    requests: [],
-    counts: { pending: 0, approved: 0, rejected: 0, total: 0 },
-  });
+export default function PerformanceVerificationsPage() {
+  const [items, setItems] = useState<VerificationItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
-  const [processingId, setProcessingId] = useState<string | null>(null);
-  const [notesMap, setNotesMap] = useState<Record<string, string>>({});
+  const [activeTab, setActiveTab] = useState<'pending' | 'verified' | 'rejected'>('pending');
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const load = useCallback(async () => {
+  const fetchVerifications = async () => {
     setLoading(true);
-    setError(null);
     try {
-      const res = await fetch(`/api/admin/verifications?status=${tab}`, { cache: 'no-store' });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json?.error || 'Failed to load verifications.');
-        setData({ requests: [], counts: { pending: 0, approved: 0, rejected: 0, total: 0 } });
-      } else {
-        setData(json);
+      const res = await fetch('/api/admin/verifications');
+      const data = await res.json();
+      if (data.ok) {
+        setItems(data.requests);
       }
     } catch (err) {
-      console.error('Verifications load error:', err);
-      setError('Network error.');
+      console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [tab]);
+  };
 
   useEffect(() => {
-    load();
-  }, [load]);
+    fetchVerifications();
+  }, []);
 
-  async function process(req: VerificationRequest, action: 'approve' | 'reject') {
-    const adminNotes = notesMap[req.id] || '';
-    if (action === 'reject' && !adminNotes.trim()) {
-      alert('Please provide a reason in the notes field before rejecting.');
-      return;
-    }
-    setProcessingId(req.id);
+  const handleUpdateStatus = async (id: string, newStatus: 'verified' | 'rejected') => {
     try {
       const res = await fetch('/api/admin/verifications', {
-        method: 'POST',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: req.id, action, adminNotes }),
+        body: JSON.stringify({ id, status: newStatus }),
       });
-      const json = await res.json();
-      if (!res.ok) {
-        alert(json?.error || 'Failed to process verification.');
-      } else {
-        setNotesMap((prev) => {
-          const next = { ...prev };
-          delete next[req.id];
-          return next;
-        });
-        await load();
+      if (res.ok) {
+        setItems((prev) =>
+          prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
+        );
       }
-    } catch {
-      alert('Network error.');
-    } finally {
-      setProcessingId(null);
+    } catch (err) {
+      console.error(err);
     }
-  }
+  };
 
-  const tabs: Array<{ key: typeof tab; label: string; count: number; color: string }> = [
-    { key: 'pending', label: 'Pending', count: data.counts.pending, color: 'text-amber-300' },
-    { key: 'approved', label: 'Approved', count: data.counts.approved, color: 'text-emerald-300' },
-    { key: 'rejected', label: 'Rejected', count: data.counts.rejected, color: 'text-red-300' },
-    { key: 'all', label: 'All', count: data.counts.total, color: 'text-slate-300' },
-  ];
+  const filteredItems = items.filter((item) => {
+    const matchesTab = item.status === activeTab;
+    const matchesSearch =
+      item.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.user.handle.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesTab && matchesSearch;
+  });
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">✅ KYC Verifications</h1>
-        <p className="text-sm text-slate-400 mt-1">
-          Review verification requests from users upgrading to Player, Coach, Team, or
-          League roles. Approvals update the user&apos;s role and verified status.
-          Rejects require a reason. All actions are audit-logged.
-        </p>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex items-center gap-1 mb-6 border-b border-slate-800">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-              tab === t.key
-                ? 'border-amber-400 text-amber-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            {t.label}
-            <span className={`ml-2 text-xs ${t.color}`}>
-              ({t.count})
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {error && (
-        <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-          ⚠ {error}
-        </div>
-      )}
-
-      {/* Queue */}
-      <div className="space-y-3">
-        {loading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="rounded-xl border border-slate-800 bg-[#0f141c] p-4">
-              <div className="skeleton h-6 w-48 mb-2" />
-              <div className="skeleton h-4 w-full mb-1" />
-              <div className="skeleton h-4 w-2/3" />
-            </div>
-          ))
-        ) : data.requests.length === 0 ? (
-          <div className="rounded-xl border border-slate-800 bg-[#0f141c] p-12 text-center text-slate-500">
-            No {tab === 'all' ? '' : tab} verification requests.
+    <div className="p-6 space-y-6 text-slate-100 bg-[#0b0e14] min-h-screen font-sans">
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-5 gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-7 h-7 text-amber-400" />
+            <h1 className="text-3xl font-black text-white tracking-tight">Performance Verifications</h1>
           </div>
-        ) : (
-          data.requests.map((req) => (
-            <div
-              key={req.id}
-              className="rounded-xl border border-slate-800 bg-[#0f141c] p-5"
-            >
-              {/* Header */}
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-sm font-bold text-slate-900 overflow-hidden">
-                    {req.user.avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={req.user.avatarUrl} alt={req.user.name} className="w-full h-full object-cover" />
-                    ) : (
-                      req.user.avatarInitials || req.user.name.slice(0, 2).toUpperCase()
-                    )}
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-slate-100">
-                      {req.user.name}
-                      <span className="ml-2 text-xs text-slate-500">@{req.user.handle}</span>
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      {req.user.email} · {req.user.currentCountry || 'Unknown country'}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-full bg-sky-500/15 border border-sky-500/30 text-sky-300 text-[10px] font-bold uppercase tracking-wider">
-                    Requesting: {req.role}
-                  </span>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                    req.status === 'pending'
-                      ? 'bg-amber-500/15 border border-amber-500/30 text-amber-300'
-                      : req.status === 'approved'
-                      ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
-                      : 'bg-red-500/15 border border-red-500/30 text-red-300'
-                  }`}>
-                    {req.status}
-                  </span>
-                </div>
-              </div>
+          <p className="text-sm text-slate-400 mt-1">
+            Review and verify match events submitted by players and coaches. Verification adds points to their profile and triggers ranking updates.
+          </p>
+        </div>
 
-              {/* Role data */}
-              {req.roleData && Object.keys(req.roleData).length > 0 && (
-                <div className="mb-3 rounded-lg bg-[#0b0e14] border border-slate-800 p-3">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-                    Submitted Role Data
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    {Object.entries(req.roleData).slice(0, 8).map(([k, v]) => (
-                      <div key={k}>
-                        <span className="text-slate-500">{k}:</span>{' '}
-                        <span className="text-slate-200 truncate">
-                          {typeof v === 'string' || typeof v === 'number' ? String(v) : '—'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Submitted / reviewed timestamps */}
-              <div className="text-xs text-slate-500 mb-3">
-                Submitted: {formatDate(req.submittedAt)}
-                {req.reviewedAt && (
-                  <span className="ml-4">Reviewed: {formatDate(req.reviewedAt)}</span>
-                )}
-                {req.adminNotes && (
-                  <div className="mt-1 text-slate-400">
-                    <strong className="text-slate-300">Admin notes:</strong> {req.adminNotes}
-                  </div>
-                )}
-              </div>
-
-              {/* Actions (only for pending) */}
-              {req.status === 'pending' && (
-                <div className="border-t border-slate-800 pt-3 space-y-2">
-                  <input
-                    type="text"
-                    placeholder="Admin notes (required for reject, optional for approve)…"
-                    value={notesMap[req.id] || ''}
-                    onChange={(e) => setNotesMap((prev) => ({ ...prev, [req.id]: e.target.value }))}
-                    className="w-full rounded-lg bg-[#0b0e14] border border-slate-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400/60"
-                  />
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => process(req, 'approve')}
-                      disabled={processingId === req.id}
-                      className="px-4 py-2 rounded-lg bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25 text-xs font-bold uppercase tracking-wider disabled:opacity-50"
-                    >
-                      {processingId === req.id ? 'Processing…' : '✓ Approve'}
-                    </button>
-                    <button
-                      onClick={() => process(req, 'reject')}
-                      disabled={processingId === req.id}
-                      className="px-4 py-2 rounded-lg bg-red-500/15 border border-red-500/40 text-red-300 hover:bg-red-500/25 text-xs font-bold uppercase tracking-wider disabled:opacity-50"
-                    >
-                      {processingId === req.id ? 'Processing…' : '✕ Reject'}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))
-        )}
+        <button
+          onClick={fetchVerifications}
+          className="p-2.5 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 rounded-xl transition flex items-center gap-2 text-xs font-semibold"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          <span>Refresh</span>
+        </button>
       </div>
 
-      {!loading && data.requests.length > 0 && (
-        <div className="mt-4 text-xs text-slate-500">
-          Showing {data.requests.length} {tab} request{data.requests.length === 1 ? '' : 's'}.
+      {/* Tabs & Search */}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="flex bg-slate-900/80 p-1 rounded-xl border border-slate-800 w-full sm:w-auto">
+          {(['pending', 'verified', 'rejected'] as const).map((tab) => {
+            const count = items.filter((i) => i.status === tab).length;
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 sm:flex-none px-5 py-2 rounded-lg text-xs font-bold capitalize transition flex items-center gap-2 ${
+                  activeTab === tab
+                    ? 'bg-amber-500 text-slate-950 shadow-md'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <span>{tab}</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] ${activeTab === tab ? 'bg-slate-950/20 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="relative w-full sm:w-64">
+          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+          <input
+            type="text"
+            placeholder="Search athlete or coach..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-400"
+          />
+        </div>
+      </div>
+
+      {/* Content List */}
+      {filteredItems.length === 0 ? (
+        <div className="p-12 text-center bg-slate-900/30 border border-slate-800/60 rounded-2xl space-y-3">
+          <UserCheck className="w-10 h-10 text-slate-600 mx-auto" />
+          <p className="text-slate-400 text-sm font-medium">No {activeTab} verification requests found.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          {filteredItems.map((item, idx) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.04 }}
+              className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-slate-700 transition"
+            >
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-white text-base">{item.user.name}</h3>
+                  <span className="text-xs text-amber-400 font-mono">@{item.user.handle}</span>
+                  <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md font-semibold uppercase">
+                    {item.user.role}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400">{item.matchDetails}</p>
+                <div className="text-[11px] text-slate-500 flex items-center gap-1 pt-1">
+                  <Clock className="w-3 h-3" />
+                  <span>Submitted on {new Date(item.createdAt).toLocaleDateString()}</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              {item.status === 'pending' && (
+                <div className="flex items-center gap-2.5 w-full md:w-auto">
+                  <button
+                    onClick={() => handleUpdateStatus(item.id, 'rejected')}
+                    className="flex-1 md:flex-none px-4 py-2 bg-red-950/40 border border-red-800/80 hover:bg-red-900/60 text-red-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    <span>Reject</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleUpdateStatus(item.id, 'verified')}
+                    className="flex-1 md:flex-none px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition shadow-lg shadow-emerald-500/10"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Approve & Verify</span>
+                  </button>
+                </div>
+              )}
+
+              {item.status !== 'pending' && (
+                <span
+                  className={`text-xs font-bold px-3 py-1 rounded-full border uppercase ${
+                    item.status === 'verified'
+                      ? 'bg-emerald-950/50 border-emerald-800 text-emerald-400'
+                      : 'bg-red-950/50 border-red-800 text-red-400'
+                  }`}
+                >
+                  {item.status}
+                </span>
+              )}
+            </motion.div>
+          ))}
         </div>
       )}
+
     </div>
   );
 }

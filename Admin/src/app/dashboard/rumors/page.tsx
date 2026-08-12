@@ -1,581 +1,313 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Flame, Plus, Sparkles, RefreshCw, ArrowRight, ShieldAlert, CheckCircle, HelpCircle } from 'lucide-react';
 
 interface Rumor {
   id: string;
-  title: string;
-  slug: string;
-  body: string;
-  source: string;
+  player: string;
+  fromClub: string;
+  toClub: string;
   credibility: number;
-  status: string;
-  createdByAI: boolean;
-  tags: any;
+  status: 'draft' | 'published' | 'debunked' | 'archived';
+  source: 'ai-generated' | 'manual';
   createdAt: string;
-  updatedAt: string;
-  sport?: { id: string; name: string; icon: string } | null;
-  league?: { id: string; name: string } | null;
-  team?: { id: string; name: string } | null;
-  player?: { id: string; name: string } | null;
-  coach?: { id: string; name: string } | null;
-}
-
-interface RumorEditorState {
-  id?: string;
-  title: string;
-  body: string;
-  credibility: number;
-  tags: string;
-  status: string;
-  sportId: string;
-  leagueId: string;
-  teamId: string;
-  playerId: string;
-  coachId: string;
-}
-
-const EMPTY_EDITOR: RumorEditorState = {
-  title: '',
-  body: '',
-  credibility: 50,
-  tags: '',
-  status: 'draft',
-  sportId: '',
-  leagueId: '',
-  teamId: '',
-  playerId: '',
-  coachId: '',
-};
-
-function timeAgo(iso: string): string {
-  const d = new Date(iso);
-  const diff = Date.now() - d.getTime();
-  const sec = Math.floor(diff / 1000);
-  if (sec < 60) return `${sec}s ago`;
-  const min = Math.floor(sec / 60);
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const day = Math.floor(hr / 24);
-  return `${day}d ago`;
-}
-
-function statusBadge(status: string) {
-  const map: Record<string, { label: string; color: string }> = {
-    draft: { label: 'DRAFT', color: 'bg-slate-500/15 text-slate-300 border-slate-500/30' },
-    published: { label: 'PUBLISHED', color: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
-    debunked: { label: 'DEBUNKED', color: 'bg-red-500/15 text-red-300 border-red-500/30' },
-    archived: { label: 'ARCHIVED', color: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
-  };
-  const cfg = map[status] || { label: status, color: 'bg-slate-500/15 text-slate-300 border-slate-500/30' };
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${cfg.color}`}>
-      {cfg.label}
-    </span>
-  );
-}
-
-function credibilityBar(value: number) {
-  let color = 'bg-red-500';
-  if (value >= 70) color = 'bg-emerald-500';
-  else if (value >= 40) color = 'bg-amber-500';
-  return (
-    <div className="flex items-center gap-2">
-      <div className="w-16 h-2 bg-slate-800 rounded-full overflow-hidden">
-        <div className={`h-full ${color}`} style={{ width: `${value}%` }} />
-      </div>
-      <span className="text-[10px] text-slate-400 tabular-nums">{value}</span>
-    </div>
-  );
-}
-
-function sourceBadge(source: string, createdByAI: boolean) {
-  if (createdByAI || source === 'ai') {
-    return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border bg-amber-500/15 text-amber-300 border-amber-500/30">
-        🤖 AI
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border bg-sky-500/15 text-sky-300 border-sky-500/30">
-      ✍ Manual
-    </span>
-  );
 }
 
 export default function RumorsManagerPage() {
   const [rumors, setRumors] = useState<Rumor[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [limit] = useState(20);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   const [statusFilter, setStatusFilter] = useState('all');
-  const [sourceFilter, setSourceFilter] = useState<'all' | 'ai' | 'manual'>('all');
-  const [search, setSearch] = useState('');
+  const [sourceFilter, setSourceFilter] = useState('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [editor, setEditor] = useState<RumorEditorState>(EMPTY_EDITOR);
-  const [saving, setSaving] = useState(false);
-  const [editorError, setEditorError] = useState<string | null>(null);
+  // Form inputs
+  const [player, setPlayer] = useState('');
+  const [fromClub, setFromClub] = useState('');
+  const [toClub, setToClub] = useState('');
+  const [credibility, setCredibility] = useState(40);
+  const [isAi, setIsAi] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const load = useCallback(async () => {
+  const fetchRumors = async () => {
     setLoading(true);
-    setError(null);
     try {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-      });
-      if (statusFilter !== 'all') params.set('status', statusFilter);
-      if (sourceFilter !== 'all') params.set('createdByAI', sourceFilter === 'ai' ? 'true' : 'false');
-
-      const res = await fetch(`/api/admin/rumors?${params.toString()}`, { cache: 'no-store' });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json?.error || 'Failed to load rumors');
-        setRumors([]);
-        setTotal(0);
-      } else {
-        setRumors(json.data || []);
-        setTotal(json.total || 0);
-      }
+      const res = await fetch('/api/admin/rumors');
+      const data = await res.json();
+      if (data.ok) setRumors(data.rumors);
     } catch (err) {
-      console.error('Rumors load error:', err);
-      setError('Network error');
+      console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [page, limit, statusFilter, sourceFilter]);
+  };
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('createdByAI') === 'true') setSourceFilter('ai');
-      if (params.get('status')) setStatusFilter(params.get('status')!);
-    }
+    fetchRumors();
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  function openNew() {
-    setEditor(EMPTY_EDITOR);
-    setEditorError(null);
-    setEditorOpen(true);
-  }
-
-  function openEdit(item: Rumor) {
-    setEditor({
-      id: item.id,
-      title: item.title || '',
-      body: item.body || '',
-      credibility: item.credibility ?? 50,
-      tags: Array.isArray(item.tags) ? item.tags.join(', ') : '',
-      status: item.status || 'draft',
-      sportId: item.sport?.id || '',
-      leagueId: item.league?.id || '',
-      teamId: item.team?.id || '',
-      playerId: item.player?.id || '',
-      coachId: item.coach?.id || '',
-    });
-    setEditorError(null);
-    setEditorOpen(true);
-  }
-
-  async function save() {
-    setSaving(true);
-    setEditorError(null);
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!player.trim() || !toClub.trim()) return;
+    setSubmitting(true);
     try {
-      const payload: any = {
-        title: editor.title.trim(),
-        body: editor.body.trim(),
-        credibility: editor.credibility,
-        tags: editor.tags
-          .split(',')
-          .map((t) => t.trim())
-          .filter(Boolean),
-        status: editor.status,
-        sportId: editor.sportId || undefined,
-        leagueId: editor.leagueId || undefined,
-        teamId: editor.teamId || undefined,
-        playerId: editor.playerId || undefined,
-        coachId: editor.coachId || undefined,
-      };
-
-      if (!payload.title || !payload.body) {
-        setEditorError('Title and body are required.');
-        setSaving(false);
-        return;
-      }
-
-      const isEdit = !!editor.id;
-      const url = isEdit ? `/api/admin/rumors/${editor.id}` : '/api/admin/rumors';
-      const method = isEdit ? 'PATCH' : 'POST';
-      const res = await fetch(url, {
-        method,
+      const res = await fetch('/api/admin/rumors', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          player,
+          fromClub,
+          toClub,
+          credibility,
+          isAiGenerated: isAi,
+          status: 'PUBLISHED',
+        }),
       });
-      const json = await res.json();
-      if (!res.ok) {
-        setEditorError(json?.error || 'Save failed');
-      } else {
-        setEditorOpen(false);
-        await load();
+      const data = await res.json();
+      if (data.ok) {
+        setPlayer('');
+        setFromClub('');
+        setToClub('');
+        setIsModalOpen(false);
+        fetchRumors();
       }
     } catch (err) {
-      console.error('Save error:', err);
-      setEditorError('Network error');
+      console.error(err);
     } finally {
-      setSaving(false);
+      setSubmitting(false);
     }
-  }
+  };
 
-  async function debunk(item: Rumor) {
-    if (!confirm(`Mark "${item.title}" as DEBUNKED?`)) return;
-    try {
-      const res = await fetch(`/api/admin/rumors/${item.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'debunked' }),
-      });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        alert(j?.error || 'Failed to debunk');
-      } else {
-        await load();
-      }
-    } catch (err) {
-      alert('Network error');
-    }
-  }
-
-  async function remove(item: Rumor) {
-    if (!confirm(`Delete "${item.title}"? This cannot be undone.`)) return;
-    try {
-      const res = await fetch(`/api/admin/rumors/${item.id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        alert(j?.error || 'Failed to delete');
-      } else {
-        await load();
-      }
-    } catch (err) {
-      alert('Network error');
-    }
-  }
-
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  const filtered = search
-    ? rumors.filter(
-        (r) =>
-          r.title.toLowerCase().includes(search.toLowerCase()) ||
-          r.body.toLowerCase().includes(search.toLowerCase())
-      )
-    : rumors;
+  const filteredRumors = rumors.filter((r) => {
+    const matchStatus = statusFilter === 'all' || r.status === statusFilter;
+    const matchSource = sourceFilter === 'all' || r.source === sourceFilter;
+    return matchStatus && matchSource;
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="p-6 space-y-6 text-slate-100 bg-[#0b0e14] min-h-screen font-sans">
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-5 gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">💬 Rumors Manager</h1>
+          <div className="flex items-center gap-2">
+            <Flame className="w-7 h-7 text-amber-400" />
+            <h1 className="text-3xl font-black text-white tracking-tight">Rumors Manager</h1>
+          </div>
           <p className="text-sm text-slate-400 mt-1">
             Manage transfer rumors and gossip. AI rumors ship with low credibility until verified.
           </p>
         </div>
-        <button
-          onClick={openNew}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-400 text-slate-900 hover:bg-amber-300 text-sm font-bold"
-        >
-          ✚ New Rumor
-        </button>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchRumors}
+            className="p-2.5 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 rounded-xl transition"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-500/10 transition"
+          >
+            <Plus className="w-4 h-4 stroke-[3]" />
+            <span>New Rumor</span>
+          </button>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <input
-          type="text"
-          placeholder="Search rumors…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 min-w-[200px] bg-[#0f141c] border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:border-amber-400/50 focus:outline-none"
-        />
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-[#0f141c] border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-amber-400/50 focus:outline-none"
-        >
-          <option value="all">All status</option>
-          <option value="draft">Draft</option>
-          <option value="published">Published</option>
-          <option value="debunked">Debunked</option>
-          <option value="archived">Archived</option>
-        </select>
-        <select
-          value={sourceFilter}
-          onChange={(e) => setSourceFilter(e.target.value as any)}
-          className="bg-[#0f141c] border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-amber-400/50 focus:outline-none"
-        >
-          <option value="all">All sources</option>
-          <option value="ai">AI-generated</option>
-          <option value="manual">Manual</option>
-        </select>
+      {/* Filter Options */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-900/60 p-3 rounded-2xl border border-slate-800/80">
+        <div>
+          <label className="text-[10px] font-semibold uppercase text-slate-500 block mb-1">Status</label>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-slate-200 focus:outline-none focus:border-amber-400"
+          >
+            <option value="all">All Status</option>
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+            <option value="debunked">Debunked</option>
+            <option value="archived">Archived</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="text-[10px] font-semibold uppercase text-slate-500 block mb-1">Source</label>
+          <select
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value)}
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-slate-200 focus:outline-none focus:border-amber-400"
+          >
+            <option value="all">All Sources</option>
+            <option value="ai-generated">AI-generated</option>
+            <option value="manual">Manual</option>
+          </select>
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl border border-slate-800 bg-[#0f141c] overflow-hidden">
-        {loading ? (
-          <div className="p-12 text-center text-slate-500 text-sm">Loading rumors…</div>
-        ) : error ? (
-          <div className="p-12 text-center text-red-300 text-sm">⚠ {error}</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-12 text-center text-slate-500 text-sm">
-            No rumors found. Click "New Rumor" to create one, or run the AI rumor generator.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-[#0b0e14] text-slate-500 uppercase tracking-wider">
-                <tr className="border-b border-slate-800">
-                  <th className="text-left px-4 py-3 font-semibold">Title</th>
-                  <th className="text-left px-4 py-3 font-semibold">Credibility</th>
-                  <th className="text-left px-4 py-3 font-semibold">Source</th>
-                  <th className="text-left px-4 py-3 font-semibold">Status</th>
-                  <th className="text-left px-4 py-3 font-semibold">AI</th>
-                  <th className="text-left px-4 py-3 font-semibold">Related</th>
-                  <th className="text-left px-4 py-3 font-semibold">Created</th>
-                  <th className="text-right px-4 py-3 font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r) => (
-                  <tr key={r.id} className="border-b border-slate-800/40 hover:bg-slate-800/20">
-                    <td className="px-4 py-3 max-w-md">
-                      <div className="text-slate-200 font-medium truncate">{r.title}</div>
-                    </td>
-                    <td className="px-4 py-3">{credibilityBar(r.credibility)}</td>
-                    <td className="px-4 py-3">{sourceBadge(r.source, r.createdByAI)}</td>
-                    <td className="px-4 py-3">{statusBadge(r.status)}</td>
-                    <td className="px-4 py-3">
-                      {r.createdByAI ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border bg-amber-500/15 text-amber-300 border-amber-500/30">
-                          🤖
-                        </span>
-                      ) : (
-                        <span className="text-slate-600">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-slate-400">
-                      {r.player?.name || r.team?.name || '—'}
-                    </td>
-                    <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{timeAgo(r.createdAt)}</td>
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
-                      {r.status !== 'debunked' && (
-                        <button
-                          onClick={() => debunk(r)}
-                          className="text-xs text-red-400 hover:text-red-300 mr-3"
-                        >
-                          Debunk
-                        </button>
-                      )}
-                      <button
-                        onClick={() => openEdit(r)}
-                        className="text-xs text-amber-400 hover:text-amber-300 mr-3"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => remove(r)}
-                        className="text-xs text-red-400 hover:text-red-300"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {total > limit && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-800 text-xs text-slate-500">
-            <div>
-              Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="px-3 py-1 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-40"
-              >
-                ← Prev
-              </button>
-              <span className="px-2 tabular-nums">{page} / {totalPages}</span>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="px-3 py-1 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-40"
-              >
-                Next →
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Editor Modal */}
-      {editorOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0f141c] border border-slate-800 rounded-xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-white">
-                {editor.id ? 'Edit Rumor' : 'New Rumor'}
-              </h2>
-              <button
-                onClick={() => setEditorOpen(false)}
-                className="text-slate-500 hover:text-slate-300 text-xl leading-none"
-              >
-                ×
-              </button>
-            </div>
-
-            {editorError && (
-              <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
-                ⚠ {editorError}
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Title *
-                </label>
-                <input
-                  type="text"
-                  value={editor.title}
-                  onChange={(e) => setEditor({ ...editor, title: e.target.value })}
-                  className="w-full bg-[#0b0e14] border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-amber-400/50 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Body *
-                </label>
-                <textarea
-                  rows={6}
-                  value={editor.body}
-                  onChange={(e) => setEditor({ ...editor, body: e.target.value })}
-                  className="w-full bg-[#0b0e14] border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-amber-400/50 focus:outline-none font-mono"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Credibility: <span className="text-amber-400 tabular-nums">{editor.credibility}</span>
-                </label>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={editor.credibility}
-                  onChange={(e) => setEditor({ ...editor, credibility: Number(e.target.value) })}
-                  className="w-full accent-amber-400"
-                />
-                <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-                  <span>Low (rumor)</span>
-                  <span>Medium</span>
-                  <span>High (confirmed)</span>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+      {/* Rumors Cards Grid */}
+      {filteredRumors.length === 0 ? (
+        <div className="p-12 text-center bg-slate-900/30 border border-slate-800/60 rounded-2xl space-y-3">
+          <HelpCircle className="w-10 h-10 text-slate-600 mx-auto" />
+          <p className="text-slate-400 text-sm">No transfer rumors found matching selected filters.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredRumors.map((rumor, idx) => (
+            <motion.div
+              key={rumor.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.04 }}
+              className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl space-y-4 hover:border-slate-700 transition"
+            >
+              <div className="flex justify-between items-start">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                    Status
-                  </label>
-                  <select
-                    value={editor.status}
-                    onChange={(e) => setEditor({ ...editor, status: e.target.value })}
-                    className="w-full bg-[#0b0e14] border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-amber-400/50 focus:outline-none"
-                  >
-                    <option value="draft">Draft</option>
-                    <option value="published">Published</option>
-                    <option value="debunked">Debunked</option>
-                    <option value="archived">Archived</option>
-                  </select>
+                  <h3 className="font-extrabold text-lg text-white">{rumor.player}</h3>
+                  <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
+                    <span className="font-medium text-slate-300">{rumor.fromClub || 'Free Agent'}</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="font-bold text-amber-400">{rumor.toClub}</span>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                    Tags (comma-separated)
-                  </label>
-                  <input
-                    type="text"
-                    value={editor.tags}
-                    onChange={(e) => setEditor({ ...editor, tags: e.target.value })}
-                    placeholder="transfer, premier-league"
-                    className="w-full bg-[#0b0e14] border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-amber-400/50 focus:outline-none"
+
+                {rumor.source === 'ai-generated' && (
+                  <span className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase">
+                    <Sparkles className="w-3 h-3" /> AI
+                  </span>
+                )}
+              </div>
+
+              {/* Credibility Meter */}
+              <div className="space-y-1.5 pt-2 border-t border-slate-800/60">
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-400 font-medium">Credibility Index</span>
+                  <span className={`font-bold ${
+                    rumor.credibility > 60 ? 'text-emerald-400' : rumor.credibility > 35 ? 'text-amber-400' : 'text-red-400'
+                  }`}>
+                    {rumor.credibility}%
+                  </span>
+                </div>
+                <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className={`h-1.5 rounded-full ${
+                      rumor.credibility > 60 ? 'bg-emerald-400' : rumor.credibility > 35 ? 'bg-amber-400' : 'bg-red-400'
+                    }`}
+                    style={{ width: `${rumor.credibility}%` }}
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                    Player ID
-                  </label>
-                  <input
-                    type="text"
-                    value={editor.playerId}
-                    onChange={(e) => setEditor({ ...editor, playerId: e.target.value })}
-                    className="w-full bg-[#0b0e14] border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-amber-400/50 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                    Team ID
-                  </label>
-                  <input
-                    type="text"
-                    value={editor.teamId}
-                    onChange={(e) => setEditor({ ...editor, teamId: e.target.value })}
-                    className="w-full bg-[#0b0e14] border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-amber-400/50 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                    League ID
-                  </label>
-                  <input
-                    type="text"
-                    value={editor.leagueId}
-                    onChange={(e) => setEditor({ ...editor, leagueId: e.target.value })}
-                    className="w-full bg-[#0b0e14] border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-amber-400/50 focus:outline-none"
-                  />
-                </div>
-              </div>
-            </div>
 
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setEditorOpen(false)}
-                className="flex-1 px-4 py-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 text-sm font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={save}
-                disabled={saving}
-                className="flex-1 px-4 py-2 rounded-lg bg-amber-400 text-slate-900 hover:bg-amber-300 text-sm font-bold disabled:opacity-50"
-              >
-                {saving ? 'Saving…' : editor.id ? 'Update' : 'Create'}
-              </button>
-            </div>
-          </div>
+              <div className="flex justify-between items-center text-xs pt-1 text-slate-500">
+                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
+                  rumor.status === 'debunked' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-slate-800 text-slate-300'
+                }`}>
+                  {rumor.status}
+                </span>
+                <span>{new Date(rumor.createdAt).toLocaleDateString()}</span>
+              </div>
+            </motion.div>
+          ))}
         </div>
       )}
+
+      {/* New Rumor Modal */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex justify-center items-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md space-y-4"
+            >
+              <h2 className="text-xl font-extrabold text-white">Post Transfer Rumor</h2>
+              <form onSubmit={handleCreate} className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold uppercase text-slate-400 block mb-1">Player Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Victor Osimhen"
+                    value={player}
+                    onChange={(e) => setPlayer(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-slate-400 block mb-1">From Club</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Napoli"
+                      value={fromClub}
+                      onChange={(e) => setFromClub(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-slate-400 block mb-1">Target Club</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Chelsea"
+                      value={toClub}
+                      onChange={(e) => setToClub(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold uppercase text-slate-400 block mb-1">Credibility Score ({credibility}%)</label>
+                  <input
+                    type="range"
+                    min="10"
+                    max="100"
+                    value={credibility}
+                    onChange={(e) => setCredibility(Number(e.target.value))}
+                    className="w-full accent-amber-400"
+                  />
+                </div>
+
+                <div className="flex items-center pt-1">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={isAi}
+                      onChange={(e) => setIsAi(e.target.checked)}
+                      className="rounded accent-amber-400 w-4 h-4"
+                    />
+                    <span>Mark as AI Gossip Source</span>
+                  </label>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-4 py-2.5 bg-slate-800 text-slate-300 font-semibold rounded-xl text-xs"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs"
+                  >
+                    {submitting ? 'Posting...' : 'Publish Rumor'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
