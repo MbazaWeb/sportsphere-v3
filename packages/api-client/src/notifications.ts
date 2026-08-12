@@ -35,6 +35,9 @@ export function createNotificationsApi(client: ReturnType<typeof createApiClient
   return {
     /** GET /api/notifications — list current user's notifications (auth required) */
     list: () => client.get<Notification[]>('/api/notifications'),
+    /** POST /api/notifications/register-device — register Expo push token */
+    registerToken: (token: string, platform: string) =>
+      client.post<{ ok: boolean }>('/api/notifications/register-device', { token, platform }),
   };
 }
 

@@ -27,17 +27,17 @@ export function usePushNotifications(userId: string | undefined) {
     registerForPushNotificationsAsync().then(token => {
       setExpoPushToken(token);
       if (token) {
-        notificationsApi.registerToken(token, Platform.OS).catch(err => {
+        notificationsApi.registerToken(token, Platform.OS).catch((err: unknown) => {
           console.error('Failed to register push token with backend:', err);
         });
       }
     });
 
-    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+    notificationListener.current = Notifications.addNotificationReceivedListener((notification: Notifications.Notification) => {
       setNotification(notification);
     });
 
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+    responseListener.current = Notifications.addNotificationResponseReceivedListener((response: Notifications.NotificationResponse) => {
       const data = response.notification.request.content.data;
       console.log('Notification response received:', data);
 

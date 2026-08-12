@@ -7,8 +7,8 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Clock, MapPin, Zap } from 'lucide-react-native';
 import { colors, radii, spacing } from '@sportsphere/design-system/tokens';
-import { FONT_BODY_BOLD, FONT_BODY, FONT_BODY_REG } from '../../lib/fonts';
-import type { Match } from './matches-types';
+import { FONT_BODY_BOLD, FONT_BODY, FONT_BODY_REG } from '../lib/fonts';
+import type { Match } from '../lib/match-types';
 
 interface MatchCardProps {
   match: Match;
@@ -103,7 +103,7 @@ export default function MatchCard({ match, onPress }: MatchCardProps) {
       {/* Goal scorers for live/finished */}
       {isLive && match.events && match.events.length > 0 ? (
         <View style={styles.eventsRow}>
-          {match.events.filter(e => e.type === 'goal').slice(0, 3).map((ev, i) => (
+          {match.events.filter((e: any) => e.type === 'goal').slice(0, 3).map((ev: any, i: number) => (
             <View key={i} style={styles.eventChip}>
               <Text style={styles.eventText}>
                 {ev.playerName ?? ev.player ?? ''} {ev.minute ?? ''}&apos;

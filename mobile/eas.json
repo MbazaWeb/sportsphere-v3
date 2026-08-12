@@ -24,11 +24,14 @@
         }
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://sportssphere.fun/sportsphere"
+        "EXPO_PUBLIC_API_URL": "https://sportssphere.fun/api"
       }
     },
     "production": {
-      "channel": "production"
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sportssphere.fun/api"
+      }
     }
   }
 }

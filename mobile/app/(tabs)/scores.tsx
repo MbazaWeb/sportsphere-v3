@@ -20,8 +20,8 @@ import MatchCard from '../../components/MatchCard';
 import { colors, radii } from '@sportsphere/design-system/tokens';
 import { FONT_DISPLAY, FONT_BODY, FONT_BODY_BOLD, FONT_BODY_REG } from '../../lib/fonts';
 import { useAuthStore } from '../../lib/authStore';
-import type { Match, Standing, MatchStatus } from './match-types';
-import { POPULAR_LEAGUES } from './match-types';
+import type { Match, Standing, MatchStatus } from '../../lib/match-types';
+import { POPULAR_LEAGUES } from '../../lib/match-types';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://sportssphere.fun/sportsphere';
 
@@ -35,7 +35,7 @@ const TABS: { id: MatchStatus; label: string }[] = [
 
 export default function ScoresScreen() {
   const router = useRouter();
-  const token = useAuthStore((s) => s.token);
+  const token = useAuthStore((s) => s.session?.token);
 
   const [activeTab, setActiveTab] = useState<MatchStatus>('live');
   const [selectedLeague, setSelectedLeague] = useState('All');
@@ -199,7 +199,7 @@ export default function ScoresScreen() {
               <Pressable style={[styles.pickerChip, selectedLeague === 'All' && styles.pickerChipActive]} onPress={() => handleLeagueSelect('All')}>
                 <Text style={[styles.pickerChipText, selectedLeague === 'All' && styles.pickerChipTextActive]}>All</Text>
               </Pressable>
-              {POPULAR_LEAGUES.map((lg) => (
+              {POPULAR_LEAGUES.map((lg: string) => (
                 <Pressable key={lg} style={[styles.pickerChip, selectedLeague === lg && styles.pickerChipActive]} onPress={() => handleLeagueSelect(lg)}>
                   <Text style={[styles.pickerChipText, selectedLeague === lg && styles.pickerChipTextActive]} numberOfLines={1}>{lg}</Text>
                 </Pressable>
@@ -223,7 +223,7 @@ export default function ScoresScreen() {
         <View style={styles.pickerContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={styles.pickerRow}>
-              {POPULAR_LEAGUES.map((lg) => (
+              {POPULAR_LEAGUES.map((lg: string) => (
                 <Pressable key={lg} style={[styles.pickerChip, standingsLeague === lg && styles.pickerChipActive]} onPress={() => { setStandingsLeague(lg); setLeaguePickerOpen(false); }}>
                   <Text style={[styles.pickerChipText, standingsLeague === lg && styles.pickerChipTextActive]} numberOfLines={1}>{lg}</Text>
                 </Pressable>

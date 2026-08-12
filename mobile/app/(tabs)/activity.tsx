@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, RefreshControl, FlatList, Pressable, ActivityIndicator,
+  View, Text, StyleSheet, RefreshControl, FlatList, ScrollView, Pressable, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
