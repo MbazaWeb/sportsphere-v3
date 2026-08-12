@@ -12,6 +12,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://sportssphere.fun"),
   title: "SportSphere - The World's Biggest Sports Community",
   description: "Connect with fans, players, teams, leagues and communities through one sports-first social platform.",
   manifest: "/sportsphere/manifest.json",
