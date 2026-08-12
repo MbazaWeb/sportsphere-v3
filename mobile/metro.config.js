@@ -3,16 +3,11 @@ const { withNativeWind } = require('nativewind/metro');
 const path = require('path');
 
 const projectRoot = __dirname;
-const workspaceRoot = path.resolve(projectRoot, '..');
-
 const config = getDefaultConfig(projectRoot);
 
-// ─── Monorepo: let Metro resolve @sportsphere/* packages ───────────
-config.watchFolders = [workspaceRoot];
+// Try only resolver paths, NOT watchFolders
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
-  path.resolve(workspaceRoot, 'node_modules'),
 ];
-config.resolver.disableHierarchicalLookup = false;
 
 module.exports = withNativeWind(config, { input: './global.css' });

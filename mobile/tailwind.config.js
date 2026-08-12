@@ -4,7 +4,7 @@ module.exports = {
     './app/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
   ],
-  presets: [require('nativewind/preset'), require('@sportsphere/design-system/tailwind-preset')],
+  presets: [require('nativewind/preset')],
   theme: {
     extend: {
       colors: {

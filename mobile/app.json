@@ -13,10 +13,7 @@
       "bundleIdentifier": "com.sportsphere.app",
       "backgroundColor": "#0A1628",
       "buildNumber": "1",
-      "associatedDomains": [
-        "applinks:sportssphere.fun",
-        "applinks:sportssphere.fun"
-      ],
+      "associatedDomains": ["applinks:sportssphere.fun"],
       "infoPlist": {
         "CFBundleDisplayName": "Sportsphere",
         "CFBundleShortVersionString": "1.0.0",
@@ -53,30 +50,7 @@
               "pathPrefix": "/u"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
-        },
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [
-            {
-              "scheme": "https",
-              "host": "sportssphere.fun",
-              "pathPrefix": "/p"
-            },
-            {
-              "scheme": "https",
-              "host": "sportssphere.fun",
-              "pathPrefix": "/u"
-            }
-          ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ],
       "permissions": [
@@ -87,31 +61,21 @@
         "WRITE_EXTERNAL_STORAGE",
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
-        "VIBRATE",
-        "INTERNET",
-        "ACCESS_NETWORK_STATE",
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
         "VIBRATE"
       ],
       "blockedPermissions": [
-        "com.google.android.gms.permission.AD_ID",
         "com.google.android.gms.permission.AD_ID"
-      ],
-      "usesCleartextTraffic": true
+      ]
     },
     "web": {
       "bundler": "metro",
-      "output": "server",
+      "output": "static",
       "favicon": "./assets/favicon.png"
     },
     "updates": {
-      "url": "https://u.expo.dev/c2df5186-621b-4b5c-a774-3cc59e7d1ced",
+      "url": "https://u.expo.dev/f649f294-ee92-4e7f-a85e-716534fa4adb",
       "enabled": true,
-      "checkAutomatically": "ON_ERROR_RECOVERY",
+      "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
     },
     "runtimeVersion": {
@@ -119,15 +83,12 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#0A1628"
-        }
-      ],
+      ["expo-splash-screen", {
+        "image": "./assets/splash-icon.png",
+        "imageWidth": 200,
+        "resizeMode": "contain",
+        "backgroundColor": "#0A1628"
+      }],
       "expo-secure-store",
       "expo-updates"
     ],
@@ -139,7 +100,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "c2df5186-621b-4b5c-a774-3cc59e7d1ced"
+        "projectId": "f649f294-ee92-4e7f-a85e-716534fa4adb"
       }
     }
   }
