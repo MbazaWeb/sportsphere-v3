@@ -43,18 +43,14 @@ export async function sendNotification(
     const expo = await getExpoClient();
     if (!expo) return;
 
-    const user = await db.user.findUnique({
-      where: { id: targetUserId },
-      select: { pushTokens: true },
+    const tokens = await db.pushToken.findMany({
+      where: { userId: targetUserId },
+      select: { token: true },
     });
 
-    if (!user?.pushTokens) return;
-
-    // Handle string, token object, or array of token objects/strings
-    const rawTokens = Array.isArray(user.pushTokens) ? user.pushTokens : [user.pushTokens];
-    const validTokens: string[] = rawTokens
-      .map((t: any) => (typeof t === 'string' ? t : t?.token))
-      .filter((token): token is string => typeof token === 'string' && token.trim().length > 0);
+    const validTokens: string[] = tokens
+      .map((t) => t.token)
+      .filter((token): token is string => typeof token === "string" && token.trim().length > 0);
 
     if (validTokens.length === 0) return;
 

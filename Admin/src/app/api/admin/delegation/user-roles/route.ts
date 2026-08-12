@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     const grants = await db.userAdminRole.findMany({
       where: { userId },
       include: {
-        adminRole: true,
+        AdminRole: true,
       },
       orderBy: [{ isActive: 'desc' }, { assignedAt: 'desc' }],
     });
@@ -65,15 +65,15 @@ export async function GET(request: NextRequest) {
         regionCode: g.regionCode,
         languageCode: g.languageCode,
         notes: g.notes,
-        adminRole: {
-          id: g.adminRole.id,
-          slug: g.adminRole.slug,
-          name: g.adminRole.name,
-          tier: g.adminRole.tier,
-          module: g.adminRole.module,
-          description: g.adminRole.description,
-          permissions: g.adminRole.permissions,
-          scopeLevel: g.adminRole.scopeLevel,
+        AdminRole: {
+          id: g.AdminRole.id,
+          slug: g.AdminRole.slug,
+          name: g.AdminRole.name,
+          tier: g.AdminRole.tier,
+          module: g.AdminRole.module,
+          description: g.AdminRole.description,
+          permissions: g.AdminRole.permissions,
+          scopeLevel: g.AdminRole.scopeLevel,
         },
       })),
     });

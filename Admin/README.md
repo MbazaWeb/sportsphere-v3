@@ -31,6 +31,19 @@ Prisma, and issues its own admin JWTs.
   news, rumors, claims, AI agent, delegation, performance verifications,
   moderation, audit, backups, notifications broadcast.
 
+
+## Prisma schema (shared)
+
+Admin **does not own** a separate schema file.  
+`Admin/prisma/schema.prisma` is a **symlink** to `../prisma/schema.prisma` (main app).
+
+- **Migrations** — only from the main app (`npx prisma migrate deploy` at repo root).
+- **After main migrates** — regenerate Admin client only:
+  ```bash
+  cd Admin && npx prisma generate && npm run build && pm2 restart sportsphere-admin
+  ```
+- **Do not** run `prisma db pull` or `migrate` from Admin — it would fight the shared file.
+
 ## Local development
 
 ```bash

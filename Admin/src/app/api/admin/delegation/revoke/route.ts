@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     const grant = await db.userAdminRole.findUnique({
       where: { id: userAdminRoleId },
-      include: { adminRole: true },
+      include: { AdminRole: true },
     });
     if (!grant) {
       return NextResponse.json(
@@ -62,13 +62,13 @@ export async function POST(request: NextRequest) {
 
     if (!isSuperAdmin) {
       // Directors can only revoke grants whose AdminRole is in their own module.
-      if (grant.adminRole.tier === 1) {
+      if (grant.AdminRole.tier === 1) {
         return NextResponse.json(
           { error: 'Forbidden: only SUPER_ADMIN can revoke the SUPER_ADMIN role' },
           { status: 403 }
         );
       }
-      if (grant.adminRole.tier === 2) {
+      if (grant.AdminRole.tier === 2) {
         return NextResponse.json(
           {
             error:
@@ -88,10 +88,10 @@ export async function POST(request: NextRequest) {
           { status: 403 }
         );
       }
-      if (actorRoleDef.module !== grant.adminRole.module) {
+      if (actorRoleDef.module !== grant.AdminRole.module) {
         return NextResponse.json(
           {
-            error: `Forbidden: you can only revoke roles in your own module ('${actorRoleDef.module}'). '${grant.adminRole.slug}' belongs to module '${grant.adminRole.module}'.`,
+            error: `Forbidden: you can only revoke roles in your own module ('${actorRoleDef.module}'). '${grant.AdminRole.slug}' belongs to module '${grant.AdminRole.module}'.`,
           },
           { status: 403 }
         );
