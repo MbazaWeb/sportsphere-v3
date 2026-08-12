@@ -1,0 +1,10 @@
+{
+  "expo": {
+    ...rest of config...
+    "extra": {
+      "router": {
+        "origin": false
+      }
+    }
+  }
+}

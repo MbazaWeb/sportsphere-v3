@@ -13,7 +13,9 @@
       "bundleIdentifier": "com.sportsphere.app",
       "backgroundColor": "#0A1628",
       "buildNumber": "1",
-      "associatedDomains": ["applinks:sportssphere.fun"],
+      "associatedDomains": [
+        "applinks:sportssphere.fun"
+      ],
       "infoPlist": {
         "CFBundleDisplayName": "Sportsphere",
         "CFBundleShortVersionString": "1.0.0",
@@ -50,7 +52,10 @@
               "pathPrefix": "/u"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ],
       "permissions": [
@@ -83,12 +88,15 @@
     },
     "plugins": [
       "expo-router",
-      ["expo-splash-screen", {
-        "image": "./assets/splash-icon.png",
-        "imageWidth": 200,
-        "resizeMode": "contain",
-        "backgroundColor": "#0A1628"
-      }],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0A1628"
+        }
+      ],
       "expo-secure-store",
       "expo-updates"
     ],
@@ -100,8 +108,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "f649f294-ee92-4e7f-a85e-716534fa4adb"
+        "projectId": "c2df5186-621b-4b5c-a774-3cc59e7d1ced"
       }
-    }
+    },
+    "owner": "mbazzacodes"
   }
 }
