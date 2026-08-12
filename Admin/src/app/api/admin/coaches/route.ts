@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
         skip: (page - 1) * limit,
         take: limit,
         include: {
-          team: { select: { id: true, name: true, logoUrl: true } },
-          sport: { select: { id: true, name: true, icon: true } },
+          Team: { select: { id: true, name: true, logoUrl: true } },
+          Sport: { select: { id: true, name: true, icon: true } },
         },
       }),
     ]);

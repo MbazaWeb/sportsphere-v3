@@ -17,7 +17,7 @@ export async function GET(
     const league = await db.league.findUnique({
       where: { id },
       include: {
-        sport: { select: { id: true, name: true, icon: true } },
+        Sport: { select: { id: true, name: true, icon: true } },
         teams: { take: 30, select: { id: true, name: true, logoUrl: true } },
       },
     });

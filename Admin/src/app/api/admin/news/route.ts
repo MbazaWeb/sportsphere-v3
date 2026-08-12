@@ -1,39 +1,33 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { randomUUID } from "crypto";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 // GET /api/admin/news — List news articles
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    let articles: any[] = [];
-    try {
-      articles = await (db as any).newsArticle?.findMany({
-        orderBy: { createdAt: 'desc' },
-      }) || [];
-    } catch {
-      // Direct raw fallback query if table name matches 'NewsArticle' or 'Post'
-      articles = await db.$queryRaw`
-        SELECT id, title, category, status, source, "createdAt", "publishedAt"
-        FROM "NewsArticle"
-        ORDER BY "createdAt" DESC
-      `.catch(() => []);
-    }
+    const articles = await db.newsItem.findMany({
+      orderBy: { publishedAt: "desc" },
+      take: 200,
+    });
 
-    const formatted = (articles || []).map((a: any) => ({
+    const formatted = articles.map((a) => ({
       id: a.id,
-      title: a.title || 'Untitled Article',
-      category: a.category || 'general',
-      status: (a.status || 'draft').toLowerCase(),
-      source: (a.source || 'manual').toLowerCase(),
-      createdAt: a.createdAt || new Date().toISOString(),
-      publishedAt: a.publishedAt || null,
+      title: a.title || "Untitled Article",
+      category: a.category || "general",
+      status: (a.status || "draft").toLowerCase(),
+      source: (a.source || "manual").toLowerCase(),
+      createdAt: a.publishedAt?.toISOString() ?? new Date().toISOString(),
+      publishedAt: a.publishedAt?.toISOString() ?? null,
+      slug: a.slug,
+      createdByAI: a.createdByAI,
     }));
 
     return NextResponse.json({ ok: true, articles: formatted });
-  } catch (error: any) {
-    console.error('News GET error:', error);
-    return NextResponse.json({ ok: true, articles: [] }); // Safe fallback to avoid UI break
+  } catch (error: unknown) {
+    console.error("News GET error:", error);
+    return NextResponse.json({ ok: true, articles: [] });
   }
 }
 
@@ -44,33 +38,43 @@ export async function POST(request: NextRequest) {
     const { title, content, category, isAiGenerated, status } = body;
 
     if (!title || !content) {
-      return NextResponse.json({ error: 'Title and Content are required.' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Title and Content are required." },
+        { status: 400 }
+      );
     }
 
-    let created: any = null;
-    try {
-      created = await (db as any).newsArticle.create({
-        data: {
-          title,
-          content,
-          category: category || 'general',
-          status: status || 'DRAFT',
-          source: isAiGenerated ? 'AI-generated' : 'Manual',
-        },
-      });
-    } catch {
-      // Direct raw insertion fallback
-      const id = crypto.randomUUID();
-      await db.$executeRaw`
-        INSERT INTO "NewsArticle" (id, title, content, category, status, source, "createdAt")
-        VALUES (${id}, ${title}, ${content}, ${category || 'general'}, ${status || 'DRAFT'}, ${isAiGenerated ? 'AI-generated' : 'Manual'}, NOW())
-      `;
-      created = { id, title, category, status, source: isAiGenerated ? 'AI-generated' : 'Manual' };
-    }
+    const slugBase = String(title)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 80);
+    const slug = `${slugBase}-${Date.now().toString(36)}`;
+
+    const created = await db.newsItem.create({
+      data: {
+        id: randomUUID(),
+        title,
+        slug,
+        body: content,
+        summary: String(content).slice(0, 240),
+        category: category || "general",
+        status: (status || "draft").toLowerCase(),
+        source: isAiGenerated ? "ai" : "manual",
+        createdByAI: Boolean(isAiGenerated),
+        publishedAt:
+          String(status || "").toLowerCase() === "published"
+            ? new Date()
+            : null,
+      },
+    });
 
     return NextResponse.json({ ok: true, article: created });
-  } catch (error: any) {
-    console.error('News POST error:', error);
-    return NextResponse.json({ error: 'Failed to create article.' }, { status: 500 });
+  } catch (error: unknown) {
+    console.error("News POST error:", error);
+    return NextResponse.json(
+      { error: "Failed to create article." },
+      { status: 500 }
+    );
   }
 }

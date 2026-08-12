@@ -1,55 +1,67 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    let claims: any[] = [];
-    try {
-      claims = await (db as any).profileClaim?.findMany({
-        orderBy: { createdAt: 'desc' },
-      }) || [];
-    } catch {
-      claims = await db.$queryRaw`
-        SELECT id, "profileType", "profileName", status, "submittedBy", "createdAt"
-        FROM "ProfileClaim"
-        ORDER BY "createdAt" DESC
-      `.catch(() => []);
-    }
+    const claims = await db.claimRequest.findMany({
+      orderBy: { submittedAt: "desc" },
+      take: 200,
+    });
 
-    const formatted = (claims || []).map((c: any) => ({
+    // Resolve submitter names
+    const userIds = [...new Set(claims.map((c) => c.userId).filter(Boolean))];
+    const users =
+      userIds.length > 0
+        ? await db.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, name: true, handle: true, email: true },
+          })
+        : [];
+    const userMap = Object.fromEntries(
+      users.map((u) => [u.id, u.name || u.handle || u.email || u.id])
+    );
+
+    const formatted = claims.map((c) => ({
       id: c.id,
-      profileType: (c.profileType || 'player').toLowerCase(),
-      profileName: c.profileName || 'Unnamed Entity',
-      submittedBy: c.submittedBy || 'Anonymous',
-      status: (c.status || 'pending').toLowerCase(),
-      createdAt: c.createdAt || new Date().toISOString(),
+      profileType: (c.profileType || "player").toLowerCase(),
+      profileName: c.profileName || "Unnamed Entity",
+      submittedBy: userMap[c.userId] || c.userId || "Anonymous",
+      status: (c.status || "pending").toLowerCase(),
+      createdAt: c.submittedAt?.toISOString() ?? new Date().toISOString(),
+      reviewNotes: c.reviewNotes,
     }));
 
     return NextResponse.json({ ok: true, claims: formatted });
   } catch (error) {
-    console.error('Claims GET error:', error);
+    console.error("Claims GET error:", error);
     return NextResponse.json({ ok: true, claims: [] });
   }
 }
 
 export async function PATCH(request: NextRequest) {
   try {
-    const { id, status } = await request.json();
-    if (!id || !status) return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
-
-    try {
-      await (db as any).profileClaim.update({
-        where: { id },
-        data: { status: status.toUpperCase() },
-      });
-    } catch {
-      await db.$executeRaw`UPDATE "ProfileClaim" SET status = ${status.toUpperCase()} WHERE id = ${id}`;
+    const { id, status, reviewNotes } = await request.json();
+    if (!id || !status) {
+      return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
     }
+
+    await db.claimRequest.update({
+      where: { id },
+      data: {
+        status: String(status).toLowerCase(),
+        reviewedAt: new Date(),
+        ...(reviewNotes != null ? { reviewNotes: String(reviewNotes) } : {}),
+      },
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update claim status' }, { status: 500 });
+    console.error("Claims PATCH error:", error);
+    return NextResponse.json(
+      { error: "Failed to update claim status" },
+      { status: 500 }
+    );
   }
 }

@@ -1,80 +1,93 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { randomUUID } from "crypto";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-// GET /api/admin/rumors — Fetch all rumors
+// GET /api/admin/rumors
 export async function GET() {
   try {
-    let rumors: any[] = [];
-    try {
-      rumors = await (db as any).rumor?.findMany({
-        orderBy: { createdAt: 'desc' },
-      }) || [];
-    } catch {
-      // Direct raw PostgreSQL fallback query
-      rumors = await db.$queryRaw`
-        SELECT id, player, "fromClub", "toClub", credibility, status, source, "createdAt"
-        FROM "Rumor"
-        ORDER BY "createdAt" DESC
-      `.catch(() => []);
-    }
+    const rumors = await db.rumor.findMany({
+      orderBy: { publishedAt: "desc" },
+      take: 200,
+    });
 
-    const formatted = (rumors || []).map((r: any) => ({
+    const formatted = rumors.map((r) => ({
       id: r.id,
-      player: r.player || 'Unknown Player',
-      fromClub: r.fromClub || 'Current Club',
-      toClub: r.toClub || 'Target Club',
-      credibility: r.credibility ?? (r.source === 'AI-generated' ? 35 : 75),
-      status: (r.status || 'draft').toLowerCase(),
-      source: (r.source || 'manual').toLowerCase(),
-      createdAt: r.createdAt || new Date().toISOString(),
+      title: r.title,
+      player: r.playerId || "Unknown",
+      fromClub: r.teamId || "—",
+      toClub: "—",
+      credibility: r.credibility ?? 50,
+      status: (r.status || "draft").toLowerCase(),
+      source: (r.source || "manual").toLowerCase(),
+      createdAt: r.publishedAt?.toISOString() ?? new Date().toISOString(),
+      body: r.body,
+      slug: r.slug,
     }));
 
     return NextResponse.json({ ok: true, rumors: formatted });
-  } catch (error: any) {
-    console.error('Rumors GET error:', error);
+  } catch (error: unknown) {
+    console.error("Rumors GET error:", error);
     return NextResponse.json({ ok: true, rumors: [] });
   }
 }
 
-// POST /api/admin/rumors — Create a new rumor
+// POST /api/admin/rumors
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { player, fromClub, toClub, credibility, status, isAiGenerated } = body;
+    const { player, fromClub, toClub, credibility, status, isAiGenerated, title, content } =
+      body;
 
-    if (!player || !toClub) {
-      return NextResponse.json({ error: 'Player name and Destination Club are required.' }, { status: 400 });
-    }
+    const rumorTitle =
+      title ||
+      [player, fromClub && `from ${fromClub}`, toClub && `to ${toClub}`]
+        .filter(Boolean)
+        .join(" ") ||
+      "Untitled rumor";
 
-    const source = isAiGenerated ? 'AI-generated' : 'Manual';
-    const initialCredibility = credibility ?? (isAiGenerated ? 35 : 75);
+    const rumorBody =
+      content ||
+      `Transfer rumor: ${player || "Player"}${fromClub ? ` from ${fromClub}` : ""}${
+        toClub ? ` to ${toClub}` : ""
+      }.`;
 
-    let created: any = null;
-    try {
-      created = await (db as any).rumor.create({
-        data: {
-          player,
-          fromClub: fromClub || 'Free Agent',
-          toClub,
-          credibility: Number(initialCredibility),
-          status: status || 'DRAFT',
-          source,
-        },
-      });
-    } catch {
-      const id = crypto.randomUUID();
-      await db.$executeRaw`
-        INSERT INTO "Rumor" (id, player, "fromClub", "toClub", credibility, status, source, "createdAt")
-        VALUES (${id}, ${player}, ${fromClub || 'Free Agent'}, ${toClub}, ${Number(initialCredibility)}, ${status || 'DRAFT'}, ${source}, NOW())
-      `;
-      created = { id, player, fromClub, toClub, credibility: initialCredibility, status, source };
-    }
+    const slugBase = rumorTitle
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 80);
+    const slug = `${slugBase}-${Date.now().toString(36)}`;
+
+    const source = isAiGenerated ? "ai" : "manual";
+    const initialCredibility = Number(
+      credibility ?? (isAiGenerated ? 35 : 75)
+    );
+
+    const created = await db.rumor.create({
+      data: {
+        id: randomUUID(),
+        title: rumorTitle,
+        slug,
+        body: rumorBody,
+        credibility: initialCredibility,
+        status: (status || "draft").toLowerCase(),
+        source,
+        createdByAI: Boolean(isAiGenerated),
+        publishedAt:
+          String(status || "").toLowerCase() === "published"
+            ? new Date()
+            : null,
+      },
+    });
 
     return NextResponse.json({ ok: true, rumor: created });
-  } catch (error: any) {
-    console.error('Rumors POST error:', error);
-    return NextResponse.json({ error: 'Failed to create rumor.' }, { status: 500 });
+  } catch (error: unknown) {
+    console.error("Rumors POST error:", error);
+    return NextResponse.json(
+      { error: "Failed to create rumor." },
+      { status: 500 }
+    );
   }
 }

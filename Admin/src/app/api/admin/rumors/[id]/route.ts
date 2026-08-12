@@ -17,11 +17,11 @@ export async function GET(
     const rumor = await db.rumor.findUnique({
       where: { id },
       include: {
-        sport: { select: { id: true, name: true, icon: true } },
-        league: { select: { id: true, name: true } },
-        team: { select: { id: true, name: true } },
-        player: { select: { id: true, name: true } },
-        coach: { select: { id: true, name: true } },
+        Sport: { select: { id: true, name: true, icon: true } },
+        League: { select: { id: true, name: true } },
+        Team: { select: { id: true, name: true } },
+        Player: { select: { id: true, name: true } },
+        Coach: { select: { id: true, name: true } },
       },
     });
     if (!rumor) {

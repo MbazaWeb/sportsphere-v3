@@ -40,10 +40,10 @@ export async function GET(request: NextRequest) {
         skip: (page - 1) * limit,
         take: limit,
         include: {
-          league: { select: { id: true, name: true } },
-          sport: { select: { id: true, name: true, icon: true } },
-          homeTeam: { select: { id: true, name: true, logoUrl: true } },
-          awayTeam: { select: { id: true, name: true, logoUrl: true } },
+          League: { select: { id: true, name: true } },
+          Sport: { select: { id: true, name: true, icon: true } },
+          Team_MatchProfile_homeTeamIdToTeam: { select: { id: true, name: true, logoUrl: true } },
+          Team_MatchProfile_awayTeamIdToTeam: { select: { id: true, name: true, logoUrl: true } },
         },
       }),
     ]);

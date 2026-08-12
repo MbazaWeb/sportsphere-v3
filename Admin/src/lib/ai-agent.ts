@@ -113,9 +113,9 @@ async function generateNews(result: AIJobResult): Promise<void> {
     take: 20,
     orderBy: { kickoffAt: 'desc' },
     include: {
-      homeTeam: { select: { name: true, logoUrl: true } },
-      awayTeam: { select: { name: true, logoUrl: true } },
-      league: { select: { name: true, country: true } },
+      Team_MatchProfile_homeTeamIdToTeam: { select: { name: true, logoUrl: true } },
+      Team_MatchProfile_awayTeamIdToTeam: { select: { name: true, logoUrl: true } },
+      League: { select: { name: true, country: true } },
     },
   });
 
@@ -229,7 +229,7 @@ async function generateRumors(result: AIJobResult): Promise<void> {
     },
     take: 10,
     orderBy: { createdAt: 'desc' },
-    include: { team: { select: { name: true, country: true } } },
+    include: { Team: { select: { name: true, country: true } } },
   });
 
   // Filter to only players with no rumors (need separate check since prisma relation filter on Rumor requires it exists)
@@ -319,8 +319,8 @@ async function tagImages(result: AIJobResult): Promise<void> {
     },
     take: 50,
     include: {
-      team: { select: { name: true, logoUrl: true } },
-      player: { select: { name: true, photoUrl: true } },
+      Team: { select: { name: true, logoUrl: true } },
+      Player: { select: { name: true, photoUrl: true } },
     },
   });
 
@@ -406,7 +406,7 @@ export async function generateProfileSummary(
   if (entityType === 'player') {
     entity = await db.player.findUnique({
       where: { id: entityId },
-      include: { team: { select: { name: true } } },
+      include: { Team: { select: { name: true } } },
     });
     if (!entity) throw new Error('Player not found');
     const pos = entity.position ? `A ${entity.position}` : 'A player';
@@ -424,7 +424,7 @@ export async function generateProfileSummary(
   if (entityType === 'coach') {
     entity = await db.coach.findUnique({
       where: { id: entityId },
-      include: { team: { select: { name: true } } },
+      include: { Team: { select: { name: true } } },
     });
     if (!entity) throw new Error('Coach not found');
     const team = entity.team?.name ? ` of ${entity.team.name}` : '';
