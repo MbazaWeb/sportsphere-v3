@@ -1,98 +1,26 @@
 {
   "cli": {
-    "version": ">= 15.0.0",
-    "appVersionSource": "remote",
-    "requireCommit": true
+    "version": ">= 10.0.0"
   },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "ios": {
-        "simulator": false,
-        "resourceClass": "m-medium"
-      },
-      "android": {
-        "buildType": "apk"
-      },
-      "channel": "development",
-      "env": {
-        "EXPO_PUBLIC_API_URL": "http://104.152.50.173:3002/sportsphere"
-      }
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
-      "channel": "preview",
-      "ios": {
-        "simulator": false
-      },
-      "android": {
-        "buildType": "apk"
-      },
-      "env": {
-        "EXPO_PUBLIC_API_URL": "http://104.152.50.173:3002/sportsphere"
-      }
+      "channel": "preview"
     },
     "production": {
-      "autoIncrement": true,
-      "channel": "production",
-      "ios": {
-        "applicationArchivePath": "build/Sportsphere.ipa",
-        "resourceClass": "m-medium",
-        "image": "latest"
-      },
-      "android": {
-        "buildType": "app-bundle",
-        "applicationArchivePath": "build/Sportsphere.aab",
-        "image": "latest"
-      },
-      "env": {
-        "EXPO_PUBLIC_API_URL": "https://sportssphere.fun/sportsphere"
-      }
+      "channel": "production"
     }
   },
   "submit": {
-    "development": {
-      "ios": {
-        "appleId": "dev@sportssphere.fun",
-        "ascAppId": "1660123456",
-        "appleTeamId": "SPHR9X8W2T"
-      },
-      "android": {
-        "serviceAccountKeyPath": "./store/credentials/google-service-account-key.json",
-        "package": "com.sportsphere.app",
-        "track": "internal"
-      }
-    },
-    "preview": {
-      "ios": {
-        "appleId": "dev@sportssphere.fun",
-        "ascAppId": "1660123456",
-        "appleTeamId": "SPHR9X8W2T"
-      },
-      "android": {
-        "serviceAccountKeyPath": "./store/credentials/google-service-account-key.json",
-        "package": "com.sportsphere.app",
-        "track": "internal"
-      }
-    },
     "production": {
-      "ios": {
-        "appleId": "dev@sportssphere.fun",
-        "ascAppId": "1660123456",
-        "appleTeamId": "SPHR9X8W2T",
-        "ascApiKeyPath": "./store/credentials/AuthKey_7KQ3X9P2HJ.p8",
-        "ascApiKeyId": "7KQ3X9P2HJ",
-        "ascApiKeyIssuerId": "91d4169b-c104-4eeb-ae51-cf84c4cdbabd"
-      },
       "android": {
-        "serviceAccountKeyPath": "./store/credentials/google-service-account-key.json",
-        "package": "com.sportsphere.app",
-        "track": "production"
+        "serviceAccountKeyPath": "./google-services.json"
       }
     }
-  },
-  "update": {
-    "url": "https://u.expo.dev/f649f294-ee92-4e7f-a85e-716534fa4adb"
   }
 }
