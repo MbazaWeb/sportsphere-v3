@@ -9,13 +9,23 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 120; // Up to 2 min for large video uploads on serverless
 
 // Allowed MIME types for uploads
+/** Strip codec params e.g. video/webm;codecs=vp9,opus → video/webm */
+function normalizeMime(raw: string): string {
+  return (raw || '').split(';')[0].trim().toLowerCase();
+}
+
 const ALLOWED_TYPES = new Set([
-  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif',
-  'video/mp4', 'video/webm', 'video/quicktime', 'video/3gpp',
+  'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'image/heic', 'image/heif',
+  'video/mp4', 'video/webm', 'video/quicktime', 'video/3gpp', 'video/3gpp2',
+  'video/x-m4v', 'video/m4v', 'video/avi', 'video/x-msvideo', 'video/mpeg', 'video/ogg',
+  'video/x-matroska', 'application/octet-stream',
 ]);
 
-// Also allow by extension for mobile browsers that send empty MIME
-const ALLOWED_EXT = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'mp4', 'webm', 'mov', '3gp']);
+// Also allow by extension for mobile browsers that send empty / exotic MIME
+const ALLOWED_EXT = new Set([
+  'jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'heic', 'heif',
+  'mp4', 'm4v', 'webm', 'mov', '3gp', '3g2', 'avi', 'mpeg', 'mpg', 'mkv', 'ogv', 'ogg',
+]);
 
 // Max file size: 100 MB
 const MAX_BYTES = 100 * 1024 * 1024;
@@ -106,17 +116,20 @@ export async function POST(request: NextRequest) {
     if (!file) return NextResponse.json({ error: 'No file provided.' }, { status: 400 });
 
     // Validate MIME type (allow empty MIME if extension is valid — common on iOS)
-    const contentType = file.type || '';
+    const rawType = file.type || '';
+    const contentType = normalizeMime(rawType);
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    const typeOk = !contentType || ALLOWED_TYPES.has(contentType) || contentType.startsWith('video/') || contentType.startsWith('image/');
+    const extOk = !ext || ALLOWED_EXT.has(ext);
 
-    if (contentType && !ALLOWED_TYPES.has(contentType)) {
+    if (contentType && !typeOk && !extOk) {
       return NextResponse.json({
-        error: `File type "${contentType}" not allowed. Use MP4, WebM, MOV, JPEG, PNG, or GIF.`
+        error: `File type "${rawType || ext}" not allowed. Use common video (MP4, WebM, MOV, M4V, AVI, MKV) or image (JPEG, PNG, WebP, GIF) formats.`
       }, { status: 400 });
     }
 
-    if (!contentType && !ALLOWED_EXT.has(ext)) {
-      return NextResponse.json({ error: 'Cannot determine file type. Please use MP4, WebM, MOV format.' }, { status: 400 });
+    if (!contentType && !extOk) {
+      return NextResponse.json({ error: 'Cannot determine file type. Please use MP4, WebM, MOV, or a common image format.' }, { status: 400 });
     }
 
     // Check size from File metadata (quick reject)
@@ -126,12 +139,14 @@ export async function POST(request: NextRequest) {
 
     // Determine extension from MIME type, falling back to filename
     const extMap: Record<string, string> = {
-      'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif',
-      'image/webp': 'webp', 'image/avif': 'avif',
+      'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png', 'image/gif': 'gif',
+      'image/webp': 'webp', 'image/avif': 'avif', 'image/heic': 'heic', 'image/heif': 'heif',
       'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov',
-      'video/3gpp': '3gp',
+      'video/3gpp': '3gp', 'video/3gpp2': '3g2', 'video/x-m4v': 'm4v', 'video/m4v': 'm4v',
+      'video/avi': 'avi', 'video/x-msvideo': 'avi', 'video/mpeg': 'mpeg',
+      'video/ogg': 'ogv', 'video/x-matroska': 'mkv',
     };
-    const finalExt = extMap[contentType] || (ALLOWED_EXT.has(ext) ? ext : 'mp4');
+    const finalExt = extMap[contentType] || (ALLOWED_EXT.has(ext) ? ext : (contentType.startsWith('image/') ? 'jpg' : 'mp4'));
     const fileName = `${userId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${finalExt}`;
     const finalContentType = contentType || `video/${finalExt === 'mov' ? 'quicktime' : finalExt}`;
 

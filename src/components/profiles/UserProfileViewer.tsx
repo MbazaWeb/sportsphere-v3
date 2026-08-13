@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUIStore } from '@/store/uiStore';
@@ -98,6 +99,17 @@ export default function UserProfileViewer() {
         className="fixed inset-0 z-40 bg-background overflow-y-auto"
         style={{ touchAction: 'pan-y' }}
       >
+        <div className="sticky top-0 z-50 flex items-center gap-2 border-b border-surface-border/80 bg-background/95 px-3 py-2 backdrop-blur-xl">
+          <button
+            type="button"
+            onClick={() => setViewingUser(null)}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-surface-border bg-surface shadow-md active:scale-95"
+            aria-label="Back to list"
+          >
+            <ArrowLeft className="h-5 w-5 text-white" />
+          </button>
+          <p className="truncate text-sm font-bold text-white">{viewingUser?.name || "Profile"}</p>
+        </div>
         <div className="mx-auto max-w-lg min-h-screen">
           <ProfileCover coverGradient={viewingUser.coverGradient} onBack={() => setViewingUser(null)} />
           <ProfileInfo user={viewingUser} role={role} roleData={apiUser?.roleData} />

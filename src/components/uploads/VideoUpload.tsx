@@ -88,16 +88,11 @@ export function VideoUpload({ mediaUrls, onChange, type }: VideoUploadProps) {
     setSuccessMsg('');
 
     // Validate type
-    if (!file.type.startsWith('video/')) {
-      setError('Please select a video file (MP4, WebM, MOV).');
-      e.target.value = '';
-      return;
-    }
-
-    // Check iOS MOV type which sometimes reports as empty
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    if (!file.type.startsWith('video/') && !['mp4', 'webm', 'mov', '3gp'].includes(ext || '')) {
-      setError('File format not recognized. Use MP4, WebM, or MOV.');
+    const mime = (file.type || '').split(';')[0].trim().toLowerCase();
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    const videoExts = ['mp4','m4v','webm','mov','3gp','3g2','avi','mpeg','mpg','mkv','ogv','ogg'];
+    if (mime && !mime.startsWith('video/') && !videoExts.includes(ext)) {
+      setError('Please select a video file (MP4, WebM, MOV, M4V, AVI, MKV, etc.).');
       e.target.value = '';
       return;
     }
@@ -229,7 +224,7 @@ export function VideoUpload({ mediaUrls, onChange, type }: VideoUploadProps) {
                 />
                 <div className="hidden absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
                   <VideoOff className="h-8 w-8" />
-                  <span className="text-xs">Failed to load video</span>
+                  <span className="text-xs">Preview unavailable — video is still attached</span>
                 </div>
                 <button
                   onClick={() => removeMedia(i)}

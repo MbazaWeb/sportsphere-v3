@@ -11,7 +11,7 @@ interface PhotoUploadProps {
 }
 
 const MAX_PHOTOS = 4;
-const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_MB = 25;
 
 export function PhotoUpload({ mediaUrls, onChange }: PhotoUploadProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -30,8 +30,11 @@ export function PhotoUpload({ mediaUrls, onChange }: PhotoUploadProps) {
     setError('');
 
     // Validate type
-    if (!file.type.startsWith('image/')) {
-      setError('Please select an image file (JPG, PNG, WebP, GIF).');
+    const mime = (file.type || '').split(';')[0].trim().toLowerCase();
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    const imgExts = ['jpg','jpeg','png','gif','webp','avif','heic','heif'];
+    if (mime && !mime.startsWith('image/') && !imgExts.includes(ext)) {
+      setError('Please select an image file (JPG, PNG, WebP, GIF, HEIC).');
       e.target.value = '';
       return;
     }
@@ -155,7 +158,7 @@ export function PhotoUpload({ mediaUrls, onChange }: PhotoUploadProps) {
                 <img src={url} alt="" className="h-full w-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }} />
                 <div className="hidden absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
                   <ImageOff className="h-8 w-8" />
-                  <span className="text-xs">Failed to load</span>
+                  <span className="text-xs">Preview unavailable — photo is still attached</span>
                 </div>
                 <button
                   onClick={() => removeMedia(i)}
@@ -170,7 +173,7 @@ export function PhotoUpload({ mediaUrls, onChange }: PhotoUploadProps) {
               <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-surface-border hover:border-gold/40 transition-colors">
                 <Plus className="h-6 w-6 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">Add more</span>
-                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+                <input ref={fileInputRef} type="file" accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif" onChange={handleFileSelect} className="hidden" />
               </label>
             )}
           </div>
@@ -187,7 +190,7 @@ export function PhotoUpload({ mediaUrls, onChange }: PhotoUploadProps) {
                 JPG, PNG, WebP, GIF · max {MAX_FILE_SIZE_MB} MB · up to {MAX_PHOTOS} photos
               </p>
             </div>
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+            <input ref={fileInputRef} type="file" accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif" onChange={handleFileSelect} className="hidden" />
           </label>
         )}
       </div>

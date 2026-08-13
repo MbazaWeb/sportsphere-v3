@@ -48,7 +48,7 @@ export function ProfileActions({ role, following, setFollowing, targetUserId }: 
         className={cn('flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 sm:py-3 text-sm font-bold transition-all active:scale-[0.98]',
           following ? 'glass-card text-muted-foreground' : 'bg-gold text-black hover:bg-gold/90 shadow-[0_4px_20px_rgba(245,197,24,0.2)]',
           busy && 'opacity-50 cursor-wait')}>
-        {following ? <><UserMinus className="h-4 w-4" /> Following</> : <><UserPlus className="h-4 w-4" /> Follow</>}
+        {following ? <><UserMinus className="h-4 w-4" /> You&apos;re a Fan</> : <><UserPlus className="h-4 w-4" /> Become a Fan</>}
       </button>
       <button className="flex items-center justify-center rounded-xl glass-card px-4 hover:bg-surface-elevated transition-colors active:scale-95">
         <MessageCircle className="h-4 w-4 text-muted-foreground" />
