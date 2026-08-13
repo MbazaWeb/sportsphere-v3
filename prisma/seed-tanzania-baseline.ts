@@ -386,20 +386,19 @@ async function cleanData() {
     }
   }
 
-  // Clean fake users
-  const fakeUsers = await db.user.deleteMany({
+  // Clean ONLY fake seeded entity accounts (team/player/coach accounts with @sportssphere.fun emails)
+  // NEVER delete real fan users or manually registered accounts
+  const fakeEntityUsers = await db.user.deleteMany({
     where: {
       AND: [
-        { role: { notIn: ['administrator', 'admin', 'moderator'] } },
-        { verificationStatus: { not: 'verified' } },
+        { role: { in: ['team', 'player', 'coach', 'competition', 'league'] } },
+        { email: { endsWith: '@sportssphere.fun' } },
       ],
     },
   });
-  console.log(`  [DEL] User (fake/unverified): ${fakeUsers.count} rows`);
+  console.log(`  [DEL] User (fake entity accounts @sportssphere.fun): ${fakeEntityUsers.count} rows`);
 
-  // Reset counts on remaining users
-  await db.user.updateMany({ data: { followerCount: 0, fanCount: 0 } });
-  console.log(`  [RESET] User counts on remaining users`);
+  // NOTE: Real fan users are NEVER touched by this seed script
 }
 
 // ─── Step 3: Seed Sports ────────────────────────────────────────────
