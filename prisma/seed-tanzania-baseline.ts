@@ -443,6 +443,7 @@ async function seedCompetitions() {
         verified: true,
         source: 'manual',
         isActive: true,
+        updatedAt: new Date(),
       },
     });
     console.log(`  [+] ${comp.name} (${comp.type})`);
@@ -480,6 +481,7 @@ async function seedTeams() {
         verified: true,
         source: 'manual',
         isActive: true,
+        updatedAt: new Date(),
       },
     });
     console.log(`  [+] ${team.name} (${team.city})`);
