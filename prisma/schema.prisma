@@ -64,6 +64,7 @@ model Sport {
   Rumor         Rumor[]
   Team          Team[]
   userSports    UserSport[]
+  Business      Business[]
 }
 
 model UserSport {
@@ -149,6 +150,9 @@ model User {
   agentProfile             AgentProfile?
   analystProfile           AnalystProfile?
   businessProfile          BusinessProfile?
+  claimedTeams             Team[]                        @relation("TeamClaimedBy")
+  claimedPlayers           Player[]                      @relation("PlayerClaimedBy")
+  claimedCoaches           Coach[]                       @relation("CoachClaimedBy")
   coachProfile             CoachProfile?
   comments                 Comment[]
   commentLikes             CommentLike[]
@@ -800,7 +804,7 @@ model VenueProfile {
 }
 
 model BusinessProfile {
-  userId          String   @id
+  userId          String    @id
   companyName     String?
   industry        String?
   foundedYear     String?
@@ -812,9 +816,13 @@ model BusinessProfile {
   partnerAthletes String?
   sponsorships    String?
   campaigns       String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Business        Business? @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
 }
 
 model CommercialPartnerProfile {
@@ -1215,9 +1223,11 @@ model Coach {
   ClaimRequest ClaimRequest[]
   League       League?        @relation(fields: [leagueId], references: [id])
   Sport        Sport?         @relation(fields: [sportId], references: [id])
-  Team         Team?          @relation(fields: [teamId], references: [id])
-  NewsItem     NewsItem[]
-  Rumor        Rumor[]
+  Team          Team?           @relation(fields: [teamId], references: [id])
+  NewsItem      NewsItem[]
+  Rumor         Rumor[]
+  BusinessCoach BusinessCoach[]
+  claimedBy     User?           @relation("CoachClaimedBy", fields: [claimedById], references: [id])
 
   @@index([createdByAI])
   @@index([leagueId])
@@ -1386,8 +1396,10 @@ model Player {
   NewsItem     NewsItem[]
   League       League?        @relation(fields: [leagueId], references: [id])
   Sport        Sport?         @relation(fields: [sportId], references: [id])
-  Team         Team?          @relation(fields: [teamId], references: [id])
-  Rumor        Rumor[]
+  Team           Team?            @relation(fields: [teamId], references: [id])
+  Rumor          Rumor[]
+  BusinessPlayer BusinessPlayer[]
+  claimedBy      User?            @relation("PlayerClaimedBy", fields: [claimedById], references: [id])
 
   @@index([createdByAI])
   @@index([leagueId])
@@ -1468,6 +1480,8 @@ model Team {
   Rumor                                      Rumor[]
   League                                     League?        @relation(fields: [leagueId], references: [id])
   Sport                                      Sport?         @relation(fields: [sportId], references: [id])
+  BusinessTeam                               BusinessTeam[]
+  claimedBy                                  User?          @relation("TeamClaimedBy", fields: [claimedById], references: [id])
 
   @@index([country])
   @@index([createdByAI])
@@ -1534,10 +1548,70 @@ model Business {
   verified    Boolean  @default(false)
   isActive    Boolean  @default(true)
   metadata    Json     @default("{}")
+  sportId     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime
+  Sport       Sport?   @relation(fields: [sportId], references: [id])
+  teams       BusinessTeam[]
+  players     BusinessPlayer[]
+  coaches     BusinessCoach[]
+  profiles    BusinessProfile[]
 
   @@index([type])
   @@index([isActive])
   @@index([name])
+  @@index([sportId])
 }
+
+
+model BusinessTeam {
+  id         String   @id
+  businessId String
+  teamId     String
+  role       String   @default("sponsor")
+  notes      String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  Business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  Team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, teamId, role])
+  @@index([teamId])
+  @@index([businessId])
+}
+
+model BusinessPlayer {
+  id         String   @id
+  businessId String
+  playerId   String
+  role       String   @default("endorsement")
+  notes      String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  Business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  Player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, playerId, role])
+  @@index([playerId])
+  @@index([businessId])
+}
+
+model BusinessCoach {
+  id         String   @id
+  businessId String
+  coachId    String
+  role       String   @default("partner")
+  notes      String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  Business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  Coach      Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, coachId, role])
+  @@index([coachId])
+  @@index([businessId])
+}
+
