@@ -89,19 +89,9 @@ async function fetchPlayerLeaderboard(opts: {
 }) {
   const { position, playerType, categoryBucket, dimension, limit } = opts;
 
-  const playerWhere: Record<string, unknown> = {
-    role: 'player',
-  };
-
-  // Prefer users with either a performance profile or a player profile
-  const orProfiles: Record<string, unknown>[] = [
-    { performanceProfile: { isNot: null } },
-    { playerProfile: { isNot: null } },
-  ];
-  playerWhere.OR = orProfiles;
-
+  // All users with role=player (profiles optional — rank by points/PPI when present)
   const users = await db.user.findMany({
-    where: playerWhere,
+    where: { role: 'player' },
     select: {
       ...USER_SELECT,
       performanceProfile: {
