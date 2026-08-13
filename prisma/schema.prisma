@@ -1400,6 +1400,7 @@ model Player {
   Rumor          Rumor[]
   BusinessPlayer BusinessPlayer[]
   claimedBy      User?            @relation("PlayerClaimedBy", fields: [claimedById], references: [id])
+  PlayerTransfer PlayerTransfer[]
 
   @@index([createdByAI])
   @@index([leagueId])
@@ -1482,6 +1483,8 @@ model Team {
   Sport                                      Sport?         @relation(fields: [sportId], references: [id])
   BusinessTeam                               BusinessTeam[]
   claimedBy                                  User?          @relation("TeamClaimedBy", fields: [claimedById], references: [id])
+  transfersOut                               PlayerTransfer[] @relation("TransferFromTeam")
+  transfersIn                                PlayerTransfer[] @relation("TransferToTeam")
 
   @@index([country])
   @@index([createdByAI])
@@ -1489,6 +1492,39 @@ model Team {
   @@index([source, externalId])
   @@index([sportId])
   @@index([verified])
+}
+
+
+model PlayerTransfer {
+  id            String    @id @default(cuid())
+  playerId      String
+  fromTeamId    String?
+  toTeamId      String?
+  transferType  String    @default("permanent") // permanent | loan | free | loan_return
+  fee           String?
+  currency      String?   @default("EUR")
+  announcedAt   DateTime  @default(now())
+  effectiveAt   DateTime  @default(now())
+  window        String?   // summer | winter | mid-season | other
+  season        String?
+  contractUntil DateTime?
+  loanUntil     DateTime?
+  status        String    @default("completed") // pending | completed | cancelled | active_loan
+  notes         String?
+  createdById   String?
+  metadata      Json      @default("{}")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  Player        Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  FromTeam      Team?     @relation("TransferFromTeam", fields: [fromTeamId], references: [id])
+  ToTeam        Team?     @relation("TransferToTeam", fields: [toTeamId], references: [id])
+
+  @@index([playerId])
+  @@index([fromTeamId])
+  @@index([toTeamId])
+  @@index([status])
+  @@index([announcedAt])
+  @@index([transferType])
 }
 
 model UserAdminRole {

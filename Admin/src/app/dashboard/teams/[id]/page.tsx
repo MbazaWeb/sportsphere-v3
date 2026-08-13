@@ -53,6 +53,18 @@ export default function TeamRosterPage() {
   const [tab, setTab] = useState<"player" | "coach" | "staff">("player");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [transferPlayer, setTransferPlayer] = useState<Member | null>(null);
+  const [teamQuery, setTeamQuery] = useState('');
+  const [teamOptions, setTeamOptions] = useState<{ id: string; name: string; city?: string | null }[]>([]);
+  const [toTeamId, setToTeamId] = useState('');
+  const [transferType, setTransferType] = useState<'permanent' | 'loan' | 'free' | 'loan_return'>('permanent');
+  const [fee, setFee] = useState('');
+  const [windowLabel, setWindowLabel] = useState('summer');
+  const [season, setSeason] = useState('');
+  const [notes, setNotes] = useState('');
+  const [loanUntil, setLoanUntil] = useState('');
+  const [transferring, setTransferring] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
 
   const [form, setForm] = useState({
     name: "",
@@ -152,6 +164,76 @@ export default function TeamRosterPage() {
     }
   };
 
+
+  useEffect(() => {
+    if (!transferPlayer) return;
+    const tmr = setTimeout(async () => {
+      try {
+        const q = new URLSearchParams({ limit: '20' });
+        if (teamQuery.trim()) q.set('search', teamQuery.trim());
+        const res = await fetch('/api/admin/teams?' + q.toString(), { credentials: 'include', cache: 'no-store' });
+        const data = await res.json();
+        const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+        setTeamOptions(list.filter((x: any) => x.id !== teamId).map((x: any) => ({ id: x.id, name: x.name, city: x.city })));
+      } catch { setTeamOptions([]); }
+    }, 250);
+    return () => clearTimeout(tmr);
+  }, [transferPlayer, teamQuery, teamId]);
+
+  async function openTransfer(player: Member) {
+    setTransferPlayer(player);
+    setToTeamId('');
+    setTransferType('permanent');
+    setFee('');
+    setNotes('');
+    setLoanUntil('');
+    setTeamQuery('');
+    setHistory([]);
+    try {
+      const res = await fetch('/api/admin/players/' + player.id + '/transfer', { credentials: 'include', cache: 'no-store' });
+      const data = await res.json();
+      if (res.ok) setHistory(Array.isArray(data.transfers) ? data.transfers : []);
+    } catch { setHistory([]); }
+  }
+
+  async function submitTransfer() {
+    if (!transferPlayer) return;
+    if (transferType !== 'loan_return' && transferType !== 'free' && !toTeamId) {
+      setErr('Select a destination team (or use Free / Loan return).');
+      return;
+    }
+    setTransferring(true);
+    setErr(null);
+    setMsg(null);
+    try {
+      const body: Record<string, unknown> = {
+        transferType,
+        fee: fee.trim() || undefined,
+        window: windowLabel || undefined,
+        season: season.trim() || undefined,
+        notes: notes.trim() || undefined,
+        loanUntil: loanUntil || undefined,
+      };
+      if (transferType === 'free') body.toTeamId = null;
+      else if (transferType !== 'loan_return') body.toTeamId = toTeamId;
+      const res = await fetch('/api/admin/players/' + transferPlayer.id + '/transfer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) { setErr(data.error || data.detail || 'Transfer failed'); return; }
+      setMsg('Transfer completed: ' + transferPlayer.name + ' → ' + (data.player?.Team?.name || (transferType === 'free' ? 'Free Agent' : 'new club')));
+      setTransferPlayer(null);
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Network error');
+    } finally {
+      setTransferring(false);
+    }
+  }
+
   if (loading) {
     return <p className="text-slate-400 text-sm">Loading team…</p>;
   }
@@ -216,6 +298,7 @@ export default function TeamRosterPage() {
                     <p className="text-white truncate">{p.shirtNumber != null ? `#${p.shirtNumber} ` : ""}{p.name}</p>
                     <p className="text-[11px] text-slate-500 truncate">{p.position || "—"}{p.nationality ? ` · ${p.nationality}` : ""}</p>
                   </div>
+                  <button type="button" onClick={() => openTransfer(p)} className="shrink-0 px-2 py-1 rounded text-[10px] font-semibold uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25">Transfer</button>
                 </li>
               ))}
             </ul>
@@ -323,6 +406,90 @@ export default function TeamRosterPage() {
           </div>
         </form>
       </section>
+
+      {transferPlayer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-slate-700 bg-[#0f141c] p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-bold text-white">Transfer player</h3>
+                <p className="text-sm text-slate-400">{transferPlayer.name} from <span className="text-slate-200">{team.name}</span></p>
+              </div>
+              <button type="button" onClick={() => setTransferPlayer(null)} className="text-slate-400 hover:text-white text-sm">Close</button>
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">Type</label>
+              <select value={transferType} onChange={(e) => setTransferType(e.target.value as any)} className="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
+                <option value="permanent">Permanent</option>
+                <option value="loan">Loan</option>
+                <option value="free">Release (free agent)</option>
+                <option value="loan_return">Loan return</option>
+              </select>
+            </div>
+            {transferType !== 'loan_return' && transferType !== 'free' && (
+              <div className="space-y-2">
+                <label className="block text-[11px] uppercase tracking-wider text-slate-500">Destination team</label>
+                <input value={teamQuery} onChange={(e) => setTeamQuery(e.target.value)} placeholder="Search teams…" className="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white" />
+                <select value={toTeamId} onChange={(e) => setToTeamId(e.target.value)} className="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
+                  <option value="">Select team…</option>
+                  {teamOptions.map((opt) => (
+                    <option key={opt.id} value={opt.id}>{opt.name}{opt.city ? ' (' + opt.city + ')' : ''}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">Fee</label>
+                <input value={fee} onChange={(e) => setFee(e.target.value)} placeholder="e.g. 5M" className="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white" />
+              </div>
+              <div>
+                <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">Window</label>
+                <select value={windowLabel} onChange={(e) => setWindowLabel(e.target.value)} className="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
+                  <option value="summer">Summer</option>
+                  <option value="winter">Winter</option>
+                  <option value="mid-season">Mid-season</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">Season</label>
+                <input value={season} onChange={(e) => setSeason(e.target.value)} placeholder="2025/26" className="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white" />
+              </div>
+              {transferType === 'loan' && (
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">Loan until</label>
+                  <input type="date" value={loanUntil} onChange={(e) => setLoanUntil(e.target.value)} className="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white" />
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">Notes</label>
+              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white" />
+            </div>
+            {history.length > 0 && (
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-slate-500 mb-2">History</p>
+                <ul className="space-y-1 max-h-32 overflow-y-auto text-xs text-slate-400">
+                  {history.map((h) => (
+                    <li key={h.id} className="border-b border-slate-800/80 py-1">
+                      <span className="text-slate-300">{h.transferType}</span>
+                      {' · '}
+                      {(h.FromTeam?.name || 'FA') + ' → ' + (h.ToTeam?.name || 'FA')}
+                      {h.fee ? ' · ' + h.fee : ''}
+                      {h.status ? ' · ' + h.status : ''}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={() => setTransferPlayer(null)} className="px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider text-slate-300 border border-slate-700">Cancel</button>
+              <button type="button" disabled={transferring} onClick={submitTransfer} className="px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider bg-amber-400 text-black disabled:opacity-50">{transferring ? 'Transferring…' : 'Confirm transfer'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
