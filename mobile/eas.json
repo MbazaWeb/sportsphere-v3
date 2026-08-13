@@ -16,7 +16,7 @@
         "buildType": "apk",
         "withoutCredentials": true,
         "cache": {
-          "key": "v3-lean-node20",
+          "key": "v4-minimal-apk",
           "paths": [
             "~/.gradle/caches",
             "~/.gradle/wrapper"

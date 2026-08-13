@@ -6,7 +6,7 @@
 
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Clock, MapPin, Zap } from 'lucide-react-native';
-import { colors, radii, spacing } from '@sportsphere/design-system/tokens';
+import { colors, radii, spacing } from '../lib/tokens';
 import { FONT_BODY_BOLD, FONT_BODY, FONT_BODY_REG } from '../lib/fonts';
 import type { Match } from '../lib/match-types';
 

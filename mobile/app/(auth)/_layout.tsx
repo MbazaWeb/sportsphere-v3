@@ -5,7 +5,7 @@
  */
 
 import { Stack } from 'expo-router';
-import { colors } from '@sportsphere/design-system/tokens';
+import { colors } from '../../lib/tokens';
 
 export default function AuthLayout() {
   return (

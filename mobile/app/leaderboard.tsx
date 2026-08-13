@@ -14,11 +14,11 @@ import {
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { X, Trophy, ChevronRight, Medal, TrendingUp, TrendingDown, Minus } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../lib/haptics';
 
 import GlassCard from '../components/GlassCard';
 import Avatar from '../components/Avatar';
-import { colors } from '@sportsphere/design-system/tokens';
+import { colors } from '../lib/tokens';
 import { FONT_DISPLAY, FONT_BODY, FONT_BODY_BOLD, FONT_BODY_REG } from '../lib/fonts';
 import { leaderboardApi } from '../lib/api';
 import type { LeaderboardEntry, LeaderboardDimension } from '@sportsphere/api-client';

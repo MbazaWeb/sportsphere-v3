@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "lib": ["ES2022", "DOM"],
+    "baseUrl": ".",
+    "paths": {
+      "@sportsphere/types": ["../types/src/index.ts"],
+      "@sportsphere/types/auth": ["../types/src/auth.ts"],
+      "@sportsphere/types/user": ["../types/src/user.ts"],
+      "@sportsphere/types/performance": ["../types/src/performance.ts"],
+      "@sportsphere/types/ranking": ["../types/src/ranking.ts"],
+      "@sportsphere/types/feed": ["../types/src/feed.ts"],
+      "@sportsphere/types/auth.js": ["../types/src/auth.ts"],
+      "@sportsphere/types/user.js": ["../types/src/user.ts"],
+      "@sportsphere/types/performance.js": ["../types/src/performance.ts"],
+      "@sportsphere/types/ranking.js": ["../types/src/ranking.ts"],
+      "@sportsphere/types/feed.js": ["../types/src/feed.ts"]
+    }
+  },
+  "include": ["src/**/*"]
+}

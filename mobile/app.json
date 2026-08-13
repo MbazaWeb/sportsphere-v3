@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sportsphere",
     "slug": "sportsphere",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "sportsphere",
@@ -12,7 +12,6 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.sportsphere.app",
       "backgroundColor": "#0A1628",
-      "buildNumber": "1",
       "associatedDomains": [
         "applinks:sportssphere.fun"
       ],
@@ -35,7 +34,6 @@
       },
       "package": "com.sportsphere.app",
       "backgroundColor": "#0A1628",
-      "versionCode": 1,
       "intentFilters": [
         {
           "action": "VIEW",
@@ -77,15 +75,6 @@
       "output": "static",
       "favicon": "./assets/favicon.png"
     },
-    "updates": {
-      "url": "https://u.expo.dev/f649f294-ee92-4e7f-a85e-716534fa4adb",
-      "enabled": true,
-      "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
     "plugins": [
       "expo-router",
       [
@@ -97,8 +86,7 @@
           "backgroundColor": "#0A1628"
         }
       ],
-      "expo-secure-store",
-      "expo-updates"
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
