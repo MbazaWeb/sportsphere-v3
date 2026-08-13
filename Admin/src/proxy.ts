@@ -20,6 +20,7 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/login/') ||
     pathname.startsWith('/api/auth/') ||
     pathname.startsWith('/api/admin/') ||
+    pathname === '/api/metrics' ||
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/favicon') ||
     pathname === '/manifest.json'
