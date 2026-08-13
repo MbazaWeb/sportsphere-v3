@@ -28,6 +28,8 @@ export default function ScoresTab() {
   const [selectedMatch, setSelectedMatch] = useState<any | null>(null);
 
 
+  const [standingsLeague, setStandingsLeague] = useState('');
+
   useScoresLive(useCallback((payload) => {
     if (!payload) return;
     // Soft refresh: re-run by flipping a version would be ideal; call fetch via status change no-op
@@ -122,6 +124,8 @@ export default function ScoresTab() {
         if (res.ok) {
           const data = await res.json();
           setStandings(Array.isArray(data.standings) ? data.standings : []);
+          // Track the actual league name returned
+          if (data.league) setStandingsLeague(data.league);
         } else {
           setStandings([]);
         }
@@ -163,7 +167,7 @@ export default function ScoresTab() {
           <StandingsList
             standings={standings}
             loading={loading}
-            league={tournament !== 'All' ? tournament : 'English Premier League'}
+            league={tournament !== 'All' ? tournament : standingsLeague}
           />
         ) : (
           <MatchList
