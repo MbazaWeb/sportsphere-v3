@@ -5,6 +5,7 @@ import {
   OpenLigaDBProvider,
   ErgastF1Provider,
   FootballDataOrgProvider,
+  SportmonksProvider,
   type SportsDataProvider,
   type ProviderFixture,
   type ProviderCompetition,
@@ -19,6 +20,7 @@ export function initializeProviders() {
     providerRegistry.register(new OpenLigaDBProvider());
     providerRegistry.register(new ErgastF1Provider());
     providerRegistry.register(new FootballDataOrgProvider());
+    providerRegistry.register(new SportmonksProvider());
   }
 }
 
@@ -349,6 +351,18 @@ async function syncProviderSport(
   };
 
   const source = provider.config.id;
+
+  // Sportmonks: only run when SPORTMONKS_API_TOKEN is configured (paid or free plan)
+  if (source === "sportmonks") {
+    const sm = provider as SportmonksProvider;
+    if (typeof sm.hasToken === "function" && !sm.hasToken()) {
+      result.errors.push(
+        "Sportmonks skipped: set SPORTMONKS_API_TOKEN in Admin .env after subscribing (or free plan)"
+      );
+      return result;
+    }
+  }
+
   let sportRow: { id: string } | null = null;
   try {
     sportRow = await ensureSport(sport);
@@ -514,6 +528,40 @@ async function syncProviderSport(
     result.errors.push(`football-data squads: ${String(err)}`);
   }
 
+  // 6) Sportmonks coaches (when token + plan allow)
+  try {
+    if (provider.config.id === "sportmonks" && typeof (provider as any).getTeamCoaches === "function") {
+      const sm = provider as SportmonksProvider;
+      const teams = await sm.getTeams(sport, {});
+      for (const t of (teams || []).slice(0, 5)) {
+        try {
+          const teamId = await upsertTeam(sportId, null, t, source, result);
+          const coaches = await sm.getTeamCoaches(t.id);
+          for (const coach of coaches) {
+            if (!coach.name) continue;
+            try {
+              await upsertCoach(
+                sportId,
+                teamId,
+                null,
+                { id: coach.id, name: coach.name, nationality: coach.nationality },
+                source,
+                result
+              );
+            } catch (err) {
+              result.errors.push(`sm coach ${coach.name}: ${String(err)}`);
+            }
+          }
+        } catch (err) {
+          result.errors.push(`sm team coaches ${t.name}: ${String(err)}`);
+        }
+      }
+    }
+  } catch (err) {
+    result.errors.push(`sportmonks coaches: ${String(err)}`);
+  }
+
+
   return result;
 }
 
@@ -529,6 +577,7 @@ export async function syncFromProviders(
       new OpenLigaDBProvider(),
       new ErgastF1Provider(),
       new FootballDataOrgProvider(),
+      new SportmonksProvider(),
     ];
   }
   const targetProviders = options.providers

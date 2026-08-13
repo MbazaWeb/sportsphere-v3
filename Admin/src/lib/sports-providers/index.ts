@@ -4,3 +4,4 @@ export * from "./openligadb";
 export * from "./ergast";
 
 export * from "./football-data-org";
+export * from "./sportmonks";
