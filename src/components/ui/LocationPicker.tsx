@@ -76,7 +76,7 @@ export function LocationPicker({
         const params = new URLSearchParams({ limit: '8' });
         if (countryCode) params.set('country', countryCode);
         if (types && types.length === 1) params.set('type', types[0]);
-        const res = await fetch(`/sportsphere/api/locations/search?${params}`);
+        const res = await fetch(`/api/locations/search?${params}`);
         if (res.ok) setResults(await res.json());
       } catch {
         // ignore
@@ -91,7 +91,7 @@ export function LocationPicker({
       const params = new URLSearchParams({ q: q, limit: '10' });
       if (countryCode) params.set('country', countryCode);
       if (types && types.length === 1) params.set('type', types[0]);
-      const res = await fetch(`/sportsphere/api/locations/search?${params}`);
+      const res = await fetch(`/api/locations/search?${params}`);
       if (res.ok) setResults(await res.json());
     } catch {
       // ignore

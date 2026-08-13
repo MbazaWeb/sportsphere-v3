@@ -4,7 +4,7 @@ export function AuthLogo() {
   return (
     <div className="flex justify-center mb-3 sm:mb-6">
       <img
-        src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/sportsphere'}/logo-wordmark.svg`}
+        src="/logo-wordmark.svg"
         alt="SportSphere"
         style={{ height: 36, width: 'auto', display: 'block' }}
         onError={(e) => {

@@ -325,10 +325,10 @@ export default function TermsOfServicePage() {
               <br />
               Web:{" "}
               <a
-                href="/sportsphere/terms"
+                href="/terms"
                 className="text-[#F5C518] underline underline-offset-4 hover:text-[#FF6B35]"
               >
-                https://sportssphere.fun/sportsphere/terms
+                https://sportssphere.fun/terms
               </a>
             </p>
             <p className="mt-4">
@@ -343,7 +343,7 @@ export default function TermsOfServicePage() {
           <p>
             See also:{" "}
             <a
-              href="/sportsphere/privacy"
+              href="/privacy"
               className="text-[#F5C518] underline underline-offset-4 hover:text-[#FF6B35]"
             >
               Privacy Policy

@@ -31,7 +31,7 @@ export default function RegisterModal({ isOpen, onClose }: { isOpen?: boolean; o
   useEffect(() => {
     async function fetchSports() {
       try {
-        const res = await fetch('/sportsphere/api/sports');
+        const res = await fetch('/api/sports');
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {

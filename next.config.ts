@@ -2,7 +2,6 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  basePath: "/sportsphere",
   reactStrictMode: true,
   serverExternalPackages: ['@aws-sdk/client-s3', '@google-cloud/storage'],
   experimental: {
@@ -10,9 +9,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '200mb',
     },
   },
-  env: {
-    NEXT_PUBLIC_BASE_PATH: '/sportsphere',
-  },
+  env: {},
   images: {
     unoptimized: true,
     remotePatterns: [
