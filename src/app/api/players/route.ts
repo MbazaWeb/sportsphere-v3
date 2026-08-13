@@ -15,34 +15,28 @@ export async function GET(request: NextRequest) {
     const position = (searchParams.get('position') || '').trim();
     const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '20', 10) || 20, 1), 50);
 
+    const profileFilter: Record<string, unknown> = {};
+    if (position) {
+      profileFilter.position = { contains: position, mode: 'insensitive' };
+    }
+
     const where: Record<string, unknown> = {
-      OR: [
-        { role: 'player' },
-        { playerProfile: { isNot: null } },
-      ],
+      playerProfile: Object.keys(profileFilter).length
+        ? profileFilter
+        : { isNot: null },
     };
 
-    const and: Record<string, unknown>[] = [];
-
     if (q) {
-      and.push({
-        OR: [
-          { name: { contains: q, mode: 'insensitive' } },
-          { handle: { contains: q, mode: 'insensitive' } },
-          { playerProfile: { position: { contains: q, mode: 'insensitive' } } },
-          { playerProfile: { currentClub: { contains: q, mode: 'insensitive' } } },
-        ],
-      });
-    }
-
-    if (position) {
-      and.push({
-        playerProfile: { position: { contains: position, mode: 'insensitive' } },
-      });
-    }
-
-    if (and.length) {
-      where.AND = and;
+      where.AND = [
+        {
+          OR: [
+            { name: { contains: q, mode: 'insensitive' } },
+            { handle: { contains: q, mode: 'insensitive' } },
+            { playerProfile: { position: { contains: q, mode: 'insensitive' } } },
+            { playerProfile: { currentClub: { contains: q, mode: 'insensitive' } } },
+          ],
+        },
+      ];
     }
 
     const users = await db.user.findMany({
@@ -65,8 +59,7 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      take: limit,
-      orderBy: { name: 'asc' },
+      take: limit * 3, // headroom then sort by PPI
     });
 
     const players = users
@@ -85,7 +78,8 @@ export async function GET(request: NextRequest) {
         assists: u.playerProfile?.assists ?? 0,
         matches_played: u.playerProfile?.appearances ?? 0,
       }))
-      .sort((a, b) => (b.ppi_score ?? 0) - (a.ppi_score ?? 0));
+      .sort((a, b) => (b.ppi_score ?? 0) - (a.ppi_score ?? 0))
+      .slice(0, limit);
 
     return NextResponse.json({ players, count: players.length });
   } catch (error) {
