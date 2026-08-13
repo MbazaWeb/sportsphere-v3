@@ -560,22 +560,32 @@ export async function getStandings(leagueId: string, leagueName?: string): Promi
 
   const tsdId = resolveTsdLeagueId(leagueId, leagueName);
   const season = currentSoccerSeason();
-  return cached(`tsd:standings:${tsdId}:${season}`, 300, async () => {
-    // Prefer current season; if empty try previous
-    let d = await tsdGet(`lookuptable.php?l=${tsdId}&s=${season}`);
-    let table = d.table || [];
-    if (!table.length) {
-      const prev = season.split('-').map((x: string) => parseInt(x, 10));
-      const prevSeason = `${prev[0] - 1}-${prev[1] - 1}`;
-      d = await tsdGet(`lookuptable.php?l=${tsdId}&s=${prevSeason}`);
-      table = d.table || [];
+  return cached(`tsd:standings:${tsdId}:${season}:v2`, 300, async () => {
+    const seasonsToTry: string[] = [season];
+    const parts = season.split('-').map((x) => parseInt(x, 10));
+    if (parts.length === 2 && !Number.isNaN(parts[0])) {
+      seasonsToTry.push(`${parts[0] - 1}-${parts[1] - 1}`);
+      seasonsToTry.push(`${parts[0] - 2}-${parts[1] - 2}`);
     }
-    if (!table.length) {
-      // last resort: no season filter
-      d = await tsdGet(`lookuptable.php?l=${tsdId}`);
-      table = d.table || [];
+
+    let best: any[] = [];
+    for (const s of seasonsToTry) {
+      const d = await tsdGet(`lookuptable.php?l=${tsdId}&s=${s}`);
+      const table = d.table || [];
+      if (!table.length) continue;
+      const totalPlayed = table.reduce(
+        (sum: number, r: any) => sum + (parseInt(r.intPlayed, 10) || 0),
+        0
+      );
+      // Prefer a table that has actual match data
+      if (totalPlayed > 0) return table.map(tsdStanding);
+      if (!best.length) best = table;
     }
-    return table.map(tsdStanding);
+    if (!best.length) {
+      const d = await tsdGet(`lookuptable.php?l=${tsdId}`);
+      best = d.table || [];
+    }
+    return best.map(tsdStanding);
   });
 }
 
