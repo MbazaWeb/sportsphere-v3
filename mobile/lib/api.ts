@@ -9,7 +9,7 @@
  *   (use your LAN IP — the simulator/device cannot reach localhost of the dev machine)
  *
  * For the deployed VPS:
- *   EXPO_PUBLIC_API_URL=http://104.152.50.173:3002/sportsphere
+ *   EXPO_PUBLIC_API_URL=https://sportssphere.fun
  */
 
 import * as SecureStore from 'expo-secure-store';
