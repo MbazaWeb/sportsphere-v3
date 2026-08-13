@@ -105,6 +105,10 @@ function LoggedInProfile({ onNavigate, onLogout }: { onNavigate: (section: strin
   const [favoriteType, setFavoriteType] = useState<'TEAM' | 'PLAYER' | 'COACH' | 'COMPETITION' | 'LEAGUE' | 'NATIONAL_TEAM' | 'STADIUM' | 'SPORT'>('TEAM');
   const [favoriteSaving, setFavoriteSaving] = useState(false);
   const [favoriteError, setFavoriteError] = useState('');
+  const [searchResults, setSearchResults] = useState<Array<{ id: string; name: string; type: string; logoUrl?: string | null; extra?: string }>>([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedSearchItem, setSelectedSearchItem] = useState<{ id: string; name: string; type: string } | null>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 const [coverUploading, setCoverUploading] = useState(false);
 
@@ -257,6 +261,39 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
     } catch { /* ignore */ }
   }
 
+  // Debounced search for autocomplete suggestions
+  function handleFavoriteSearchInput(value: string) {
+    setFavoriteName(value);
+    setSelectedSearchItem(null);
+
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+
+    if (value.trim().length < 2) {
+      setSearchResults([]);
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+    searchTimerRef.current = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ q: value.trim(), type: favoriteType, limit: '10' });
+        const res = await apiFetch(`/api/teams/search?${params}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data.results || []);
+        }
+      } catch { /* ignore */ }
+      setSearching(false);
+    }, 300);
+  }
+
+  function selectSearchItem(item: { id: string; name: string; type: string }) {
+    setSelectedSearchItem(item);
+    setFavoriteName(item.name);
+    setSearchResults([]);
+  }
+
   async function addFavorite() {
     if (!favoriteName.trim()) {
       setFavoriteError('Please enter a name.');
@@ -265,13 +302,13 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
     setFavoriteSaving(true);
     setFavoriteError('');
     try {
-      const slug = favoriteName.trim().toLowerCase().replace(/\s+/g, '-');
+      const targetId = selectedSearchItem?.id || favoriteName.trim().toLowerCase().replace(/\s+/g, '-');
       const res = await apiFetch('/api/profile/favorites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           targetType: favoriteType,
-          targetId: slug,
+          targetId,
           targetName: favoriteName.trim(),
           targetHandle: null,
         }),
@@ -280,6 +317,8 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
         const created = await res.json();
         setFavorites(prev => [created, ...prev.filter(f => f.id !== created.id)]);
         setFavoriteName('');
+        setSelectedSearchItem(null);
+        setSearchResults([]);
         setAddFavoriteOpen(false);
       } else {
         const data = await res.json().catch(() => ({}));
@@ -710,17 +749,17 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-white">Add a favorite</p>
                 <button
-                  onClick={() => { setAddFavoriteOpen(false); setFavoriteName(''); setFavoriteError(''); }}
+                  onClick={() => { setAddFavoriteOpen(false); setFavoriteName(''); setFavoriteError(''); setSearchResults([]); setSelectedSearchItem(null); }}
                   className="text-muted-foreground hover:text-white"
                   aria-label="Close add favorite form"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col sm:flex-row gap-2 relative">
                 <select
                   value={favoriteType}
-                  onChange={e => setFavoriteType(e.target.value as typeof favoriteType)}
+                  onChange={e => { setFavoriteType(e.target.value as typeof favoriteType); setSearchResults([]); setSelectedSearchItem(null); }}
                   className="rounded-lg bg-surface-elevated border border-surface-border px-2 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold"
                 >
                   <option value="TEAM">Team</option>
@@ -732,23 +771,52 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
                   <option value="STADIUM">Stadium</option>
                   <option value="SPORT">Sport</option>
                 </select>
-                <input
-                  type="text"
-                  value={favoriteName}
-                  onChange={e => setFavoriteName(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') addFavorite(); }}
-                  placeholder="e.g. Manchester United"
-                  className="flex-1 rounded-lg bg-surface-elevated border border-surface-border px-3 py-2 text-xs text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold"
-                  autoFocus
-                />
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={favoriteName}
+                    onChange={e => handleFavoriteSearchInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') addFavorite(); }}
+                    placeholder="Search teams, players..."
+                    className="w-full rounded-lg bg-surface-elevated border border-surface-border px-3 py-2 text-xs text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold"
+                    autoFocus
+                  />
+                  {/* Autocomplete dropdown */}
+                  {searchResults.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-50 max-h-48 overflow-y-auto rounded-lg border border-surface-border bg-surface-elevated shadow-lg">
+                      {searchResults.map((item) => (
+                        <button
+                          key={`${item.type}-${item.id}`}
+                          type="button"
+                          onClick={() => selectSearchItem(item)}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-surface-border/50 transition-colors"
+                        >
+                          <div className="flex-1">
+                            <p className="text-white font-medium">{item.name}</p>
+                            {item.extra && <p className="text-muted-foreground text-[10px]">{item.extra}</p>}
+                          </div>
+                          <span className="text-[10px] text-gold bg-gold/10 px-1.5 py-0.5 rounded">{item.type}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {searching && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-lg border border-surface-border bg-surface-elevated p-2 text-[10px] text-muted-foreground">
+                      Searching...
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={addFavorite}
                   disabled={favoriteSaving}
-                  className="rounded-lg bg-gold text-black px-3 py-2 text-xs font-bold hover:bg-gold/90 transition-colors disabled:opacity-50"
+                  className="rounded-lg bg-gold text-black px-3 py-2 text-xs font-bold hover:bg-gold/90 transition-colors disabled:opacity-50 whitespace-nowrap"
                 >
-                  {favoriteSaving ? 'Adding…' : 'Add'}
+                  {favoriteSaving ? 'Adding...' : 'Add'}
                 </button>
               </div>
+              {selectedSearchItem && (
+                <p className="text-[10px] text-emerald-400">Selected from database: {selectedSearchItem.name}</p>
+              )}
               {favoriteError && <p className="text-[11px] text-red-400">{favoriteError}</p>}
             </div>
           )}

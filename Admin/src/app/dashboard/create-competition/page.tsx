@@ -43,8 +43,8 @@ export default function CreateCompetitionPage() {
     (async () => {
       try {
         const [s, t] = await Promise.all([
-          fetch("/api/admin/sports").then((r) => r.json()),
-          fetch("/api/admin/teams?limit=300").then((r) => r.json()),
+          fetch("/api/admin/sports", { credentials: "include" }).then((r) => r.json()),
+          fetch("/api/admin/teams?limit=300", { credentials: "include" }).then((r) => r.json()),
         ]);
         setSports((s.sports || s.data || []).map((x: any) => ({ id: x.id, name: x.name })));
         setTeams((t.data || t.teams || []).map((x: any) => ({ id: x.id, name: x.name })));

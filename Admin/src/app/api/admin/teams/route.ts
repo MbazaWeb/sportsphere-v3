@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const verified = searchParams.get('verified');
     const createdByAI = searchParams.get('createdByAI');
     const page = Math.max(1, Number(searchParams.get('page') || '1'));
-    const limit = Math.min(100, Math.max(1, Number(searchParams.get('limit') || '20')));
+    const limit = Math.min(500, Math.max(1, Number(searchParams.get('limit') || '20')));
 
     const where: any = {};
     if (search) {
