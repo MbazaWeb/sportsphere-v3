@@ -34,7 +34,7 @@ export function HomeHeader({ isSearchOpen, setIsSearchOpen }: HomeHeaderProps) {
         <div className="flex h-14 items-center justify-between px-4">
           {/* Logo */}
           <button onClick={() => window.scrollTo(0, 0)} className="flex items-center gap-2">
-            <img src="/logo.svg" alt="SportSphere" className="h-7 w-auto object-contain" onError={(e) => { (e.target as HTMLImageElement).src = "/logo.svg"; }} />
+            <img src="/logo.svg" alt="SportSphere" className="h-7 w-auto object-contain" onError={(e) => { (e.target as HTMLImageElement).src = "/sportsphere/logo.svg"; }} />
           </button>
 
           {/* Actions */}

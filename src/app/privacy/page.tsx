@@ -415,10 +415,10 @@ export default function PrivacyPolicyPage() {
               <br />
               Web:{" "}
               <a
-                href="/privacy"
+                href="/sportsphere/privacy"
                 className="text-[#F5C518] underline underline-offset-4 hover:text-[#FF6B35]"
               >
-                https://sportssphere.fun/privacy
+                https://sportssphere.fun/sportsphere/privacy
               </a>
             </p>
             <p className="mt-4">
@@ -433,7 +433,7 @@ export default function PrivacyPolicyPage() {
           <p>
             See also:{" "}
             <a
-              href="/terms"
+              href="/sportsphere/terms"
               className="text-[#F5C518] underline underline-offset-4 hover:text-[#FF6B35]"
             >
               Terms of Service

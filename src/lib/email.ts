@@ -169,7 +169,7 @@ export async function sendWelcomeEmail(
           Your SportSphere account is ready. Start building your profile,
           connect with athletes, and track your performance.
         </p>
-        <a href="${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://sportssphere.fun'}/" style="
+        <a href="${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://sportssphere.fun'}/sportsphere/home" style="
           display: inline-block;
           background: #18181b;
           color: #fff;

@@ -22,15 +22,15 @@ export const metadata: Metadata = {
   },
   title: "SportSphere - The World's Biggest Sports Community",
   description: "Connect with fans, players, teams, leagues and communities through one sports-first social platform.",
-  manifest: "/manifest.json",
+  manifest: "/sportsphere/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "SportSphere",
   },
   icons: {
-    icon: "/favicon.svg",
-    apple: "/favicon.svg",
+    icon: "/sportsphere/favicon.svg",
+    apple: "/sportsphere/favicon.svg",
   },
   openGraph: {
     title: "SportSphere",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     siteName: "SportSphere",
     images: [
       {
-        url: "/logo.svg",
+        url: "/sportsphere/logo.svg",
         width: 800,
         height: 600,
       },
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "SportSphere",
     description: "The World's Biggest Sports Community",
-    images: ["/logo.svg"],
+    images: ["/sportsphere/logo.svg"],
   },
 };
 
@@ -90,7 +90,7 @@ export default function RootLayout({
             }),
           }}
         />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.svg" />
+        <link rel="apple-touch-icon" href="/sportsphere/icons/icon-192x192.svg" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="mobile-web-app-capable" content="yes" />

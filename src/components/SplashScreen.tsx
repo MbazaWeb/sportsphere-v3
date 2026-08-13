@@ -57,7 +57,7 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
     }
   }, [progress, wordIndex]);
 
-  const basePath = '';
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '/sportsphere';
 
   return (
     <div

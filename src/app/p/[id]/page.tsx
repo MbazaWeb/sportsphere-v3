@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!post) return { title: 'Post Not Found' };
 
   const mediaUrls = safeJsonParse<string[]>(post.mediaUrls, []);
-  const previewImage = mediaUrls.length > 0 ? mediaUrls[0] : '/logo.svg';
+  const previewImage = mediaUrls.length > 0 ? mediaUrls[0] : '/sportsphere/logo.svg';
 
   return {
     title: `${post.user.name} on SportSphere: "${post.content.substring(0, 60)}${post.content.length > 60 ? '...' : ''}"`,
