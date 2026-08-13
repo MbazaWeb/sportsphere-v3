@@ -9,12 +9,25 @@ const VALID_TYPES: FavoriteTargetType[] = [
   'TEAM', 'PLAYER', 'COACH', 'STADIUM', 'LEAGUE', 'NATIONAL_TEAM', 'COMPETITION', 'SPORT'
 ];
 
-// GET /api/profile/favorites — list current user's favorites
+// GET /api/profile/favorites — list favorites
+//   ?userId=xxx  — public: fetch any user's favorites (no auth needed)
+//   (no param)   — private: fetch current user's favorites (auth required)
 export async function GET(request: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest(request);
-    if (!userId) {
-      return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+    const { searchParams } = request.nextUrl;
+    const targetUserId = searchParams.get('userId');
+
+    let userId: string | null = null;
+
+    if (targetUserId) {
+      // Public access — anyone can view a user's favorites
+      userId = targetUserId;
+    } else {
+      // Private access — require auth
+      userId = await getUserIdFromRequest(request);
+      if (!userId) {
+        return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+      }
     }
 
     const favorites = await db.userFavorite.findMany({
