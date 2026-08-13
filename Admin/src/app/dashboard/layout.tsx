@@ -57,6 +57,7 @@ const NAV = [
   { href: '/dashboard/rumors', label: '💬 Rumors' },
   { href: '/dashboard/claims', label: '🏷️ Claims' },
   { href: '/dashboard/ai-agent', label: '🤖 AI Agent' },
+  { href: '/dashboard/backups', label: '💾 Backups' },
   { href: '/dashboard/audit', label: '📜 Audit Log' },
 ];
 
