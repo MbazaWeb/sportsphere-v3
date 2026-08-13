@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     let id = leagueId || POPULAR_LEAGUE_IDS[leagueName] || '2021';
 
-    const standings = await getStandings(id);
+    const standings = await getStandings(id, leagueName);
     return NextResponse.json({
       league: leagueName,
       leagueId: id,

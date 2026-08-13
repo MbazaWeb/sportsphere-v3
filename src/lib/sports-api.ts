@@ -485,24 +485,97 @@ export async function getUpcomingFixtures(leagueId: string): Promise<SportsMatch
 }
 
 /** Fetch league standings */
-export async function getStandings(leagueId: string): Promise<StandingRow[]> {
-  if (FD_TOKEN && /^\d+$/.test(leagueId)) {
-    try { return await cached(`fd:standings:${leagueId}`, 600, () => fdStandings(parseInt(leagueId, 10))); }
-    catch (e) { console.warn('[FD] Standings failed, falling back:', e); }
+/** Map football-data.org competition IDs → TheSportsDB league IDs */
+const FD_TO_TSD_LEAGUE: Record<string, string> = {
+  '2021': '4328', // Premier League
+  '2014': '4335', // La Liga
+  '2002': '4331', // Bundesliga
+  '2019': '4332', // Serie A
+  '2015': '4334', // Ligue 1
+  '2001': '4480', // Champions League
+  '2003': '4481', // Europa League (note: also Eredivisie on FD — prefer name map)
+  '2016': '4396', // Championship
+  '2017': '4344', // Primeira Liga
+  '2018': '4330', // Scottish Premiership
+  '4347': '4346', // MLS (if passed as TSD-ish)
+};
+
+const TSD_LEAGUE_BY_NAME: Record<string, string> = {
+  'English Premier League': '4328',
+  'Premier League': '4328',
+  'Spanish La Liga': '4335',
+  'La Liga': '4335',
+  'German Bundesliga': '4331',
+  'Bundesliga': '4331',
+  'Italian Serie A': '4332',
+  'Serie A': '4332',
+  'French Ligue 1': '4334',
+  'Ligue 1': '4334',
+  'UEFA Champions League': '4480',
+  'UEFA Europa League': '4481',
+  'English Championship': '4396',
+  'Portuguese Primeira Liga': '4344',
+  'Dutch Eredivisie': '4337',
+  'Scottish Premiership': '4330',
+  'Major League Soccer': '4346',
+};
+
+function currentSoccerSeason(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1; // 1-12
+  // European season starts ~Aug
+  if (m >= 8) return `${y}-${y + 1}`;
+  return `${y - 1}-${y}`;
+}
+
+function resolveTsdLeagueId(leagueId: string, leagueName?: string): string {
+  if (leagueName && TSD_LEAGUE_BY_NAME[leagueName]) return TSD_LEAGUE_BY_NAME[leagueName];
+  if (FD_TO_TSD_LEAGUE[leagueId]) return FD_TO_TSD_LEAGUE[leagueId];
+  // already a TSD id (4xxx)
+  if (/^4\d{3}$/.test(leagueId)) return leagueId;
+  return leagueId;
+}
+
+export async function getStandings(leagueId: string, leagueName?: string): Promise<StandingRow[]> {
+  if (FD_TOKEN && /^\d+$/.test(leagueId) && leagueId.length <= 4 && !leagueId.startsWith('4')) {
+    try {
+      const rows = await cached(`fd:standings:${leagueId}`, 600, () => fdStandings(parseInt(leagueId, 10)));
+      if (rows.length) return rows;
+    } catch (e) { console.warn('[FD] Standings failed, falling back:', e); }
   }
   if (API_SPORTS_KEY) {
     try {
-      return await cached(`as:standings:${leagueId}`, 600, async () => {
-        const season = new Date().getFullYear();
+      const season = new Date().getFullYear();
+      const rows = await cached(`as:standings:${leagueId}:${season}`, 600, async () => {
         const d = await asGet(`/standings?league=${leagueId}&season=${season}`);
         const league = d.response?.[0];
-        return (league?.standings || []).map((r: any) => asStanding(r.team || {}, r));
+        const table = league?.league?.standings?.[0] || league?.standings?.[0] || league?.standings || [];
+        const list = Array.isArray(table) ? table : [];
+        return list.map((r: any) => asStanding(r.team || {}, r));
       });
+      if (rows.length) return rows;
     } catch (e) { console.warn('[AS] Standings failed, falling back:', e); }
   }
-  return cached(`tsd:standings:${leagueId}`, 600, async () => {
-    const d = await tsdGet(`lookuptable.php?l=${leagueId}&s=Soccer`);
-    return (d.table || []).map(tsdStanding);
+
+  const tsdId = resolveTsdLeagueId(leagueId, leagueName);
+  const season = currentSoccerSeason();
+  return cached(`tsd:standings:${tsdId}:${season}`, 300, async () => {
+    // Prefer current season; if empty try previous
+    let d = await tsdGet(`lookuptable.php?l=${tsdId}&s=${season}`);
+    let table = d.table || [];
+    if (!table.length) {
+      const prev = season.split('-').map((x: string) => parseInt(x, 10));
+      const prevSeason = `${prev[0] - 1}-${prev[1] - 1}`;
+      d = await tsdGet(`lookuptable.php?l=${tsdId}&s=${prevSeason}`);
+      table = d.table || [];
+    }
+    if (!table.length) {
+      // last resort: no season filter
+      d = await tsdGet(`lookuptable.php?l=${tsdId}`);
+      table = d.table || [];
+    }
+    return table.map(tsdStanding);
   });
 }
 
