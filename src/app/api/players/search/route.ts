@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const query = (searchParams.get('q') || '').toLowerCase();
+  const query = (searchParams.get('q') || '').trim();
+
+  if (!query) {
+    return NextResponse.json({ players: [] });
+  }
 
   try {
     const users = await db.user.findMany({
@@ -16,13 +22,25 @@ export async function GET(request: Request) {
           { playerProfile: { currentClub: { contains: query, mode: 'insensitive' } } },
         ],
       },
-      include: { playerProfile: true },
+      select: {
+        id: true,
+        name: true,
+        handle: true,
+        avatarUrl: true,
+        playerProfile: {
+          select: {
+            position: true,
+            currentClub: true,
+            rating: true,
+          },
+        },
+      },
       take: 10,
     });
 
     const players = users
       .sort((a, b) => (b.playerProfile?.rating ?? 0) - (a.playerProfile?.rating ?? 0))
-      .map(u => ({
+      .map((u) => ({
         id: u.id,
         full_name: u.name || u.handle,
         photo_url: u.avatarUrl,

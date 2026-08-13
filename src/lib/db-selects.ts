@@ -8,7 +8,7 @@
 export const USER_SELECT = {
   id: true,
   name: true,
-  email: true,
+  // email intentionally omitted — never expose in shared selects
   handle: true,
   avatarUrl: true,
   avatarInitials: true,

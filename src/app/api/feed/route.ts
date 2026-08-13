@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { USER_SELECT } from '@/lib/db-selects';
 import { safeJsonParse } from '@/lib/json';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { getUserIdFromRequest, serializePublicUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -154,11 +154,13 @@ export async function GET(request: NextRequest) {
         ...(post.prediction && {
           prediction: { ...post.prediction },
         }),
-        user: {
+        user: serializePublicUser({
           ...post.user,
-          roleData: safeJsonParse(post.user.roleData, {}),
-          sportsFollowing: safeJsonParse(post.user.sportsFollowing, []),
-        },
+          // serializePublicUser type expects email; never persist it in the response
+          email: '',
+          roleData: post.user.roleData,
+          sportsFollowing: post.user.sportsFollowing,
+        } as Parameters<typeof serializePublicUser>[0]),
       };
     });
 

@@ -46,7 +46,7 @@ export async function verifyPassword(
 export function serializePublicUser(u: {
   id: string;
   name: string;
-  email: string;
+  email?: string | null;
   handle: string;
   avatarUrl: string | null;
   avatarInitials: string | null;
