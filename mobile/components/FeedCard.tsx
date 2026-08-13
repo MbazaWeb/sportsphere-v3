@@ -1,3 +1,4 @@
+import { View, Text, Pressable, StyleSheet, Image } from 'react-native';
 /**
  * FeedCard — matches web FeedCard exactly
  * ----------------------------------------
@@ -9,8 +10,6 @@
  * - Action row: like (heart, filled when liked), comment, share, bookmark (filled when bookmarked)
  */
 
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
 import {
   Heart, MessageCircle, Share2, Bookmark, BadgeCheck,
   BarChart3, Vote, Crown,
@@ -75,11 +74,9 @@ export default function FeedCard({
       {firstMedia ? (
         <View style={styles.mediaWrap}>
           <Image
-            source={firstMedia.url}
+            source={{ uri: firstMedia.url }}
             style={styles.media}
-            contentFit="cover"
-            transition={150}
-            cachePolicy="memory-disk"
+            resizeMode="cover"
           />
         </View>
       ) : null}
