@@ -1,50 +1,71 @@
 /**
- * SportSphere — Real-time triggering utility
- * -----------------------------------------
- * Allows the Next.js API routes to push events to the WebSocket server.
+ * SportSphere — Real-time triggers (Next.js → WS internal API :3005)
  */
 
-const WS_INTERNAL_URL = 'http://127.0.0.1:3005';
+const WS_INTERNAL_URL = process.env.WS_INTERNAL_URL || "http://127.0.0.1:3005";
 
-export async function emitRealtimeEvent(event: string, data: any, room?: string) {
+export async function emitRealtimeEvent(
+  event: string,
+  data: unknown,
+  room?: string,
+  rooms?: string[]
+) {
   try {
     const res = await fetch(WS_INTERNAL_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ event, data, room }),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event, data, room, rooms }),
     });
-
     if (!res.ok) {
-      console.warn(`[Realtime] Failed to emit event ${event}: ${res.statusText}`);
+      console.warn(`[Realtime] emit ${event} failed: ${res.status}`);
     }
   } catch (error) {
-    console.error(`[Realtime] Connection error to WS server:`, error);
+    console.error(`[Realtime] WS unreachable for ${event}:`, error);
   }
 }
 
-/**
- * Domain-specific triggers
- */
 export const realtime = {
-  // Notify match score update
-  matchUpdate: (matchId: string, matchData: any) => {
-    emitRealtimeEvent('match_update', matchData, `match_${matchId}`);
-    emitRealtimeEvent('scores_feed', { type: 'match_update', match: matchData });
+  matchUpdate: (matchId: string, matchData: unknown) => {
+    void emitRealtimeEvent("match_update", matchData, `match_${matchId}`);
+    void emitRealtimeEvent("scores_feed", { type: "match_update", match: matchData });
   },
-  leagueUpdate: (leagueId: string, data: any) => {
-    emitRealtimeEvent('league_update', data, `league_${leagueId}`);
-    emitRealtimeEvent('scores_feed', { type: 'league_update', league: data });
+  leagueUpdate: (leagueId: string, data: unknown) => {
+    void emitRealtimeEvent("league_update", data, `league_${leagueId}`);
+    void emitRealtimeEvent("scores_feed", { type: "league_update", league: data });
   },
-
-  // Notify new comment in a post
-  newComment: (postId: string, comment: any) =>
-    emitRealtimeEvent('new_comment', comment, `post_${postId}`),
-
-  // Global system announcement
-  systemAlert: (message: string) =>
-    emitRealtimeEvent('system_alert', { message }),
-
-  // User presence or notification badge update
-  userNotification: (userId: string) =>
-    emitRealtimeEvent('notification_received', { unreadCount: 1 }, `user_${userId}`),
+  newComment: (postId: string, comment: unknown) => {
+    void emitRealtimeEvent("new_comment", comment, `post_${postId}`);
+    void emitRealtimeEvent("feed_update", { type: "comment", postId, comment }, "feed");
+  },
+  postCreated: (post: unknown) => {
+    void emitRealtimeEvent("post_created", post, "feed");
+    void emitRealtimeEvent("feed_update", { type: "post", post }, "feed");
+    void emitRealtimeEvent("admin_activity", { type: "post_created", at: Date.now() }, "admin");
+  },
+  likeUpdated: (postId: string, payload: { likeCount: number; liked?: boolean; userId?: string }) => {
+    void emitRealtimeEvent("like_update", { postId, ...payload }, `post_${postId}`);
+    void emitRealtimeEvent("feed_update", { type: "like", postId, ...payload }, "feed");
+  },
+  followUpdated: (payload: {
+    followerId: string;
+    followingId: string;
+    following?: boolean;
+  }) => {
+    void emitRealtimeEvent("follow_update", payload, `user_${payload.followingId}`);
+    void emitRealtimeEvent("follow_update", payload, `user_${payload.followerId}`);
+    void emitRealtimeEvent("admin_activity", { type: "follow", at: Date.now() }, "admin");
+  },
+  systemAlert: (message: string) => {
+    void emitRealtimeEvent("system_alert", { message });
+  },
+  userNotification: (userId: string, data?: unknown) => {
+    void emitRealtimeEvent(
+      "notification_received",
+      data ?? { unreadCount: 1 },
+      `user_${userId}`
+    );
+  },
+  presenceHint: () => {
+    void emitRealtimeEvent("presence_ping", { at: Date.now() });
+  },
 };

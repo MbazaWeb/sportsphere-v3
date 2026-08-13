@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { getAdminSocket } from "@/lib/socket-client";
 import { motion } from "framer-motion";
 import {
   AreaChart,
@@ -239,6 +240,35 @@ export default function AnimatedOverviewDashboard() {
     load();
     const id = setInterval(load, 8000);
     return () => clearInterval(id);
+  }, [load]);
+
+  useEffect(() => {
+    let s: ReturnType<typeof getAdminSocket> | null = null;
+    try {
+      s = getAdminSocket();
+      const onPresence = (payload: { onlineCount?: number }) => {
+        if (typeof payload?.onlineCount === "number") {
+          setData((prev) =>
+            prev
+              ? { ...prev, db: { ...prev.db, onlineUsers: payload.onlineCount as number } }
+              : prev
+          );
+        }
+      };
+      const onActivity = () => {
+        load();
+      };
+      s.on("presence_update", onPresence);
+      s.on("admin_activity", onActivity);
+      s.on("feed_update", onActivity);
+      return () => {
+        s?.off("presence_update", onPresence);
+        s?.off("admin_activity", onActivity);
+        s?.off("feed_update", onActivity);
+      };
+    } catch {
+      return;
+    }
   }, [load]);
 
   const series = data?.series || [];

@@ -1,3 +1,4 @@
+import { realtime } from '@/lib/realtime';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -190,6 +191,7 @@ export async function POST(request: NextRequest) {
       } : null,
     };
 
+        try { realtime.postCreated(parsed); } catch { /* ignore */ }
     return NextResponse.json(parsed, { status: 201 });
   } catch (error) {
     console.error('Create post error:', error);

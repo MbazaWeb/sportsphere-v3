@@ -1,3 +1,4 @@
+import { realtime } from '@/lib/realtime';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { safeJsonParse } from '@/lib/json';
@@ -53,6 +54,13 @@ export async function POST(request: NextRequest) {
       db.user.update({ where: { id: String(targetUserId) }, data: { followerCount: theirFollowers } }),
     ]);
 
+    try {
+      realtime.followUpdated({
+        followerId: userId,
+        followingId: String(targetUserId),
+        following: !existing,
+      });
+    } catch {}
     return NextResponse.json({
       following: !existing,
       followerCount: theirFollowers,

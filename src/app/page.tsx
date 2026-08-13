@@ -27,6 +27,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useServiceWorker } from '@/hooks/useServiceWorker';
 import { useOfflinePostSync } from '@/hooks/useOfflinePostSync';
+import { useRealtime } from '@/hooks/useRealtime';
 
 function Toast() {
   const msg = useUIStore((s) => s.toastMessage);
@@ -120,6 +121,7 @@ export default function Home() {
   useServiceWorker();
   useAuthSession();
   useOfflinePostSync();
+  useRealtime();
 
   if (!splashDone) return <SplashScreen onDone={() => { setActiveTab('home'); setSplashDone(true); }} />;
 

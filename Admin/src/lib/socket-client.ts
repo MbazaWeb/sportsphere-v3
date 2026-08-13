@@ -1,87 +1,30 @@
-export type SocketStatus =
-  | 'idle'
-  | 'connecting'
-  | 'connected'
-  | 'disconnected'
-  | 'reconnecting'
-  | 'error';
+"use client";
 
-export const SOCKET_RECONNECT_OPTIONS = {
-  path: '/socket.io' as const,
-  transports: ['websocket', 'polling'] as string[],
-  reconnection: true,
-  reconnectionAttempts: Infinity,
-  reconnectionDelay: 1000,
-  reconnectionDelayMax: 15000,
-  randomizationFactor: 0.5,
-  timeout: 20000,
-  autoConnect: true,
-};
+import { io, Socket } from "socket.io-client";
 
-type StatusListener = (status: SocketStatus, detail?: string) => void;
+let socket: Socket | null = null;
 
-let sharedSocket: any = null;
-let status: SocketStatus = 'idle';
-const statusListeners = new Set<StatusListener>();
-
-function setStatus(next: SocketStatus, detail?: string) {
-  status = next;
-  statusListeners.forEach((fn) => {
-    try {
-      fn(next, detail);
-    } catch {
-      /* ignore */
-    }
+/** Admin connects to main site origin Socket.IO (same host, path /socket.io) */
+export function getAdminSocket(): Socket {
+  if (socket) return socket;
+  const url =
+    typeof window !== "undefined"
+      ? window.location.origin.replace(/:\\d+$/, "") // strip admin port if any
+      : "https://sportssphere.fun";
+  // When admin is under /sportsphere-admin on same host, origin is sportssphere.fun
+  socket = io({
+    path: "/socket.io",
+    transports: ["websocket", "polling"],
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 15000,
+    autoConnect: true,
   });
-}
-
-export function getSocketStatus(): SocketStatus {
-  return status;
-}
-
-export function onSocketStatus(listener: StatusListener): () => void {
-  statusListeners.add(listener);
-  listener(status);
-  return () => {
-    statusListeners.delete(listener);
-  };
-}
-
-export async function getSharedSocket(): Promise<any> {
-  if (sharedSocket) return sharedSocket;
-
-  const mod = await import('socket.io-client');
-  sharedSocket = mod.io({
-    ...SOCKET_RECONNECT_OPTIONS,
+  socket.on("connect", () => {
+    socket?.emit("join_admin");
+    console.log("[AdminSocket] connected", socket?.id);
   });
-
-  sharedSocket.on('connect', () => {
-    setStatus('connected');
-  });
-
-  sharedSocket.on('disconnect', (reason: string) => {
-    setStatus('disconnected', reason);
-    if (reason === 'io server disconnect') {
-      sharedSocket.connect();
-    }
-  });
-
-  sharedSocket.io.on('reconnect_attempt', (attempt: number) => {
-    setStatus('reconnecting', `attempt ${attempt}`);
-  });
-
-  sharedSocket.io.on('reconnect', (attempt: number) => {
-    setStatus('connected', `reconnected after ${attempt}`);
-  });
-
-  sharedSocket.io.on('reconnect_error', (err: Error) => {
-    setStatus('error', err?.message || 'reconnect_error');
-  });
-
-  sharedSocket.on('connect_error', (err: Error) => {
-    if (status !== 'reconnecting') setStatus('connecting', err?.message);
-  });
-
-  setStatus('connecting');
-  return sharedSocket;
+  socket.on("disconnect", (r) => console.warn("[AdminSocket] disconnect", r));
+  return socket;
 }

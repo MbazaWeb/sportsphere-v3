@@ -1,126 +1,168 @@
 /**
- * SportSphere — Real-time WebSocket Server
- * ----------------------------------------
- * Separate Node.js process to handle WebSockets (Socket.io).
- * Proxyed by Nginx at /socket.io
+ * SportSphere — Real-time WebSocket Server (Socket.IO)
+ * Nginx proxies /socket.io/ → :3004
+ * Internal emit API on 127.0.0.1:3005
  */
-import { Server } from 'socket.io';
-import http from 'http';
+import { Server } from "socket.io";
+import http from "http";
 
-const PORT = process.env.WS_PORT || 3004;
+const PORT = Number(process.env.WS_PORT || 3004);
+const INTERNAL_PORT = Number(process.env.WS_INTERNAL_PORT || 3005);
 
 const httpServer = http.createServer((req, res) => {
+  if (req.url === "/health") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: true, online: activeUsers.size, sockets: io.engine?.clientsCount || 0 }));
+    return;
+  }
   res.writeHead(200);
-  res.end('SportSphere WebSocket Server is running\n');
+  res.end("SportSphere WebSocket Server\n");
 });
 
 const io = new Server(httpServer, {
-  path: '/socket.io',
-  cors: {
-    origin: "*", // Controlled by Nginx in production
-    methods: ["GET", "POST"]
-  },
-  // Help clients detect dead connections and reconnect cleanly
+  path: "/socket.io",
+  cors: { origin: "*", methods: ["GET", "POST"] },
   pingInterval: 25000,
   pingTimeout: 20000,
   connectTimeout: 20000,
+  // allow both transports through nginx
+  transports: ["websocket", "polling"],
 });
 
-// Presence tracking
+/** userId -> Set(socketId) for multi-device */
+const userSockets = new Map();
 const activeUsers = new Set();
 
-io.on('connection', (socket) => {
-  console.log(`[WS] Client connected: ${socket.id}`);
+function presencePayload() {
+  return {
+    onlineCount: activeUsers.size,
+    socketCount: io.engine?.clientsCount || 0,
+    at: new Date().toISOString(),
+  };
+}
 
-  socket.on('join_match', (matchId) => {
-    socket.join(`match_${matchId}`);
-    console.log(`[WS] Socket ${socket.id} joined match_${matchId}`);
+function broadcastPresence() {
+  io.emit("presence_update", presencePayload());
+}
+
+io.on("connection", (socket) => {
+  console.log(`[WS] connected ${socket.id}`);
+
+  socket.emit("welcome", {
+    id: socket.id,
+    ...presencePayload(),
   });
 
-  socket.on('leave_match', (matchId) => {
-    socket.leave(`match_${matchId}`);
-    console.log(`[WS] Socket ${socket.id} left match_${matchId}`);
-  });
-
-  // Generic room joining (for posts, DMs, etc.)
-  socket.on('join_room', (roomId) => {
-    socket.join(roomId);
-    console.log(`[WS] Socket ${socket.id} joined room ${roomId}`);
-  });
-
-  socket.on('leave_room', (roomId) => {
-    socket.leave(roomId);
-    console.log(`[WS] Socket ${socket.id} left room ${roomId}`);
-  });
-
-  // DM sending
-  socket.on('send_message', (data) => {
-    // data: { roomId, message }
-    socket.to(data.roomId).emit('new_message', data.message);
-  });
-
-  // Typing indicators
-  socket.on('typing_start', (data) => {
-    // data: { roomId, userId, name }
-    socket.to(data.roomId).emit('user_typing', data);
-  });
-
-  socket.on('typing_stop', (data) => {
-    socket.to(data.roomId).emit('user_stopped_typing', data);
-  });
-
-  // Global presence
-  socket.on('register_user', (userId) => {
-    socket.userId = userId;
+  socket.on("register_user", (userId) => {
+    if (!userId || typeof userId !== "string") return;
+    socket.data.userId = userId;
+    if (!userSockets.has(userId)) userSockets.set(userId, new Set());
+    userSockets.get(userId).add(socket.id);
     activeUsers.add(userId);
-    io.emit('presence_update', { onlineCount: activeUsers.size });
+    socket.join(`user_${userId}`);
+    broadcastPresence();
   });
 
-  socket.on('disconnect', () => {
-    if (socket.userId) {
-      activeUsers.delete(socket.userId);
-      io.emit('presence_update', { onlineCount: activeUsers.size });
-    }
-    console.log(`[WS] Client disconnected: ${socket.id}`);
+  socket.on("join_match", (matchId) => {
+    if (!matchId) return;
+    socket.join(`match_${matchId}`);
   });
-});
+  socket.on("leave_match", (matchId) => {
+    if (!matchId) return;
+    socket.leave(`match_${matchId}`);
+  });
 
-httpServer.listen(PORT, '0.0.0.0', () => {
-  console.log(`[WS] Server listening on port ${PORT}`);
-});
+  socket.on("join_room", (roomId) => {
+    if (!roomId) return;
+    socket.join(String(roomId));
+  });
+  socket.on("leave_room", (roomId) => {
+    if (!roomId) return;
+    socket.leave(String(roomId));
+  });
 
-/**
- * API for the Next.js backend to push updates to WebSockets.
- * (Simple HTTP server for internal triggers)
- */
-const internalApi = http.createServer((req, res) => {
-  if (req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', () => {
-      try {
-        const payload = JSON.parse(body);
-        const { event, room, data } = payload;
+  socket.on("join_feed", () => socket.join("feed"));
+  socket.on("leave_feed", () => socket.leave("feed"));
+  socket.on("join_admin", () => socket.join("admin"));
 
-        if (room) {
-          io.to(room).emit(event, data);
-        } else {
-          io.emit(event, data);
-        }
+  socket.on("send_message", (data) => {
+    if (!data?.roomId) return;
+    socket.to(data.roomId).emit("new_message", data.message);
+  });
+  socket.on("typing_start", (data) => {
+    if (!data?.roomId) return;
+    socket.to(data.roomId).emit("user_typing", data);
+  });
+  socket.on("typing_stop", (data) => {
+    if (!data?.roomId) return;
+    socket.to(data.roomId).emit("user_stopped_typing", data);
+  });
 
-        res.writeHead(200);
-        res.end(JSON.stringify({ success: true }));
-      } catch (e) {
-        res.writeHead(400);
-        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+  socket.on("ping_alive", () => {
+    socket.emit("pong_alive", { at: Date.now() });
+  });
+
+  socket.on("disconnect", () => {
+    const userId = socket.data.userId;
+    if (userId && userSockets.has(userId)) {
+      const set = userSockets.get(userId);
+      set.delete(socket.id);
+      if (set.size === 0) {
+        userSockets.delete(userId);
+        activeUsers.delete(userId);
       }
-    });
-  } else {
-    res.writeHead(404);
-    res.end();
-  }
+      broadcastPresence();
+    }
+    console.log(`[WS] disconnected ${socket.id}`);
+  });
 });
 
-internalApi.listen(3005, '127.0.0.1', () => {
-  console.log(`[WS] Internal API listening on port 3005`);
+httpServer.listen(PORT, "0.0.0.0", () => {
+  console.log(`[WS] listening on ${PORT}`);
+});
+
+/** Internal HTTP API for Next.js to push events */
+const internalApi = http.createServer((req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
+    res.writeHead(200);
+    res.end(JSON.stringify({ ok: true, ...presencePayload() }));
+    return;
+  }
+  if (req.method !== "POST") {
+    res.writeHead(404);
+    res.end(JSON.stringify({ error: "not found" }));
+    return;
+  }
+  let body = "";
+  req.on("data", (chunk) => {
+    body += chunk.toString();
+  });
+  req.on("end", () => {
+    try {
+      const payload = JSON.parse(body || "{}");
+      const { event, room, data, rooms } = payload;
+      if (!event) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: "event required" }));
+        return;
+      }
+      if (Array.isArray(rooms) && rooms.length) {
+        for (const r of rooms) io.to(r).emit(event, data);
+      } else if (room) {
+        io.to(room).emit(event, data);
+      } else {
+        io.emit(event, data);
+      }
+      res.writeHead(200);
+      res.end(JSON.stringify({ success: true, online: activeUsers.size }));
+    } catch (e) {
+      res.writeHead(400);
+      res.end(JSON.stringify({ error: "Invalid JSON" }));
+    }
+  });
+});
+
+internalApi.listen(INTERNAL_PORT, "127.0.0.1", () => {
+  console.log(`[WS] internal API on ${INTERNAL_PORT}`);
 });
