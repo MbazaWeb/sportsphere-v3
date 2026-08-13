@@ -2,7 +2,6 @@
 
 import { useScoresLive } from '@/hooks/useScoresLive';
 import { apiFetch } from '@/lib/api';
-import { useRef } from 'react';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
