@@ -23,6 +23,8 @@ export default function MatchLiveEditorPage() {
   const [eventType, setEventType] = useState("goal");
   const [eventPlayer, setEventPlayer] = useState("");
   const [eventTeam, setEventTeam] = useState<"home" | "away">("home");
+  const [publishing, setPublishing] = useState(false);
+  const [published, setPublished] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -214,6 +216,45 @@ export default function MatchLiveEditorPage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      {/* Post to Feed */}
+      <section className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5 space-y-3">
+        <h2 className="text-sm font-bold text-amber-300 uppercase">Publish to Fan Feed</h2>
+        <p className="text-xs text-slate-400">Post this match to the fan home feed so fans can like, comment, predict and share.</p>
+        {published ? (
+          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+            Posted to feed! Fans can now interact with this match.
+          </div>
+        ) : (
+          <button
+            type="button"
+            disabled={publishing}
+            onClick={async () => {
+              setPublishing(true);
+              try {
+                const res = await fetch(`/api/admin/matches/${id}`, {
+                  method: 'POST',
+                  credentials: 'include',
+                });
+                const data = await res.json();
+                if (res.ok) {
+                  setPublished(true);
+                  setMsg('Match posted to fan feed!');
+                } else {
+                  setErr(data.error || 'Failed to publish');
+                }
+              } catch (e) {
+                setErr(e instanceof Error ? e.message : 'Network error');
+              } finally {
+                setPublishing(false);
+              }
+            }}
+            className="px-5 py-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-100 text-sm font-semibold disabled:opacity-40 flex items-center gap-2"
+          >
+            {publishing ? 'Publishing...' : 'Post to Feed'}
+          </button>
+        )}
       </section>
     </div>
   );

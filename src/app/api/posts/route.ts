@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       };
     };
 
-    const validPostTypes = ['post', 'photo', 'video', 'spotlight', 'poll', 'prediction', 'highlight', 'welcome'];
+    const validPostTypes = ['post', 'photo', 'video', 'spotlight', 'poll', 'prediction', 'highlight', 'welcome', 'match'];
     if (!validPostTypes.includes(postType)) {
       return NextResponse.json({ error: 'Invalid post type.' }, { status: 400 });
     }

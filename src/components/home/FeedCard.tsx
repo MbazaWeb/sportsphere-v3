@@ -1,7 +1,7 @@
 'use client';
 import { apiFetch } from '@/lib/api';
 
-import { Heart, MessageCircle, Share2, Bookmark, Check, RotateCcw, Pencil, ImageOff, VideoOff, Eye, TrendingUp, MoreHorizontal } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, Check, RotateCcw, Pencil, ImageOff, VideoOff, Eye, TrendingUp, MoreHorizontal, Trophy, MapPin, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BadgeStack } from '@/components/ui/RoleBadge';
 import { useAuthStore } from '@/store/authStore';
@@ -207,6 +207,69 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
             {item.teamTag}
           </span>
         )}
+
+        {/* Match Card */}
+        {item.postType === 'match' && item.mediaUrls && item.mediaUrls.length > 0 && (() => {
+          try {
+            const md = typeof item.mediaUrls[0] === 'string' ? JSON.parse(item.mediaUrls[0]) : item.mediaUrls[0];
+            if (!md || md.type !== 'match-card') return null;
+            const isLive = md.status === 'live' || md.status === 'ht';
+            const isUpcoming = md.status === 'upcoming';
+            const kickoffStr = md.kickoffAt ? new Date(md.kickoffAt).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+            return (
+              <div className="mb-3 rounded-2xl border border-surface-border bg-surface/60 overflow-hidden">
+                {/* League header */}
+                <div className={cn('flex items-center gap-2 px-4 py-2 border-b border-surface-border/60', isLive ? 'bg-red-500/[0.06]' : 'bg-surface-border/20')}>
+                  <Trophy className="h-3.5 w-3.5 text-gold" />
+                  <span className="text-xs font-bold text-foreground truncate flex-1">{md.league || 'Match'}</span>
+                  {isLive && <span className="flex items-center gap-1 text-[10px] font-bold text-red-400"><span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />LIVE</span>}
+                  {!isLive && md.status && (
+                    <span className={cn('text-[10px] font-bold rounded-full px-2 py-0.5 border',
+                      md.status === 'ft' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                      md.status === 'ht' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
+                      md.status === 'upcoming' ? 'bg-sky-500/10 border-sky-500/20 text-sky-400' :
+                      'bg-surface text-muted-foreground border-surface-border'
+                    )}>{(md.status || '').toUpperCase()}{md.minute != null && md.status === 'live' ? ` ${md.minute}'` : ''}</span>
+                  )}
+                </div>
+                {/* Teams & Score */}
+                <div className="flex items-center justify-between px-4 py-4 gap-2">
+                  <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
+                    {md.homeBadge ? (
+                      <img src={md.homeBadge} alt="" className="h-10 w-10 object-contain" />
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/10 text-xs font-bold text-gold">{(md.homeTeam || '').split(' ').map((w: string) => w[0]).slice(0, 2).join('')}</div>
+                    )}
+                    <span className="text-[11px] font-semibold text-foreground text-center leading-tight line-clamp-2">{md.homeTeam}</span>
+                  </div>
+                  <div className="flex flex-col items-center px-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-black tabular-nums text-foreground">{md.homeScore ?? '-'}</span>
+                      <span className="text-sm text-muted-foreground font-bold">-</span>
+                      <span className="text-2xl font-black tabular-nums text-foreground">{md.awayScore ?? '-'}</span>
+                    </div>
+                    {isUpcoming && kickoffStr && (
+                      <span className="text-[10px] text-gold font-semibold mt-1">{kickoffStr}</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
+                    {md.awayBadge ? (
+                      <img src={md.awayBadge} alt="" className="h-10 w-10 object-contain" />
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/10 text-xs font-bold text-gold">{(md.awayTeam || '').split(' ').map((w: string) => w[0]).slice(0, 2).join('')}</div>
+                    )}
+                    <span className="text-[11px] font-semibold text-foreground text-center leading-tight line-clamp-2">{md.awayTeam}</span>
+                  </div>
+                </div>
+                {/* Footer info */}
+                <div className="flex items-center gap-3 px-4 py-2 border-t border-surface-border/40 text-[10px] text-muted-foreground">
+                  {md.venue && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{md.venue}</span>}
+                  {md.country && <span>{md.country}</span>}
+                </div>
+              </div>
+            );
+          } catch { return null; }
+        })()}
 
         {/* Photo */}
         {item.postType === 'photo' && (

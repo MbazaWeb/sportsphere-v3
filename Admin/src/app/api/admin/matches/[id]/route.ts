@@ -127,3 +127,96 @@ export async function PATCH(
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
 }
+
+// POST /api/admin/matches/[id] — publish match to fan feed
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await verifyAdmin(request);
+  if (!auth.authorized) return auth.response;
+
+  try {
+    const { id } = await params;
+    const match = await db.matchProfile.findUnique({
+      where: { id },
+      include: {
+        League: { select: { id: true, name: true, country: true } },
+        Sport: { select: { id: true, name: true } },
+        Team_MatchProfile_homeTeamIdToTeam: { select: { id: true, name: true, logoUrl: true } },
+        Team_MatchProfile_awayTeamIdToTeam: { select: { id: true, name: true, logoUrl: true } },
+      },
+    });
+    if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
+
+    // Find or create a system user for admin posts
+    let adminUser = await db.user.findFirst({ where: { role: 'admin' } });
+    if (!adminUser) {
+      adminUser = await db.user.findFirst({ orderBy: { createdAt: 'asc' } });
+    }
+    if (!adminUser) return NextResponse.json({ error: 'No user available to post.' }, { status: 500 });
+
+    const homeBadge = match.Team_MatchProfile_homeTeamIdToTeam?.logoUrl || null;
+    const awayBadge = match.Team_MatchProfile_awayTeamIdToTeam?.logoUrl || null;
+    const league = match.League?.name || 'Match';
+    const statusLabel = (match.status || 'upcoming').toUpperCase();
+    const kickoffStr = match.kickoffAt
+      ? new Date(match.kickoffAt).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+      : 'TBD';
+
+    const content = `${match.homeTeamName} vs ${match.awayTeamName} \u2014 ${league}`;
+
+    // Store match data as JSON in mediaUrls[0]
+    const matchData = {
+      type: 'match-card',
+      matchId: match.id,
+      homeTeam: match.homeTeamName,
+      awayTeam: match.awayTeamName,
+      homeBadge,
+      awayBadge,
+      homeScore: match.homeScore,
+      awayScore: match.awayScore,
+      status: match.status,
+      minute: match.minute,
+      kickoffAt: match.kickoffAt,
+      venue: match.venue,
+      league,
+      country: match.League?.country || '',
+      sport: match.Sport?.name || '',
+    };
+
+    const post = await db.post.create({
+      data: {
+        userId: adminUser.id,
+        content,
+        postType: 'match',
+        mediaUrls: JSON.stringify([JSON.stringify(matchData)]),
+        teamTag: league,
+        hashtags: JSON.stringify([league, match.homeTeamName, match.awayTeamName, 'MatchDay'].filter(Boolean)),
+        isBreaking: match.status === 'live',
+      },
+      select: {
+        id: true, userId: true, content: true, postType: true, mediaUrls: true,
+        teamTag: true, playerTag: true, hashtags: true, location: true,
+        isBreaking: true, likeCount: true, commentCount: true, shareCount: true,
+        viewCount: true, createdAt: true, updatedAt: true,
+        user: { select: { id: true, name: true, handle: true, avatarUrl: true, avatarInitials: true, isVerified: true, isPro: true, role: true, bio: true, location: true, followerCount: true, followingCount: true, postCount: true, registeredAt: true, verificationStatus: true, coverGradient: true, roleData: true, sportsFollowing: true } },
+      },
+    });
+
+    // Emit realtime
+    try {
+      realtime.postCreated({
+        ...post,
+        mediaUrls: [matchData],
+        hashtags: [league, match.homeTeamName, match.awayTeamName, 'MatchDay'].filter(Boolean),
+        user: post.user ? { ...post.user, roleData: {}, sportsFollowing: [] } : null,
+      });
+    } catch { /* ignore */ }
+
+    return NextResponse.json({ ok: true, postId: post.id });
+  } catch (e) {
+    console.error('Publish match to feed:', e);
+    return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
+}
