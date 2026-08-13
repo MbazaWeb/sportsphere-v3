@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import ApiProviderManager from "./ApiProviderManager";
 import {
   RefreshCw,
   Database,
@@ -81,6 +82,16 @@ export default function SportsSyncDashboard() {
     "ergast",
   ]);
   const [selectedSports, setSelectedSports] = useState<string[]>(["football", "f1", "motorsport"]);
+  const [customProviders, setCustomProviders] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    const h = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { id: string; name: string }[];
+      setCustomProviders(detail || []);
+    };
+    window.addEventListener("sportsphere-custom-providers", h);
+    return () => window.removeEventListener("sportsphere-custom-providers", h);
+  }, []);
 
   const applyInventory = (data: any) => {
     if (data.stats) setStats(data.stats);
@@ -294,7 +305,7 @@ export default function SportsSyncDashboard() {
         <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/50 space-y-3">
           <h2 className="font-semibold text-slate-200">Providers</h2>
           <div className="flex flex-wrap gap-2">
-            {PROVIDERS.map((p) => (
+            {[...PROVIDERS, ...customProviders.map((cp) => ({ id: cp.id, label: cp.name, sports: "Custom HTTP API" }))].map((p) => (
               <button
                 key={p.id}
                 onClick={() => toggle(selectedProviders, setSelectedProviders, p.id)}
@@ -329,6 +340,13 @@ export default function SportsSyncDashboard() {
           </div>
         </div>
       </div>
+
+      <ApiProviderManager
+        onProvidersChanged={(customs) => {
+          // merge custom ids into selection availability via state event
+          window.dispatchEvent(new CustomEvent("sportsphere-custom-providers", { detail: customs }));
+        }}
+      />
 
       {/* Last sync summary */}
       {(summary || lastSyncResult) && (

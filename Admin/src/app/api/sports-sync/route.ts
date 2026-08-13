@@ -119,8 +119,10 @@ export async function POST(request: NextRequest) {
       ? (body.sports as unknown[]).map(String)
       : ["football", "f1", "motorsport"];
 
-    const providers = rawProviders.filter((p) =>
-      (KNOWN_PROVIDERS as readonly string[]).includes(p)
+    const providers = rawProviders.filter(
+      (p) =>
+        (KNOWN_PROVIDERS as readonly string[]).includes(p) ||
+        p.startsWith("custom-")
     );
     const sports = rawSports.filter((s) =>
       (KNOWN_SPORTS as readonly string[]).includes(s)

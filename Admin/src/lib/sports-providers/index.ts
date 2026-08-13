@@ -6,3 +6,4 @@ export * from "./ergast";
 export * from "./football-data-org";
 export * from "./sportmonks";
 export * from "./rapid-live-football";
+export * from "./custom-http";

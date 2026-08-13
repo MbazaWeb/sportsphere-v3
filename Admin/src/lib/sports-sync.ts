@@ -15,6 +15,8 @@ import {
 } from "./sports-providers";
 import { db } from "@/lib/db";
 import { observeProviderSync } from "@/lib/metrics";
+import { listCustomProviders } from "@/lib/api-providers-store";
+import { CustomHttpProvider } from "./sports-providers/custom-http";
 
 export function initializeProviders() {
   if (providerRegistry.getAll().length === 0) {
@@ -596,6 +598,17 @@ export async function syncFromProviders(
   options: { providers?: string[]; sports?: string[] } = {}
 ): Promise<SyncResult[]> {
   initializeProviders();
+  // UI-configured HTTP APIs (no code deploy)
+  try {
+    const customs = await listCustomProviders();
+    for (const cfg of customs) {
+      if (!cfg.enabled) continue;
+      const p = new CustomHttpProvider(cfg);
+      providerRegistry.register(p);
+    }
+  } catch (e) {
+    console.error("load custom API providers:", e);
+  }
   const results: SyncResult[] = [];
   let allProviders = providerRegistry.getAll();
   if (allProviders.length === 0) {
