@@ -2,8 +2,9 @@
 
 import { useScoresLive } from '@/hooks/useScoresLive';
 import { apiFetch } from '@/lib/api';
+import { useRef } from 'react';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { ScoresHeader } from './ScoresHeader';
 import { MatchList } from './MatchList';
@@ -11,7 +12,12 @@ import { MatchDetailModal } from '@/components/home/MatchDetailModal';
 import { StandingsList } from './StandingsList';
 
 function getTodayStr(): string {
-  return new Date().toISOString().split('T')[0];
+  // Use local date parts to avoid UTC offset shifting the day
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export default function ScoresTab() {
@@ -26,11 +32,10 @@ export default function ScoresTab() {
   const [standings, setStandings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<any | null>(null);
-
-
   const [standingsLeague, setStandingsLeague] = useState('');
+  const wsConnected = useRef(false);
 
-  useScoresLive(useCallback((payload) => {
+  const { status: wsStatus } = useScoresLive(useCallback((payload) => {
     if (!payload) return;
     // Soft refresh: re-run by flipping a version would be ideal; call fetch via status change no-op
     if (payload.type === 'match_update' || payload.type === 'league_update') {
@@ -72,6 +77,11 @@ export default function ScoresTab() {
     }
   }, []));
 
+  // Track WebSocket connectivity so we can skip redundant HTTP polling
+  useEffect(() => {
+    wsConnected.current = wsStatus === 'connected';
+  }, [wsStatus]);
+
 
   // Fetch matches
   useEffect(() => {
@@ -104,9 +114,11 @@ export default function ScoresTab() {
 
     fetchMatches();
 
-    // Auto-refresh live every 30s
+    // Auto-refresh live every 60s, but only when WebSocket is not connected
     if (scoresSubTab === 'live') {
-      const interval = setInterval(fetchMatches, 30000);
+      const interval = setInterval(() => {
+        if (!wsConnected.current) fetchMatches();
+      }, 60000);
       return () => clearInterval(interval);
     }
   }, [scoresSubTab, tournament, selectedDate]);
@@ -193,12 +205,13 @@ export default function ScoresTab() {
           }}
           onClose={() => setSelectedMatch(null)}
           onTeamClick={(name: string) => {
-            // Could navigate to team profile in future
-            console.log('Team clicked:', name);
+            setSelectedMatch(null);
+            // Search for the team profile and open it
+            window.location.href = `/players?q=${encodeURIComponent(name)}&type=team`;
           }}
           onPlayerClick={(name: string) => {
-            // Could navigate to player profile in future
-            console.log('Player clicked:', name);
+            setSelectedMatch(null);
+            window.location.href = `/players?q=${encodeURIComponent(name)}`;
           }}
         />
       )}

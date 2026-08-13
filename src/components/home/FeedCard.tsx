@@ -89,16 +89,45 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
     });
   }, [user, setViewingUser]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!isAuthenticated) { setLoginModalOpen(true); return; }
-    setSaved(!saved);
+    const next = !saved;
+    setSaved(next);
+    try {
+      if (next) {
+        await apiFetch('/api/profile/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            targetType: 'TEAM',
+            targetId: item.id,
+            targetName: item.content.slice(0, 60) || 'Post',
+          }),
+        });
+      } else {
+        // Find and delete — store favoriteId on save for clean delete
+        await apiFetch(`/api/profile/favorites?id=${encodeURIComponent(item.id)}`, { method: 'DELETE' });
+      }
+    } catch {
+      // Rollback on error
+      setSaved(!next);
+    }
   };
 
   if (hidden) return null;
 
   let welcomeMeta: { type?: string; gradient?: string; accentColor?: string; emoji?: string; roleLabel?: string } | null = null;
   if (item.postType === 'welcome' && item.mediaUrls && item.mediaUrls.length > 0) {
-    try { welcomeMeta = JSON.parse(item.mediaUrls[0]); } catch {}
+    try {
+      const raw = item.mediaUrls[0];
+      // Only attempt JSON parse if it looks like an object, not a URL
+      if (raw && raw.trimStart().startsWith('{')) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          welcomeMeta = parsed;
+        }
+      }
+    } catch { /* ignore malformed metadata */ }
   }
   const contentHashtags = (item as any).hashtags || [];
 

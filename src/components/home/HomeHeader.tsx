@@ -7,6 +7,8 @@ import { useNavigationStore } from '@/store/navigationStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { SearchModal } from './SearchModal';
+import { useState, useEffect } from 'react';
+import { apiFetch } from '@/lib/api';
 
 const SUBTABS = [
   { id: 'for-you', label: 'Sportlights' },
@@ -26,6 +28,24 @@ export function HomeHeader({ isSearchOpen, setIsSearchOpen }: HomeHeaderProps) {
   const setActiveTab = useNavigationStore((s) => s.setActiveTab);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const setLoginModalOpen = useUIStore((s) => s.setLoginModalOpen);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!isAuthenticated) { setUnreadCount(0); return; }
+    const fetchUnread = async () => {
+      try {
+        const res = await apiFetch('/api/notifications');
+        if (res.ok) {
+          const data = await res.json();
+          const unread = Array.isArray(data) ? data.filter((n: { isRead: boolean }) => !n.isRead).length : 0;
+          setUnreadCount(unread);
+        }
+      } catch { /* ignore */ }
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 60_000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   return (
     <>
@@ -60,7 +80,9 @@ export function HomeHeader({ isSearchOpen, setIsSearchOpen }: HomeHeaderProps) {
               className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-surface/80 hover:bg-surface-elevated transition-all duration-200"
             >
               <Bell className="h-[18px] w-[18px] text-muted-foreground" />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-gold ring-2 ring-background" />
+              {unreadCount > 0 && (
+                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-gold ring-2 ring-background" />
+              )}
             </button>
           </div>
         </div>
