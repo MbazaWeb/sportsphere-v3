@@ -101,11 +101,15 @@ export default function SportsDataManagementPage() {
       </div>
 
       {/* KPI Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <MetricCard title="Total Matches Tracked" value={loading ? "..." : (data?.metrics?.totalMatches ?? 0)} icon="⚽" subtitle="Live PostgreSQL match records" />
-        <MetricCard title="Active Sports Categories" value={loading ? "..." : (data?.metrics?.activeSports ?? 0)} icon="🏆" subtitle={`Out of ${data?.metrics?.totalSports ?? 0} total configured`} />
-        <MetricCard title="Total Platform Users" value={loading ? "..." : (data?.metrics?.totalUsers ?? 0)} icon="👥" subtitle="Registered user accounts" />
-        <MetricCard title="Database Latency" value={loading ? "..." : (data?.metrics?.providerLatency ?? "14ms")} icon="⚡" subtitle="Shared PostgreSQL pool" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <MetricCard title="Total Matches" value={loading ? "..." : (data?.metrics?.totalMatches ?? 0)} icon="⚽" subtitle="Match table records" />
+        <MetricCard title="Leagues" value={loading ? "..." : (data?.metrics?.leagues ?? 0)} icon="🏆" subtitle="Synced league entities" />
+        <MetricCard title="Teams" value={loading ? "..." : (data?.metrics?.teams ?? 0)} icon="🛡️" subtitle="Synced team entities" />
+        <MetricCard title="Players" value={loading ? "..." : (data?.metrics?.players ?? 0)} icon="👤" subtitle="Synced player entities" />
+        <MetricCard title="Coaches" value={loading ? "..." : (data?.metrics?.coaches ?? 0)} icon="👔" subtitle="Synced coach entities" />
+        <MetricCard title="Active Sports" value={loading ? "..." : (data?.metrics?.activeSports ?? 0)} icon="🎯" subtitle={`Of ${data?.metrics?.totalSports ?? 0} configured`} />
+        <MetricCard title="Platform Users" value={loading ? "..." : (data?.metrics?.totalUsers ?? 0)} icon="👥" subtitle="Registered accounts" />
+        <MetricCard title="DB query time" value={loading ? "..." : (data?.metrics?.providerLatency ?? "—")} icon="⚡" subtitle="Stats endpoint latency" />
       </div>
 
       {/* ─── External Feed Ingestion ─────────────────── */}

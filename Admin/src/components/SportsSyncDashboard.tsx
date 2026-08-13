@@ -1,298 +1,426 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { RefreshCw, Database, Calendar, Activity, CheckCircle2, AlertCircle, Play, Layers, Clock } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  RefreshCw,
+  Database,
+  Activity,
+  CheckCircle2,
+  AlertCircle,
+  Play,
+  Layers,
+  Users,
+  Shield,
+  Trophy,
+  UserCircle,
+} from "lucide-react";
 
 interface Stats {
   totalMatches: number;
   upcomingMatches: number;
   liveMatches: number;
   completedMatches: number;
-}
-
-interface LeagueStat {
-  name: string;
-  count: number;
+  leagues: number;
+  teams: number;
+  players: number;
+  coaches: number;
+  activeSports: number;
+  matchProfiles: number;
 }
 
 interface SyncRunResult {
   provider: string;
   sport: string;
+  leaguesCreated: number;
+  leaguesUpdated: number;
+  teamsCreated: number;
+  teamsUpdated: number;
+  playersCreated: number;
+  playersUpdated: number;
+  coachesCreated?: number;
+  coachesUpdated?: number;
   matchesCreated: number;
   matchesUpdated: number;
   errors: string[];
 }
 
+const PROVIDERS = [
+  { id: "thesportsdb", label: "TheSportsDB", sports: "Football & multi" },
+  { id: "openligadb", label: "OpenLigaDB", sports: "German football" },
+  { id: "ergast", label: "Ergast F1", sports: "Formula 1" },
+];
+
+const SPORTS = [
+  { id: "football", label: "Football" },
+  { id: "f1", label: "F1" },
+  { id: "motorsport", label: "Motorsport" },
+  { id: "basketball", label: "Basketball" },
+];
+
 export default function SportsSyncDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
-  const [leagues, setLeagues] = useState<LeagueStat[]>([]);
+  const [leagues, setLeagues] = useState<{ name: string; count: number }[]>([]);
   const [recentMatches, setRecentMatches] = useState<any[]>([]);
+  const [recentLeagues, setRecentLeagues] = useState<any[]>([]);
+  const [recentTeams, setRecentTeams] = useState<any[]>([]);
+  const [recentPlayers, setRecentPlayers] = useState<any[]>([]);
+  const [recentCoaches, setRecentCoaches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [lastSyncResult, setLastSyncResult] = useState<SyncRunResult[] | null>(null);
+  const [summary, setSummary] = useState<Record<string, number> | null>(null);
 
-  const [selectedProviders, setSelectedProviders] = useState<string[]>(["thesportsdb", "openligadb", "ergast"]);
+  const [selectedProviders, setSelectedProviders] = useState<string[]>([
+    "thesportsdb",
+    "openligadb",
+    "ergast",
+  ]);
   const [selectedSports, setSelectedSports] = useState<string[]>(["football", "f1", "motorsport"]);
 
-  const fetchDashboardData = async () => {
+  const applyInventory = (data: any) => {
+    if (data.stats) setStats(data.stats);
+    if (data.leagues) setLeagues(data.leagues);
+    if (data.recentMatches) setRecentMatches(data.recentMatches);
+    if (data.recentLeagues) setRecentLeagues(data.recentLeagues);
+    if (data.recentTeams) setRecentTeams(data.recentTeams);
+    if (data.recentPlayers) setRecentPlayers(data.recentPlayers);
+    if (data.recentCoaches) setRecentCoaches(data.recentCoaches);
+  };
+
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/sports-sync");
+      setError(null);
+      const res = await fetch("/api/sports-sync", { cache: "no-store" });
       const data = await res.json();
-      if (res.ok) {
-        setStats(data.stats);
-        setLeagues(data.leagues);
-        setRecentMatches(data.recentMatches);
+      if (!res.ok) {
+        setError(data.error || `Failed to load (${res.status})`);
+        return;
       }
+      applyInventory(data);
     } catch (err) {
-      console.error("Failed to load sync stats:", err);
+      setError(err instanceof Error ? err.message : "Network error loading inventory");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [fetchDashboardData]);
 
   const handleTriggerSync = async () => {
+    if (selectedProviders.length === 0 || selectedSports.length === 0) {
+      setError("Select at least one provider and one sport");
+      return;
+    }
     try {
       setSyncing(true);
+      setError(null);
       setLastSyncResult(null);
+      setSummary(null);
 
       const res = await fetch("/api/sports-sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ providers: selectedProviders, sports: selectedSports }),
+        body: JSON.stringify({
+          providers: selectedProviders,
+          sports: selectedSports,
+        }),
       });
-
       const data = await res.json();
-      if (data.results) {
-        setLastSyncResult(data.results);
+      if (!res.ok) {
+        setError(data.error || `Sync failed (${res.status})`);
+        return;
       }
-
-      await fetchDashboardData();
+      if (data.results) setLastSyncResult(data.results);
+      if (data.summary) setSummary(data.summary);
+      if (data.inventory) applyInventory(data.inventory);
+      else await fetchDashboardData();
     } catch (err) {
-      console.error("Sync trigger error:", err);
+      setError(err instanceof Error ? err.message : "Sync network error");
     } finally {
       setSyncing(false);
     }
   };
 
-  const toggleProvider = (id: string) => {
-    setSelectedProviders((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
+  const toggle = (
+    list: string[],
+    setList: React.Dispatch<React.SetStateAction<string[]>>,
+    id: string
+  ) => {
+    setList((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+    );
   };
 
+  const kpi = [
+    { label: "Leagues", value: stats?.leagues ?? 0, icon: Trophy, color: "text-amber-400" },
+    { label: "Teams", value: stats?.teams ?? 0, icon: Shield, color: "text-sky-400" },
+    { label: "Players", value: stats?.players ?? 0, icon: Users, color: "text-emerald-400" },
+    { label: "Coaches", value: stats?.coaches ?? 0, icon: UserCircle, color: "text-violet-400" },
+    { label: "Matches", value: stats?.totalMatches ?? 0, icon: Activity, color: "text-rose-400" },
+    { label: "Live", value: stats?.liveMatches ?? 0, icon: Layers, color: "text-orange-400" },
+  ];
+
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 bg-slate-900 text-slate-100 min-h-screen">
+    <div className="p-6 max-w-7xl mx-auto space-y-8 text-slate-100 min-h-screen">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-5">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
             <Database className="w-6 h-6 text-indigo-400" />
-            Sports Data Sync & Engine Control
+            Sports Sync — Leagues · Teams · Players · Coaches
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Monitor real-time match records and orchestrate multi-provider sync operations.
+            Multi-provider sync into structured entities. Errors are captured per provider/sport.
           </p>
         </div>
-
-        <button
-          onClick={fetchDashboardData}
-          disabled={loading || syncing}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-medium transition disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh Stats
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-slate-800/60 border border-slate-700/60 p-5 rounded-xl">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-sm font-medium">Total DB Matches</span>
-            <Database className="w-5 h-5 text-indigo-400" />
-          </div>
-          <p className="text-3xl font-extrabold text-white mt-3">
-            {stats ? stats.totalMatches.toLocaleString() : "---"}
-          </p>
-        </div>
-
-        <div className="bg-slate-800/60 border border-slate-700/60 p-5 rounded-xl">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-sm font-medium">Upcoming Fixtures</span>
-            <Calendar className="w-5 h-5 text-emerald-400" />
-          </div>
-          <p className="text-3xl font-extrabold text-emerald-400 mt-3">
-            {stats ? stats.upcomingMatches.toLocaleString() : "---"}
-          </p>
-        </div>
-
-        <div className="bg-slate-800/60 border border-slate-700/60 p-5 rounded-xl">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-sm font-medium">Live Matches</span>
-            <Activity className="w-5 h-5 text-amber-400 animate-pulse" />
-          </div>
-          <p className="text-3xl font-extrabold text-amber-400 mt-3">
-            {stats ? stats.liveMatches.toLocaleString() : "---"}
-          </p>
-        </div>
-
-        <div className="bg-slate-800/60 border border-slate-700/60 p-5 rounded-xl">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-sm font-medium">Active Leagues</span>
-            <Layers className="w-5 h-5 text-blue-400" />
-          </div>
-          <p className="text-3xl font-extrabold text-white mt-3">{leagues.length}</p>
+        <div className="flex gap-2">
+          <button
+            onClick={fetchDashboardData}
+            disabled={loading || syncing}
+            className="px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 text-sm hover:bg-slate-700 disabled:opacity-40 flex items-center gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+          <button
+            onClick={handleTriggerSync}
+            disabled={syncing || loading}
+            className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold disabled:opacity-40 flex items-center gap-2"
+          >
+            <Play className={`w-4 h-4 ${syncing ? "animate-pulse" : ""}`} />
+            {syncing ? "Syncing…" : "Run sync"}
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 space-y-6">
-          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-            <Play className="w-5 h-5 text-indigo-400" />
-            Trigger Data Sync
-          </h2>
+      {error && (
+        <div className="flex items-start gap-2 p-4 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-200 text-sm">
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+          <div>
+            <div className="font-semibold">Error</div>
+            <div className="text-rose-300/90">{error}</div>
+          </div>
+        </div>
+      )}
 
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">
-                Select Active Providers
-              </label>
-              <div className="flex flex-wrap gap-3">
-                {[
-                  { id: "thesportsdb", name: "TheSportsDB (Free / Global)" },
-                  { id: "openligadb", name: "OpenLigaDB (German Leagues)" },
-                  { id: "ergast", name: "Ergast (F1 Motorsport)" },
-                ].map((p) => {
-                  const active = selectedProviders.includes(p.id);
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => toggleProvider(p.id)}
-                      className={`px-4 py-2.5 rounded-lg text-xs font-medium border transition flex items-center gap-2 ${
-                        active ? "bg-indigo-600/20 border-indigo-500 text-indigo-300" : "bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-600"
-                      }`}
-                    >
-                      <span className={`w-2 h-2 rounded-full ${active ? "bg-indigo-400" : "bg-slate-600"}`} />
-                      {p.name}
-                    </button>
-                  );
-                })}
-              </div>
+      {/* Entity KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {kpi.map((k) => (
+          <div
+            key={k.label}
+            className="p-4 rounded-2xl border border-slate-800 bg-slate-900/70"
+          >
+            <div className="flex items-center justify-between text-xs text-slate-500 uppercase tracking-wider">
+              <span>{k.label}</span>
+              <k.icon className={`w-4 h-4 ${k.color}`} />
             </div>
+            <div className={`text-2xl font-bold mt-2 ${k.color}`}>
+              {loading && !stats ? "…" : k.value.toLocaleString()}
+            </div>
+          </div>
+        ))}
+      </div>
 
-            <div className="pt-2">
+      {/* Provider + sport selection */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/50 space-y-3">
+          <h2 className="font-semibold text-slate-200">Providers</h2>
+          <div className="flex flex-wrap gap-2">
+            {PROVIDERS.map((p) => (
               <button
-                onClick={handleTriggerSync}
-                disabled={syncing || selectedProviders.length === 0}
-                className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm rounded-lg transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                key={p.id}
+                onClick={() => toggle(selectedProviders, setSelectedProviders, p.id)}
+                className={`px-3 py-2 rounded-xl text-xs border transition ${
+                  selectedProviders.includes(p.id)
+                    ? "bg-indigo-500/20 border-indigo-400/50 text-indigo-200"
+                    : "bg-slate-800/50 border-slate-700 text-slate-400"
+                }`}
               >
-                <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
-                {syncing ? "Syncing External Providers..." : "Run Sync Now"}
+                <div className="font-semibold">{p.label}</div>
+                <div className="opacity-70">{p.sports}</div>
               </button>
-            </div>
+            ))}
           </div>
+        </div>
+        <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/50 space-y-3">
+          <h2 className="font-semibold text-slate-200">Sports</h2>
+          <div className="flex flex-wrap gap-2">
+            {SPORTS.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => toggle(selectedSports, setSelectedSports, s.id)}
+                className={`px-3 py-2 rounded-xl text-xs border transition ${
+                  selectedSports.includes(s.id)
+                    ? "bg-emerald-500/20 border-emerald-400/50 text-emerald-200"
+                    : "bg-slate-800/50 border-slate-700 text-slate-400"
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
+      {/* Last sync summary */}
+      {(summary || lastSyncResult) && (
+        <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/50 space-y-4">
+          <h2 className="font-semibold text-slate-200 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            Last sync result
+          </h2>
+          {summary && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+              {[
+                ["Leagues +", summary.leaguesCreated],
+                ["Leagues ~", summary.leaguesUpdated],
+                ["Teams +", summary.teamsCreated],
+                ["Teams ~", summary.teamsUpdated],
+                ["Players +", summary.playersCreated],
+                ["Players ~", summary.playersUpdated],
+                ["Matches +", summary.matchesCreated],
+                ["Matches ~", summary.matchesUpdated],
+              ].map(([label, val]) => (
+                <div key={String(label)} className="p-2 rounded-lg bg-slate-800/60 border border-slate-700/50">
+                  <div className="text-slate-500">{label}</div>
+                  <div className="text-lg font-bold text-slate-100">{val ?? 0}</div>
+                </div>
+              ))}
+            </div>
+          )}
           {lastSyncResult && (
-            <div className="mt-6 pt-5 border-t border-slate-700/60 space-y-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Latest Execution Summary
-              </h3>
-              <div className="space-y-2">
-                {lastSyncResult.map((res, i) => (
-                  <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-slate-900/80 border border-slate-700/40 rounded-lg text-xs gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-indigo-300 capitalize">{res.provider}</span>
-                      <span className="text-slate-500">•</span>
-                      <span className="text-slate-400 capitalize">{res.sport}</span>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <span className="text-emerald-400 font-medium">+{res.matchesCreated} created</span>
-                      <span className="text-blue-400 font-medium">{res.matchesUpdated} updated</span>
-                      {res.errors.length > 0 ? (
-                        <span className="text-rose-400 font-medium flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5" />
-                          {res.errors.length} errors
-                        </span>
-                      ) : (
-                        <span className="text-slate-500 flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                          Success
-                        </span>
-                      )}
-                    </div>
+            <div className="space-y-2 max-h-56 overflow-y-auto text-xs">
+              {lastSyncResult.map((r, i) => (
+                <div
+                  key={`${r.provider}-${r.sport}-${i}`}
+                  className="p-3 rounded-xl border border-slate-800 flex flex-col gap-1"
+                >
+                  <div className="flex justify-between">
+                    <span className="font-medium text-slate-200">
+                      {r.provider} / {r.sport}
+                    </span>
+                    <span
+                      className={
+                        r.errors.length
+                          ? "text-amber-400"
+                          : "text-emerald-400"
+                      }
+                    >
+                      {r.errors.length
+                        ? `${r.errors.length} issue(s)`
+                        : "ok"}
+                    </span>
                   </div>
-                ))}
-              </div>
+                  <div className="text-slate-500">
+                    L {r.leaguesCreated}/{r.leaguesUpdated} · T {r.teamsCreated}/
+                    {r.teamsUpdated} · P {r.playersCreated}/{r.playersUpdated} · M{" "}
+                    {r.matchesCreated}/{r.matchesUpdated}
+                  </div>
+                  {r.errors.slice(0, 3).map((e, j) => (
+                    <div key={j} className="text-rose-400/90 truncate">
+                      {e}
+                    </div>
+                  ))}
+                </div>
+              ))}
             </div>
           )}
         </div>
+      )}
 
-        <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">Ingested Competitions</h2>
-          <div className="space-y-3">
-            {leagues.length === 0 ? (
-              <p className="text-xs text-slate-500">No match records found in database.</p>
-            ) : (
-              leagues.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs py-2 border-b border-slate-700/40 last:border-0">
-                  <span className="text-slate-300 truncate max-w-[200px]" title={item.name}>
-                    {item.name}
-                  </span>
-                  <span className="font-mono font-semibold bg-slate-700/50 text-indigo-300 px-2 py-0.5 rounded">
-                    {item.count}
-                  </span>
-                </div>
-              ))
+      {/* Entity lists */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <EntityList title="Leagues (recent)" empty="No leagues synced yet — run sync" rows={recentLeagues.map((l) => ({
+          id: l.id,
+          primary: l.name,
+          secondary: [l.country, l.source].filter(Boolean).join(" · "),
+        }))} />
+        <EntityList title="Teams (recent)" empty="No teams synced yet" rows={recentTeams.map((t) => ({
+          id: t.id,
+          primary: t.name,
+          secondary: [t.country, t.source].filter(Boolean).join(" · "),
+        }))} />
+        <EntityList title="Players (recent)" empty="No players synced yet" rows={recentPlayers.map((p) => ({
+          id: p.id,
+          primary: p.name,
+          secondary: [p.position, p.nationality, p.source].filter(Boolean).join(" · "),
+        }))} />
+        <EntityList title="Coaches (recent)" empty="No coaches yet (providers rarely expose coaches)" rows={recentCoaches.map((c) => ({
+          id: c.id,
+          primary: c.name,
+          secondary: [c.role, c.nationality, c.source].filter(Boolean).join(" · "),
+        }))} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/50">
+          <h2 className="font-semibold text-slate-200 mb-3">Top leagues by matches</h2>
+          <div className="space-y-2 max-h-64 overflow-y-auto text-sm">
+            {leagues.length === 0 && (
+              <p className="text-slate-600 text-xs">No match league breakdown yet</p>
             )}
+            {leagues.map((l) => (
+              <div key={l.name} className="flex justify-between border-b border-slate-800/80 py-1.5">
+                <span className="text-slate-300 truncate pr-2">{l.name}</span>
+                <span className="text-slate-500 tabular-nums">{l.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/50">
+          <h2 className="font-semibold text-slate-200 mb-3">Recent matches</h2>
+          <div className="space-y-2 max-h-64 overflow-y-auto text-sm">
+            {recentMatches.length === 0 && (
+              <p className="text-slate-600 text-xs">No matches</p>
+            )}
+            {recentMatches.map((m) => (
+              <div key={m.id} className="border-b border-slate-800/80 py-1.5">
+                <div className="text-slate-200">
+                  {m.homeTeam} vs {m.awayTeam}
+                  {m.homeScore != null && (
+                    <span className="text-slate-500 ml-2">
+                      {m.homeScore}-{m.awayScore}
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-slate-500">
+                  {m.league} · {m.status} ·{" "}
+                  {m.kickoffAt ? new Date(m.kickoffAt).toLocaleString() : "—"}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
+    </div>
+  );
+}
 
-      <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <Clock className="w-5 h-5 text-slate-400" />
-          Recently Ingested Matches
-        </h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-900/60 text-slate-400 uppercase tracking-wider text-[10px]">
-              <tr>
-                <th className="p-3">League</th>
-                <th className="p-3">Fixture</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Kickoff</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-700/40">
-              {recentMatches.map((m) => (
-                <tr key={m.id} className="hover:bg-slate-800/30">
-                  <td className="p-3 font-medium text-slate-200">{m.league}</td>
-                  <td className="p-3">
-                    {m.homeTeam} <span className="text-slate-500">vs</span> {m.awayTeam}
-                  </td>
-                  <td className="p-3">
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${
-                        m.status === "upcoming"
-                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                          : m.status === "live"
-                          ? "bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse"
-                          : "bg-slate-700/40 text-slate-400"
-                      }`}
-                    >
-                      {m.status}
-                    </span>
-                  </td>
-                  <td className="p-3 font-mono text-slate-400">
-                    {new Date(m.kickoffAt).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+function EntityList({
+  title,
+  empty,
+  rows,
+}: {
+  title: string;
+  empty: string;
+  rows: { id: string; primary: string; secondary: string }[];
+}) {
+  return (
+    <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/50">
+      <h2 className="font-semibold text-slate-200 mb-3">{title}</h2>
+      <div className="space-y-2 max-h-56 overflow-y-auto text-sm">
+        {rows.length === 0 && <p className="text-slate-600 text-xs">{empty}</p>}
+        {rows.map((r) => (
+          <div key={r.id} className="border-b border-slate-800/80 py-1.5">
+            <div className="text-slate-200">{r.primary}</div>
+            {r.secondary && (
+              <div className="text-xs text-slate-500">{r.secondary}</div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

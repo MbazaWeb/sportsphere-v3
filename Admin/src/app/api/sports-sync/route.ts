@@ -1,62 +1,90 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { syncFromProviders } from "@/lib/sports-sync";
+import { NextRequest, NextResponse } from "next/server";
+import { verifyAdmin } from "@/lib/adminGuard";
+import { getSportsInventory, syncFromProviders } from "@/lib/sports-sync";
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+export const maxDuration = 120;
+
+export async function GET(request: NextRequest) {
+  const auth = await verifyAdmin(request);
+  if (!auth.authorized) return auth.response;
+
   try {
-    const totalMatches = await db.match.count();
-    const upcomingMatches = await db.match.count({ where: { status: "upcoming" } });
-    const liveMatches = await db.match.count({ where: { status: "live" } });
-    const completedMatches = await db.match.count({ where: { status: "finished" } });
-
-    const leagueBreakdown = await db.match.groupBy({
-      by: ["league"],
-      _count: { id: true },
-      orderBy: { _count: { id: "desc" } },
-      take: 10,
-    });
-
-    const recentMatches = await db.match.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 5,
-      select: {
-        id: true,
-        league: true,
-        homeTeam: true,
-        awayTeam: true,
-        kickoffAt: true,
-        status: true,
-        createdAt: true,
-      },
-    });
-
-    return NextResponse.json({
-      stats: { totalMatches, upcomingMatches, liveMatches, completedMatches },
-      leagues: leagueBreakdown.map((item) => ({ name: item.league, count: item._count.id })),
-      recentMatches,
-    });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const data = await getSportsInventory();
+    return NextResponse.json({ ok: true, ...data });
+  } catch (error: unknown) {
+    console.error("sports-sync GET:", error);
+    return NextResponse.json(
+      { ok: false, error: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
+  const auth = await verifyAdmin(request);
+  if (!auth.authorized) return auth.response;
+
   try {
-    const body = await req.json().catch(() => ({}));
-    const providers = body.providers || ["thesportsdb", "openligadb", "ergast"];
-    const sports = body.sports || ["football", "f1", "motorsport"];
+    const body = await request.json().catch(() => ({}));
+    const providers = Array.isArray(body.providers)
+      ? body.providers
+      : ["thesportsdb", "openligadb", "ergast"];
+    const sports = Array.isArray(body.sports)
+      ? body.sports
+      : ["football", "f1", "motorsport"];
 
     const syncResults = await syncFromProviders({ providers, sports });
-    const totalCreated = syncResults.reduce((acc, r) => acc + r.matchesCreated, 0);
-    const totalUpdated = syncResults.reduce((acc, r) => acc + r.matchesUpdated, 0);
+    const summary = syncResults.reduce(
+      (acc, r) => {
+        acc.leaguesCreated += r.leaguesCreated;
+        acc.leaguesUpdated += r.leaguesUpdated;
+        acc.teamsCreated += r.teamsCreated;
+        acc.teamsUpdated += r.teamsUpdated;
+        acc.playersCreated += r.playersCreated;
+        acc.playersUpdated += r.playersUpdated;
+        acc.coachesCreated += r.coachesCreated;
+        acc.coachesUpdated += r.coachesUpdated;
+        acc.matchesCreated += r.matchesCreated;
+        acc.matchesUpdated += r.matchesUpdated;
+        acc.errors += r.errors.length;
+        return acc;
+      },
+      {
+        leaguesCreated: 0,
+        leaguesUpdated: 0,
+        teamsCreated: 0,
+        teamsUpdated: 0,
+        playersCreated: 0,
+        playersUpdated: 0,
+        coachesCreated: 0,
+        coachesUpdated: 0,
+        matchesCreated: 0,
+        matchesUpdated: 0,
+        errors: 0,
+      }
+    );
+
+    let inventory = null;
+    try {
+      inventory = await getSportsInventory();
+    } catch (invErr) {
+      console.error("inventory refresh after sync:", invErr);
+    }
 
     return NextResponse.json({
+      ok: true,
       success: true,
-      summary: { totalCreated, totalUpdated },
+      summary,
       results: syncResults,
+      inventory,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    console.error("sports-sync POST:", error);
+    return NextResponse.json(
+      { ok: false, error: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
   }
 }
