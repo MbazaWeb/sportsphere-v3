@@ -47,6 +47,7 @@ interface SyncRunResult {
 const PROVIDERS = [
   { id: "thesportsdb", label: "TheSportsDB", sports: "Football & multi" },
   { id: "openligadb", label: "OpenLigaDB", sports: "German football" },
+  { id: "football-data-org", label: "football-data.org", sports: "EU football + coaches" },
   { id: "ergast", label: "Ergast F1", sports: "Formula 1" },
 ];
 
@@ -74,6 +75,7 @@ export default function SportsSyncDashboard() {
   const [selectedProviders, setSelectedProviders] = useState<string[]>([
     "thesportsdb",
     "openligadb",
+    "football-data-org",
     "ergast",
   ]);
   const [selectedSports, setSelectedSports] = useState<string[]>(["football", "f1", "motorsport"]);

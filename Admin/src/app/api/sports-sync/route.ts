@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const providers = Array.isArray(body.providers)
       ? body.providers
-      : ["thesportsdb", "openligadb", "ergast"];
+      : ["thesportsdb", "openligadb", "football-data-org", "ergast"];
     const sports = Array.isArray(body.sports)
       ? body.sports
       : ["football", "f1", "motorsport"];

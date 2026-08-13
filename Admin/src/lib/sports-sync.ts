@@ -4,6 +4,7 @@ import {
   TheSportsDBProvider,
   OpenLigaDBProvider,
   ErgastF1Provider,
+  FootballDataOrgProvider,
   type SportsDataProvider,
   type ProviderFixture,
   type ProviderCompetition,
@@ -17,6 +18,7 @@ export function initializeProviders() {
     providerRegistry.register(new TheSportsDBProvider());
     providerRegistry.register(new OpenLigaDBProvider());
     providerRegistry.register(new ErgastF1Provider());
+    providerRegistry.register(new FootballDataOrgProvider());
   }
 }
 
@@ -272,6 +274,60 @@ async function upsertMatchLegacy(f: ProviderFixture, result: SyncResult) {
   }
 }
 
+
+async function upsertCoach(
+  sportId: string,
+  teamId: string | null,
+  leagueId: string | null,
+  coach: { id: string; name: string; nationality?: string; dateOfBirth?: string },
+  source: string,
+  result: SyncResult
+) {
+  const slug = slugify(coach.name) || randomUUID().slice(0, 8);
+  const externalId = coach.id || null;
+  const existing = externalId
+    ? await db.coach.findFirst({ where: { externalId, source } })
+    : await db.coach.findFirst({ where: { slug, sportId } });
+
+  if (existing) {
+    await db.coach.update({
+      where: { id: existing.id },
+      data: {
+        name: coach.name,
+        nationality: coach.nationality || existing.nationality,
+        teamId: teamId || existing.teamId,
+        leagueId: leagueId || existing.leagueId,
+        isActive: true,
+        updatedAt: new Date(),
+      },
+    });
+    result.coachesUpdated++;
+    return existing.id;
+  }
+
+  const id = randomUUID();
+  await db.coach.create({
+    data: {
+      id,
+      sportId,
+      teamId,
+      leagueId,
+      name: coach.name,
+      slug: `${slug}-${id.slice(0, 6)}`,
+      nationality: coach.nationality || null,
+      role: "head_coach",
+      externalId,
+      source,
+      verified: false,
+      createdByAI: false,
+      isActive: true,
+      updatedAt: new Date(),
+    },
+  });
+  result.coachesCreated++;
+  return id;
+}
+
 async function syncProviderSport(
   provider: SportsDataProvider,
   sport: string
@@ -426,6 +482,38 @@ async function syncProviderSport(
     result.errors.push(`players: ${String(err)}`);
   }
 
+  // 5) football-data.org squads → players + coaches (rate-limit: first 5 PL teams)
+  try {
+    if (provider.config.id === "football-data-org" && typeof (provider as any).getSquad === "function") {
+      const fd = provider as FootballDataOrgProvider;
+      const teams = await fd.getTeams(sport, { league: "PL" });
+      for (const t of (teams || []).slice(0, 5)) {
+        try {
+          const teamId = await upsertTeam(sportId, null, t, source, result);
+          const squad = await fd.getSquad(t.id);
+          for (const p of squad.players || []) {
+            try {
+              await upsertPlayer(sportId, teamId, null, p, source, result);
+            } catch (err) {
+              result.errors.push(`fd player ${p.name}: ${String(err)}`);
+            }
+          }
+          if (squad.coach) {
+            try {
+              await upsertCoach(sportId, teamId, null, squad.coach, source, result);
+            } catch (err) {
+              result.errors.push(`fd coach ${squad.coach.name}: ${String(err)}`);
+            }
+          }
+        } catch (err) {
+          result.errors.push(`fd squad ${t.name}: ${String(err)}`);
+        }
+      }
+    }
+  } catch (err) {
+    result.errors.push(`football-data squads: ${String(err)}`);
+  }
+
   return result;
 }
 
@@ -440,6 +528,7 @@ export async function syncFromProviders(
       new TheSportsDBProvider(),
       new OpenLigaDBProvider(),
       new ErgastF1Provider(),
+      new FootballDataOrgProvider(),
     ];
   }
   const targetProviders = options.providers
