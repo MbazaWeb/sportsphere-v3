@@ -177,10 +177,12 @@ function LeagueGroup({
   league,
   badge,
   matches,
+  onMatchClick,
 }: {
   league: string;
   badge?: string;
   matches: ApiMatch[];
+  onMatchClick?: (match: ApiMatch) => void;
 }) {
   const hasLive = matches.some((m) => m.status === 'live' || m.status === 'ht');
 
@@ -208,7 +210,7 @@ function LeagueGroup({
       {/* Match rows */}
       <div className="divide-y divide-surface-border/30">
         {matches.map((m) => (
-          <MatchRow key={m.id} m={m} />
+          <MatchRow key={m.id} m={m} onClick={onMatchClick} />
         ))}
       </div>
     </div>
