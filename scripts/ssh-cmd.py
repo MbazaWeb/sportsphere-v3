@@ -20,4 +20,5 @@ if __name__ == '__main__':
         print("Usage: ssh-cmd.py <command>", file=sys.stderr)
         sys.exit(1)
     cmd = sys.argv[1]
-    run('104.152.50.173', 'deploy', 'Rehema@1234!', cmd)
+    timeout_sec = int(sys.argv[2]) if len(sys.argv) > 2 else 60
+    run('104.152.50.173', 'deploy', 'Rehema@1234!', cmd, timeout=timeout_sec)
