@@ -3,6 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { adminFetch } from '@/lib/admin-api';
 
 /**
  * Admin Login Page
@@ -36,7 +37,7 @@ function LoginInner() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/auth/me', { cache: 'no-store' });
+        const res = await adminFetch('/api/auth/me', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           if (!cancelled && data?.user) {
@@ -60,7 +61,7 @@ function LoginInner() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await adminFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: identifier, password }),

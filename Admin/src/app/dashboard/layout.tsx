@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { adminFetch } from '@/lib/admin-api';
 
 interface AdminUser {
   id: string;
@@ -79,7 +80,7 @@ export default function DashboardLayout({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/auth/me', { cache: 'no-store' });
+        const res = await adminFetch('/api/auth/me', { cache: 'no-store' });
         if (cancelled) return;
         if (!res.ok) {
           router.replace('/login');
@@ -107,7 +108,7 @@ export default function DashboardLayout({
   async function handleLogout() {
     setLoggingOut(true);
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await adminFetch('/api/auth/logout', { method: 'POST' });
     } catch {
       /* ignore */
     }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { adminFetch } from '@/lib/admin-api';
 
 // ─── Types ───────────────────────────────────────────────────────────
 interface AdminRole {
@@ -196,7 +197,7 @@ export default function DelegationPage() {
     (async () => {
       try {
         const [meRes, rolesRes] = await Promise.all([
-          fetch('/api/auth/me', { cache: 'no-store' }),
+          adminFetch('/api/auth/me', { cache: 'no-store' }),
           fetch('/api/admin/delegation/roles', { cache: 'no-store' }),
         ]);
         if (cancelled) return;
