@@ -15,12 +15,11 @@
     },
     "preview": {
       "distribution": "internal",
-      "channel": "preview",
       "android": {
         "buildType": "apk",
         "withoutCredentials": true,
         "cache": {
-          "key": "v6-full-ui-no-newarch",
+          "key": "v7-full-ui-no-push-updates",
           "paths": [
             "~/.gradle/caches",
             "~/.gradle/wrapper"
@@ -34,7 +33,6 @@
       "node": "20.18.0"
     },
     "production": {
-      "channel": "production",
       "android": {
         "buildType": "app-bundle"
       },

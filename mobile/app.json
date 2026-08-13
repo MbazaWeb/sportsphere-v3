@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sportsphere",
     "slug": "sportsphere",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "sportsphere",
@@ -75,15 +75,6 @@
       "output": "static",
       "favicon": "./assets/favicon.png"
     },
-    "updates": {
-      "url": "https://u.expo.dev/f649f294-ee92-4e7f-a85e-716534fa4adb",
-      "enabled": true,
-      "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
     "plugins": [
       "expo-router",
       [
@@ -95,8 +86,7 @@
           "backgroundColor": "#0A1628"
         }
       ],
-      "expo-secure-store",
-      "expo-updates"
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
