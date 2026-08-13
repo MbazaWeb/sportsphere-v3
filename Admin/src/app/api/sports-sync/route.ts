@@ -11,6 +11,7 @@ const KNOWN_PROVIDERS = [
   "openligadb",
   "football-data-org",
   "sportmonks",
+  "rapid-live-football",
   "ergast",
 ] as const;
 

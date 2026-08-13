@@ -48,6 +48,7 @@ const PROVIDERS = [
   { id: "thesportsdb", label: "TheSportsDB", sports: "Football & multi" },
   { id: "openligadb", label: "OpenLigaDB", sports: "German football" },
   { id: "football-data-org", label: "football-data.org", sports: "EU football + coaches" },
+  { id: "rapid-live-football", label: "RapidAPI Live Football", sports: "Leagues, matches, player/team search" },
   { id: "sportmonks", label: "Sportmonks", sports: "Paid: full coverage · Free: DK+Scotland" },
   { id: "ergast", label: "Ergast F1", sports: "Formula 1" },
 ];

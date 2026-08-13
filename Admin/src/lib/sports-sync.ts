@@ -6,6 +6,7 @@ import {
   ErgastF1Provider,
   FootballDataOrgProvider,
   SportmonksProvider,
+  RapidLiveFootballProvider,
   type SportsDataProvider,
   type ProviderFixture,
   type ProviderCompetition,
@@ -22,6 +23,7 @@ export function initializeProviders() {
     providerRegistry.register(new ErgastF1Provider());
     providerRegistry.register(new FootballDataOrgProvider());
     providerRegistry.register(new SportmonksProvider());
+    providerRegistry.register(new RapidLiveFootballProvider());
   }
 }
 
@@ -374,6 +376,18 @@ async function syncProviderSport(
       );
       return result;
     }
+
+  if (source === "rapid-live-football") {
+    const rp = provider as RapidLiveFootballProvider;
+    if (typeof rp.hasToken === "function" && !rp.hasToken()) {
+      pushError(
+        result,
+        "RapidAPI Live Football skipped: set RAPIDAPI_KEY in Admin .env"
+      );
+      return result;
+    }
+  }
+
   }
 
   let sportRow: { id: string } | null = null;
@@ -591,6 +605,7 @@ export async function syncFromProviders(
       new ErgastF1Provider(),
       new FootballDataOrgProvider(),
       new SportmonksProvider(),
+      new RapidLiveFootballProvider(),
     ];
   }
   const targetProviders = options.providers
