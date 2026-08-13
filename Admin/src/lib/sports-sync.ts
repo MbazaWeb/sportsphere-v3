@@ -499,25 +499,55 @@ async function syncProviderSport(
     pushError(result, `teams: ${String(err)}`);
   }
 
-  // 4) Players
+  // 4) Players — bulk + per-team squads (empty getPlayers({}) is useless for most APIs)
   try {
     if (typeof provider.getPlayers === "function") {
-      const players = await provider.getPlayers(sport, {});
-      for (const p of players || []) {
-        try {
-          let teamId: string | null = null;
-          if (p.team) {
-            teamId = await upsertTeam(
-              sportId,
-              null,
-              { id: slugify(p.team), name: p.team },
-              source,
-              result
-            );
+      try {
+        const bulk = await provider.getPlayers(sport, {});
+        for (const p of bulk || []) {
+          try {
+            let teamId: string | null = null;
+            if (p.team) {
+              teamId = await upsertTeam(
+                sportId,
+                null,
+                { id: slugify(p.team), name: p.team },
+                source,
+                result
+              );
+            }
+            await upsertPlayer(sportId, teamId, null, p, source, result);
+          } catch (err) {
+            pushError(result, `player ${p.name}: ${String(err)}`);
           }
-          await upsertPlayer(sportId, teamId, null, p, source, result);
+        }
+      } catch (err) {
+        pushError(result, `players bulk: ${String(err)}`);
+      }
+
+      const dbTeams = await db.team.findMany({
+        where: { sportId, isActive: true },
+        take: 40,
+        orderBy: { updatedAt: "desc" },
+        select: { id: true, name: true, externalId: true, source: true },
+      });
+      for (const t of dbTeams) {
+        try {
+          const teamKey =
+            t.source === source && t.externalId ? t.externalId : undefined;
+          const players = await provider.getPlayers(sport, {
+            team: teamKey,
+            search: teamKey ? undefined : t.name.split(" ")[0],
+          });
+          for (const p of players || []) {
+            try {
+              await upsertPlayer(sportId, t.id, null, p, source, result);
+            } catch (err) {
+              pushError(result, `squad player ${p.name}: ${String(err)}`);
+            }
+          }
         } catch (err) {
-          pushError(result, `player ${p.name}: ${String(err)}`);
+          pushError(result, `squad ${t.name}: ${String(err)}`);
         }
       }
     }
@@ -525,12 +555,12 @@ async function syncProviderSport(
     pushError(result, `players: ${String(err)}`);
   }
 
-  // 5) football-data.org squads → players + coaches (rate-limit: first 5 PL teams)
+  // 5) football-data.org squads → players + coaches (rate-limit: first 20 PL teams)
   try {
     if (provider.config.id === "football-data-org" && typeof (provider as any).getSquad === "function") {
       const fd = provider as FootballDataOrgProvider;
       const teams = await fd.getTeams(sport, { league: "PL" });
-      for (const t of (teams || []).slice(0, 5)) {
+      for (const t of (teams || []).slice(0, 20)) {
         try {
           const teamId = await upsertTeam(sportId, null, t, source, result);
           const squad = await fd.getSquad(t.id);
@@ -562,7 +592,7 @@ async function syncProviderSport(
     if (provider.config.id === "sportmonks" && typeof (provider as any).getTeamCoaches === "function") {
       const sm = provider as SportmonksProvider;
       const teams = await sm.getTeams(sport, {});
-      for (const t of (teams || []).slice(0, 5)) {
+      for (const t of (teams || []).slice(0, 20)) {
         try {
           const teamId = await upsertTeam(sportId, null, t, source, result);
           const coaches = await sm.getTeamCoaches(t.id);
