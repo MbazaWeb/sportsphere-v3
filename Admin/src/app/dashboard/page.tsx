@@ -1,252 +1,505 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { ShieldCheck, Database, Cpu, Activity, Lock, Users, FileText, Trophy, ArrowUpRight, ArrowDownLeft, Wifi } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+} from "recharts";
+import {
+  Activity,
+  Users,
+  FileText,
+  Trophy,
+  Heart,
+  MessageCircle,
+  UserPlus,
+  Wifi,
+  Cpu,
+  Database,
+  Image as ImageIcon,
+  Video,
+  BarChart3,
+  Sparkles,
+  Radio,
+} from "lucide-react";
+
+const COLORS = ["#f5c518", "#38bdf8", "#a78bfa", "#34d399", "#f472b6", "#fb923c", "#94a3b8"];
+
+type SeriesPoint = {
+  day: string;
+  signups: number;
+  posts: number;
+  likes: number;
+  comments: number;
+  follows: number;
+  images: number;
+  videos: number;
+  polls: number;
+};
+
+type Overview = {
+  ok?: boolean;
+  db: Record<string, number>;
+  series: SeriesPoint[];
+  postTypes: { name: string; value: number }[];
+  sports: { name: string; teams: number; players: number; icon?: string }[];
+  flow: {
+    nodes: { id: string; label: string; value: number }[];
+    edges: { from: string; to: string }[];
+  };
+  system: {
+    cpu: number;
+    ram: number;
+    eth0: { rx: number; tx: number };
+  };
+  timestamp: string;
+};
+
+function Kpi({
+  label,
+  value,
+  icon: Icon,
+  color,
+  pulse,
+}: {
+  label: string;
+  value: string | number;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  pulse?: boolean;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70 p-4"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{label}</p>
+          <p className={`mt-1 text-2xl font-extrabold tabular-nums ${color}`}>{value}</p>
+        </div>
+        <div className={`rounded-xl border border-slate-700/60 bg-slate-800/60 p-2 ${color}`}>
+          <Icon className="h-4 w-4" />
+        </div>
+      </div>
+      {pulse && (
+        <motion.div
+          className="absolute bottom-0 left-0 h-0.5 bg-current opacity-40"
+          style={{ color: "currentColor", width: "100%" }}
+          animate={{ opacity: [0.2, 0.8, 0.2], scaleX: [0.4, 1, 0.4] }}
+          transition={{ duration: 2.4, repeat: Infinity }}
+        />
+      )}
+    </motion.div>
+  );
+}
+
+function ChartCard({
+  title,
+  subtitle,
+  children,
+  className = "",
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`rounded-2xl border border-slate-800 bg-slate-900/60 p-4 ${className}`}
+    >
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-bold text-white">{title}</h3>
+          {subtitle && <p className="text-[11px] text-slate-500">{subtitle}</p>}
+        </div>
+        <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-400/90">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+          </span>
+          Live
+        </span>
+      </div>
+      <div className="h-56 w-full">{children}</div>
+    </motion.div>
+  );
+}
+
+/** Animated node-edge flow of app usage */
+function LiveFlowChart({
+  nodes,
+}: {
+  nodes: { id: string; label: string; value: number }[];
+}) {
+  const max = Math.max(1, ...nodes.map((n) => n.value));
+  return (
+    <div className="relative h-56 overflow-hidden rounded-xl bg-slate-950/80 border border-slate-800/80">
+      {/* flowing particles */}
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <motion.div
+          key={i}
+          className="absolute h-1.5 w-1.5 rounded-full bg-amber-400/80 shadow-[0_0_8px_rgba(245,197,24,0.8)]"
+          initial={{ left: "5%", top: `${15 + i * 12}%`, opacity: 0 }}
+          animate={{
+            left: ["5%", "30%", "55%", "80%", "95%"],
+            opacity: [0, 1, 1, 1, 0],
+          }}
+          transition={{ duration: 4 + i * 0.3, repeat: Infinity, delay: i * 0.4, ease: "linear" }}
+        />
+      ))}
+      <div className="relative z-10 flex h-full items-center justify-between gap-2 px-3">
+        {nodes.map((n, idx) => {
+          const h = 28 + (n.value / max) * 72;
+          return (
+            <div key={n.id} className="flex flex-1 flex-col items-center gap-2">
+              <motion.div
+                className="flex w-full max-w-[72px] flex-col items-center justify-end rounded-lg border border-amber-400/20 bg-gradient-to-t from-amber-500/20 to-sky-500/10"
+                style={{ height: `${h}%`, minHeight: 40 }}
+                animate={{ boxShadow: ["0 0 0 rgba(245,197,24,0)", "0 0 18px rgba(245,197,24,0.35)", "0 0 0 rgba(245,197,24,0)"] }}
+                transition={{ duration: 2.2, repeat: Infinity, delay: idx * 0.15 }}
+              >
+                <span className="pb-1 text-sm font-black text-amber-300 tabular-nums">{n.value}</span>
+              </motion.div>
+              <span className="text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                {n.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function AnimatedOverviewDashboard() {
-  const [data, setData] = useState<any>(null);
-  const [history, setHistory] = useState<any[]>([]);
+  const [data, setData] = useState<Overview | null>(null);
+  const [sysHistory, setSysHistory] = useState<
+    { time: string; cpu: number; ram: number; rx: number; tx: number }[]
+  >([]);
+  const [error, setError] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await fetch('/api/admin/overview-stats');
-        if (!res.ok) return;
-        const result = await res.json();
-        setData(result);
-
-        const now = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        setHistory((prev) => [
-          ...prev.slice(-14),
-          {
-            time: now,
-            cpu: result.system.cpu,
-            ram: result.system.ram,
-            eth0Rx: result.system.eth0.rx,
-            eth0Tx: result.system.eth0.tx
-          }
-        ]);
-      } catch (err) {
-        console.error(err);
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/overview-stats", { cache: "no-store", credentials: "include" });
+      const result = await res.json();
+      if (!res.ok) {
+        setError(result.error || "Failed to load stats");
+        return;
       }
-    };
-
-    fetchStats();
-    const interval = setInterval(fetchStats, 3000);
-    return () => clearInterval(interval);
+      setError(null);
+      setData(result);
+      const now = new Date().toLocaleTimeString([], {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+      setSysHistory((prev) => [
+        ...prev.slice(-24),
+        {
+          time: now,
+          cpu: result.system?.cpu ?? 0,
+          ram: result.system?.ram ?? 0,
+          rx: result.system?.eth0?.rx ?? 0,
+          tx: result.system?.eth0?.tx ?? 0,
+        },
+      ]);
+      setTick((t) => t + 1);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Network error");
+    }
   }, []);
 
+  useEffect(() => {
+    load();
+    const id = setInterval(load, 8000);
+    return () => clearInterval(id);
+  }, [load]);
+
+  const series = data?.series || [];
+  const db = data?.db || {};
+  const sportsRadar = useMemo(
+    () =>
+      (data?.sports || []).slice(0, 8).map((s) => ({
+        sport: s.name.length > 10 ? s.name.slice(0, 10) + "…" : s.name,
+        teams: s.teams,
+        players: s.players,
+      })),
+    [data?.sports]
+  );
+
+  const contentPie = useMemo(() => {
+    const rows = [
+      { name: "Images", value: db.imagePosts || 0 },
+      { name: "Videos", value: db.videoPosts || 0 },
+      { name: "Polls", value: db.pollPosts || 0 },
+      ...(data?.postTypes || []).filter(
+        (p) => !["photo", "image", "video", "poll", "highlight"].includes((p.name || "").toLowerCase())
+      ),
+    ].filter((r) => r.value > 0);
+    if (rows.length === 0) return [{ name: "Posts", value: db.posts || 1 }];
+    return rows;
+  }, [data, db]);
+
   return (
-    <div className="p-6 space-y-6 text-slate-100 bg-[#0b0e14] min-h-screen font-sans">
-      
-      {/* Top Header */}
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-5 gap-4"
-      >
+    <div className="space-y-6 pb-10">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-black tracking-tight text-white">SportSphere Control Center</h1>
-            <span className="bg-amber-500/10 text-amber-400 border border-amber-500/30 text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
-              Live Node
-            </span>
-          </div>
-          <p className="text-sm text-slate-400 mt-1">Real-time system telemetry, database health, and security overview</p>
+          <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+            <Sparkles className="h-6 w-6 text-amber-400" />
+            Live Control Center
+          </h1>
+          <p className="text-sm text-slate-400 mt-1">
+            App flow, usage, engagement & sports — auto-refresh every 8s
+            {data?.timestamp && (
+              <span className="ml-2 text-slate-600">
+                · tick #{tick} · {new Date(data.timestamp).toLocaleTimeString()}
+              </span>
+            )}
+          </p>
         </div>
-
-        {/* Live Status Indicators */}
-        <div className="flex items-center gap-3">
-          <motion.div 
-            animate={{ scale: [1, 1.03, 1] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-            className="flex items-center gap-2 bg-emerald-950/50 border border-emerald-800/80 px-3.5 py-1.5 rounded-full text-xs font-semibold text-emerald-400"
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span>DB CONNECTED</span>
-          </motion.div>
-
-          <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3.5 py-1.5 rounded-full text-xs font-medium text-slate-300">
-            <Lock className="w-3.5 h-3.5 text-cyan-400" />
-            <span>SSL TLS 1.3</span>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Database Stats Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Users', val: data?.db?.users ?? 1844, icon: Users, color: 'text-amber-400', bg: 'from-amber-500/10' },
-          { label: 'Total Posts', val: data?.db?.posts ?? 5, icon: FileText, color: 'text-cyan-400', bg: 'from-cyan-500/10' },
-          { label: 'Active Sports', val: data?.db?.sports ?? 20, icon: Trophy, color: 'text-emerald-400', bg: 'from-emerald-500/10' },
-          { label: 'Pending Requests', val: data?.db?.pendingRoles ?? 0, icon: Activity, color: 'text-indigo-400', bg: 'from-indigo-500/10' },
-        ].map((item, idx) => (
-          <motion.div
-            key={idx}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, delay: idx * 0.1 }}
-            whileHover={{ y: -4 }}
-            className={`p-5 bg-gradient-to-br ${item.bg} to-slate-900/80 border border-slate-800/80 rounded-2xl relative overflow-hidden backdrop-blur-sm`}
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{item.label}</p>
-                <h3 className={`text-3xl font-extrabold mt-2 ${item.color}`}>{item.val}</h3>
-              </div>
-              <div className="p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/50">
-                <item.icon className={`w-5 h-5 ${item.color}`} />
-              </div>
-            </div>
-            <motion.div 
-              className="absolute bottom-0 left-0 h-1 bg-current opacity-30" 
-              style={{ width: '100%' }}
-              animate={{ opacity: [0.2, 0.6, 0.2] }}
-              transition={{ duration: 3, repeat: Infinity }}
-            />
-          </motion.div>
-        ))}
+        <button
+          type="button"
+          onClick={load}
+          className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-300 hover:border-amber-400/40"
+        >
+          Refresh now
+        </button>
       </div>
 
-      {/* Host Telemetry & Hardware Gauges */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* CPU */}
-        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="p-5 bg-slate-900/70 border border-slate-800 rounded-2xl">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
-            <span>CPU Usage</span>
-            <Cpu className="w-4 h-4 text-amber-400" />
-          </div>
-          <div className="text-3xl font-black text-amber-400 mt-2">{data?.system?.cpu ?? 0}%</div>
-          <div className="w-full bg-slate-800 rounded-full h-2 mt-3 overflow-hidden">
-            <motion.div className="bg-amber-400 h-2 rounded-full" animate={{ width: `${data?.system?.cpu ?? 0}%` }} transition={{ duration: 0.5 }} />
-          </div>
-        </motion.div>
-
-        {/* RAM */}
-        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="p-5 bg-slate-900/70 border border-slate-800 rounded-2xl">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
-            <span>RAM Usage</span>
-            <Activity className="w-4 h-4 text-cyan-400" />
-          </div>
-          <div className="text-3xl font-black text-cyan-400 mt-2">{data?.system?.ram ?? 0}%</div>
-          <p className="text-xs text-slate-400 mt-1">{data?.system?.ramUsedGB ?? 0} GB / {data?.system?.ramTotalGB ?? 0} GB</p>
-          <div className="w-full bg-slate-800 rounded-full h-2 mt-2 overflow-hidden">
-            <motion.div className="bg-cyan-400 h-2 rounded-full" animate={{ width: `${data?.system?.ram ?? 0}%` }} transition={{ duration: 0.5 }} />
-          </div>
-        </motion.div>
-
-        {/* Loopback Network */}
-        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="p-5 bg-slate-900/70 border border-slate-800 rounded-2xl">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
-            <span>Loopback (lo)</span>
-            <Wifi className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="flex justify-between items-center mt-3">
-            <div>
-              <span className="text-[10px] text-slate-400 uppercase block font-semibold">⇓ DOWN</span>
-              <span className="text-lg font-bold text-emerald-400">{data?.system?.lo?.rx ?? 0} <span className="text-xs">MB/s</span></span>
-            </div>
-            <div>
-              <span className="text-[10px] text-slate-400 uppercase block font-semibold">⇑ UP</span>
-              <span className="text-lg font-bold text-indigo-400">{data?.system?.lo?.tx ?? 0} <span className="text-xs">MB/s</span></span>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Ethernet Network */}
-        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="p-5 bg-slate-900/70 border border-slate-800 rounded-2xl">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
-            <span>Ethernet (eth0)</span>
-            <Wifi className="w-4 h-4 text-indigo-400" />
-          </div>
-          <div className="flex justify-between items-center mt-3">
-            <div>
-              <span className="text-[10px] text-slate-400 uppercase block font-semibold">⇓ DOWN</span>
-              <span className="text-lg font-bold text-emerald-400">{data?.system?.eth0?.rx ?? 0} <span className="text-xs">MB/s</span></span>
-            </div>
-            <div>
-              <span className="text-[10px] text-slate-400 uppercase block font-semibold">⇑ UP</span>
-              <span className="text-lg font-bold text-indigo-400">{data?.system?.eth0?.tx ?? 0} <span className="text-xs">MB/s</span></span>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Database & Security Monitor Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Database Health Card */}
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="p-6 bg-slate-900/60 border border-slate-800 rounded-2xl space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-2">
-              <Database className="w-5 h-5 text-emerald-400" />
-              <h3 className="text-md font-bold text-slate-200">PostgreSQL Engine Telemetry</h3>
-            </div>
-            <span className="text-xs text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-2.5 py-1 rounded-full font-semibold">
-              OPTIMIZED
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="p-3.5 bg-slate-950/50 rounded-xl border border-slate-800/60">
-              <span className="text-xs text-slate-400 block">Database Storage Size</span>
-              <span className="text-xl font-bold text-white mt-1 block">{data?.db?.size ?? '18.4 MB'}</span>
-            </div>
-            <div className="p-3.5 bg-slate-950/50 rounded-xl border border-slate-800/60">
-              <span className="text-xs text-slate-400 block">Active Pool Connections</span>
-              <span className="text-xl font-bold text-emerald-400 mt-1 block">{data?.db?.connections ?? 4} Pool Connections</span>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Security Monitor Card */}
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="p-6 bg-slate-900/60 border border-slate-800 rounded-2xl space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-cyan-400" />
-              <h3 className="text-md font-bold text-slate-200">Security & Protection Matrix</h3>
-            </div>
-            <span className="text-xs text-cyan-400 bg-cyan-950/60 border border-cyan-800 px-2.5 py-1 rounded-full font-semibold">
-              ENFORCED
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="p-3.5 bg-slate-950/50 rounded-xl border border-slate-800/60">
-              <span className="text-xs text-slate-400 block">JWT Token Expiry</span>
-              <span className="text-base font-bold text-white mt-1 block">HS256 · 7 Days</span>
-            </div>
-            <div className="p-3.5 bg-slate-950/50 rounded-xl border border-slate-800/60">
-              <span className="text-xs text-slate-400 block">Rate Limit Shield</span>
-              <span className="text-base font-bold text-cyan-400 mt-1 block">Active (100 req/min)</span>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Real-time Utilization Graph */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }} className="p-6 bg-slate-900/50 border border-slate-800 rounded-2xl">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-md font-bold text-slate-200">Live Server Resource Flow</h3>
-          <span className="text-xs text-slate-400 font-mono">Sampling: 3000ms</span>
+      {error && (
+        <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          {error}
         </div>
-        <div className="h-64 w-full">
+      )}
+
+      {/* KPI row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
+        <Kpi label="Online now" value={db.onlineUsers ?? "—"} icon={Radio} color="text-emerald-400" pulse />
+        <Kpi label="Active 24h" value={db.activeUsers24h ?? "—"} icon={Wifi} color="text-sky-400" pulse />
+        <Kpi label="Users" value={db.users ?? "—"} icon={Users} color="text-violet-300" />
+        <Kpi label="Sign-ups today" value={db.signupsToday ?? "—"} icon={UserPlus} color="text-amber-300" pulse />
+        <Kpi label="Posts" value={db.posts ?? "—"} icon={FileText} color="text-slate-100" />
+        <Kpi label="Likes" value={db.likes ?? "—"} icon={Heart} color="text-pink-400" />
+        <Kpi label="Comments" value={db.comments ?? "—"} icon={MessageCircle} color="text-cyan-300" />
+        <Kpi label="Follows" value={db.follows ?? "—"} icon={Activity} color="text-orange-300" />
+      </div>
+
+      {/* Live app flow */}
+      <ChartCard title="Live app flow" subtitle="Sign-ins → online → posts → engagement">
+        <LiveFlowChart nodes={data?.flow?.nodes || []} />
+      </ChartCard>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <ChartCard title="New sign-ins" subtitle="Registrations · last 14 days">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={history}>
+            <AreaChart data={series}>
+              <defs>
+                <linearGradient id="gSign" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#f5c518" stopOpacity={0.5} />
+                  <stop offset="100%" stopColor="#f5c518" stopOpacity={0} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="time" stroke="#64748b" fontSize={11} />
-              <YAxis stroke="#64748b" fontSize={11} domain={[0, 100]} />
-              <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }} />
-              <Area type="monotone" dataKey="cpu" name="CPU Load %" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.25} />
-              <Area type="monotone" dataKey="ram" name="RAM Usage %" stroke="#22d3ee" fill="#22d3ee" fillOpacity={0.25} />
+              <XAxis dataKey="day" tick={{ fill: "#64748b", fontSize: 10 }} />
+              <YAxis tick={{ fill: "#64748b", fontSize: 10 }} allowDecimals={false} />
+              <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
+              <Area type="monotone" dataKey="signups" stroke="#f5c518" fill="url(#gSign)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
-      </motion.div>
+        </ChartCard>
 
+        <ChartCard title="Active usage pulse" subtitle="Host CPU / RAM / network">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={sysHistory}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+              <XAxis dataKey="time" tick={{ fill: "#64748b", fontSize: 9 }} />
+              <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
+              <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
+              <Legend />
+              <Line type="monotone" dataKey="cpu" name="CPU %" stroke="#f5c518" dot={false} strokeWidth={2} isAnimationActive />
+              <Line type="monotone" dataKey="ram" name="RAM %" stroke="#38bdf8" dot={false} strokeWidth={2} />
+              <Line type="monotone" dataKey="rx" name="RX KB/s" stroke="#34d399" dot={false} strokeWidth={1.5} />
+              <Line type="monotone" dataKey="tx" name="TX KB/s" stroke="#a78bfa" dot={false} strokeWidth={1.5} />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <ChartCard title="Posts over time" subtitle="Daily posts · 14 days">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={series}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+              <XAxis dataKey="day" tick={{ fill: "#64748b", fontSize: 10 }} />
+              <YAxis tick={{ fill: "#64748b", fontSize: 10 }} allowDecimals={false} />
+              <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
+              <Bar dataKey="posts" fill="#38bdf8" radius={[4, 4, 0, 0]} isAnimationActive />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard title="Likes & comments" subtitle="Engagement velocity">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={series}>
+              <defs>
+                <linearGradient id="gLike" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#f472b6" stopOpacity={0.45} />
+                  <stop offset="100%" stopColor="#f472b6" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gCom" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.4} />
+                  <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+              <XAxis dataKey="day" tick={{ fill: "#64748b", fontSize: 10 }} />
+              <YAxis tick={{ fill: "#64748b", fontSize: 10 }} allowDecimals={false} />
+              <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
+              <Legend />
+              <Area type="monotone" dataKey="likes" stroke="#f472b6" fill="url(#gLike)" strokeWidth={2} />
+              <Area type="monotone" dataKey="comments" stroke="#22d3ee" fill="url(#gCom)" strokeWidth={2} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <ChartCard title="Follow graph" subtitle="New follow edges per day">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={series}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+              <XAxis dataKey="day" tick={{ fill: "#64748b", fontSize: 10 }} />
+              <YAxis tick={{ fill: "#64748b", fontSize: 10 }} allowDecimals={false} />
+              <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
+              <Line type="monotone" dataKey="follows" stroke="#fb923c" strokeWidth={2} dot={{ r: 3 }} isAnimationActive />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard title="Media posts" subtitle="Images · videos · polls">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={series}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+              <XAxis dataKey="day" tick={{ fill: "#64748b", fontSize: 10 }} />
+              <YAxis tick={{ fill: "#64748b", fontSize: 10 }} allowDecimals={false} />
+              <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
+              <Legend />
+              <Bar dataKey="images" stackId="m" fill="#a78bfa" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="videos" stackId="m" fill="#f472b6" />
+              <Bar dataKey="polls" stackId="m" fill="#f5c518" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <ChartCard title="Content mix" subtitle="Post types & media">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={contentPie}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={48}
+                outerRadius={78}
+                paddingAngle={3}
+                isAnimationActive
+              >
+                {contentPie.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard title="Sports graph" subtitle="Teams & players by sport" className="lg:col-span-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart data={sportsRadar}>
+              <PolarGrid stroke="#334155" />
+              <PolarAngleAxis dataKey="sport" tick={{ fill: "#94a3b8", fontSize: 10 }} />
+              <PolarRadiusAxis tick={{ fill: "#64748b", fontSize: 9 }} />
+              <Radar name="Teams" dataKey="teams" stroke="#f5c518" fill="#f5c518" fillOpacity={0.25} />
+              <Radar name="Players" dataKey="players" stroke="#38bdf8" fill="#38bdf8" fillOpacity={0.2} />
+              <Legend />
+              <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
+            </RadarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+
+      {/* Secondary KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <Kpi label="Teams" value={db.teams ?? "—"} icon={Trophy} color="text-emerald-300" />
+        <Kpi label="Players" value={db.players ?? "—"} icon={Users} color="text-sky-300" />
+        <Kpi label="Sports" value={db.sports ?? "—"} icon={Trophy} color="text-amber-300" />
+        <Kpi label="Polls" value={db.polls ?? "—"} icon={BarChart3} color="text-violet-300" />
+        <Kpi label="Image posts" value={db.imagePosts ?? "—"} icon={ImageIcon} color="text-fuchsia-300" />
+        <Kpi label="Video posts" value={db.videoPosts ?? "—"} icon={Video} color="text-rose-300" />
+      </div>
+
+      {/* Host gauges */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[
+          { label: "CPU", val: data?.system?.cpu ?? 0, icon: Cpu, color: "text-amber-400" },
+          { label: "RAM", val: data?.system?.ram ?? 0, icon: Database, color: "text-sky-400" },
+          {
+            label: "Net RX+TX KB/s",
+            val: (data?.system?.eth0?.rx ?? 0) + (data?.system?.eth0?.tx ?? 0),
+            icon: Activity,
+            color: "text-emerald-400",
+          },
+        ].map((g) => (
+          <div key={g.label} className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+              <span>{g.label}</span>
+              <g.icon className={`h-4 w-4 ${g.color}`} />
+            </div>
+            <p className={`mt-2 text-3xl font-black tabular-nums ${g.color}`}>
+              {typeof g.val === "number" ? g.val.toFixed(1) : g.val}
+              {g.label !== "Net RX+TX KB/s" ? "%" : ""}
+            </p>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-amber-400 to-sky-400"
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(100, Number(g.val) || 0)}%` }}
+                transition={{ duration: 0.8 }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
