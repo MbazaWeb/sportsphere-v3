@@ -2,6 +2,7 @@
 import { apiFetch } from '@/lib/api';
 
 import { useAppStore, type ProfileTypeId } from '@/store/useAppStore';
+import { useAuthStore } from '@/store/authStore';
 import type { VerificationStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -141,9 +142,75 @@ const handleCoverFile = async (
 
 const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
 
-  const isVerified = userProfile?.verificationStatus === 'verified';
+  const isVerified = userProfile?.verificationStatus === 'verified' || !!userProfile?.isVerified || !!userProfile?.isPro;
   const isPending = userProfile?.verificationStatus === 'pending';
-  const canUpgrade = userProfile?.role === 'fan' && !isVerified && !isPending;
+  const canUpgrade = userProfile?.role === 'fan' && !isVerified && !isPending && !userProfile?.isPro;
+  const setUserProfile = useAuthStore((s) => s.setUserProfile);
+
+  // Always re-sync own profile from server so avatar/name aren't stuck on placeholders
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiFetch('/api/auth/me', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const u = data.user || data;
+        if (cancelled || !u?.id) return;
+        setUserProfile({
+          id: u.id,
+          name: u.name || '',
+          email: u.email || '',
+          handle: u.handle || '',
+          avatar: u.avatar || u.avatarInitials || (u.name ? String(u.name).slice(0, 2).toUpperCase() : '?'),
+          avatarUrl: u.avatarUrl ?? null,
+          role: u.role || 'fan',
+          verificationStatus: u.verificationStatus || 'none',
+          bio: u.bio || '',
+          sportsFollowing: u.sportsFollowing || [],
+          registeredAt: u.registeredAt || new Date().toISOString(),
+          roleData: u.roleData || {},
+          isVerified: !!u.isVerified,
+          emailVerified: !!u.emailVerified,
+          isPro: !!u.isPro,
+          proSince: u.proSince ?? null,
+          proTier: u.proTier ?? null,
+          followerCount: u.followerCount ?? 0,
+          followingCount: u.followingCount ?? 0,
+          postCount: u.postCount ?? 0,
+          location: u.location || '',
+          coverGradient: u.coverGradient,
+          coverUrl: u.coverUrl ?? null,
+          roleId: u.roleId,
+          roleTypeId: u.roleTypeId,
+          roleName: u.roleName,
+          typeName: u.typeName,
+          typedProfile: u.typedProfile,
+          roleProfile: u.roleProfile,
+          sports: u.sports,
+        } as any);
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [setUserProfile]);
+
+  const [hideEmailVerify, setHideEmailVerify] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try { return localStorage.getItem('ss_dismiss_email_verify') === '1'; } catch { return false; }
+  });
+  const emailNeedsVerify = !!(
+    userProfile
+    && !userProfile.emailVerified
+    && !userProfile.isVerified
+    && !userProfile.isPro
+    && !hideEmailVerify
+  );
+  const [hideGetVerified, setHideGetVerified] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try { return localStorage.getItem('ss_dismiss_get_verified') === '1'; } catch { return false; }
+  });
+  const showGetVerified = canUpgrade && !hideGetVerified;
+
 
   const handleOpenList = (type: 'followers' | 'following') => {
     if (type === 'followers') onNavigate('followers');
@@ -263,15 +330,24 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
           </motion.div>
         )}
 
-        {!isVerified && !isPending && userProfile?.role !== 'fan' && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 rounded-2xl bg-gold/5 border border-gold/20 p-4">
-            <div className="flex items-start gap-3"><div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gold/10"><Sparkles className="h-5 w-5 text-gold" /></div><div className="flex-1"><h3 className="text-sm font-semibold text-gold">Get Verified</h3><p className="mt-1 text-xs text-muted-foreground">Verify your professional credentials to earn a verified badge.</p><button onClick={() => setUpgradeOpen(true)} className="mt-2 rounded-lg bg-gold px-3 py-1.5 text-xs font-bold text-black">Upgrade to PRO</button></div></div>
+        {showGetVerified && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 rounded-2xl bg-gold/5 border border-gold/20 p-4 relative">
+            <button
+              type="button"
+              aria-label="Dismiss get verified"
+              onClick={() => { setHideGetVerified(true); try { localStorage.setItem('ss_dismiss_get_verified', '1'); } catch {} }}
+              className="absolute top-2 right-2 rounded-full p-1 text-muted-foreground hover:text-white hover:bg-surface"
+            >✕</button>
+            <div className="flex items-start gap-3 pr-6"><div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gold/10"><Sparkles className="h-5 w-5 text-gold" /></div><div className="flex-1"><h3 className="text-sm font-semibold text-gold">Get Verified</h3><p className="mt-1 text-xs text-muted-foreground">Verify your professional credentials to earn a verified badge.</p><button onClick={() => setUpgradeOpen(true)} className="mt-2 rounded-lg bg-gold px-3 py-1.5 text-xs font-bold text-black">Upgrade to PRO</button></div></div>
           </motion.div>
         )}
 
         {/* Email verification banner */}
-        {userProfile && !userProfile.emailVerified && (
-          <button onClick={() => setVerifyEmailOpen(true)} className="mb-4 w-full rounded-xl bg-gold/10 border border-gold/20 p-3 flex items-center gap-3 text-left hover:bg-gold/15 transition-colors"><Mail className="h-5 w-5 text-gold flex-shrink-0" /><div className="flex-1 min-w-0"><p className="text-xs font-semibold text-gold">Verify your email</p><p className="text-[11px] text-muted-foreground">Confirm your email to access all features</p></div><ChevronRight className="h-4 w-4 text-gold/60 flex-shrink-0" /></button>
+        {emailNeedsVerify && (
+          <div className="mb-4 relative">
+            <button type="button" aria-label="Dismiss email verify" onClick={() => { setHideEmailVerify(true); try { localStorage.setItem('ss_dismiss_email_verify','1'); } catch {} }} className="absolute top-2 right-2 z-10 rounded-full p-1 text-muted-foreground hover:text-white">✕</button>
+            <button onClick={() => setVerifyEmailOpen(true)} className="w-full rounded-xl bg-gold/10 border border-gold/20 p-3 flex items-center gap-3 text-left hover:bg-gold/15 transition-colors"><Mail className="h-5 w-5 text-gold flex-shrink-0" /><div className="flex-1 min-w-0 pr-6"><p className="text-xs font-semibold text-gold">Verify your email</p><p className="text-[11px] text-muted-foreground">Confirm your email to access all features</p></div><ChevronRight className="h-4 w-4 text-gold/60 flex-shrink-0" /></button>
+          </div>
         )}
 
         {/* ---- HERO/BANNER SECTION ---- */}

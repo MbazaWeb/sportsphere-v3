@@ -66,6 +66,9 @@ export function serializePublicUser(u: {
   registeredAt: Date;
   roleId: string;
   roleTypeId: string;
+  isPro?: boolean;
+  proSince?: Date | string | null;
+  proTier?: string | null;
 }) {
   return {
     id: u.id,
@@ -77,7 +80,10 @@ export function serializePublicUser(u: {
     role: u.role,
     verificationStatus: u.verificationStatus,
     isVerified: u.isVerified,
-    emailVerified: u.emailVerified,
+    emailVerified: !!u.emailVerified,
+    isPro: !!u.isPro,
+    proSince: u.proSince ? (typeof u.proSince === 'string' ? u.proSince : u.proSince.toISOString()) : null,
+    proTier: u.proTier || null,
     bio: u.bio || '',
     location: u.location || '',
     coverGradient: u.coverGradient,

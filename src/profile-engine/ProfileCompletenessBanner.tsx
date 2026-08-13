@@ -23,23 +23,22 @@ export function ProfileCompletenessBanner({
   baseProfile?: { name?: string; handle?: string; bio?: string; avatarUrl?: string | null; location?: string | null } | null;
   onEdit: () => void;
 }) {
-  const [dismissed, setDismissed] = useState(false);
+  const dismissKey = `ss_dismiss_completeness_${role}`;
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try { return localStorage.getItem(dismissKey) === '1'; } catch { return false; }
+  });
   const result = computeCompleteness(role, roleProfile, baseProfile);
 
+  const dismiss = () => {
+    setDismissed(true);
+    try { localStorage.setItem(dismissKey, '1'); } catch { /* ignore */ }
+  };
+
+  // Don't nag when profile already looks solid for day-to-day use
   if (dismissed) return null;
-  if (result.pct >= 100) {
-    return (
-      <div className="glass-card rounded-2xl p-4 mb-3 border border-emerald-500/30 bg-emerald-500/5">
-        <div className="flex items-center gap-3">
-          <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm font-bold text-white">Profile complete</p>
-            <p className="text-xs text-muted-foreground">Your {role} profile is fully filled out.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (result.pct >= 80) return null;
+  if (result.pct >= 100) return null;
 
   const topMissing = result.missing.slice(0, 3);
   const remainingCount = result.missing.length - topMissing.length;
@@ -57,7 +56,7 @@ export function ProfileCompletenessBanner({
           </div>
         </div>
         <button
-          onClick={() => setDismissed(true)}
+          onClick={dismiss}
           className="text-muted-foreground hover:text-white text-xs"
           aria-label="Dismiss"
         >
