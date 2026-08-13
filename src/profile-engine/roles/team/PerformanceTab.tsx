@@ -6,7 +6,7 @@
 
 import { Activity, TrendingUp, Target, Shield, Trophy, BarChart3, User, Zap, Flag } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, EmptyState, ProgressBar, Badge, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, EmptyState, ProgressBar, Badge, KeyValueRow, rpString, rpNumber } from '../../shared/ui';
 import { PerformanceCard } from '@/components/performance/PerformanceCard';
 
 export function TeamPerformanceTab({ apiUser }: { apiUser: ApiUserLike | null }) {
