@@ -36,12 +36,20 @@ export default function LoginModal() {
     setNotFound(false);
     setLoading(true);
     try {
+      const identifier = email.trim();
       const res = await apiFetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: identifier, password }),
+        redirect: 'follow',
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = {};
+      try { data = text ? JSON.parse(text) : {}; } catch {
+        setError('Login service unavailable. Please try again.');
+        setLoading(false);
+        return;
+      }
       if (!res.ok) {
         if (data.notFound) setNotFound(true);
         else setError(data.error || 'Login failed');

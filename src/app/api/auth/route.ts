@@ -72,11 +72,21 @@ export async function POST(request: NextRequest) {
   const GENERIC_ERROR = 'Invalid email/handle or password.';
 
   // ── Look up user by email OR handle ─────────────────────────────────────
-  const isEmail = identifier.includes('@');
+  // Handles may start with "@" (e.g. @davidmbazza). Only treat as email when
+  // there is a domain part (local@domain).
+  const rawId = identifier.startsWith('@') ? identifier : identifier;
+  const looksLikeEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(identifier);
+  const handleNorm = identifier.replace(/^@+/, '').toLowerCase();
   const user = await db.user.findFirst({
-    where: isEmail
+    where: looksLikeEmail
       ? { email: identifier.toLowerCase() }
-      : { handle: { equals: identifier, mode: 'insensitive' } },
+      : {
+          OR: [
+            { handle: { equals: handleNorm, mode: 'insensitive' } },
+            { handle: { equals: '@' + handleNorm, mode: 'insensitive' } },
+            { handle: { equals: identifier, mode: 'insensitive' } },
+          ],
+        },
     select: {
       id: true, name: true, email: true, handle: true,
       passwordHash: true, role: true,
