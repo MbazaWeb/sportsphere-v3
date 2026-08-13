@@ -7,17 +7,42 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
-    const leagueSlug = searchParams.get('league') || searchParams.get('id') || 'vodacom-premier-league';
+    const leagueParam = searchParams.get('league') || searchParams.get('id') || '';
 
-    // Find the league
-    const league = await db.league.findUnique({
-      where: { slug: leagueSlug },
-      include: { Sport: { select: { name: true, slug: true, icon: true } } },
-    });
+    // Find the league — try by name first (fan app sends names), then by slug
+    let league = null;
+    if (leagueParam) {
+      // Try exact name match first (case-insensitive)
+      league = await db.league.findFirst({
+        where: { name: { equals: leagueParam, mode: 'insensitive' } },
+        include: { Sport: { select: { name: true, slug: true, icon: true } } },
+      });
+      // Fallback: try by slug
+      if (!league) {
+        league = await db.league.findUnique({
+          where: { slug: leagueParam },
+          include: { Sport: { select: { name: true, slug: true, icon: true } } },
+        });
+      }
+      // Fallback: partial name match (contains)
+      if (!league) {
+        league = await db.league.findFirst({
+          where: { name: { contains: leagueParam, mode: 'insensitive' } },
+          include: { Sport: { select: { name: true, slug: true, icon: true } } },
+        });
+      }
+    } else {
+      // No league specified — pick the first active league
+      league = await db.league.findFirst({
+        where: { isActive: true, type: 'league' },
+        orderBy: { name: 'asc' },
+        include: { Sport: { select: { name: true, slug: true, icon: true } } },
+      });
+    }
 
     if (!league) {
       return NextResponse.json({
-        league: leagueSlug,
+        league: leagueParam || 'None',
         standings: [],
         available: await getAvailableLeagues(),
         message: 'League not found in database.',
@@ -147,7 +172,7 @@ export async function GET(request: NextRequest) {
 
 async function getAvailableLeagues(): Promise<string[]> {
   const leagues = await db.league.findMany({
-    where: { isActive: true, type: 'league' },
+    where: { isActive: true },
     orderBy: { name: 'asc' },
     select: { name: true },
   });
