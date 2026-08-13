@@ -78,7 +78,7 @@ function GuestProfile() {
           <button onClick={() => setLoginModalOpen(true)} className="h-12 rounded-xl border border-surface-border text-sm font-semibold text-muted-foreground transition-colors hover:text-white hover:bg-surface">Already have an account? Sign In</button>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          {[ { Icon: Users, label: 'Join Communities', color: 'text-purple-400', bg: 'bg-purple-500/10' }, { Icon: Trophy, label: 'Make Predictions', color: 'text-gold', bg: 'bg-gold/10' }, { Icon: BarChart3, label: 'Live Scores', color: 'text-blue-400', bg: 'bg-blue-500/10' }, { Icon: Heart, label: 'Follow Teams & Players', color: 'text-pink-400', bg: 'bg-pink-500/10' }, { Icon: BadgeCheck, label: 'Verified Profiles', color: 'text-gold', bg: 'bg-gold/10' }, { Icon: MessageCircle, label: 'Live Match Chat', color: 'text-cyan-400', bg: 'bg-cyan-500/10' }, { Icon: Bookmark, label: 'Save & Bookmark', color: 'text-yellow-400', bg: 'bg-yellow-500/10' }, { Icon: Sparkles, label: 'Create Posts', color: 'text-sport-green', bg: 'bg-green-500/10' } ].map(({ Icon, label, color, bg }) => (
+          {[ { Icon: Users, label: 'Join Communities', color: 'text-purple-400', bg: 'bg-purple-500/10' }, { Icon: Trophy, label: 'Make Predictions', color: 'text-gold', bg: 'bg-gold/10' }, { Icon: BarChart3, label: 'Live Scores', color: 'text-blue-400', bg: 'bg-blue-500/10' }, { Icon: Heart, label: 'Fan Teams & Players', color: 'text-pink-400', bg: 'bg-pink-500/10' }, { Icon: BadgeCheck, label: 'Verified Profiles', color: 'text-gold', bg: 'bg-gold/10' }, { Icon: MessageCircle, label: 'Live Match Chat', color: 'text-cyan-400', bg: 'bg-cyan-500/10' }, { Icon: Bookmark, label: 'Save & Bookmark', color: 'text-yellow-400', bg: 'bg-yellow-500/10' }, { Icon: Sparkles, label: 'Create Posts', color: 'text-sport-green', bg: 'bg-green-500/10' } ].map(({ Icon, label, color, bg }) => (
             <div key={label} className="flex items-center gap-3 rounded-xl bg-surface-elevated border border-surface-border p-3"><div className={cn('flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg', bg)}><Icon className={cn('h-4 w-4', color)} /></div><span className="text-xs font-semibold text-foreground/80 leading-tight">{label}</span></div>
           ))}
         </div>
@@ -215,11 +215,11 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
 
 
   const handleOpenList = (type: 'followers' | 'following') => {
-    if (type === 'followers') onNavigate('followers');
+    if (type === 'followers') onNavigate('fans');
     else onNavigate('following');
   };
 
-  const moreItems = [ { id: 'saved', label: 'Saved', icon: Bookmark, color: 'text-yellow-400' }, { id: 'achievements', label: 'Achievements', icon: Trophy, color: 'text-orange-400' }, { id: 'predictions', label: 'Predictions', icon: BarChart3, color: 'text-blue-400' }, { id: 'communities', label: 'Communities', icon: Users, color: 'text-purple-400' }, { id: 'followers', label: 'Followers', icon: UserPlus, color: 'text-cyan-400' }, { id: 'following', label: 'Following', icon: Heart, color: 'text-pink-400' } ];
+  const moreItems = [ { id: 'saved', label: 'Saved', icon: Bookmark, color: 'text-yellow-400' }, { id: 'achievements', label: 'Achievements', icon: Trophy, color: 'text-orange-400' }, { id: 'predictions', label: 'Predictions', icon: BarChart3, color: 'text-blue-400' }, { id: 'communities', label: 'Communities', icon: Users, color: 'text-purple-400' }, { id: 'fans', label: 'Fans', icon: UserPlus, color: 'text-cyan-400' }, { id: 'following', label: 'Following', icon: Heart, color: 'text-pink-400' } ];
 
   useEffect(() => {
     async function loadPosts() {
@@ -451,7 +451,7 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
                 {userProfile?.nationality && <span className="flex items-center gap-1"><Flag className="h-3 w-3 text-gold" />{userProfile.nationality}</span>}
               </div>
               <div className="mt-2 text-xs text-muted-foreground">
-                <span className="font-semibold text-white">{formatCount(userProfile?.followerCount || 0)}</span> followers · <span className="font-semibold text-white">{formatCount(userProfile?.followingCount || 0)}</span> following
+                <span className="font-semibold text-white">{formatCount((userProfile?.fanCount ?? userProfile?.followerCount) || 0)}</span> fans · <span className="font-semibold text-white">{formatCount(userProfile?.followingCount || 0)}</span> following
               </div>
             </div>
           </div>
@@ -542,7 +542,7 @@ const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
             <h3 className="text-xs font-bold text-gold uppercase tracking-wider">Stats</h3>
           </div>
           <div className="grid grid-cols-4 gap-2">
-            <StatCard label="Followers" value={userProfile?.followerCount || 0} onClick={() => handleOpenList('followers')} />
+            <StatCard label="Fans" value={userProfile?.followerCount || 0} onClick={() => handleOpenList('followers')} />
             <StatCard label="Following" value={userProfile?.followingCount || 0} onClick={() => handleOpenList('following')} />
             <StatCard label="Posts" value={userProfile?.postCount || 0} />
             <StatCard label="Predictions" value="-" />
@@ -975,7 +975,7 @@ function PeopleList({ title, onBack }: { title: string; onBack: () => void }) {
     async function loadData() {
       if (!userProfile?.id) { setLoading(false); return; }
       try {
-        const type = title === 'Following' ? 'following' : 'followers';
+        const type = title === 'Following' ? 'following' : 'fans';
         const res = await apiFetch(`/api/follows?userId=${userProfile.id}&type=${type}`);
         if (res.ok) { const data = await res.json(); setPeople(data); } else { setError('Failed to load.'); }
       } catch { setError('Network error.'); }
@@ -1021,5 +1021,5 @@ export default function ProfileTab() {
 
   if (!isAuthenticated) { return (<><GuestProfile /><RegistrationModal /></>); }
 
-  return (<div className="mx-auto max-w-lg"><RegistrationModal />{profileSection === 'main' && (<LoggedInProfile onNavigate={(s: string) => setProfileSection(s as typeof profileSection)} onLogout={logout} />)}{profileSection === 'settings' && (<SettingsSection onBack={() => setProfileSection('main')} onLogout={logout} />)}{profileSection === 'explore' && (<ProfileExplorerSection onBack={() => setProfileSection('main')} />)}{profileSection === 'saved' && <GenericSection title="Saved" onBack={() => setProfileSection('main')} />}{profileSection === 'achievements' && <GenericSection title="Achievements" onBack={() => setProfileSection('main')} />}{profileSection === 'predictions' && <GenericSection title="Predictions" onBack={() => setProfileSection('main')} />}{profileSection === 'communities' && <GenericSection title="Communities" onBack={() => setProfileSection('main')} />}{profileSection === 'followers' && <PeopleList title="Followers" onBack={() => setProfileSection('main')} />}{profileSection === 'following' && <PeopleList title="Following" onBack={() => setProfileSection('main')} />}</div>);
+  return (<div className="mx-auto max-w-lg"><RegistrationModal />{profileSection === 'main' && (<LoggedInProfile onNavigate={(s: string) => setProfileSection(s as typeof profileSection)} onLogout={logout} />)}{profileSection === 'settings' && (<SettingsSection onBack={() => setProfileSection('main')} onLogout={logout} />)}{profileSection === 'explore' && (<ProfileExplorerSection onBack={() => setProfileSection('main')} />)}{profileSection === 'saved' && <GenericSection title="Saved" onBack={() => setProfileSection('main')} />}{profileSection === 'achievements' && <GenericSection title="Achievements" onBack={() => setProfileSection('main')} />}{profileSection === 'predictions' && <GenericSection title="Predictions" onBack={() => setProfileSection('main')} />}{profileSection === 'communities' && <GenericSection title="Communities" onBack={() => setProfileSection('main')} />}{(profileSection === 'fans' || profileSection === 'followers') && <PeopleList title="Fans" onBack={() => setProfileSection('main')} />}{profileSection === 'following' && <PeopleList title="Following" onBack={() => setProfileSection('main')} />}</div>);
 }

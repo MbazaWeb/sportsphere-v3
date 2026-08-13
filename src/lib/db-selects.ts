@@ -24,6 +24,7 @@ export const USER_SELECT = {
   coverGradient: true,
   coverUrl: true,
   followerCount: true,
+  fanCount: true,
   followingCount: true,
   postCount: true,
   sportsFollowing: true,

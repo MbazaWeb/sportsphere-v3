@@ -94,7 +94,7 @@ const TABS = {
   events: { id: 'events', label: 'Events', category: 'community' as TabCategory },
   gallery: { id: 'gallery', label: 'Gallery', category: 'community' as TabCategory },
   fans: { id: 'fans', label: 'Fans', category: 'community' as TabCategory },
-  followers: { id: 'followers', label: 'Followers', category: 'community' as TabCategory },
+  followers: { id: 'followers', label: 'Fans', category: 'community' as TabCategory },
   members: { id: 'members', label: 'Members', category: 'community' as TabCategory },
   media: { id: 'media', label: 'Media', category: 'community' as TabCategory },
   reviews: { id: 'reviews', label: 'Reviews', category: 'community' as TabCategory },
@@ -223,21 +223,21 @@ export const PROFILE_TYPES: Partial<Record<ProfileTypeId, ProfileTypeConfig>> = 
     id: 'business', label: 'Business', emoji: '💼',
     tabs: [TABS.overview, TABS.feed, TABS.products, TABS.services, TABS.offers, TABS.reviews, TABS.events, TABS.media, TABS.shop, TABS.about],
     primaryActions: [{ id: 'follow', label: 'Follow', primary: true }, { id: 'shop', label: 'Shop' }],
-    mockData: { name: 'Nike Football', handle: '@nikefootball', role: 'Sportswear & Equipment', bio: 'Official partner of top football clubs and national teams worldwide.', avatar: 'NK', coverGradient: COVER_DARK, verified: true, stats: [{ label: 'Products', value: '450+' }, { label: 'Followers', value: '8.5M' }, { label: 'Rating', value: '4.6' }, { label: 'Teams', value: '45' }] },
+    mockData: { name: 'Nike Football', handle: '@nikefootball', role: 'Sportswear & Equipment', bio: 'Official partner of top football clubs and national teams worldwide.', avatar: 'NK', coverGradient: COVER_DARK, verified: true, stats: [{ label: 'Products', value: '450+' }, { label: 'Fans', value: '8.5M' }, { label: 'Rating', value: '4.6' }, { label: 'Teams', value: '45' }] },
   },
 
   journalist: {
     id: 'journalist', label: 'Journalist', emoji: '📰',
     tabs: [TABS.overview, TABS.articles, TABS.news, TABS.videos, TABS.podcasts, TABS.media, TABS.followers, TABS.about],
     primaryActions: [{ id: 'follow', label: 'Follow', primary: true }, { id: 'articles', label: 'Articles' }],
-    mockData: { name: 'Fabrizio Romano', handle: '@fabrizioromano', role: 'Transfer Journalist', bio: 'The most trusted football transfer journalist.', avatar: 'FR', coverGradient: COVER_DARK, verified: true, stats: [{ label: 'Articles', value: '2.4K' }, { label: 'Followers', value: '12M' }, { label: 'Breaking', value: '890' }, { label: 'Accuracy', value: '99%' }] },
+    mockData: { name: 'Fabrizio Romano', handle: '@fabrizioromano', role: 'Transfer Journalist', bio: 'The most trusted football transfer journalist.', avatar: 'FR', coverGradient: COVER_DARK, verified: true, stats: [{ label: 'Articles', value: '2.4K' }, { label: 'Fans', value: '12M' }, { label: 'Breaking', value: '890' }, { label: 'Accuracy', value: '99%' }] },
   },
 
   analyst: {
     id: 'analyst', label: 'Analyst', emoji: '📊',
     tabs: [TABS.overview, TABS.analysis, TABS.predictions, TABS.statistics, TABS.tactical_boards, TABS.videos, TABS.media, TABS.followers, TABS.about],
     primaryActions: [{ id: 'follow', label: 'Follow', primary: true }, { id: 'analysis', label: 'Analysis' }],
-    mockData: { name: 'Stats Perform', handle: '@statsperform', role: 'Data & Analytics Provider', bio: 'Industry-leading sports data, AI-powered analytics and performance insights.', avatar: 'SP', coverGradient: COVER_DARK, verified: true, stats: [{ label: 'Reports', value: '1.2K' }, { label: 'Followers', value: '450K' }, { label: 'Data Points', value: '5B+' }, { label: 'Leagues', value: '80' }] },
+    mockData: { name: 'Stats Perform', handle: '@statsperform', role: 'Data & Analytics Provider', bio: 'Industry-leading sports data, AI-powered analytics and performance insights.', avatar: 'SP', coverGradient: COVER_DARK, verified: true, stats: [{ label: 'Reports', value: '1.2K' }, { label: 'Fans', value: '450K' }, { label: 'Data Points', value: '5B+' }, { label: 'Leagues', value: '80' }] },
   },
 
   creator: {
@@ -251,7 +251,7 @@ export const PROFILE_TYPES: Partial<Record<ProfileTypeId, ProfileTypeConfig>> = 
     id: 'scout', label: 'Scout', emoji: '🔍',
     tabs: [TABS.overview, TABS.reports, TABS.watchlist, TABS.players, TABS.recommendations, TABS.media, TABS.about],
     primaryActions: [{ id: 'follow', label: 'Follow', primary: true }, { id: 'reports', label: 'Reports' }],
-    mockData: { name: 'David Tshiani', handle: '@davidtshiani', role: 'Football Scout', bio: 'Identifying the next generation of football talent across Africa and Europe.', avatar: 'DT', coverGradient: COVER_DARK, verified: false, stats: [{ label: 'Reports', value: '340' }, { label: 'Watchlist', value: '89' }, { label: 'Recommendations', value: '56' }, { label: 'Followers', value: '12K' }] },
+    mockData: { name: 'David Tshiani', handle: '@davidtshiani', role: 'Football Scout', bio: 'Identifying the next generation of football talent across Africa and Europe.', avatar: 'DT', coverGradient: COVER_DARK, verified: false, stats: [{ label: 'Reports', value: '340' }, { label: 'Watchlist', value: '89' }, { label: 'Recommendations', value: '56' }, { label: 'Fans', value: '12K' }] },
   },
 
   referee: {
@@ -265,7 +265,7 @@ export const PROFILE_TYPES: Partial<Record<ProfileTypeId, ProfileTypeConfig>> = 
     id: 'fan', label: 'Fan', emoji: '👤',
     tabs: [TABS.overview, TABS.feed, TABS.posts, TABS.media, TABS.spotlight, TABS.predictions, TABS.achievements, TABS.communities, TABS.shop, TABS.about],
     primaryActions: [{ id: 'follow', label: 'Follow', primary: true }, { id: 'message', label: 'Message' }],
-    mockData: { name: 'David Mbaza', handle: '@davidmbaza', role: 'Sports Fan', bio: 'Football is life. Man Utd till I die. Predictions guru.', avatar: 'DM', coverGradient: COVER_DARK, verified: false, stats: [{ label: 'Posts', value: '52' }, { label: 'Followers', value: '1.2K' }, { label: 'Predictions', value: '89%' }, { label: 'Badges', value: '14' }], location: 'Dar es Salaam, Tanzania', joined: 'January 2024' },
+    mockData: { name: 'David Mbaza', handle: '@davidmbaza', role: 'Sports Fan', bio: 'Football is life. Man Utd till I die. Predictions guru.', avatar: 'DM', coverGradient: COVER_DARK, verified: false, stats: [{ label: 'Posts', value: '52' }, { label: 'Fans', value: '1.2K' }, { label: 'Predictions', value: '89%' }, { label: 'Badges', value: '14' }], location: 'Dar es Salaam, Tanzania', joined: 'January 2024' },
   },
 };
 

@@ -12,6 +12,7 @@ export interface UserProfile {
   isVerified?: boolean; emailVerified?: boolean;
   isPro?: boolean; proSince?: string | null; proTier?: string | null;
   followerCount?: number;
+  fanCount?: number;
   followingCount?: number;
   postCount?: number;
   location?: string;

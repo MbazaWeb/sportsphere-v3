@@ -890,7 +890,7 @@ function BusinessOverview() {
         <h3 className="mb-3 text-sm font-bold text-white">Business Stats</h3>
         <div className="grid grid-cols-2 gap-3">
           {[
-            { label: 'Followers', value: '8.5M' },
+            { label: 'Fans', value: '8.5M' },
             { label: 'Rating', value: '4.6 ★' },
             { label: 'Countries', value: '120+' },
             { label: 'Revenue', value: '$2.8B' },
@@ -972,7 +972,7 @@ function JournalistOverview() {
         <h3 className="mb-3 text-sm font-bold text-white">Journalist Stats</h3>
         <div className="grid grid-cols-2 gap-3">
           {[
-            { label: 'Followers', value: '12M' },
+            { label: 'Fans', value: '12M' },
             { label: 'Accuracy', value: '99%' },
             { label: 'Specialty', value: 'Transfers' },
             { label: 'Experience', value: '12 Years' },
@@ -1001,7 +1001,7 @@ function AnalystOverview() {
         <div className="grid grid-cols-2 gap-3">
           {[
             { label: 'Data Points', value: '5B+' },
-            { label: 'Followers', value: '450K' },
+            { label: 'Fans', value: '450K' },
             { label: 'Accuracy', value: '94%' },
             { label: 'Models', value: '120+' },
           ].map((stat: any) => (
@@ -1199,7 +1199,7 @@ function ScoutOverview() {
         <div className="grid grid-cols-2 gap-3">
           {[
             { label: 'Recommendations', value: '56' },
-            { label: 'Followers', value: '12K' },
+            { label: 'Fans', value: '12K' },
             { label: 'Success Rate', value: '78%' },
             { label: 'Players Found', value: '45' },
           ].map((stat: any) => (
@@ -1253,7 +1253,7 @@ function FanOverview() {
         <div className="grid grid-cols-2 gap-3">
           {[
             { label: 'Posts', value: '52' },
-            { label: 'Followers', value: '1.2K' },
+            { label: 'Fans', value: '1.2K' },
             { label: 'Badges', value: '14' },
             { label: 'Predictions', value: '89%' },
           ].map((stat: any) => (

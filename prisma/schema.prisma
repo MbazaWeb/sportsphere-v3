@@ -97,6 +97,7 @@ model User {
   location                 String?
   coverGradient            String                        @default("from-emerald-600 to-emerald-900")
   followerCount            Int                           @default(0)
+  fanCount                 Int                           @default(0)
   followingCount           Int                           @default(0)
   postCount                Int                           @default(0)
   registeredAt             DateTime                      @default(now())
@@ -206,6 +207,8 @@ model User {
 model Follow {
   followerId  String
   followingId String
+  /// fan = human supports team/player/coach; follow = peer social (user↔user or org↔org)
+  kind        String   @default("fan")
   createdAt   DateTime @default(now())
   follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
   following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
@@ -213,6 +216,7 @@ model Follow {
   @@id([followerId, followingId])
   @@index([followerId])
   @@index([followingId])
+  @@index([kind])
 }
 
 model Post {

@@ -76,7 +76,7 @@ export function CreatorOverviewTab({ apiUser }: { apiUser: ApiUserLike | null })
         <Card hover>
           <SectionTitle icon={Sparkles}>Audience</SectionTitle>
           <StatGrid cols={3}>
-            {followers > 0 &&   <StatTile icon={Users}      label="Followers"  value={formatCount(followers)} accent="gold" />}
+            {followers > 0 &&   <StatTile icon={Users}      label="Fans"  value={formatCount(followers)} accent="gold" />}
             {engagement > 0 &&  <StatTile icon={TrendingUp} label="Engagement" value={`${engagement}%`} accent="green" />}
             {avgViews > 0 &&    <StatTile icon={Eye}        label="Avg Views"  value={formatCount(avgViews)} />}
           </StatGrid>

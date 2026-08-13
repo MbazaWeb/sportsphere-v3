@@ -26,6 +26,7 @@ export interface UserRecord {
   isVerified?: boolean;
   emailVerified?: boolean;
   followerCount?: number;
+  fanCount?: number;
   followingCount?: number;
   postCount?: number;
   coverGradient?: string;
@@ -74,6 +75,7 @@ export function serializePublicUser(u: UserRecord) {
     isVerified: u.isVerified ?? false,
     emailVerified: u.emailVerified ?? false,
     followerCount: u.followerCount ?? 0,
+    fanCount: u.fanCount ?? u.followerCount ?? 0,
     followingCount: u.followingCount ?? 0,
     postCount: u.postCount ?? 0,
     coverGradient: u.coverGradient ?? 'from-gray-800 to-gray-900',

@@ -41,7 +41,9 @@ export async function POST(request: NextRequest) {
       await db.follow.delete({ where: { followerId_followingId: { followerId: userId, followingId: String(targetUserId) } } });
     } else {
       // Follow
-      await db.follow.create({ data: { followerId: userId, followingId: String(targetUserId) } });
+      const sportsRoles = new Set(["player", "team", "coach", "club", "league", "scout", "agent", "referee", "commentator"]);
+      const kind = sportsRoles.has(String(target.role || "").toLowerCase()) ? "fan" : "follow";
+      await db.follow.create({ data: { followerId: userId, followingId: String(targetUserId), kind } });
     }
 
     // Always reconcile counts from source of truth (avoids negative drift)
@@ -51,7 +53,7 @@ export async function POST(request: NextRequest) {
     ]);
     await Promise.all([
       db.user.update({ where: { id: userId }, data: { followingCount: myFollowing } }),
-      db.user.update({ where: { id: String(targetUserId) }, data: { followerCount: theirFollowers } }),
+      db.user.update({ where: { id: String(targetUserId) }, data: { followerCount: theirFollowers, fanCount: theirFollowers } }),
     ]);
 
     try {
@@ -63,6 +65,8 @@ export async function POST(request: NextRequest) {
     } catch {}
     return NextResponse.json({
       following: !existing,
+      isFan: !existing,
+      fanCount: theirFollowers,
       followerCount: theirFollowers,
       followingCount: myFollowing,
     });
@@ -85,7 +89,7 @@ export async function PATCH() {
       
       await db.user.update({
         where: { id: user.id },
-        data: { followerCount, followingCount, postCount },
+        data: { followerCount, fanCount: followerCount, followingCount, postCount },
       });
     }
     
@@ -120,7 +124,7 @@ export async function GET(request: NextRequest) {
     }
 
     let users;
-    if (type === 'followers') {
+    if (type === 'followers' || type === 'fans') {
       const follows = await db.follow.findMany({
         where: { followingId: resolvedUserId },
         select: { follower: { select: USER_SELECT } },

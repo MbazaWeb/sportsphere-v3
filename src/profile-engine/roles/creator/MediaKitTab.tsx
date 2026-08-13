@@ -168,7 +168,7 @@ export function CreatorMediaKitTab({ apiUser }: { apiUser: ApiUserLike | null })
         <Card hover>
           <SectionTitle icon={Users}>Audience Snapshot</SectionTitle>
           <StatGrid cols={4}>
-            {followers > 0 &&   <StatTile icon={Users}      label="Followers"  value={formatCount(followers)} accent="gold" />}
+            {followers > 0 &&   <StatTile icon={Users}      label="Fans"  value={formatCount(followers)} accent="gold" />}
             {engagement > 0 &&  <StatTile icon={TrendingUp} label="Engagement" value={`${engagement}%`} accent="green" />}
             {avgViews > 0 &&    <StatTile icon={Eye}        label="Avg Views"  value={formatCount(avgViews)} />}
             {reach > 0 &&       <StatTile icon={Sparkles}   label="Monthly Reach" value={formatCount(reach)} />}

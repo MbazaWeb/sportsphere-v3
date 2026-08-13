@@ -7,7 +7,7 @@ export type ActivitySubTab = "all"|"social"|"sports"|"messages";
 
 interface NavigationState {
   activeTab: TabId; homeSubTab: HomeSubTab; scoresSubTab: ScoresSubTab; activitySubTab: ActivitySubTab;
-  profileSection: "main"|"settings"|"saved"|"achievements"|"predictions"|"communities"|"followers"|"following"|"explore";
+  profileSection: "main"|"settings"|"saved"|"achievements"|"predictions"|"communities"|"followers"|"fans"|"following"|"explore";
   settingsSection: string;
   /** Whether the bottom nav bar is currently visible */
   navVisible: boolean;

@@ -136,7 +136,7 @@ export default function ProfileHeader({ config, onBack, onAction, isFollowing }:
                     ? 'glass-card text-white hover:bg-surface-elevated'
                     : 'glass-card text-muted-foreground hover:text-white',
               )}>
-              {action.id === 'follow' && isFollowing ? 'Following' : action.label}
+              {action.id === 'follow' && isFollowing ? "You're a Fan" : (action.id === "follow" ? "Become a Fan" : action.label)}
             </button>
           ))}
         </div>

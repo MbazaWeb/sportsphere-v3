@@ -23,7 +23,7 @@ export function OverviewTab({ apiUser, user }: OverviewTabProps) {
           <BarChart3 className="h-4 w-4" /> Quick Stats
         </h3>
         <div className="grid grid-cols-2 gap-3">
-          <StatCard label="Followers" value={formatCount(user.followers)} />
+          <StatCard label="Fans" value={formatCount(user.followers)} />
           <StatCard label="Following" value={formatCount(user.following)} />
           <StatCard label="Posts" value={formatCount(user.posts)} />
           <StatCard label="Joined" value={user.joined} />

@@ -59,6 +59,7 @@ export function serializePublicUser(u: {
   coverGradient: string;
   coverUrl: string | null;
   followerCount: number;
+  fanCount?: number;
   followingCount: number;
   postCount: number;
   sportsFollowing: unknown;
@@ -89,6 +90,7 @@ export function serializePublicUser(u: {
     coverGradient: u.coverGradient,
     coverUrl: u.coverUrl || null,
     followerCount: u.followerCount,
+    fanCount: u.fanCount ?? u.followerCount ?? 0,
     followingCount: u.followingCount,
     postCount: u.postCount,
     sportsFollowing: safeJsonParse(u.sportsFollowing, []),
