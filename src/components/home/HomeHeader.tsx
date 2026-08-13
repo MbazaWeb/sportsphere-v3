@@ -11,6 +11,8 @@ import { SearchModal } from './SearchModal';
 const SUBTABS = [
   { id: 'for-you', label: 'Sportlights' },
   { id: 'trending', label: 'Trending' },
+  { id: 'predictions', label: 'Predictions' },
+  { id: 'polls', label: 'Polls' },
 ];
 
 interface HomeHeaderProps {

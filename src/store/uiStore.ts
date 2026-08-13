@@ -2,6 +2,14 @@
 import { create } from 'zustand';
 import type { ViewingUser } from '@/types';
 
+export interface ViewingEntity {
+  id: string;
+  name: string;
+  type: string;
+  logoUrl?: string | null;
+  extra?: string;
+}
+
 interface UIState {
   toastMessage: string | null;
   loginModalOpen: boolean;
@@ -11,6 +19,7 @@ interface UIState {
   viewingProfile: string | null;
   viewingUser: ViewingUser | null;
   viewingPostId: string | null;
+  viewingEntity: ViewingEntity | null;
 
   showToast: (msg: string, duration?: number) => void;
   setLoginModalOpen: (o: boolean) => void;
@@ -20,6 +29,7 @@ interface UIState {
   setViewingProfile: (id: string | null) => void;
   setViewingUser: (u: ViewingUser | null) => void;
   setViewingPostId: (id: string | null) => void;
+  setViewingEntity: (e: ViewingEntity | null) => void;
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -33,6 +43,7 @@ export const useUIStore = create<UIState>((set) => ({
   viewingProfile: null,
   viewingUser: null,
   viewingPostId: null,
+  viewingEntity: null,
 
   showToast: (msg, dur = 3000) => {
     if (toastTimer) clearTimeout(toastTimer);
@@ -46,6 +57,7 @@ export const useUIStore = create<UIState>((set) => ({
   setViewingProfile: (id) => set({ viewingProfile: id }),
   setViewingUser: (u) => set({ viewingUser: u }),
   setViewingPostId: (id) => set({ viewingPostId: id }),
+  setViewingEntity: (e) => set({ viewingEntity: e }),
 }));
 
 // Keep MockUserData as alias for backward compat

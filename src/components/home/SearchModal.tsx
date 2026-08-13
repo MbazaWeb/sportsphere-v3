@@ -82,6 +82,7 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const setViewingUser = useUIStore((s) => s.setViewingUser);
+  const setViewingEntity = useUIStore((s) => s.setViewingEntity);
 
   useEffect(() => {
     if (open) {
@@ -143,7 +144,7 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
   };
 
   const handleEntityClick = (entity: SearchEntity) => {
-    // For now close the modal; could navigate to entity detail page later
+    setViewingEntity(entity);
     onClose();
   };
 

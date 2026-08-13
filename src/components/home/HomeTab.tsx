@@ -8,6 +8,9 @@ import { motion } from 'framer-motion';
 import { HomeHeader } from './HomeHeader';
 import { SportlightsTab } from './SportlightsTab';
 import { TrendingTab } from './TrendingTab';
+import { PredictionsTab } from './PredictionsTab';
+import { PollsTab } from './PollsTab';
+import EntityProfileSheet from '@/components/profiles/EntityProfileSheet';
 
 export default function HomeTab() {
   const homeSubTab = useNavigationStore((s) => s.homeSubTab);
@@ -44,12 +47,25 @@ export default function HomeTab() {
           />
         )}
         {homeSubTab === 'trending' && <TrendingTab />}
+        {homeSubTab === 'predictions' && (
+          <PredictionsTab
+            onShare={setShareId}
+            onComment={setCommentId}
+          />
+        )}
+        {homeSubTab === 'polls' && (
+          <PollsTab
+            onShare={setShareId}
+            onComment={setCommentId}
+          />
+        )}
       </motion.div>
 
       <AnimatePresence>
         {shareId !== null && <ShareSheet onClose={() => setShareId(null)} />}
         {commentId !== null && <CommentSheet itemId={commentId} onClose={handleCloseComments} />}
       </AnimatePresence>
+      <EntityProfileSheet />
     </div>
   );
 }

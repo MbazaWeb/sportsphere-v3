@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export type TabId = "home"|"scores"|"create"|"activity"|"profile";
-export type HomeSubTab = "for-you"|"trending"|"spotlight";
+export type HomeSubTab = "for-you"|"trending"|"spotlight"|"predictions"|"polls";
 export type ScoresSubTab = "live"|"today"|"upcoming"|"results"|"standings";
 export type ActivitySubTab = "all"|"social"|"sports"|"messages";
 

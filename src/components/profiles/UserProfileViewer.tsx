@@ -113,7 +113,7 @@ export default function UserProfileViewer() {
         <div className="mx-auto max-w-lg min-h-screen">
           <ProfileCover coverGradient={viewingUser.coverGradient} onBack={() => setViewingUser(null)} />
           <ProfileInfo user={viewingUser} role={role} roleData={apiUser?.roleData} />
-          <ProfileStats followers={viewingUser.followers} following={viewingUser.following} posts={viewingUser.posts} onOpenList={setPeopleListOpen} />
+          <ProfileStats followers={viewingUser.followers} following={viewingUser.following} posts={viewingUser.posts} onOpenList={setPeopleListOpen} role={role} />
           <ProfileActions role={role} following={following} setFollowing={handleSetFollowing} targetUserId={viewingUser.id} />
           <ProfileTabs tabs={tabs} activeTab={activeTab} onTabChange={(t) => setActiveTab(t as TabId)} />
           <div className="p-3 sm:p-4 flex flex-col gap-3 pb-20">
