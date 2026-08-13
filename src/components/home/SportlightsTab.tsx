@@ -212,9 +212,11 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
           setSuggestedAccounts(suggestions);
         }
       }
+      // Leaderboard: only use performance API if it returns data with actual points > 0.
+      // Otherwise keep the follower-based ranking from allUsers above.
       if (leaderboardRes.ok) {
         const lbData = await leaderboardRes.json();
-        if (Array.isArray(lbData) && lbData.length > 0) {
+        if (Array.isArray(lbData) && lbData.length > 0 && lbData.some((e: any) => (e.points || 0) > 0)) {
           setLeaderboard(lbData.slice(0, 10));
         }
       }
@@ -520,7 +522,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                   <p className="text-sm font-semibold text-white truncate">{item.name}</p>
                   <p className="text-[10px] text-muted-foreground capitalize">{item.role}</p>
                 </div>
-                <span className="text-sm font-bold text-gold">{formatCount(item.points)}</span>
+                <span className="text-sm font-bold text-gold">{formatCount(item.points)} <span className="text-[9px] text-muted-foreground font-normal">fans</span></span>
               </button>
             ))}
           </div>

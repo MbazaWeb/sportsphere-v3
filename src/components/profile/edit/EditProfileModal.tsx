@@ -12,6 +12,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { getRoleConfig } from '@/profile-engine/registry';
 import { useSports } from '@/hooks/useSports';
+import { LocationPicker } from '@/components/ui/LocationPicker';
 
 const INTERESTS = ['Transfers', 'Statistics', 'Fantasy', 'Highlights', 'Live Scores', 'Sports Business', 'Coaching', 'Fitness', 'Betting News', 'Analysis', 'Youth Academy', "Women's Sports", 'Local Football', 'International Football'];
 const COUNTRIES = ['England', 'Spain', 'Germany', 'France', 'Italy', 'Portugal', 'Netherlands', 'Belgium', 'Brazil', 'Argentina', 'Nigeria', 'Kenya', 'Tanzania', 'South Africa', 'Egypt', 'Morocco', 'Ghana', 'Cameroon', 'Senegal', 'Ivory Coast', 'USA', 'Canada', 'Mexico', 'Japan', 'South Korea', 'China', 'India', 'Australia', 'Saudi Arabia', 'Qatar', 'UAE'];
@@ -451,9 +452,15 @@ function ProfileSection({ data, update }: { data: Record<string, unknown>; updat
         </select>
       </div>
 
-      {/* Single location field */}
+      {/* Location with search-as-you-type dropdown */}
       <Field label="Location" hint="e.g. Dar es Salaam, Tanzania">
-        <TextInput value={data.location as string} onChange={(v) => update('location', v)} placeholder="City, Country" />
+        <LocationPicker
+          value={data.location as string || ''}
+          onSelect={(loc) => update('location', loc.displayLabel)}
+          onClear={() => update('location', '')}
+          placeholder="Search city or country..."
+          inputClassName="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-gold"
+        />
       </Field>
 
       <Field label="About Me" hint="Up to 500 characters">
@@ -723,7 +730,7 @@ function RoleTab({ data, update }: { data: Record<string, unknown>; update: (k: 
   );
 }
 
-// ─── FavoritesSection (unchanged logic, lighter markup) ──────────────────────
+// ─── FavoritesSection (with search-as-you-type autocomplete) ─────────────────
 
 function FavoritesSection({ data }: { data: Record<string, unknown> }) {
   const favorites = (data.favorites as Array<{ id: string; targetType: string; targetName: string }>) || [];
@@ -731,6 +738,10 @@ function FavoritesSection({ data }: { data: Record<string, unknown> }) {
   const [adding, setAdding] = useState(false);
   const [newType, setNewType] = useState('team');
   const [newName, setNewName] = useState('');
+  const [selectedItem, setSelectedItem] = useState<{ id: string; name: string } | null>(null);
+  const [searchResults, setSearchResults] = useState<Array<{ id: string; name: string; type: string; extra?: string }>>([]);
+  const [searching, setSearching] = useState(false);
+  const searchTimer = useRef<NodeJS.Timeout | null>(null);
 
   const types = [
     { id: 'team',         label: 'Team',         icon: Users },
@@ -742,11 +753,34 @@ function FavoritesSection({ data }: { data: Record<string, unknown> }) {
     { id: 'competition',  label: 'Competition',   icon: Award },
   ];
 
+  const handleSearchInput = (val: string) => {
+    setNewName(val);
+    setSelectedItem(null);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (val.trim().length < 2) { setSearchResults([]); setSearching(false); return; }
+    setSearching(true);
+    searchTimer.current = setTimeout(async () => {
+      try {
+        const res = await apiFetch(`/api/teams/search?q=${encodeURIComponent(val.trim())}&type=${newType.toUpperCase()}&limit=8`);
+        if (res.ok) { const d = await res.json(); setSearchResults(d.results || []); }
+      } catch { /* ignore */ }
+      setSearching(false);
+    }, 300);
+  };
+
+  const selectResult = (item: { id: string; name: string }) => {
+    setSelectedItem(item);
+    setNewName(item.name);
+    setSearchResults([]);
+  };
+
   const addFavorite = async () => {
     if (!newName.trim()) return;
+    const targetId = selectedItem?.id || newName.trim().toLowerCase().replace(/\s+/g, '-');
     try {
-      const res = await apiFetch('/api/profile/favorites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetType: newType, targetName: newName.trim() }) });
-      if (res.ok) { showToast('Favorite added'); setNewName(''); setAdding(false); window.location.reload(); }
+      const res = await apiFetch('/api/profile/favorites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetType: newType, targetId, targetName: newName.trim() }) });
+      if (res.ok) { showToast('Favorite added'); setNewName(''); setSelectedItem(null); setSearchResults([]); setAdding(false); window.location.reload(); }
+      else { const d = await res.json().catch(() => ({})); showToast(d?.error || 'Failed to add'); }
     } catch { showToast('Failed to add'); }
   };
 
@@ -759,7 +793,7 @@ function FavoritesSection({ data }: { data: Record<string, unknown> }) {
     <div>
       <div className="flex items-center justify-between mb-3">
         <p className="text-[10px] font-bold text-gold uppercase tracking-wider">Favorites</p>
-        <button onClick={() => setAdding(!adding)} className="flex items-center gap-1 rounded-lg bg-gold px-2.5 py-1 text-[11px] font-bold text-black">
+        <button onClick={() => { setAdding(!adding); setSearchResults([]); setSelectedItem(null); setNewName(''); }} className="flex items-center gap-1 rounded-lg bg-gold px-2.5 py-1 text-[11px] font-bold text-black">
           <Plus className="h-3 w-3" /> Add
         </button>
       </div>
@@ -768,18 +802,36 @@ function FavoritesSection({ data }: { data: Record<string, unknown> }) {
         <div className="mb-4 rounded-xl bg-surface border border-surface-border p-3">
           <div className="flex flex-wrap gap-1.5 mb-3">
             {types.map(t => (
-              <button key={t.id} onClick={() => setNewType(t.id)}
+              <button key={t.id} onClick={() => { setNewType(t.id); setSearchResults([]); setSelectedItem(null); }}
                 className={cn('flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold',
                   newType === t.id ? 'bg-gold text-black' : 'bg-surface-elevated text-muted-foreground')}>
                 <t.icon className="h-3 w-3" /> {t.label}
               </button>
             ))}
           </div>
-          <div className="flex gap-2">
-            <TextInput value={newName} onChange={setNewName} placeholder="e.g. Manchester United" />
-            <button onClick={addFavorite} disabled={!newName.trim()} className="rounded-xl bg-gold px-4 text-xs font-bold text-black disabled:opacity-50 whitespace-nowrap">
-              Add
-            </button>
+          <div className="relative">
+            <div className="flex gap-2">
+              <TextInput value={newName} onChange={handleSearchInput} placeholder="Search teams, players..." />
+              <button onClick={addFavorite} disabled={!newName.trim()} className="rounded-xl bg-gold px-4 text-xs font-bold text-black disabled:opacity-50 whitespace-nowrap">
+                Add
+              </button>
+            </div>
+            {searchResults.length > 0 && (
+              <div className="absolute left-0 right-0 top-full mt-1 z-50 max-h-40 overflow-y-auto rounded-lg border border-surface-border bg-surface-elevated shadow-lg">
+                {searchResults.map((item) => (
+                  <button key={`${item.type}-${item.id}`} type="button" onClick={() => selectResult(item)}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-surface-border/50 transition-colors">
+                    <div className="flex-1">
+                      <p className="text-white font-medium">{item.name}</p>
+                      {item.extra && <p className="text-muted-foreground text-[10px]">{item.extra}</p>}
+                    </div>
+                    <span className="text-[9px] text-gold">{item.type}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {searching && <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-lg border border-surface-border bg-surface-elevated p-2 text-[10px] text-muted-foreground">Searching...</div>}
+            {selectedItem && <p className="mt-1 text-[10px] text-emerald-400">Selected: {selectedItem.name}</p>}
           </div>
         </div>
       )}
