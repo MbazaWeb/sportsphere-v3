@@ -2,7 +2,7 @@
 import { apiFetch } from '@/lib/api';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, X, User, FileText, TrendingUp, Loader2, ChevronRight } from 'lucide-react';
+import { Search, X, User, FileText, TrendingUp, Loader2, ChevronRight, Shield, Trophy, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { BadgeStack } from '@/components/ui/RoleBadge';
@@ -21,15 +21,52 @@ interface SearchPost {
   likeCount: number; commentCount: number;
   user: { name: string; handle: string; avatarUrl?: string | null; avatar?: string; role: string; isVerified: boolean; };
 }
-interface SearchResults { users: SearchUser[]; posts: SearchPost[]; }
+interface SearchEntity {
+  id: string; name: string; type: string; logoUrl?: string | null; extra?: string;
+}
+interface SearchResults {
+  users: SearchUser[];
+  posts: SearchPost[];
+  entities: SearchEntity[];
+}
 
-const TRENDING = ['Simba SC', 'Yanga SC', 'Premier League', 'Champions League', 'AFCON'];
+const TRENDING = ['Simba SC', 'Yanga SC', 'Premier League', 'Champions League', 'AFCON', 'Taifa Stars'];
 
 function UserAvatar({ user, size = 'sm' }: { user: { avatarUrl?: string | null; avatarInitials?: string | null; avatar?: string; name: string }; size?: 'sm' | 'md' }) {
   const dim = size === 'md' ? 'h-10 w-10 text-sm' : 'h-8 w-8 text-xs';
   if (user.avatarUrl) return <img src={user.avatarUrl} alt={user.name} className={cn('rounded-full object-cover flex-shrink-0', dim)} />;
   const initials = user.avatarInitials || user.avatar || user.name.slice(0, 2).toUpperCase();
   return <div className={cn('rounded-full bg-gold/20 flex items-center justify-center font-bold text-gold flex-shrink-0', dim)}>{initials}</div>;
+}
+
+function EntityIcon({ type, logoUrl }: { type: string; logoUrl?: string | null }) {
+  const size = 'h-10 w-10';
+  if (logoUrl) return <img src={logoUrl} alt="" className={cn(size, 'rounded-full object-cover flex-shrink-0')} />;
+
+  const config: Record<string, { bg: string; icon: typeof Shield; label: string }> = {
+    TEAM: { bg: 'bg-emerald-500/20', icon: Shield, label: 'TM' },
+    PLAYER: { bg: 'bg-blue-500/20', icon: User, label: 'PL' },
+    COACH: { bg: 'bg-orange-500/20', icon: Users, label: 'CO' },
+    LEAGUE: { bg: 'bg-purple-500/20', icon: Trophy, label: 'LG' },
+    COMPETITION: { bg: 'bg-purple-500/20', icon: Trophy, label: 'CP' },
+    NATIONAL_TEAM: { bg: 'bg-cyan-500/20', icon: Shield, label: 'NT' },
+    SPORT: { bg: 'bg-pink-500/20', icon: Trophy, label: 'SP' },
+    STADIUM: { bg: 'bg-yellow-500/20', icon: Trophy, label: 'ST' },
+  };
+  const c = config[type] || config.TEAM;
+  return (
+    <div className={cn(size, 'rounded-full flex items-center justify-center font-bold text-[10px] flex-shrink-0', c.bg, type === 'TEAM' ? 'text-emerald-400' : type === 'PLAYER' ? 'text-blue-400' : type === 'COACH' ? 'text-orange-400' : type === 'LEAGUE' || type === 'COMPETITION' ? 'text-purple-400' : 'text-gold')}>
+      {c.label}
+    </div>
+  );
+}
+
+function typeLabel(type: string) {
+  const labels: Record<string, string> = {
+    TEAM: 'Team', PLAYER: 'Player', COACH: 'Coach', LEAGUE: 'League',
+    COMPETITION: 'Competition', NATIONAL_TEAM: 'National Team', SPORT: 'Sport', STADIUM: 'Stadium',
+  };
+  return labels[type] || type;
 }
 
 function postTypeIcon(type: string) {
@@ -39,40 +76,42 @@ function postTypeIcon(type: string) {
 
 export function SearchModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResults>({ users: [], posts: [] });
+  const [results, setResults] = useState<SearchResults>({ users: [], posts: [], entities: [] });
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'people' | 'posts'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'people' | 'teams' | 'posts'>('all');
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const setViewingUser = useUIStore((s) => s.setViewingUser);
 
   useEffect(() => {
     if (open) {
-      setQuery(''); setResults({ users: [], posts: [] }); setActiveTab('all');
+      setQuery(''); setResults({ users: [], posts: [], entities: [] }); setActiveTab('all');
       setTimeout(() => inputRef.current?.focus(), 80);
     }
   }, [open]);
 
   const doSearch = useCallback(async (q: string) => {
-    if (!q.trim()) { setResults({ users: [], posts: [] }); setLoading(false); return; }
+    if (!q.trim()) { setResults({ users: [], posts: [], entities: [] }); setLoading(false); return; }
     setLoading(true);
     try {
-      const [usersRes, postsRes] = await Promise.all([
+      const [usersRes, postsRes, entitiesRes] = await Promise.all([
         apiFetch(`/api/users?q=${encodeURIComponent(q)}&limit=6`),
         apiFetch(`/api/feed?q=${encodeURIComponent(q)}&limit=5`),
+        apiFetch(`/api/teams/search?q=${encodeURIComponent(q)}&limit=10`),
       ]);
       setResults({
         users: usersRes.ok ? await usersRes.json() : [],
         posts: postsRes.ok ? await postsRes.json() : [],
+        entities: entitiesRes.ok ? (await entitiesRes.json()).results || [] : [],
       });
-    } catch { setResults({ users: [], posts: [] }); }
+    } catch { setResults({ users: [], posts: [], entities: [] }); }
     setLoading(false);
   }, []);
 
   const handleChange = (val: string) => {
     setQuery(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!val.trim()) { setResults({ users: [], posts: [] }); setLoading(false); return; }
+    if (!val.trim()) { setResults({ users: [], posts: [], entities: [] }); setLoading(false); return; }
     setLoading(true);
     debounceRef.current = setTimeout(() => doSearch(val), 300);
   };
@@ -103,10 +142,18 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
     onClose();
   };
 
-  const hasResults = results.users.length > 0 || results.posts.length > 0;
+  const handleEntityClick = (entity: SearchEntity) => {
+    // For now close the modal; could navigate to entity detail page later
+    onClose();
+  };
+
+  const hasResults = results.users.length > 0 || results.posts.length > 0 || results.entities.length > 0;
   const showEmpty = query.trim().length > 1 && !loading && !hasResults;
-  const displayUsers = activeTab === 'posts' ? [] : results.users;
-  const displayPosts = activeTab === 'people' ? [] : results.posts;
+  const displayUsers = activeTab === 'teams' || activeTab === 'posts' ? [] : results.users;
+  const displayPosts = activeTab === 'people' || activeTab === 'teams' ? [] : results.posts;
+  const displayEntities = activeTab === 'people' || activeTab === 'posts' ? [] : results.entities;
+
+  const totalEntities = results.entities.length;
 
   return (
     <AnimatePresence>
@@ -125,7 +172,7 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
                 {loading ? <Loader2 className="h-4 w-4 text-gold animate-spin" /> : <Search className="h-4 w-4 text-muted-foreground" />}
               </div>
               <input ref={inputRef} type="text" value={query} onChange={(e) => handleChange(e.target.value)}
-                placeholder="Search players, teams, posts..." autoComplete="off"
+                placeholder="Search players, teams, leagues..." autoComplete="off"
                 className="flex-1 bg-transparent px-3 py-3.5 text-sm text-white placeholder:text-muted-foreground focus:outline-none" />
               {query
                 ? <button onClick={() => handleChange('')} className="pr-4"><X className="h-4 w-4 text-muted-foreground hover:text-white transition-colors" /></button>
@@ -140,13 +187,14 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
                   className="mt-2 rounded-2xl bg-surface-elevated border border-surface-border shadow-2xl overflow-hidden max-h-[70vh] flex flex-col">
 
                   {hasResults && (
-                    <div className="flex border-b border-surface-border px-2 pt-1">
-                      {(['all', 'people', 'posts'] as const).map((tab) => (
+                    <div className="flex border-b border-surface-border px-2 pt-1 overflow-x-auto">
+                      {(['all', 'people', 'teams', 'posts'] as const).map((tab) => (
                         <button key={tab} onClick={() => setActiveTab(tab)}
-                          className={cn('px-4 py-2 text-xs font-semibold capitalize transition-colors border-b-2 -mb-px',
+                          className={cn('px-4 py-2 text-xs font-semibold capitalize transition-colors border-b-2 -mb-px whitespace-nowrap',
                             activeTab === tab ? 'border-gold text-gold' : 'border-transparent text-muted-foreground hover:text-white')}>
-                          {tab}
+                          {tab === 'teams' ? 'Teams & Players' : tab}
                           {tab === 'people' && results.users.length > 0 && <span className="ml-1 rounded-full bg-surface px-1.5 py-0.5 text-[9px]">{results.users.length}</span>}
+                          {tab === 'teams' && totalEntities > 0 && <span className="ml-1 rounded-full bg-surface px-1.5 py-0.5 text-[9px]">{totalEntities}</span>}
                           {tab === 'posts' && results.posts.length > 0 && <span className="ml-1 rounded-full bg-surface px-1.5 py-0.5 text-[9px]">{results.posts.length}</span>}
                         </button>
                       ))}
@@ -178,6 +226,36 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
                         <p className="text-sm text-muted-foreground">No results for &ldquo;{query}&rdquo;</p>
                         <p className="text-xs text-muted-foreground/60 mt-1">Try a different name or keyword</p>
                       </div>
+                    )}
+
+                    {/* Teams, Players, Leagues, etc. */}
+                    {displayEntities.length > 0 && (
+                      <div className="p-2">
+                        {activeTab === 'all' && (
+                          <p className="mb-1 px-2 flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                            <Shield className="h-3 w-3" /> Teams & Players
+                          </p>
+                        )}
+                        {displayEntities.map((entity) => (
+                          <button key={`${entity.type}-${entity.id}`} onClick={() => handleEntityClick(entity)}
+                            className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-surface transition-colors group">
+                            <EntityIcon type={entity.type} logoUrl={entity.logoUrl} />
+                            <div className="flex-1 text-left min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-sm font-semibold text-white truncate group-hover:text-gold transition-colors">{entity.name}</span>
+                                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-surface text-muted-foreground">{typeLabel(entity.type)}</span>
+                              </div>
+                              {entity.extra && <p className="text-[11px] text-muted-foreground/70 truncate mt-0.5">{entity.extra}</p>}
+                            </div>
+                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-gold transition-colors flex-shrink-0" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Separator between entities and people */}
+                    {activeTab === 'all' && displayEntities.length > 0 && displayUsers.length > 0 && (
+                      <div className="border-t border-surface-border mx-3" />
                     )}
 
                     {/* People */}
@@ -213,7 +291,11 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
                       </div>
                     )}
 
+                    {/* Separator between people and posts */}
                     {activeTab === 'all' && displayUsers.length > 0 && displayPosts.length > 0 && (
+                      <div className="border-t border-surface-border mx-3" />
+                    )}
+                    {activeTab === 'all' && displayEntities.length > 0 && displayUsers.length === 0 && displayPosts.length > 0 && (
                       <div className="border-t border-surface-border mx-3" />
                     )}
 
