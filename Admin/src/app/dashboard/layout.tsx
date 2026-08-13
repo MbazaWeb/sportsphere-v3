@@ -51,6 +51,7 @@ const NAV = [
   { href: '/dashboard/create-team', label: '🏟️ Create Team' },
   { href: '/dashboard/create-player-staff', label: '👤 Create Player & Staff' },
   { href: '/dashboard/create-business', label: '🏢 Create Business' },
+  { href: '/dashboard/business-links', label: '🔗 Business Links' },
   { href: '/dashboard/roles', label: '🛡️ Role Approvals' },
   { href: '/dashboard/verifications', label: '✅ Verifications' },
   { href: '/dashboard/performance-verifications', label: '📊 Performance Review' },
