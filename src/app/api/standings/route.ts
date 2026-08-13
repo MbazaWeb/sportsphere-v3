@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
         const gd = s.gf - s.ga;
         return {
           pos: 0,
-          team: t.shortName || t.name,
+          team: t.name,
           badge: t.logoUrl || undefined,
           slug: t.slug,
           city: t.city,
