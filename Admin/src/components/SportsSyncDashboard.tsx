@@ -107,7 +107,7 @@ export default function SportsSyncDashboard() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch("/api/sports-sync", { cache: "no-store" });
+      const res = await fetch("/api/admin/sports-sync", { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || `Failed to load (${res.status})`);
@@ -138,7 +138,7 @@ export default function SportsSyncDashboard() {
       setLastSyncResult(null);
       setSummary(null);
 
-      const res = await fetch("/api/sports-sync", {
+      const res = await fetch("/api/admin/sports-sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -148,8 +148,17 @@ export default function SportsSyncDashboard() {
         signal: controller.signal,
       });
 
+      const ct = res.headers.get("content-type") || "";
       let data: any = null;
       try {
+        if (!ct.includes("application/json")) {
+          const text = await res.text();
+          setError(
+            `Sync returned HTML/non-JSON (HTTP ${res.status}). Check admin session and API path. ` +
+              text.replace(/<[^>]+>/g, " ").slice(0, 120)
+          );
+          return;
+        }
         data = await res.json();
       } catch {
         setError(`Sync returned non-JSON response (HTTP ${res.status})`);
