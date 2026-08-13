@@ -45,11 +45,13 @@ function formatDateLabel(d: Date): string {
   target.setHours(0,0,0,0);
   const diff = (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
 
-  if (diff === 0) return 'Today';
-  if (diff === 1) return 'Tomorrow';
-  if (diff === -1) return 'Yesterday';
+  const datePart = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  if (diff === 0) return `Today · ${datePart}`;
+  if (diff === 1) return `Tomorrow · ${datePart}`;
+  if (diff === -1) return `Yesterday · ${datePart}`;
+
+  return datePart;
 }
 
 interface ScoresHeaderProps {
@@ -131,8 +133,8 @@ export function ScoresHeader({
     onDateChange(formatDate(new Date()));
   }, [onDateChange]);
 
-  // Show date picker for upcoming/results
-  const showDateControls = scoresSubTab === 'upcoming' || scoresSubTab === 'results';
+  // Show date picker for today/upcoming/results
+  const showDateControls = scoresSubTab === 'today' || scoresSubTab === 'upcoming' || scoresSubTab === 'results';
   const displayDate = selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date();
 
   // Date picker calendar helpers
@@ -244,7 +246,12 @@ export function ScoresHeader({
             >
               <ChevronLeft className="h-5 w-5 text-foreground" />
             </button>
-            <h2 className="truncate text-base sm:text-lg font-extrabold text-foreground tracking-tight">Scores</h2>
+            <div className="flex flex-col min-w-0">
+              <h2 className="truncate text-base sm:text-lg font-extrabold text-foreground tracking-tight leading-tight">Scores</h2>
+              {selectedDate && (
+                <span className="text-[10px] text-muted-foreground font-medium leading-tight">{formatDateLabel(displayDate)}</span>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {leaguesLoading && (

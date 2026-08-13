@@ -31,24 +31,47 @@ function mapProfileMatch(m: any) {
   };
 }
 
-async function loadAdminMatches(status: string, leagueName?: string | null) {
+async function loadAdminMatches(status: string, leagueName?: string | null, dateStr?: string | null) {
   try {
     const where: any = { source: 'admin' };
     const now = new Date();
+
+    // Parse date parameter into start/end of day (UTC-aware)
+    let dateStart: Date | null = null;
+    let dateEnd: Date | null = null;
+    if (dateStr) {
+      dateStart = new Date(dateStr + 'T00:00:00');
+      dateEnd = new Date(dateStr + 'T23:59:59.999');
+    }
 
     if (status === 'live') {
       where.status = { in: ['live', 'ht'] };
     } else if (status === 'upcoming') {
       where.status = 'upcoming';
-      where.kickoffAt = { gte: now };
+      if (dateStart && dateEnd) {
+        // When a specific date is selected, show upcoming matches on THAT date
+        where.kickoffAt = { gte: dateStart, lte: dateEnd };
+      } else {
+        // Default: show all future upcoming matches
+        where.kickoffAt = { gte: now };
+      }
     } else if (status === 'results') {
       where.status = 'ft';
+      if (dateStart && dateEnd) {
+        // When a specific date is selected, show results for THAT date only
+        where.kickoffAt = { gte: dateStart, lte: dateEnd };
+      }
+      // else: show all results (most recent first, limited by take)
     } else if (status === 'today') {
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-      const end = new Date();
-      end.setHours(23, 59, 59, 999);
-      where.kickoffAt = { gte: start, lte: end };
+      if (dateStart && dateEnd) {
+        where.kickoffAt = { gte: dateStart, lte: dateEnd };
+      } else {
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+        const end = new Date();
+        end.setHours(23, 59, 59, 999);
+        where.kickoffAt = { gte: start, lte: end };
+      }
     }
 
     // Filter by league name or ID
@@ -69,7 +92,7 @@ async function loadAdminMatches(status: string, leagueName?: string | null) {
     const rows = await db.matchProfile.findMany({
       where,
       orderBy: { kickoffAt: status === 'results' ? 'desc' : 'asc' },
-      take: 100,
+      take: dateStr ? 200 : 100,
       include: {
         League: { select: { id: true, name: true, country: true } },
         Sport: { select: { id: true, name: true, icon: true } },
@@ -98,28 +121,46 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const status = searchParams.get('status') || 'live';
     const leagueName = searchParams.get('league');
+    const dateStr = searchParams.get('date') || undefined;
 
     // Primary: fetch from MatchProfile (admin-created data)
-    let matches = await loadAdminMatches(status, leagueName);
+    let matches = await loadAdminMatches(status, leagueName, dateStr);
 
     // Fallback: if no admin data, try the legacy Match table
     if (!matches || matches.length === 0) {
       try {
         const where: any = {};
         const now = new Date();
+        let legacyDateStart: Date | null = null;
+        let legacyDateEnd: Date | null = null;
+        if (dateStr) {
+          legacyDateStart = new Date(dateStr + 'T00:00:00');
+          legacyDateEnd = new Date(dateStr + 'T23:59:59.999');
+        }
         if (status === 'live') {
           where.status = { in: ['live', 'ht'] };
         } else if (status === 'upcoming') {
           where.status = 'upcoming';
-          where.kickoffAt = { gte: now };
+          if (legacyDateStart && legacyDateEnd) {
+            where.kickoffAt = { gte: legacyDateStart, lte: legacyDateEnd };
+          } else {
+            where.kickoffAt = { gte: now };
+          }
         } else if (status === 'results') {
           where.status = 'ft';
+          if (legacyDateStart && legacyDateEnd) {
+            where.kickoffAt = { gte: legacyDateStart, lte: legacyDateEnd };
+          }
         } else if (status === 'today') {
-          const start = new Date();
-          start.setHours(0, 0, 0, 0);
-          const end = new Date();
-          end.setHours(23, 59, 59, 999);
-          where.kickoffAt = { gte: start, lte: end };
+          if (legacyDateStart && legacyDateEnd) {
+            where.kickoffAt = { gte: legacyDateStart, lte: legacyDateEnd };
+          } else {
+            const start = new Date();
+            start.setHours(0, 0, 0, 0);
+            const end = new Date();
+            end.setHours(23, 59, 59, 999);
+            where.kickoffAt = { gte: start, lte: end };
+          }
         }
 
         const legacyRows = await db.match.findMany({

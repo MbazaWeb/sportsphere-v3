@@ -82,7 +82,8 @@ export default function ScoresTab() {
       try {
         const params = new URLSearchParams({ status: scoresSubTab });
         if (tournament !== 'All') params.append('league', tournament);
-        if ((scoresSubTab === 'upcoming' || scoresSubTab === 'results') && selectedDate) {
+        // Send date filter for today/upcoming/results tabs
+        if ((scoresSubTab === 'today' || scoresSubTab === 'upcoming' || scoresSubTab === 'results') && selectedDate) {
           params.append('date', selectedDate);
         }
 
@@ -151,6 +152,10 @@ export default function ScoresTab() {
     results: 'past results',
   };
 
+  // Show date on match cards when results tab or browsing a non-today date
+  const todayStr = getTodayStr();
+  const showDateOnCards = scoresSubTab === 'results' || !!selectedDate && selectedDate !== todayStr;
+
   return (
     <div>
       <ScoresHeader
@@ -175,6 +180,7 @@ export default function ScoresTab() {
             loading={loading}
             label={labelMap[scoresSubTab] || 'matches'}
             onMatchClick={setSelectedMatch}
+            showDate={showDateOnCards}
           />
         )}
       </div>

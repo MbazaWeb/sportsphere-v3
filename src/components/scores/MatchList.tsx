@@ -28,6 +28,7 @@ interface MatchListProps {
   loading: boolean;
   label: string;
   onMatchClick?: (match: ApiMatch) => void;
+  showDate?: boolean;
 }
 
 // ─── Status badge ────────────────────────────────────────────────────────────────────────────────────────────
@@ -109,8 +110,15 @@ function formatKickoff(isoStr: string): string {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+function formatMatchDate(isoStr: string): string {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
 // ─── Match row ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-function MatchRow({ m, onClick }: { m: ApiMatch; onClick?: (match: ApiMatch) => void }) {
+function MatchRow({ m, onClick, showDate }: { m: ApiMatch; onClick?: (match: ApiMatch) => void; showDate?: boolean }) {
   const isLive = m.status === 'live' || m.status === 'ht';
 
   return (
@@ -126,7 +134,12 @@ function MatchRow({ m, onClick }: { m: ApiMatch; onClick?: (match: ApiMatch) => 
       {/* Home */}
       <div className="flex items-center gap-2.5 flex-1 min-w-0">
         <TeamBadge src={m.homeBadge} name={m.homeTeam} />
-        <span className="text-[13px] font-semibold text-foreground truncate">{m.homeTeam}</span>
+        <div className="min-w-0 flex-1">
+          <span className="text-[13px] font-semibold text-foreground truncate block">{m.homeTeam}</span>
+          {showDate && m.kickoffAt && (
+            <span className="text-[9px] text-muted-foreground">{formatMatchDate(m.kickoffAt)}</span>
+          )}
+        </div>
       </div>
 
       {/* Score / Time */}
@@ -165,7 +178,12 @@ function MatchRow({ m, onClick }: { m: ApiMatch; onClick?: (match: ApiMatch) => 
 
       {/* Away */}
       <div className="flex items-center gap-2.5 flex-1 min-w-0 justify-end">
-        <span className="text-[13px] font-semibold text-foreground truncate text-right">{m.awayTeam}</span>
+        <div className="min-w-0 flex-1 text-right">
+          <span className="text-[13px] font-semibold text-foreground truncate block">{m.awayTeam}</span>
+          {showDate && m.kickoffAt && (
+            <span className="text-[9px] text-muted-foreground">{formatMatchDate(m.kickoffAt)}</span>
+          )}
+        </div>
         <TeamBadge src={m.awayBadge} name={m.awayTeam} />
       </div>
     </button>
@@ -178,11 +196,13 @@ function LeagueGroup({
   badge,
   matches,
   onMatchClick,
+  showDate,
 }: {
   league: string;
   badge?: string;
   matches: ApiMatch[];
   onMatchClick?: (match: ApiMatch) => void;
+  showDate?: boolean;
 }) {
   const hasLive = matches.some((m) => m.status === 'live' || m.status === 'ht');
 
@@ -210,7 +230,7 @@ function LeagueGroup({
       {/* Match rows */}
       <div className="divide-y divide-surface-border/30">
         {matches.map((m) => (
-          <MatchRow key={m.id} m={m} onClick={onMatchClick} />
+          <MatchRow key={m.id} m={m} onClick={onMatchClick} showDate={showDate} />
         ))}
       </div>
     </div>
@@ -218,7 +238,7 @@ function LeagueGroup({
 }
 
 // ─── Main MatchList ───────────────────────────────────────────────────────────────────────────────────────────────────────
-export function MatchList({ matches, loading, label, onMatchClick }: MatchListProps) {
+export function MatchList({ matches, loading, label, onMatchClick, showDate }: MatchListProps) {
   // Group matches by league
   const grouped = useMemo(() => {
     const map = new Map<string, ApiMatch[]>();
@@ -272,7 +292,7 @@ export function MatchList({ matches, loading, label, onMatchClick }: MatchListPr
   return (
     <div className="space-y-3 p-4">
       {grouped.map((g) => (
-        <LeagueGroup key={g.league} league={g.league} badge={g.badge} matches={g.matches} onMatchClick={onMatchClick} />
+        <LeagueGroup key={g.league} league={g.league} badge={g.badge} matches={g.matches} onMatchClick={onMatchClick} showDate={showDate} />
       ))}
     </div>
   );
