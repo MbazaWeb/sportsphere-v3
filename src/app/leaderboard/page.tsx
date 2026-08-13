@@ -87,6 +87,13 @@ export default function LeaderboardPage() {
 
   const [dimension, setDimension] = useState<Dimension>('overall');
   const [role, setRole] = useState<RoleFilter>('all');
+
+  // Honour ?role=player|coach|team from the URL (e.g. /leaderboard?role=player)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const r = new URLSearchParams(window.location.search).get('role');
+    if (r === 'player' || r === 'coach' || r === 'team') setRole(r);
+  }, []);
   const [position, setPosition] = useState<PositionFilter>('all');
   const [limit, setLimit] = useState(25);
 

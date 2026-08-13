@@ -142,7 +142,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
         apiFetch('/api/matches?status=live'),
         apiFetch('/api/feed?type=for-you'),
         apiFetch('/api/users'),
-        apiFetch('/api/leaderboard'),
+        apiFetch('/api/leaderboard?role=player&limit=5'),
         apiFetch('/api/spotlight'),
         apiFetch('/api/matches?status=results'),
       ]);

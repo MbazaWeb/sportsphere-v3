@@ -16,7 +16,10 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '20', 10) || 20, 1), 50);
 
     const where: Record<string, unknown> = {
-      playerProfile: { isNot: null },
+      OR: [
+        { role: 'player' },
+        { playerProfile: { isNot: null } },
+      ],
     };
 
     const and: Record<string, unknown>[] = [];
