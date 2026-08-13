@@ -118,6 +118,8 @@ export default function SportsSyncDashboard() {
       setError("Select at least one provider and one sport");
       return;
     }
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 130_000);
     try {
       setSyncing(true);
       setError(null);
@@ -131,19 +133,61 @@ export default function SportsSyncDashboard() {
           providers: selectedProviders,
           sports: selectedSports,
         }),
+        signal: controller.signal,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || `Sync failed (${res.status})`);
+
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        setError(`Sync returned non-JSON response (HTTP ${res.status})`);
         return;
       }
+
       if (data.results) setLastSyncResult(data.results);
       if (data.summary) setSummary(data.summary);
       if (data.inventory) applyInventory(data.inventory);
-      else await fetchDashboardData();
+      else if (res.ok) await fetchDashboardData();
+
+      if (data.status === "failed" || (data.ok === false && !data.partial)) {
+        const detail =
+          data.error ||
+          data.code ||
+          (data.meta?.failedRuns
+            ? `${data.meta.failedRuns} provider/sport run(s) failed`
+            : `Sync failed (HTTP ${res.status})`);
+        setError(String(detail));
+        return;
+      }
+
+      if (data.status === "partial" || data.partial) {
+        const n = data.meta?.totalErrors ?? data.summary?.errors ?? 0;
+        setError(
+          `Partial sync: ${n} issue(s). See per-provider results below — some data may still have been written.`
+        );
+        return;
+      }
+
+      if (data.status === "skipped") {
+        setError(
+          "All selected runs were skipped (e.g. missing API tokens). Enable a configured provider or set tokens in Admin .env."
+        );
+        return;
+      }
+
+      if (!res.ok && res.status !== 207) {
+        setError(data.error || `Sync failed (HTTP ${res.status})`);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sync network error");
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError("Sync timed out after 130s. Try fewer providers/sports and retry.");
+      } else if (err instanceof TypeError) {
+        setError("Network error — check connection and try again.");
+      } else {
+        setError(err instanceof Error ? err.message : "Sync network error");
+      }
     } finally {
+      window.clearTimeout(timeoutId);
       setSyncing(false);
     }
   };
@@ -200,11 +244,28 @@ export default function SportsSyncDashboard() {
       </div>
 
       {error && (
-        <div className="flex items-start gap-2 p-4 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-200 text-sm">
+        <div className="flex items-start gap-3 p-4 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-200 text-sm">
           <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-          <div>
-            <div className="font-semibold">Error</div>
-            <div className="text-rose-300/90">{error}</div>
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold">Sync notice</div>
+            <div className="text-rose-300/90 break-words mt-0.5">{error}</div>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              className="text-xs px-2 py-1 rounded-lg border border-rose-500/30 hover:bg-rose-500/20"
+            >
+              Dismiss
+            </button>
+            <button
+              type="button"
+              disabled={syncing}
+              onClick={() => void handleTriggerSync()}
+              className="text-xs px-2 py-1 rounded-lg border border-rose-500/30 hover:bg-rose-500/20 disabled:opacity-40"
+            >
+              Retry
+            </button>
           </div>
         </div>
       )}
@@ -322,7 +383,7 @@ export default function SportsSyncDashboard() {
                     {r.teamsUpdated} · P {r.playersCreated}/{r.playersUpdated} · M{" "}
                     {r.matchesCreated}/{r.matchesUpdated}
                   </div>
-                  {r.errors.slice(0, 3).map((e, j) => (
+                  {r.errors.slice(0, 8).map((e, j) => (
                     <div key={j} className="text-rose-400/90 truncate">
                       {e}
                     </div>

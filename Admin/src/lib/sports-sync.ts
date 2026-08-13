@@ -34,6 +34,18 @@ export function slugify(s: string): string {
     .slice(0, 100);
 }
 
+
+/** Cap per-run error list so one flaky provider cannot flood the response */
+function pushError(result: SyncResult, message: string, max = 25) {
+  if (result.errors.length >= max) {
+    if (!result.errors[result.errors.length - 1]?.startsWith("…")) {
+      result.errors.push("… additional errors truncated");
+    }
+    return;
+  }
+  result.errors.push(String(message).slice(0, 400));
+}
+
 export interface SyncResult {
   provider: string;
   sport: string;
@@ -356,7 +368,7 @@ async function syncProviderSport(
   if (source === "sportmonks") {
     const sm = provider as SportmonksProvider;
     if (typeof sm.hasToken === "function" && !sm.hasToken()) {
-      result.errors.push(
+      pushError(result, 
         "Sportmonks skipped: set SPORTMONKS_API_TOKEN in Admin .env after subscribing (or free plan)"
       );
       return result;
@@ -367,11 +379,11 @@ async function syncProviderSport(
   try {
     sportRow = await ensureSport(sport);
   } catch (err) {
-    result.errors.push(`sport ensure: ${String(err)}`);
+    pushError(result, `sport ensure: ${String(err)}`);
   }
   const sportId = sportRow?.id;
   if (!sportId) {
-    result.errors.push("Could not resolve sport id");
+    pushError(result, "Could not resolve sport id");
     return result;
   }
 
@@ -386,12 +398,12 @@ async function syncProviderSport(
           const id = await upsertLeague(sportId, c, source, result);
           leagueIdByName.set(c.name.toLowerCase(), id);
         } catch (err) {
-          result.errors.push(`league ${c.name}: ${String(err)}`);
+          pushError(result, `league ${c.name}: ${String(err)}`);
         }
       }
     }
   } catch (err) {
-    result.errors.push(`competitions: ${String(err)}`);
+    pushError(result, `competitions: ${String(err)}`);
   }
 
   // 2) Fixtures → matches + discover league/team names
@@ -428,7 +440,7 @@ async function syncProviderSport(
               result
             );
           } catch (err) {
-            result.errors.push(`team ${f.homeTeam}: ${String(err)}`);
+            pushError(result, `team ${f.homeTeam}: ${String(err)}`);
           }
         }
         if (f.awayTeam) {
@@ -441,17 +453,17 @@ async function syncProviderSport(
               result
             );
           } catch (err) {
-            result.errors.push(`team ${f.awayTeam}: ${String(err)}`);
+            pushError(result, `team ${f.awayTeam}: ${String(err)}`);
           }
         }
 
         await upsertMatchLegacy(f, result);
       } catch (err) {
-        result.errors.push(`fixture: ${String(err)}`);
+        pushError(result, `fixture: ${String(err)}`);
       }
     }
   } catch (err) {
-    result.errors.push(`fixtures: ${String(err)}`);
+    pushError(result, `fixtures: ${String(err)}`);
   }
 
   // 3) Teams from provider (if available)
@@ -462,12 +474,12 @@ async function syncProviderSport(
         try {
           await upsertTeam(sportId, null, t, source, result);
         } catch (err) {
-          result.errors.push(`team list ${t.name}: ${String(err)}`);
+          pushError(result, `team list ${t.name}: ${String(err)}`);
         }
       }
     }
   } catch (err) {
-    result.errors.push(`teams: ${String(err)}`);
+    pushError(result, `teams: ${String(err)}`);
   }
 
   // 4) Players
@@ -488,12 +500,12 @@ async function syncProviderSport(
           }
           await upsertPlayer(sportId, teamId, null, p, source, result);
         } catch (err) {
-          result.errors.push(`player ${p.name}: ${String(err)}`);
+          pushError(result, `player ${p.name}: ${String(err)}`);
         }
       }
     }
   } catch (err) {
-    result.errors.push(`players: ${String(err)}`);
+    pushError(result, `players: ${String(err)}`);
   }
 
   // 5) football-data.org squads → players + coaches (rate-limit: first 5 PL teams)
@@ -509,23 +521,23 @@ async function syncProviderSport(
             try {
               await upsertPlayer(sportId, teamId, null, p, source, result);
             } catch (err) {
-              result.errors.push(`fd player ${p.name}: ${String(err)}`);
+              pushError(result, `fd player ${p.name}: ${String(err)}`);
             }
           }
           if (squad.coach) {
             try {
               await upsertCoach(sportId, teamId, null, squad.coach, source, result);
             } catch (err) {
-              result.errors.push(`fd coach ${squad.coach.name}: ${String(err)}`);
+              pushError(result, `fd coach ${squad.coach.name}: ${String(err)}`);
             }
           }
         } catch (err) {
-          result.errors.push(`fd squad ${t.name}: ${String(err)}`);
+          pushError(result, `fd squad ${t.name}: ${String(err)}`);
         }
       }
     }
   } catch (err) {
-    result.errors.push(`football-data squads: ${String(err)}`);
+    pushError(result, `football-data squads: ${String(err)}`);
   }
 
   // 6) Sportmonks coaches (when token + plan allow)
@@ -549,16 +561,16 @@ async function syncProviderSport(
                 result
               );
             } catch (err) {
-              result.errors.push(`sm coach ${coach.name}: ${String(err)}`);
+              pushError(result, `sm coach ${coach.name}: ${String(err)}`);
             }
           }
         } catch (err) {
-          result.errors.push(`sm team coaches ${t.name}: ${String(err)}`);
+          pushError(result, `sm team coaches ${t.name}: ${String(err)}`);
         }
       }
     }
   } catch (err) {
-    result.errors.push(`sportmonks coaches: ${String(err)}`);
+    pushError(result, `sportmonks coaches: ${String(err)}`);
   }
 
 
@@ -593,6 +605,13 @@ export async function syncFromProviders(
       try {
         results.push(await syncProviderSport(provider, sport));
       } catch (err) {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : typeof err === "string"
+              ? err
+              : "Unknown sync failure";
+        console.error(`sync ${provider.config.id}/${sport}:`, err);
         results.push({
           provider: provider.config.id,
           sport,
@@ -606,7 +625,7 @@ export async function syncFromProviders(
           coachesUpdated: 0,
           matchesCreated: 0,
           matchesUpdated: 0,
-          errors: [String(err)],
+          errors: [msg.slice(0, 400)],
         });
       }
     }
