@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/adminGuard";
 import { getSportsInventory, syncFromProviders, type SyncResult } from "@/lib/sports-sync";
+import { observeOverallSync, syncInProgress } from "@/lib/metrics";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -146,11 +147,17 @@ export async function POST(request: NextRequest) {
     }
 
     const startedAt = Date.now();
+    syncInProgress.set({}, 1);
     let syncResults: SyncResult[];
     try {
       syncResults = await syncFromProviders({ providers, sports });
     } catch (syncErr) {
       console.error("sports-sync POST fatal:", syncErr);
+      syncInProgress.set({}, 0);
+      observeOverallSync({
+        durationSeconds: (Date.now() - startedAt) / 1000,
+        status: "failed",
+      });
       return NextResponse.json(
         {
           ok: false,
@@ -203,6 +210,9 @@ export async function POST(request: NextRequest) {
     );
 
     const meta = classifySync(syncResults);
+    const elapsedSec = (Date.now() - startedAt) / 1000;
+    observeOverallSync({ durationSeconds: elapsedSec, status: meta.status });
+    syncInProgress.set({}, 0);
 
     let inventory = null;
     let inventoryError: string | null = null;
@@ -230,7 +240,7 @@ export async function POST(request: NextRequest) {
         providersRequested: providers,
         sportsRequested: sports,
         timestamp: new Date().toISOString(),
-        elapsedMs: Date.now() - startedAt,
+        elapsedMs: Math.round(elapsedSec * 1000),
       },
       { status: httpStatus }
     );

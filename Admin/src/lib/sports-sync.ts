@@ -13,6 +13,7 @@ import {
   type ProviderPlayer,
 } from "./sports-providers";
 import { db } from "@/lib/db";
+import { observeProviderSync } from "@/lib/metrics";
 
 export function initializeProviders() {
   if (providerRegistry.getAll().length === 0) {
@@ -602,8 +603,40 @@ export async function syncFromProviders(
   for (const provider of targetProviders) {
     for (const sport of targetSports) {
       if (!provider.config.supportedSports.includes(sport)) continue;
+      const t0 = Date.now();
       try {
-        results.push(await syncProviderSport(provider, sport));
+        const result = await syncProviderSport(provider, sport);
+        results.push(result);
+        const writes =
+          result.leaguesCreated +
+          result.leaguesUpdated +
+          result.teamsCreated +
+          result.teamsUpdated +
+          result.playersCreated +
+          result.playersUpdated +
+          result.coachesCreated +
+          result.coachesUpdated +
+          result.matchesCreated +
+          result.matchesUpdated;
+        const skipped = result.errors.some((e) =>
+          /skipped|missing.*token|set .*TOKEN/i.test(e)
+        );
+        const status =
+          result.errors.length === 0
+            ? "success"
+            : skipped && writes === 0
+              ? "skipped"
+              : writes > 0
+                ? "partial"
+                : "failed";
+        observeProviderSync({
+          provider: provider.config.id,
+          sport,
+          durationSeconds: (Date.now() - t0) / 1000,
+          errorCount: result.errors.length,
+          status,
+          writes,
+        });
       } catch (err) {
         const msg =
           err instanceof Error
@@ -626,6 +659,14 @@ export async function syncFromProviders(
           matchesCreated: 0,
           matchesUpdated: 0,
           errors: [msg.slice(0, 400)],
+        });
+        observeProviderSync({
+          provider: provider.config.id,
+          sport,
+          durationSeconds: (Date.now() - t0) / 1000,
+          errorCount: 1,
+          status: "failed",
+          writes: 0,
         });
       }
     }
