@@ -41,22 +41,10 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  try {
-    const body = await req.json().catch(() => ({}));
-    const providers = body.providers || ["thesportsdb", "openligadb", "ergast"];
-    const sports = body.sports || ["football", "f1", "motorsport"];
-
-    const syncResults = await syncFromProviders({ providers, sports });
-    const totalCreated = syncResults.reduce((acc, r) => acc + r.matchesCreated, 0);
-    const totalUpdated = syncResults.reduce((acc, r) => acc + r.matchesUpdated, 0);
-
-    return NextResponse.json({
-      success: true,
-      summary: { totalCreated, totalUpdated },
-      results: syncResults,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  // DISABLED: External sports sync is paused for Tanzania-only baseline.
+  // Re-enable when ready with Tanzania-scoped providers only.
+  return NextResponse.json(
+    { error: "Sports sync is temporarily disabled. Tanzania-only sync coming soon.", disabled: true },
+    { status: 503 }
+  );
 }
