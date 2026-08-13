@@ -72,6 +72,13 @@ type Overview = {
     ram: number;
     eth0: { rx: number; tx: number };
   };
+  network?: {
+    status: string;
+    alert: string | null;
+    services: { id: string; label: string; up: boolean; ms: number; status?: number }[];
+    connections: { https: number; http: number; fan: number; admin: number; ws: number; total: number };
+    pingMs: { fan: number; admin: number; ws: number; api: number };
+  };
   timestamp: string;
 };
 
@@ -201,6 +208,9 @@ export default function AnimatedOverviewDashboard() {
   const [sysHistory, setSysHistory] = useState<
     { time: string; cpu: number; ram: number; rx: number; tx: number }[]
   >([]);
+  const [pingHistory, setPingHistory] = useState<
+    { time: string; fan: number; admin: number; ws: number; api: number; https: number }[]
+  >([]);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
 
@@ -230,6 +240,19 @@ export default function AnimatedOverviewDashboard() {
           tx: result.system?.eth0?.tx ?? 0,
         },
       ]);
+      if (result.network?.pingMs) {
+        setPingHistory((prev) => [
+          ...prev.slice(-24),
+          {
+            time: now,
+            fan: result.network.pingMs.fan ?? 0,
+            admin: result.network.pingMs.admin ?? 0,
+            ws: result.network.pingMs.ws ?? 0,
+            api: result.network.pingMs.api ?? 0,
+            https: result.network.connections?.https ?? 0,
+          },
+        ]);
+      }
       setTick((t) => t + 1);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Network error");
@@ -339,6 +362,99 @@ export default function AnimatedOverviewDashboard() {
         <Kpi label="Comments" value={db.comments ?? "—"} icon={MessageCircle} color="text-cyan-300" />
         <Kpi label="Follows" value={db.follows ?? "—"} icon={Activity} color="text-orange-300" />
       </div>
+
+      {/* Network status + ping */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`rounded-2xl border p-4 ${
+            data?.network?.status === "up"
+              ? "border-emerald-500/40 bg-emerald-500/10"
+              : data?.network?.status === "degraded"
+                ? "border-amber-500/40 bg-amber-500/10"
+                : "border-red-500/40 bg-red-500/10"
+          }`}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-sm font-bold text-white">Network status</h3>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${
+                data?.network?.status === "up"
+                  ? "bg-emerald-500/20 text-emerald-300"
+                  : data?.network?.status === "degraded"
+                    ? "bg-amber-500/20 text-amber-300"
+                    : "bg-red-500/20 text-red-300"
+              }`}
+            >
+              <span className="relative flex h-2 w-2">
+                <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-70 ${
+                  data?.network?.status === "up" ? "bg-emerald-400" : "bg-red-400"
+                }`} />
+                <span className={`relative inline-flex h-2 w-2 rounded-full ${
+                  data?.network?.status === "up" ? "bg-emerald-400" : "bg-red-400"
+                }`} />
+              </span>
+              {data?.network?.status === "up"
+                ? "SERVER UP"
+                : data?.network?.status === "degraded"
+                  ? "DEGRADED"
+                  : "SERVER DOWN"}
+            </span>
+          </div>
+          {data?.network?.alert && (
+            <div className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+              Status alert: {data.network.alert}
+            </div>
+          )}
+          <ul className="mt-3 space-y-2">
+            {(data?.network?.services || []).map((s) => (
+              <li key={s.id} className="flex items-center justify-between text-xs">
+                <span className="text-slate-300">{s.label}</span>
+                <span className={`font-semibold tabular-nums ${s.up ? "text-emerald-400" : "text-red-400"}`}>
+                  {s.up ? "UP" : "DOWN"} · {s.ms}ms
+                </span>
+              </li>
+            ))}
+          </ul>
+        </motion.div>
+
+        <ChartCard title="Network ping" subtitle="Latency ms · live pulse" className="lg:col-span-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={pingHistory}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+              <XAxis dataKey="time" tick={{ fill: "#64748b", fontSize: 9 }} />
+              <YAxis tick={{ fill: "#64748b", fontSize: 10 }} unit="ms" />
+              <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
+              <Legend />
+              <Line type="monotone" dataKey="fan" name="Fan" stroke="#34d399" dot={false} strokeWidth={2} isAnimationActive />
+              <Line type="monotone" dataKey="api" name="API" stroke="#38bdf8" dot={false} strokeWidth={2} />
+              <Line type="monotone" dataKey="ws" name="WS" stroke="#f5c518" dot={false} strokeWidth={2} />
+              <Line type="monotone" dataKey="admin" name="Admin" stroke="#a78bfa" dot={false} strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+
+      <ChartCard title="Nginx / service connections" subtitle="Established TCP · live">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={[
+              { name: "HTTPS :443", value: data?.network?.connections?.https ?? 0 },
+              { name: "HTTP :80", value: data?.network?.connections?.http ?? 0 },
+              { name: "Fan :3002", value: data?.network?.connections?.fan ?? 0 },
+              { name: "Admin :3003", value: data?.network?.connections?.admin ?? 0 },
+              { name: "WS :3004", value: data?.network?.connections?.ws ?? 0 },
+            ]}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+            <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} />
+            <YAxis tick={{ fill: "#64748b", fontSize: 10 }} allowDecimals={false} />
+            <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155" }} />
+            <Bar dataKey="value" fill="#38bdf8" radius={[4, 4, 0, 0]} isAnimationActive />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
 
       {/* Live app flow */}
       <ChartCard title="Live app flow" subtitle="Sign-ins → online → posts → engagement">

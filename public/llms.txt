@@ -1,0 +1,21 @@
+# SportSphere
+
+> SportSphere is a sports-first social platform connecting fans, players, teams, leagues, and communities.
+
+SportSphere helps users follow scores, share posts, discover players, and engage with sports communities.
+
+## Public pages
+
+- [Home](https://sportssphere.fun/): Main SportSphere experience
+- [Players](https://sportssphere.fun/players): Public player directory
+- [Leaderboard](https://sportssphere.fun/leaderboard): Public rankings
+- [Privacy Policy](https://sportssphere.fun/privacy): Privacy policy
+- [Terms](https://sportssphere.fun/terms): Terms of service
+
+## Optional
+
+- [Player demo](https://sportssphere.fun/player-demo): Public player profile demo
+
+## Contact
+
+Website: https://sportssphere.fun/

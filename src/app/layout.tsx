@@ -13,6 +13,13 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://sportssphere.fun"),
+  alternates: {
+    canonical: "https://sportssphere.fun/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   title: "SportSphere - The World's Biggest Sports Community",
   description: "Connect with fans, players, teams, leagues and communities through one sports-first social platform.",
   manifest: "/sportsphere/manifest.json",
@@ -70,6 +77,19 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "SportSphere",
+              url: "https://sportssphere.fun/",
+              description:
+                "Connect with fans, players, teams, leagues and communities through one sports-first social platform.",
+            }),
+          }}
+        />
         <link rel="apple-touch-icon" href="/sportsphere/icons/icon-192x192.svg" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

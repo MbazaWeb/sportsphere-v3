@@ -3,6 +3,32 @@ import { db } from "@/lib/db";
 import { verifyAdmin } from "@/lib/adminGuard";
 import si from "systeminformation";
 
+async function probe(url: string, timeoutMs = 2500): Promise<{ up: boolean; ms: number; status?: number }> {
+  const start = Date.now();
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    const res = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
+    clearTimeout(timer);
+    return { up: res.ok || res.status < 500, ms: Date.now() - start, status: res.status };
+  } catch {
+    return { up: false, ms: Date.now() - start };
+  }
+}
+
+function countEstablished(port: number): number {
+  try {
+    const { execSync } = require("child_process") as typeof import("child_process");
+    const out = execSync(
+      `ss -tan state established "( sport = :${port} )" 2>/dev/null | tail -n +2 | wc -l`,
+      { encoding: "utf8" }
+    );
+    return Math.max(0, parseInt(String(out).trim(), 10) || 0);
+  } catch {
+    return 0;
+  }
+}
+
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
@@ -248,8 +274,41 @@ export async function GET(request: NextRequest) {
       ],
     };
 
+    const [fan, admin, wsHealth, apiHealth] = await Promise.all([
+      probe("http://127.0.0.1:3002/api/health"),
+      probe("http://127.0.0.1:3003/sportsphere-admin/api/auth/me"),
+      probe("http://127.0.0.1:3004/health"),
+      probe("http://127.0.0.1:3002/api/feed"),
+    ]);
+    const nginx443 = countEstablished(443);
+    const nginx80 = countEstablished(80);
+    const node3002 = countEstablished(3002);
+    const node3003 = countEstablished(3003);
+    const node3004 = countEstablished(3004);
+    const services = [
+      { id: "fan", label: "Fan web", ...fan },
+      { id: "admin", label: "Admin", ...admin },
+      { id: "ws", label: "WebSocket", ...wsHealth },
+      { id: "api", label: "API", ...apiHealth },
+    ];
+    const allUp = services.every((s) => s.up);
+    const anyDown = services.some((s) => !s.up);
     return NextResponse.json({
       ok: true,
+      network: {
+        status: allUp ? "up" : anyDown ? "degraded" : "down",
+        alert: allUp ? null : services.filter((s) => !s.up).map((s) => `${s.label} DOWN (${s.ms}ms)`).join(" · "),
+        services,
+        connections: {
+          https: nginx443,
+          http: nginx80,
+          fan: node3002,
+          admin: node3003,
+          ws: node3004,
+          total: nginx443 + nginx80 + node3002 + node3003 + node3004,
+        },
+        pingMs: { fan: fan.ms, admin: admin.ms, ws: wsHealth.ms, api: apiHealth.ms },
+      },
       db: {
         users,
         posts,
