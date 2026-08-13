@@ -1520,3 +1520,24 @@ model PushToken {
 
   @@index([userId])
 }
+
+model Business {
+  id          String   @id
+  name        String
+  slug        String   @unique
+  type        String   @default("brand")
+  website     String?
+  logoUrl     String?
+  country     String?
+  description String?
+  source      String?  @default("admin")
+  verified    Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+
+  @@index([type])
+  @@index([isActive])
+  @@index([name])
+}

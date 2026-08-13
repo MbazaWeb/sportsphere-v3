@@ -85,3 +85,53 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export async function POST(request: NextRequest) {
+  const auth = await verifyAdmin(request);
+  if (!auth.authorized) return auth.response;
+
+  try {
+    const body = await request.json();
+    const name = String(body.name || "").trim();
+    if (!name) {
+      return NextResponse.json({ ok: false, error: "name is required" }, { status: 400 });
+    }
+    const { randomUUID } = await import("crypto");
+    const id = randomUUID();
+    const baseSlug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 60) || "team";
+    const slug = `${baseSlug}-${id.slice(0, 6)}`;
+    const team = await db.team.create({
+      data: {
+        id,
+        name,
+        slug,
+        shortName: body.shortName || null,
+        city: body.city || null,
+        country: body.country || null,
+        countryCode: body.countryCode || null,
+        logoUrl: body.logoUrl || null,
+        venue: body.venue || null,
+        foundedYear: body.foundedYear ? Number(body.foundedYear) : null,
+        sportId: body.sportId || null,
+        leagueId: body.leagueId || null,
+        description: body.description || null,
+        source: "admin",
+        verified: Boolean(body.verified),
+        createdByAI: false,
+        isActive: body.isActive !== false,
+        updatedAt: new Date(),
+      },
+    });
+    return NextResponse.json({ ok: true, team }, { status: 201 });
+  } catch (error: unknown) {
+    console.error("POST /api/admin/teams:", error);
+    return NextResponse.json(
+      { ok: false, error: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
+  }
+}
