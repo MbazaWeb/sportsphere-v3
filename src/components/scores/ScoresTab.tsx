@@ -186,8 +186,14 @@ export default function ScoresTab() {
             events: selectedMatch.events || [],
           }}
           onClose={() => setSelectedMatch(null)}
-          onTeamClick={() => {}}
-          onPlayerClick={() => {}}
+          onTeamClick={(name: string) => {
+            // Could navigate to team profile in future
+            console.log('Team clicked:', name);
+          }}
+          onPlayerClick={(name: string) => {
+            // Could navigate to player profile in future
+            console.log('Player clicked:', name);
+          }}
         />
       )}
     </div>

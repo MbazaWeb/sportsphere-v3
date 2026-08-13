@@ -12,6 +12,7 @@ import { useNavigationStore } from '@/store/navigationStore';
 import { apiUserToViewing } from '@/types';
 import { FeedCard } from './FeedCard';
 import { CommentSheet } from './CommentSheet';
+import { MatchDetailModal } from './MatchDetailModal';
 import { formatTime } from '@/lib/format';
 
 // Types
@@ -698,92 +699,6 @@ function CardSkeleton() {
           <div className="flex gap-4"><div className="h-3 w-8 rounded bg-surface animate-pulse" /><div className="h-3 w-8 rounded bg-surface animate-pulse" /><div className="h-3 w-8 rounded bg-surface animate-pulse" /></div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }: {
-  match: ApiMatch;
-  onClose: () => void;
-  onTeamClick: (name: string) => void;
-  onPlayerClick: (name: string) => void;
-}) {
-  const events = (match.events || []) as Array<{ minute: number; type: string; player: string; team: string }>;
-
-  return (
-    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
-      <motion.div
-        initial={{ y: '100%', opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: '100%', opacity: 0 }}
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl bg-surface-elevated border border-surface-border"
-      >
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-surface-border bg-surface-elevated px-4 py-3">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-gold" />
-            <h2 className="text-sm font-bold text-white">Match Details</h2>
-          </div>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full bg-surface hover:bg-surface-elevated">
-            <X className="h-4 w-4 text-muted-foreground" />
-          </button>
-        </div>
-        <div className="p-4 flex flex-col gap-4">
-          <div className="premium-glow-border">
-            <div className="rounded-[14px] bg-gradient-to-br from-emerald-700 to-green-900 p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold uppercase text-white/70 tracking-wider">{match.league}</span>
-                <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold uppercase', match.status === 'live' ? 'bg-red-500 text-white' : 'bg-surface text-muted-foreground')}>
-                  {match.status === 'live' ? ('Live ' + match.minute + "'") : 'Full Time'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <button onClick={() => onTeamClick(match.homeTeam)} className="flex flex-col items-center gap-1 flex-1 group">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 border border-white/20 text-sm font-black text-white group-hover:border-gold transition-colors">
-                    {match.homeTeam.slice(0, 2).toUpperCase()}
-                  </div>
-                  <p className="text-xs font-bold text-white text-center group-hover:text-gold">{match.homeTeam}</p>
-                </button>
-                <div className="text-center">
-                  <p className="text-3xl font-black text-white">{match.homeScore} - {match.awayScore}</p>
-                </div>
-                <button onClick={() => onTeamClick(match.awayTeam)} className="flex flex-col items-center gap-1 flex-1 group">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 border border-white/20 text-sm font-black text-white group-hover:border-gold transition-colors">
-                    {match.awayTeam.slice(0, 2).toUpperCase()}
-                  </div>
-                  <p className="text-xs font-bold text-white text-center group-hover:text-gold">{match.awayTeam}</p>
-                </button>
-              </div>
-            </div>
-          </div>
-          {events.length > 0 && (
-            <div className="glass-card rounded-xl p-3">
-              <h4 className="text-xs font-bold text-gold uppercase tracking-wider mb-2">Match Events</h4>
-              <div className="flex flex-col gap-1.5">
-                {events.map((e, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs">
-                    <span className="text-[10px] font-bold text-muted-foreground w-8 text-right">{e.minute}&apos;</span>
-                    <span className={cn('text-[10px] font-bold uppercase w-12', e.team === 'home' ? 'text-emerald-400' : 'text-blue-400')}>{e.team === 'home' ? match.homeTeam.slice(0, 3) : match.awayTeam.slice(0, 3)}</span>
-                    <span className={cn('rounded px-1.5 py-0.5 text-[9px] font-bold uppercase', e.type === 'goal' ? 'bg-gold/20 text-gold' : e.type === 'red_card' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400')}>
-                      {e.type === 'goal' ? '\u26bd' : e.type === 'red_card' ? '\ud83d\uddf5' : '\ud83d\udfe8'} {e.player}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-xl bg-surface border border-surface-border p-3">
-              <p className="text-[10px] text-muted-foreground uppercase">Venue</p>
-              <p className="text-sm font-semibold text-white">{match.venue || 'TBD'}</p>
-            </div>
-            <div className="rounded-xl bg-surface border border-surface-border p-3">
-              <p className="text-[10px] text-muted-foreground uppercase">Kick-off</p>
-              <p className="text-sm font-semibold text-white">{new Date(match.kickoffAt).toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-      </motion.div>
     </div>
   );
 }
