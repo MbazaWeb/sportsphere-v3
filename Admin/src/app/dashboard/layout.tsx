@@ -48,6 +48,7 @@ const NAV = [
   { href: '/dashboard/sports', label: '🏆 Sports Manager', exact: true },
   { href: '/dashboard/sports-data', label: '🔗 Data Engine' },
   { href: '/dashboard/sports-sync', label: '⚡ Sports Sync' },
+  { href: '/dashboard/create-match', label: '⚽ Create Match' },
   { href: '/dashboard/create-team', label: '🏟️ Create Team' },
   { href: '/dashboard/create-player-staff', label: '👤 Create Player & Staff' },
   { href: '/dashboard/create-team', label: '📋 Team → add roster' },

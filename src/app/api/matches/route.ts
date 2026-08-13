@@ -4,11 +4,75 @@ import {
   getMatchesByDate,
   getPastResults,
   getUpcomingFixtures,
-  getStandings,
   POPULAR_LEAGUE_IDS,
 } from '@/lib/sports-api';
+import { db } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+
+function mapDbMatch(m: {
+  id: string;
+  league: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  status: string;
+  minute: number | null;
+  venue: string | null;
+  kickoffAt: Date;
+  continent: string;
+  country: string;
+  events: unknown;
+}) {
+  return {
+    id: m.id,
+    league: m.league,
+    leagueId: '',
+    homeTeam: m.homeTeam,
+    awayTeam: m.awayTeam,
+    homeScore: m.homeScore,
+    awayScore: m.awayScore,
+    status: m.status as any,
+    minute: m.minute,
+    kickoffAt: m.kickoffAt.toISOString(),
+    venue: m.venue || undefined,
+    continent: m.continent,
+    country: m.country,
+    events: Array.isArray(m.events) ? m.events : [],
+    source: 'database',
+  };
+}
+
+async function loadDbMatches(status: string) {
+  try {
+    const where: any = {};
+    const now = new Date();
+    if (status === 'live') {
+      where.status = { in: ['live', 'ht'] };
+    } else if (status === 'upcoming') {
+      where.status = 'upcoming';
+      where.kickoffAt = { gte: now };
+    } else if (status === 'results') {
+      where.status = 'ft';
+    } else if (status === 'today') {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const end = new Date();
+      end.setHours(23, 59, 59, 999);
+      where.kickoffAt = { gte: start, lte: end };
+    }
+    const rows = await db.match.findMany({
+      where,
+      orderBy: { kickoffAt: status === 'results' ? 'desc' : 'asc' },
+      take: 50,
+    });
+    return rows.map(mapDbMatch);
+  } catch (e) {
+    console.warn('DB matches load failed:', e);
+    return [];
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,7 +80,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || 'live';
     const leagueName = searchParams.get('league');
 
-    let matches: any[];
+    let matches: any[] = [];
 
     switch (status) {
       case 'live': {
@@ -52,7 +116,19 @@ export async function GET(request: NextRequest) {
         matches = [];
     }
 
-    // Filter by league name if provided
+    // Merge admin/database matches (always include — source of truth for manual entries)
+    const dbMatches = await loadDbMatches(status);
+    if (dbMatches.length) {
+      const seen = new Set((matches || []).map((m: any) => `${m.homeTeam}|${m.awayTeam}|${m.kickoffAt}`));
+      for (const m of dbMatches) {
+        const key = `${m.homeTeam}|${m.awayTeam}|${m.kickoffAt}`;
+        if (!seen.has(key)) {
+          matches = [m, ...(matches || [])];
+          seen.add(key);
+        }
+      }
+    }
+
     if (leagueName && leagueName !== 'All' && Array.isArray(matches)) {
       const lower = leagueName.toLowerCase();
       matches = matches.filter(
