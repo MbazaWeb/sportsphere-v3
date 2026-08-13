@@ -521,9 +521,10 @@ export function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }:
             <div className="rounded-2xl bg-gradient-to-br from-slate-800/80 to-slate-900/90 border border-white/10 p-4">
               <div className="flex items-center justify-between gap-2">
                 <button type="button" onClick={() => onTeamClick(match.homeTeam)} className="flex flex-1 flex-col items-center gap-2 min-w-0 group">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 border border-white/15 text-sm font-bold text-white group-hover:border-amber-400/50">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 border border-white/15 text-sm font-bold text-white group-hover:border-amber-400/50 overflow-hidden">
                     {match.homeBadge ? (
-                      <img src={match.homeBadge} alt="" className="h-8 w-8 object-contain" />
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={match.homeBadge} alt="" className="h-8 w-8 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
                     ) : initials(match.homeTeam)}
                   </div>
                   <span className="text-xs font-semibold text-white text-center leading-tight line-clamp-2">{match.homeTeam}</span>
@@ -542,9 +543,10 @@ export function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }:
                 </div>
 
                 <button type="button" onClick={() => onTeamClick(match.awayTeam)} className="flex flex-1 flex-col items-center gap-2 min-w-0 group">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 border border-white/15 text-sm font-bold text-white group-hover:border-amber-400/50">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 border border-white/15 text-sm font-bold text-white group-hover:border-amber-400/50 overflow-hidden">
                     {match.awayBadge ? (
-                      <img src={match.awayBadge} alt="" className="h-8 w-8 object-contain" />
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={match.awayBadge} alt="" className="h-8 w-8 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
                     ) : initials(match.awayTeam)}
                   </div>
                   <span className="text-xs font-semibold text-white text-center leading-tight line-clamp-2">{match.awayTeam}</span>

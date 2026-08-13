@@ -1,6 +1,7 @@
 // GET /api/standings — Return standings computed from MatchProfile results (admin data)
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { batchResolveLogosFromAPI } from '@/lib/team-logo-resolver';
 
 export const dynamic = 'force-dynamic';
 
@@ -137,6 +138,7 @@ export async function GET(request: NextRequest) {
           pos: 0,
           team: t.name,
           badge: t.logoUrl || undefined,
+          _id: t.id,
           slug: t.slug,
           city: t.city,
           played: s.played,
@@ -152,6 +154,36 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf)
       .map((row, i) => ({ ...row, pos: i + 1 }));
 
+    // Resolve any missing badges from TheSportsDB
+    const teamsMissingBadge = standings.filter(s => !s.badge);
+    if (teamsMissingBadge.length > 0) {
+      try {
+        const apiLogos = await batchResolveLogosFromAPI(teamsMissingBadge.map(s => s.team));
+        if (apiLogos.size > 0) {
+          for (const row of standings) {
+            if (!row.badge) {
+              const logo = apiLogos.get(row.team.toLowerCase());
+              if (logo) row.badge = logo;
+            }
+          }
+          // Persist discovered logos
+          for (const [name, url] of apiLogos) {
+            try {
+              const team = teams.find(t => t.name.toLowerCase() === name);
+              if (team && !team.logoUrl) {
+                await db.team.update({ where: { id: team.id }, data: { logoUrl: url } });
+              }
+            } catch { /* ignore */ }
+          }
+        }
+      } catch (e) {
+        console.warn('[standings] Logo resolution failed:', e);
+      }
+    }
+
+    // Strip internal _id before sending response
+    const responseStandings = standings.map(({ _id, ...rest }: any) => rest);
+
     return NextResponse.json({
       league: league.name,
       leagueId: league.id,
@@ -160,7 +192,7 @@ export async function GET(request: NextRequest) {
       country: league.country,
       sport: league.Sport,
       season: league.season,
-      standings,
+      standings: responseStandings,
       available: await getAvailableLeagues(),
       source: 'database',
     });

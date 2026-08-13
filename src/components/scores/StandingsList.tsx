@@ -94,16 +94,31 @@ export function StandingsList({ standings, loading, league }: StandingsListProps
           >
             <span className="text-xs font-bold text-muted-foreground">{row.pos}</span>
             <div className="flex items-center gap-2 min-w-0">
-              {row.badge ? (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={row.badge} alt={row.team} className="h-5 w-5 object-contain flex-shrink-0" />
-                </>
-              ) : (
-                <div className="h-5 w-5 rounded-full bg-gold/10 flex items-center justify-center text-[8px] font-bold text-gold flex-shrink-0">
-                  {row.team.slice(0, 2).toUpperCase()}
-                </div>
-              )}
+              <div className="h-5 w-5 rounded-full bg-surface-border/60 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                {row.badge ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={row.badge}
+                    alt={row.team}
+                    className="h-full w-full object-contain p-px"
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      img.style.display = 'none';
+                      const parent = img.parentElement;
+                      if (parent) {
+                        parent.classList.remove('bg-surface-border/60');
+                        parent.classList.add('bg-gold/10');
+                        const s = document.createElement('span');
+                        s.className = 'text-[7px] font-bold text-gold';
+                        s.textContent = row.team.slice(0, 2).toUpperCase();
+                        parent.appendChild(s);
+                      }
+                    }}
+                  />
+                ) : (
+                  <span className="text-[7px] font-bold text-gold">{row.team.slice(0, 2).toUpperCase()}</span>
+                )}
+              </div>
               <span className="text-xs font-semibold text-foreground truncate">{row.team}</span>
             </div>
             <span className="text-center text-xs text-muted-foreground tabular-nums">{row.played}</span>

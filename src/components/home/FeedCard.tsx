@@ -235,11 +235,14 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
                 {/* Teams & Score */}
                 <div className="flex items-center justify-between px-4 py-4 gap-2">
                   <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
-                    {md.homeBadge ? (
-                      <img src={md.homeBadge} alt="" className="h-10 w-10 object-contain" />
-                    ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/10 text-xs font-bold text-gold">{(md.homeTeam || '').split(' ').map((w: string) => w[0]).slice(0, 2).join('')}</div>
-                    )}
+                    <div className="h-10 w-10 rounded-full bg-gold/10 flex items-center justify-center overflow-hidden">
+                      {md.homeBadge ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={md.homeBadge} alt="" className="h-full w-full object-contain p-0.5" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      ) : (
+                        <span className="text-xs font-bold text-gold">{(md.homeTeam || '').split(' ').map((w: string) => w[0]).slice(0, 2).join('')}</span>
+                      )}
+                    </div>
                     <span className="text-[11px] font-semibold text-foreground text-center leading-tight line-clamp-2">{md.homeTeam}</span>
                   </div>
                   <div className="flex flex-col items-center px-2">
@@ -253,11 +256,14 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
                     )}
                   </div>
                   <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
-                    {md.awayBadge ? (
-                      <img src={md.awayBadge} alt="" className="h-10 w-10 object-contain" />
-                    ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/10 text-xs font-bold text-gold">{(md.awayTeam || '').split(' ').map((w: string) => w[0]).slice(0, 2).join('')}</div>
-                    )}
+                    <div className="h-10 w-10 rounded-full bg-gold/10 flex items-center justify-center overflow-hidden">
+                      {md.awayBadge ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={md.awayBadge} alt="" className="h-full w-full object-contain p-0.5" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      ) : (
+                        <span className="text-xs font-bold text-gold">{(md.awayTeam || '').split(' ').map((w: string) => w[0]).slice(0, 2).join('')}</span>
+                      )}
+                    </div>
                     <span className="text-[11px] font-semibold text-foreground text-center leading-tight line-clamp-2">{md.awayTeam}</span>
                   </div>
                 </div>

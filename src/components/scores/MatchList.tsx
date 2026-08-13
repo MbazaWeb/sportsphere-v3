@@ -70,8 +70,8 @@ function StatusBadge({ status, minute }: { status: MatchStatus; minute: number |
   }
 }
 
-// ─── Team badge with fallback ───────────────────────────────────────────────────────────────────────────────────────────────────────
-function TeamBadge({ src, name }: { src?: string; name: string }) {
+// ─── Team badge / avatar with image + styled fallback ────────────────
+function TeamBadge({ src, name, size = 'md' }: { src?: string; name: string; size?: 'sm' | 'md' | 'lg' }) {
   const initials = name
     .split(' ')
     .map((w) => w[0])
@@ -79,24 +79,40 @@ function TeamBadge({ src, name }: { src?: string; name: string }) {
     .join('')
     .toUpperCase();
 
+  const sizeClasses = {
+    sm: 'h-5 w-5 text-[7px]',
+    md: 'h-8 w-8 text-[9px]',
+    lg: 'h-10 w-10 text-[11px]',
+  };
+  const cls = sizeClasses[size];
+
   if (src) {
     return (
-      <>
+      <div className={`${cls} rounded-full bg-surface-border flex-shrink-0 overflow-hidden flex items-center justify-center`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={src}
           alt={name}
-          className="h-7 w-7 object-contain flex-shrink-0"
-          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
+          className="h-full w-full object-contain p-0.5"
+          onError={(e) => {
+            const img = e.target as HTMLImageElement;
+            img.style.display = 'none';
+            const parent = img.parentElement;
+            if (parent) {
+              parent.classList.remove('bg-surface-border');
+              parent.classList.add('bg-gold/10');
+              const span = document.createElement('span');
+              span.className = 'text-[9px] font-bold text-gold';
+              span.textContent = initials;
+              parent.appendChild(span);
+            }
+          }}
         />
-        <div className="hidden h-7 w-7 rounded-full bg-gold/10 flex items-center justify-center text-[9px] font-bold text-gold flex-shrink-0">
-          {initials}
-        </div>
-      </>
+      </div>
     );
   }
   return (
-    <div className="h-7 w-7 rounded-full bg-surface-border flex items-center justify-center text-[9px] font-bold text-muted-foreground flex-shrink-0">
+    <div className={`${cls} rounded-full bg-surface-border/60 flex items-center justify-center text-[9px] font-bold text-muted-foreground flex-shrink-0`}>
       {initials}
     </div>
   );

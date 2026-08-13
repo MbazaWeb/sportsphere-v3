@@ -1,5 +1,103 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { batchResolveLogosFromAPI } from '@/lib/team-logo-resolver';
+
+// ─── Batch-resolve team logos by name for matches missing badges ───────────
+async function resolveMissingBadges(matches: any[]): Promise<any[]> {
+  // Collect team names that don't have badges
+  const missingNames = new Set<string>();
+  for (const m of matches) {
+    if (!m.homeBadge) missingNames.add(m.homeTeam);
+    if (!m.awayBadge) missingNames.add(m.awayTeam);
+  }
+  if (missingNames.size === 0) return matches;
+
+  // Build OR conditions for Prisma (chunked to avoid query limits)
+  const nameList = Array.from(missingNames);
+  const logoMap = new Map<string, string>();
+  const CHUNK = 50;
+  for (let i = 0; i < nameList.length; i += CHUNK) {
+    const chunk = nameList.slice(i, i + CHUNK);
+    const teams = await db.team.findMany({
+      where: {
+        OR: chunk.map(name => ({
+          name: { equals: name, mode: 'insensitive' },
+        })),
+      },
+      select: { name: true, logoUrl: true },
+    });
+    for (const t of teams) {
+      if (t.logoUrl) {
+        // Store with lowercase key for case-insensitive matching
+        logoMap.set(t.name.toLowerCase(), t.logoUrl);
+      }
+    }
+  }
+
+  // Also try shortName matching for any still missing
+  const stillMissing = nameList.filter(n => !logoMap.has(n.toLowerCase()));
+  if (stillMissing.length > 0) {
+    for (let i = 0; i < stillMissing.length; i += CHUNK) {
+      const chunk = stillMissing.slice(i, i + CHUNK);
+      const teams = await db.team.findMany({
+        where: {
+          OR: chunk.map(name => ({
+            shortName: { equals: name, mode: 'insensitive' },
+          })),
+        },
+        select: { shortName: true, name: true, logoUrl: true },
+      });
+      for (const t of teams) {
+        if (t.logoUrl) {
+          logoMap.set((t.shortName || t.name).toLowerCase(), t.logoUrl);
+        }
+      }
+    }
+  }
+
+  // Apply resolved logos to matches
+  if (logoMap.size > 0) {
+    for (const m of matches) {
+      if (!m.homeBadge) m.homeBadge = logoMap.get(m.homeTeam.toLowerCase()) || undefined;
+      if (!m.awayBadge) m.awayBadge = logoMap.get(m.awayTeam.toLowerCase()) || undefined;
+    }
+  }
+
+  // Second pass: for any STILL missing, try TheSportsDB API
+  const stillMissingAfter = new Set<string>();
+  for (const m of matches) {
+    if (!m.homeBadge) stillMissingAfter.add(m.homeTeam);
+    if (!m.awayBadge) stillMissingAfter.add(m.awayTeam);
+  }
+
+  if (stillMissingAfter.size > 0) {
+    try {
+      const apiLogos = await batchResolveLogosFromAPI(Array.from(stillMissingAfter));
+      if (apiLogos.size > 0) {
+        for (const m of matches) {
+          if (!m.homeBadge) m.homeBadge = apiLogos.get(m.homeTeam.toLowerCase()) || undefined;
+          if (!m.awayBadge) m.awayBadge = apiLogos.get(m.awayTeam.toLowerCase()) || undefined;
+        }
+        // Persist discovered logos back to Team records for future requests
+        for (const [name, url] of apiLogos) {
+          try {
+            const team = await db.team.findFirst({
+              where: { name: { equals: name, mode: 'insensitive' } },
+              select: { id: true, logoUrl: true },
+            });
+            if (team && !team.logoUrl) {
+              await db.team.update({ where: { id: team.id }, data: { logoUrl: url } });
+            }
+          } catch { /* ignore persist errors */ }
+        }
+      }
+    } catch (e) {
+      console.warn('[matches] TheSportsDB logo fallback failed:', e);
+    }
+  }
+
+  return matches;
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -103,6 +201,9 @@ async function loadAdminMatches(status: string, leagueName?: string | null, date
 
     let results = rows.map(mapProfileMatch);
 
+    // Resolve missing team badges by looking up teams by name
+    results = await resolveMissingBadges(results);
+
     // Post-filter by league name if we couldn't do FK match
     if (leagueName && leagueName !== 'All' && !where.leagueId) {
       const lower = leagueName.toLowerCase();
@@ -175,8 +276,8 @@ export async function GET(request: NextRequest) {
           leagueId: '',
           homeTeam: m.homeTeam,
           awayTeam: m.awayTeam,
-          homeBadge: undefined,
-          awayBadge: undefined,
+          homeBadge: undefined as string | undefined,
+          awayBadge: undefined as string | undefined,
           homeScore: m.homeScore,
           awayScore: m.awayScore,
           status: m.status,
@@ -200,6 +301,11 @@ export async function GET(request: NextRequest) {
       } catch (e) {
         console.warn('Legacy Match table fallback failed:', e);
       }
+    }
+
+    // Resolve missing badges for legacy matches too
+    if (matches && matches.length > 0) {
+      matches = await resolveMissingBadges(matches);
     }
 
     return NextResponse.json(matches || []);
