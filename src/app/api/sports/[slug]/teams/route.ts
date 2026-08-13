@@ -44,10 +44,10 @@ export async function GET(
       where,
       orderBy: { name: 'asc' },
       include: {
-        league: {
+        League: {
           select: { name: true, slug: true, type: true },
         },
-        sport: {
+        Sport: {
           select: { name: true, slug: true, icon: true },
         },
       },
@@ -67,8 +67,8 @@ export async function GET(
         foundedYear: t.foundedYear,
         verified: t.verified,
         logoUrl: t.logoUrl,
-        league: t.league,
-        sport: t.sport,
+        league: t.League,
+        sport: t.Sport,
       })),
       total: teams.length,
       sport: { name: sport.name, slug: sport.slug, icon: sport.icon },

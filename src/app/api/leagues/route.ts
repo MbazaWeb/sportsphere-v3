@@ -10,7 +10,7 @@ export async function GET() {
       where: { isActive: true },
       orderBy: [{ type: 'asc' }, { name: 'asc' }],
       include: {
-        sport: {
+        Sport: {
           select: { name: true, slug: true, icon: true },
         },
       },
@@ -27,7 +27,7 @@ export async function GET() {
       countryCode: l.countryCode,
       season: l.season,
       description: l.description,
-      sport: l.sport,
+      sport: l.Sport, // Prisma relation name is capitalized
       verified: l.verified,
     }));
 

@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const league = await db.league.findUnique({
       where: { slug: leagueSlug },
       include: {
-        sport: { select: { name: true, slug: true, icon: true } },
+        Sport: { select: { name: true, slug: true, icon: true } },
       },
     });
 
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
       leagueSlug: league.slug,
       type: league.type,
       country: league.country,
-      sport: league.sport,
+      sport: league.Sport,
       season: league.season,
       standings,
       available: await getAvailableLeagues(),
