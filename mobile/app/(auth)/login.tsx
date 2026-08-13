@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { Mail, Lock, Eye, EyeOff, BadgeCheck, X } from 'lucide-react-native';
-import * as Haptics from '../../lib/haptics';
+import * as Haptics from 'expo-haptics';
 
 import { useAuthStore } from '../../lib/authStore';
 import { FONT_DISPLAY, FONT_BODY, FONT_BODY_REG, FONT_BODY_BOLD } from '../../lib/fonts';

@@ -1,6 +1,6 @@
 import { Link, Stack } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, typography } from '../lib/tokens';
+import { colors, typography } from '@sportsphere/design-system/tokens';
 
 export default function NotFoundScreen() {
   return (

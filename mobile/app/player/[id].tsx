@@ -19,11 +19,11 @@ import {
   ArrowLeft, BadgeCheck, MapPin, Calendar, Users, FileText, Crown,
   TrendingUp, BarChart3, Trophy, Target, Activity, UserPlus, UserCheck,
 } from 'lucide-react-native';
-import * as Haptics from '../../lib/haptics';
+import * as Haptics from 'expo-haptics';
 
 import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';
-import { colors } from '../../lib/tokens';
+import { colors } from '@sportsphere/design-system/tokens';
 import { FONT_DISPLAY, FONT_BODY, FONT_BODY_BOLD, FONT_BODY_REG } from '../../lib/fonts';
 import { profileApi, performanceApi, followsApi } from '../../lib/api';
 import { useAuthStore } from '../../lib/authStore';

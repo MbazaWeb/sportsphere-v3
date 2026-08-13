@@ -11,15 +11,13 @@
     },
     "preview": {
       "distribution": "internal",
+      "channel": "preview",
       "android": {
         "buildType": "apk",
         "withoutCredentials": true,
         "cache": {
-          "key": "v5-ultra-minimal",
-          "paths": [
-            "~/.gradle/caches",
-            "~/.gradle/wrapper"
-          ]
+          "key": "v6-full-ui-no-newarch",
+          "paths": ["~/.gradle/caches", "~/.gradle/wrapper"]
         }
       },
       "env": {

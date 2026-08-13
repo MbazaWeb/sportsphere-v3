@@ -20,7 +20,7 @@ import {
   Trophy, Settings, LogOut, BadgeCheck, MapPin, Calendar, BarChart3,
   ChevronRight, Crown, Camera, X, Share2,
 } from 'lucide-react-native';
-import * as Haptics from '../../lib/haptics';
+import * as Haptics from 'expo-haptics';
 
 import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';

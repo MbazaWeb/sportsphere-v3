@@ -6,7 +6,7 @@
 
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { Trophy, Search, Bell, ShoppingBag } from 'lucide-react-native';
-import { colors, typography } from '../lib/tokens';
+import { colors, typography } from '@sportsphere/design-system/tokens';
 
 interface HeaderProps {
   title?: string;

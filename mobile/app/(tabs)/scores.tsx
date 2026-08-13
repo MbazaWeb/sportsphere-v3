@@ -13,11 +13,11 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Search, Trophy, ChevronDown } from 'lucide-react-native';
-import * as Haptics from '../../lib/haptics';
+import * as Haptics from 'expo-haptics';
 
 import Header from '../../components/Header';
 import MatchCard from '../../components/MatchCard';
-import { colors, radii } from '../../lib/tokens';
+import { colors, radii } from '@sportsphere/design-system/tokens';
 import { FONT_DISPLAY, FONT_BODY, FONT_BODY_BOLD, FONT_BODY_REG } from '../../lib/fonts';
 import { useAuthStore } from '../../lib/authStore';
 import type { Match, Standing, MatchStatus } from '../../lib/match-types';

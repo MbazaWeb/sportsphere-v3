@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { Mail, Lock, User, AtSign, Eye, EyeOff, X, Check, Crown, UserCheck } from 'lucide-react-native';
-import * as Haptics from '../../lib/haptics';
+import * as Haptics from 'expo-haptics';
 
 import { useAuthStore } from '../../lib/authStore';
 import { sportsApi } from '../../lib/api';

@@ -32,7 +32,6 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "nativewind-env.d.ts",
-    "vendor/**/*.ts",
-    "lucide-react-native.d.ts"
+    "vendor/**/*.ts"
   ]
 }

@@ -1,10 +1,12 @@
-import { View, StyleSheet, Image } from 'react-native';
 /**
  * Avatar — circular avatar matching the web implementation
  * Uses expo-image for fast, cached, blur-up loading.
  * Gold ring: 2px solid #F5C518 for verified/pro users.
  * Fallback background: #0F1D3A
  */
+
+import { View, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 
 interface AvatarProps {
   url?: string | null;
@@ -25,9 +27,11 @@ export default function Avatar({ url, size = 44, goldRing = false }: AvatarProps
     >
       {url ? (
         <Image
-          source={{ uri: url }}
+          source={url}
           style={resolvedSize}
-          resizeMode="cover"
+          contentFit="cover"
+          transition={150}
+          cachePolicy="memory-disk"
         />
       ) : null}
     </View>

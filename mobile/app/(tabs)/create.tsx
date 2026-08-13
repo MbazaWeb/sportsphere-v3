@@ -16,12 +16,12 @@ import { useRouter } from 'expo-router';
 import {
   Send, Hash, Image as ImageIcon, Vote, BarChart3, AlertCircle,
 } from 'lucide-react-native';
-import * as Haptics from '../../lib/haptics';
+import * as Haptics from 'expo-haptics';
 
 import Header from '../../components/Header';
 import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';
-import { colors } from '../../lib/tokens';
+import { colors } from '@sportsphere/design-system/tokens';
 import { FONT_DISPLAY, FONT_BODY, FONT_BODY_BOLD, FONT_BODY_REG } from '../../lib/fonts';
 import { postsApi } from '../../lib/api';
 import { useAuthStore } from '../../lib/authStore';
