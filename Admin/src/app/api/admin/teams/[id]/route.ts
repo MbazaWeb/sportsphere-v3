@@ -29,8 +29,8 @@ export async function GET(
       include: {
         League: { select: { id: true, name: true, country: true } },
         Sport: { select: { id: true, name: true, icon: true } },
-        players: { take: 50, select: { id: true, name: true, position: true, photoUrl: true } },
-        coaches: { take: 10, select: { id: true, name: true, role: true } },
+        Player: { take: 100, orderBy: { name: 'asc' }, select: { id: true, name: true, position: true, photoUrl: true, shirtNumber: true, nationality: true, verified: true } },
+        Coach: { take: 50, orderBy: { name: 'asc' }, select: { id: true, name: true, role: true, photoUrl: true, nationality: true, verified: true } },
       },
     });
     if (!team) {

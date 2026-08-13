@@ -50,6 +50,7 @@ const NAV = [
   { href: '/dashboard/sports-sync', label: '⚡ Sports Sync' },
   { href: '/dashboard/create-team', label: '🏟️ Create Team' },
   { href: '/dashboard/create-player-staff', label: '👤 Create Player & Staff' },
+  { href: '/dashboard/create-team', label: '📋 Team → add roster' },
   { href: '/dashboard/create-business', label: '🏢 Create Business' },
   { href: '/dashboard/business-links', label: '🔗 Business Links' },
   { href: '/dashboard/roles', label: '🛡️ Role Approvals' },

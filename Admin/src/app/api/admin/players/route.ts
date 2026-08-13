@@ -112,6 +112,14 @@ export async function POST(request: NextRequest) {
           body.shirtNumber != null && body.shirtNumber !== ""
             ? Number(body.shirtNumber)
             : null,
+        heightCm:
+          body.heightCm != null && body.heightCm !== ""
+            ? Number(body.heightCm)
+            : null,
+        weightKg:
+          body.weightKg != null && body.weightKg !== ""
+            ? Number(body.weightKg)
+            : null,
         teamId: body.teamId || null,
         leagueId: body.leagueId || null,
         sportId: body.sportId || null,
