@@ -1,4 +1,5 @@
 'use client';
+
 import { apiFetch } from '@/lib/api';
 
 import { useState, useEffect } from 'react';
@@ -61,9 +62,17 @@ export default function CreateTab() {
   return (
     <div>
       <header className="sticky top-0 z-40 border-b border-surface-border/60 bg-background/80 backdrop-blur-2xl">
-        <div className="flex h-14 items-center px-4 gap-3">
-          <Sparkles className="h-5 w-5 text-gold" />
-          <h1 className="text-lg font-extrabold text-foreground tracking-tight">Create</h1>
+        <div className="flex h-14 items-center px-3 sm:px-4 gap-2">
+          <button
+            type="button"
+            onClick={() => useNavigationStore.getState().setActiveTab('home')}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-surface-border bg-surface transition-colors hover:bg-surface-elevated active:scale-95"
+            aria-label="Back to Home"
+          >
+            <ChevronLeft className="h-5 w-5 text-foreground" />
+          </button>
+          <Sparkles className="h-5 w-5 text-gold shrink-0" />
+          <h1 className="truncate text-base sm:text-lg font-extrabold text-foreground tracking-tight">Create</h1>
         </div>
       </header>
 
@@ -192,7 +201,7 @@ function Composer({ type, onBack }: { type: string; onBack: () => void }) {
     <div>
       <header className="sticky top-0 z-40 border-b border-surface-border/60 bg-background/80 backdrop-blur-2xl">
         <div className="flex h-14 items-center px-4 gap-3">
-          <button onClick={onBack} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-surface transition-colors" aria-label="Back">
+          <button onClick={onBack} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-surface-border bg-surface transition-colors hover:bg-surface-elevated active:scale-95" aria-label="Back">
             <ChevronLeft className="h-5 w-5 text-foreground" />
           </button>
           <h1 className="text-lg font-extrabold text-foreground tracking-tight">Create {typeLabels[type] || 'Post'}</h1>

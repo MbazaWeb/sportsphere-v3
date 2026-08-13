@@ -23,7 +23,7 @@ interface NavigationState {
 export const useNavigationStore = create<NavigationState>((set) => ({
   activeTab: "home", homeSubTab: "for-you", scoresSubTab: "live",
   activitySubTab: "all", profileSection: "main", settingsSection: "account",
-  navVisible: false,
+  navVisible: true,
   showNav: () => set({ navVisible: true }),
   hideNav: () => set({ navVisible: false }),
   setActiveTab: (t) => set({ activeTab: t }),

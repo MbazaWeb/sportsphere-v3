@@ -1,5 +1,7 @@
 'use client';
 
+import { useNavigationStore } from '@/store/navigationStore';
+
 import { useState, useEffect, useCallback } from 'react';
 import { Trophy, RefreshCw, Calendar, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -221,8 +223,18 @@ export function ScoresHeader({
 
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-surface-border/60 bg-background/80 backdrop-blur-2xl">
-        <div className="flex h-14 items-center justify-between px-4">
-          <h2 className="text-lg font-extrabold text-foreground tracking-tight">Scores</h2>
+        <div className="flex h-14 items-center justify-between gap-2 px-3 sm:px-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => useNavigationStore.getState().setActiveTab('home')}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-surface-border bg-surface transition-colors hover:bg-surface-elevated active:scale-95"
+              aria-label="Back to Home"
+            >
+              <ChevronLeft className="h-5 w-5 text-foreground" />
+            </button>
+            <h2 className="truncate text-base sm:text-lg font-extrabold text-foreground tracking-tight">Scores</h2>
+          </div>
           <div className="flex items-center gap-2">
             {leaguesLoading && (
               <RefreshCw className="h-3.5 w-3.5 text-muted-foreground animate-spin" />

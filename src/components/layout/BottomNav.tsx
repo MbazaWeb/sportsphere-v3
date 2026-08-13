@@ -23,7 +23,7 @@ const ALL_TABS: TabConfig[] = [
   { id: 'profile',  label: 'Profile',  Icon: User,       authRequired: true },
 ];
 
-const AUTO_HIDE_DELAY = 5000;
+const AUTO_HIDE_DELAY = 120000;
 
 export default function BottomNav() {
   const activeTab         = useNavigationStore((s) => s.activeTab);
@@ -52,18 +52,22 @@ export default function BottomNav() {
   }, [navVisible, resetTimer]);
 
   const handleTabTap = useCallback((tabId: TabId) => {
+    const tab = ALL_TABS.find((x) => x.id === tabId);
+    if (tab?.authRequired && !isAuthenticated) {
+      setLoginModalOpen(true);
+      resetTimer();
+      return;
+    }
     setActiveTab(tabId);
     resetTimer();
-  }, [setActiveTab, resetTimer]);
+  }, [setActiveTab, resetTimer, isAuthenticated, setLoginModalOpen]);
 
   const handleLoginTap = useCallback(() => {
     setLoginModalOpen(true);
     resetTimer();
   }, [setLoginModalOpen, resetTimer]);
 
-  const visibleTabs = isAuthenticated
-    ? ALL_TABS
-    : ALL_TABS.filter((t) => !t.authRequired);
+  const visibleTabs = ALL_TABS;
 
   return (
     <AnimatePresence>
