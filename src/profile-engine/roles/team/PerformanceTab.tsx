@@ -4,7 +4,7 @@
 //
 // Current season: matches, W/D/L, goals, points, position, form.
 
-import { Activity, TrendingUp, Target, Shield, Trophy, BarChart3 } from 'lucide-react';
+import { Activity, TrendingUp, Target, Shield, Trophy, BarChart3, User, Zap, Flag } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
 import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, EmptyState, ProgressBar, Badge, rpString, rpNumber } from '../../shared/ui';
 import { PerformanceCard } from '@/components/performance/PerformanceCard';
@@ -20,6 +20,14 @@ export function TeamPerformanceTab({ apiUser }: { apiUser: ApiUserLike | null })
   const points = rpNumber(rp, 'points');
   const position = rpString(rp, 'position');
   const form = rpString(rp, 'form');
+
+  // New fields
+  const topScorer = rpString(rp, 'topScorer');
+  const mostAssists = rpString(rp, 'mostAssists');
+  const seasonObjective = rpString(rp, 'seasonObjective');
+  const tacticalFormation = rpString(rp, 'tacticalFormation');
+  const styleOfPlay = rpString(rp, 'styleOfPlay');
+  const keyPrinciples = rpString(rp, 'keyPrinciples');
 
   const winRate = matches > 0 ? Math.round((wins / matches) * 100) : 0;
   const goalDiff = goalsFor - goalsAgainst;
@@ -114,6 +122,33 @@ export function TeamPerformanceTab({ apiUser }: { apiUser: ApiUserLike | null })
             <StatTile icon={Target} label="Against" value={goalsAgainst} accent="red" />
             <StatTile icon={BarChart3} label="Diff" value={goalDiff > 0 ? `+${goalDiff}` : goalDiff} accent={goalDiff >= 0 ? 'green' : 'red'} />
           </StatGrid>
+        </Card>
+      )}
+
+      {/* ── Season Contributors ── */}
+      {(topScorer || mostAssists || seasonObjective) && (
+        <Card hover>
+          <SectionTitle icon={User}>Season Contributors</SectionTitle>
+          {topScorer && <KeyValueRow label="Top Scorer" value={topScorer} />}
+          {mostAssists && <KeyValueRow label="Most Assists" value={mostAssists} />}
+          {seasonObjective && (
+            <KeyValueRow label="Season Objective" value={<Badge color="gold">{seasonObjective}</Badge>} />
+          )}
+        </Card>
+      )}
+
+      {/* ── Team Performance Style ── */}
+      {(tacticalFormation || styleOfPlay || keyPrinciples) && (
+        <Card hover>
+          <SectionTitle icon={Zap}>Performance Style</SectionTitle>
+          {tacticalFormation && <KeyValueRow label="Formation" value={<Badge color="gold">{tacticalFormation}</Badge>} />}
+          {styleOfPlay && <KeyValueRow label="Style of Play" value={<Badge color="blue">{styleOfPlay}</Badge>} />}
+          {keyPrinciples && (
+            <div className="mt-2">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Key Principles</p>
+              <p className="text-sm text-white leading-relaxed">{keyPrinciples}</p>
+            </div>
+          )}
         </Card>
       )}
     </div>

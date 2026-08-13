@@ -14,9 +14,9 @@
 //   - Comparison vs other players
 //   - Transfer interest (clubs watching)
 
-import { TrendingUp, Target, Zap, AlertCircle, Heart, Activity, DollarSign, ShieldAlert } from 'lucide-react';
+import { TrendingUp, Target, Zap, AlertCircle, Heart, Activity, DollarSign, ShieldAlert, Brain } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, StatTile, StatGrid, rpString, rpArray } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, StatTile, StatGrid, ProgressBar, rpString, rpNumber, rpArray } from '../../shared/ui';
 
 export function PlayerScoutingTab({ apiUser }: { apiUser: ApiUserLike | null }) {
   const rp = getRoleProfile(apiUser, 'player');
@@ -100,6 +100,37 @@ export function PlayerScoutingTab({ apiUser }: { apiUser: ApiUserLike | null }) 
           <p className="text-sm text-white whitespace-pre-line">{injuryHistory}</p>
         </Card>
       )}
+
+      {/* ── Mental Attributes Summary (for scouts) ── */}
+      {(() => {
+        const mental = [
+          { key: 'vision', label: 'Vision / Awareness' },
+          { key: 'decisionMaking', label: 'Decision Making' },
+          { key: 'leadership', label: 'Leadership' },
+          { key: 'workRate', label: 'Work Rate' },
+          { key: 'composure', label: 'Composure' },
+        ].filter(m => rpNumber(rp, m.key) > 0);
+        if (mental.length === 0) return null;
+        return (
+          <Card hover>
+            <SectionTitle icon={Brain}>Mental Profile</SectionTitle>
+            <div className="flex flex-col gap-2">
+              {mental.map(m => {
+                const val = Math.min(10, Math.max(0, rpNumber(rp, m.key)));
+                return (
+                  <div key={m.key}>
+                    <div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-wider mb-1">
+                      <span>{m.label}</span>
+                      <span className="text-white font-bold">{val}/10</span>
+                    </div>
+                    <ProgressBar value={val} max={10} color={val >= 8 ? 'green' : val >= 6 ? 'gold' : 'red'} />
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        );
+      })()}
     </div>
   );
 }

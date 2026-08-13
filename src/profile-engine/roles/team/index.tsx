@@ -6,6 +6,8 @@ import { TeamOverviewTab } from './OverviewTab';
 import { TeamSquadTab } from './SquadTab';
 import { TeamPerformanceTab } from './PerformanceTab';
 import { TeamTrophiesTab } from './TrophiesTab';
+import { TeamFixturesTab } from './FixturesTab';
+import { TeamStandingsTab } from './StandingsTab';
 
 export const teamRole: RoleConfig = {
   ...teamConfig,
@@ -15,6 +17,8 @@ export const teamRole: RoleConfig = {
       case 'squad':       return <TeamSquadTab       apiUser={props.apiUser} />;
       case 'performance': return <TeamPerformanceTab apiUser={props.apiUser} />;
       case 'trophies':    return <TeamTrophiesTab    apiUser={props.apiUser} />;
+      case 'fixtures':    return <TeamFixturesTab    apiUser={props.apiUser} />;
+      case 'standings':   return <TeamStandingsTab   apiUser={props.apiUser} />;
       default:            return null;
     }
   },

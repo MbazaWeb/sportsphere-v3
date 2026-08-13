@@ -9,7 +9,7 @@
 //     which the user enters as one-per-line:
 //     "2024 | Club A → Club B | €10M | Transfer")
 
-import { Trophy, MapPin, Calendar, Flag, ArrowRight, Building2, GraduationCap } from 'lucide-react';
+import { Trophy, MapPin, Calendar, Flag, ArrowRight, Building2, GraduationCap, Globe } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
 import {getRoleProfile, Card, SectionTitle, EmptyState, TimelineItem, KeyValueRow, Badge, rpString, rpNumber } from '../../shared/ui';
 
@@ -59,6 +59,10 @@ export function PlayerCareerTab({ apiUser }: { apiUser: ApiUserLike | null }) {
   const internationalGoals = rpNumber(rp, 'internationalGoals');
   const transfers = parseTransfers(rpString(rp, 'transferHistory'));
 
+  // New fields
+  const majorTournaments = rpString(rp, 'majorTournaments');
+  const tournamentList = majorTournaments.split('\n').map(s => s.trim()).filter(Boolean);
+
   const hasAny = currentClub || academy || debutYear || nationalTeam || transfers.length > 0;
 
   if (!hasAny) {
@@ -104,6 +108,17 @@ export function PlayerCareerTab({ apiUser }: { apiUser: ApiUserLike | null }) {
               </p>
             </div>
           </div>
+          {/* Major Tournaments */}
+          {tournamentList.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-surface-border/40">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Major Tournaments</p>
+              <div className="flex flex-wrap gap-1.5">
+                {tournamentList.map((t, i) => (
+                  <Badge key={i} color="blue"><Globe className="h-3 w-3 mr-1" />{t}</Badge>
+                ))}
+              </div>
+            </div>
+          )}
         </Card>
       )}
 

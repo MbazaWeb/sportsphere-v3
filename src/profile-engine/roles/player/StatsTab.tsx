@@ -14,10 +14,10 @@
 
 import {
   Activity, Target, Shield, Hand, Goal, Zap, TrendingUp, Award,
-  Footprints, Timer, Square, Star,
+  Footprints, Timer, Square, Star, Brain, Zap as Bolt, Wind, Swords, Eye, Heart as HeartIcon,
 } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, EmptyState, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, EmptyState, ProgressBar, rpString, rpNumber } from '../../shared/ui';
 import { PerformanceCard } from '@/components/performance/PerformanceCard';
 
 function positionGroup(position: string): 'GK' | 'DEF' | 'MID' | 'FWD' | 'OTHER' {
@@ -147,6 +147,71 @@ export function PlayerStatsTab({ apiUser }: { apiUser: ApiUserLike | null }) {
           ))}
         </StatGrid>
       </Card>
+
+      {/* ── Physical & Technical Attributes (out of 10) ── */}
+      {(() => {
+        const attrs = [
+          { key: 'pace', label: 'Pace / Speed', icon: Zap },
+          { key: 'strength', label: 'Strength', icon: Swords },
+          { key: 'dribbling', label: 'Dribbling', icon: Footprints },
+          { key: 'passingRange', label: 'Passing', icon: Wind },
+          { key: 'shooting', label: 'Shooting', icon: Target },
+          { key: 'defensiveAbility', label: 'Defensive', icon: Shield },
+          { key: 'aerialDuelsRating', label: 'Aerial Duels', icon: Activity },
+          { key: 'stamina', label: 'Stamina', icon: Bolt },
+        ].filter(a => rpNumber(rp, a.key) > 0);
+        if (attrs.length === 0) return null;
+        return (
+          <Card hover>
+            <SectionTitle icon={Activity}>Physical & Technical Attributes</SectionTitle>
+            <div className="flex flex-col gap-2">
+              {attrs.map(a => {
+                const val = Math.min(10, Math.max(0, rpNumber(rp, a.key)));
+                return (
+                  <div key={a.key}>
+                    <div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-wider mb-1">
+                      <span>{a.label}</span>
+                      <span className="text-white font-bold">{val}/10</span>
+                    </div>
+                    <ProgressBar value={val} max={10} color={val >= 8 ? 'green' : val >= 6 ? 'gold' : 'red'} />
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        );
+      })()}
+
+      {/* ── Mental Attributes (out of 10) ── */}
+      {(() => {
+        const mental = [
+          { key: 'vision', label: 'Vision / Awareness', icon: Eye },
+          { key: 'decisionMaking', label: 'Decision Making', icon: Brain },
+          { key: 'leadership', label: 'Leadership', icon: Star },
+          { key: 'workRate', label: 'Work Rate', icon: Bolt },
+          { key: 'composure', label: 'Composure', icon: HeartIcon },
+        ].filter(m => rpNumber(rp, m.key) > 0);
+        if (mental.length === 0) return null;
+        return (
+          <Card hover>
+            <SectionTitle icon={Brain}>Mental Attributes</SectionTitle>
+            <div className="flex flex-col gap-2">
+              {mental.map(m => {
+                const val = Math.min(10, Math.max(0, rpNumber(rp, m.key)));
+                return (
+                  <div key={m.key}>
+                    <div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-wider mb-1">
+                      <span>{m.label}</span>
+                      <span className="text-white font-bold">{val}/10</span>
+                    </div>
+                    <ProgressBar value={val} max={10} color={val >= 8 ? 'green' : val >= 6 ? 'gold' : 'red'} />
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        );
+      })()}
     </div>
   );
 }

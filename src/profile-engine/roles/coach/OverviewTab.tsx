@@ -4,10 +4,13 @@
 //
 // Hero: role + current team + license. Top stats: win rate, PPG,
 // trophies, years coaching.
+//
+// NEW: Playing position, Key Strengths, Areas for Improvement,
+// Assistant Staff, Fun Facts.
 
-import { Megaphone, Building2, Award, TrendingUp, Trophy, Clock, Flag } from 'lucide-react';
+import { Megaphone, Building2, Award, TrendingUp, Trophy, Clock, Flag, Zap, AlertCircle, Users, Sparkles, Footprints } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
-import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, ProgressBar, rpString, rpNumber } from '../../shared/ui';
+import {getRoleProfile, Card, SectionTitle, StatGrid, StatTile, KeyValueRow, Badge, ProgressBar, rpString, rpNumber, rpArray } from '../../shared/ui';
 import { PerformanceCard } from '@/components/performance/PerformanceCard';
 
 export function CoachOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
@@ -24,6 +27,21 @@ export function CoachOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
   const ppg = rpNumber(rp, 'pointsPerGame');
   const trophies = rpNumber(rp, 'trophiesWon');
   const formation = rpString(rp, 'preferredFormation');
+
+  // New fields
+  const playingPosition = rpString(rp, 'playingPosition');
+  const strengths = rpArray(rp, 'strengths').map(String);
+  const weaknesses = rpArray(rp, 'weaknesses').map(String);
+  const assistantCoach = rpString(rp, 'assistantCoach');
+  const firstTeamCoach = rpString(rp, 'firstTeamCoach');
+  const gkCoach = rpString(rp, 'gkCoach');
+  const fitnessCoach = rpString(rp, 'fitnessCoach');
+  const setPieceCoach = rpString(rp, 'setPieceCoach');
+  const coachingIdol = rpString(rp, 'coachingIdol');
+  const knownFor = rpString(rp, 'knownFor');
+  const playingCareerHighlight = rpString(rp, 'playingCareerHighlight');
+
+  const hasStaff = assistantCoach || firstTeamCoach || gkCoach || fitnessCoach || setPieceCoach;
 
   const winRate = matches > 0 ? Math.round((wins / matches) * 100) : 0;
 
@@ -53,6 +71,7 @@ export function CoachOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
           {licenseFederation && <KeyValueRow label="Federation" value={licenseFederation} />}
           {yearsCoaching > 0 && <KeyValueRow label="Years Coaching" value={yearsCoaching} />}
           {rpString(rp, 'dateOfBirth') && <KeyValueRow label="Born" value={rpString(rp, 'dateOfBirth')} />}
+          {playingPosition && <KeyValueRow label="Playing Position" value={<Badge color="blue"><Footprints className="h-3 w-3 mr-1" />{playingPosition}</Badge>} />}
         </div>
       </Card>
 
@@ -75,6 +94,52 @@ export function CoachOverviewTab({ apiUser }: { apiUser: ApiUserLike | null }) {
               <ProgressBar value={winRate} color={winRate >= 50 ? 'green' : winRate >= 30 ? 'gold' : 'red'} />
             </div>
           )}
+        </Card>
+      )}
+
+      {/* ── Key Strengths & Areas for Improvement ── */}
+      {(strengths.length > 0 || weaknesses.length > 0) && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {strengths.length > 0 && (
+            <Card hover>
+              <SectionTitle icon={Zap}>Key Strengths</SectionTitle>
+              <div className="flex flex-wrap gap-1.5">
+                {strengths.map((s, i) => <Badge key={i} color="green">{s}</Badge>)}
+              </div>
+            </Card>
+          )}
+          {weaknesses.length > 0 && (
+            <Card hover>
+              <SectionTitle icon={AlertCircle}>Areas for Improvement</SectionTitle>
+              <div className="flex flex-wrap gap-1.5">
+                {weaknesses.map((w, i) => <Badge key={i} color="red">{w}</Badge>)}
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ── Assistant Staff ── */}
+      {hasStaff && (
+        <Card hover>
+          <SectionTitle icon={Users}>Assistant Staff</SectionTitle>
+          <div className="flex flex-col gap-0">
+            {assistantCoach && <KeyValueRow label="Assistant Coach" value={assistantCoach} />}
+            {firstTeamCoach && <KeyValueRow label="First-Team Coach" value={firstTeamCoach} />}
+            {gkCoach && <KeyValueRow label="Goalkeeping Coach" value={gkCoach} />}
+            {fitnessCoach && <KeyValueRow label="Fitness Coach" value={fitnessCoach} />}
+            {setPieceCoach && <KeyValueRow label="Set-Piece Coach" value={setPieceCoach} />}
+          </div>
+        </Card>
+      )}
+
+      {/* ── Fun Facts / Trivia ── */}
+      {(playingCareerHighlight || coachingIdol || knownFor) && (
+        <Card hover>
+          <SectionTitle icon={Sparkles}>Fun Facts</SectionTitle>
+          {playingCareerHighlight && <KeyValueRow label="Playing Highlight" value={playingCareerHighlight} />}
+          {coachingIdol && <KeyValueRow label="Coaching Idol" value={coachingIdol} />}
+          {knownFor && <KeyValueRow label="Known For" value={knownFor} />}
         </Card>
       )}
     </div>

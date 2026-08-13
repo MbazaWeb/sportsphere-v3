@@ -91,6 +91,35 @@ export const PLAYER_FIELDS: RoleConfig['fields'] = [
   { key: 'form',              label: 'Current Form',        type: 'select', section: 'performance', group: 'Scouting',
     options: ['Excellent', 'Good', 'Average', 'Poor', 'Injured'] },
   { key: 'ranking',           label: 'Player Ranking',      type: 'text', section: 'performance', group: 'Scouting', placeholder: '#42 in TZ' },
+
+  // ── Physical & Technical Attributes (rated out of 10) ──
+  { key: 'pace',              label: 'Pace / Speed',         type: 'number', section: 'performance', group: 'Attributes', placeholder: '8' },
+  { key: 'strength',          label: 'Strength / Physicality',type: 'number', section: 'performance', group: 'Attributes', placeholder: '7' },
+  { key: 'dribbling',         label: 'Dribbling / Ball Control',type: 'number',section: 'performance', group: 'Attributes', placeholder: '8' },
+  { key: 'passingRange',      label: 'Passing Range',        type: 'number', section: 'performance', group: 'Attributes', placeholder: '7' },
+  { key: 'shooting',          label: 'Shooting / Finishing',  type: 'number', section: 'performance', group: 'Attributes', placeholder: '8' },
+  { key: 'defensiveAbility',  label: 'Defensive Ability',    type: 'number', section: 'performance', group: 'Attributes', placeholder: '5' },
+  { key: 'aerialDuelsRating', label: 'Aerial Duels',          type: 'number', section: 'performance', group: 'Attributes', placeholder: '6' },
+  { key: 'stamina',           label: 'Stamina',              type: 'number', section: 'performance', group: 'Attributes', placeholder: '8' },
+
+  // ── Mental Attributes (rated out of 10) ──
+  { key: 'vision',            label: 'Vision / Awareness',    type: 'number', section: 'performance', group: 'Mental', placeholder: '8' },
+  { key: 'decisionMaking',    label: 'Decision Making',      type: 'number', section: 'performance', group: 'Mental', placeholder: '7' },
+  { key: 'leadership',        label: 'Leadership',           type: 'number', section: 'performance', group: 'Mental', placeholder: '6' },
+  { key: 'workRate',          label: 'Work Rate',            type: 'number', section: 'performance', group: 'Mental', placeholder: '9' },
+  { key: 'composure',         label: 'Composure under Pressure', type: 'number', section: 'performance', group: 'Mental', placeholder: '7' },
+
+  // ── Personal / Fun Facts ──
+  { key: 'placeOfBirth',      label: 'Place of Birth',       type: 'text',   section: 'identity', group: 'Personal', placeholder: 'Dar es Salaam' },
+  { key: 'nickname',          label: 'Nickname',             type: 'text',   section: 'identity', group: 'Personal' },
+  { key: 'idol',              label: 'Idol / Role Model',    type: 'text',   section: 'identity', group: 'Personal' },
+  { key: 'hobbies',           label: 'Hobbies',              type: 'text',   section: 'identity', group: 'Personal' },
+  { key: 'socialInstagram',   label: 'Instagram',            type: 'text',   section: 'identity', group: 'Personal', placeholder: '@username' },
+  { key: 'socialTwitter',     label: 'Twitter / X',          type: 'text',   section: 'identity', group: 'Personal', placeholder: '@username' },
+
+  // ── International Career ──
+  { key: 'majorTournaments',  label: 'Major Tournaments Played', type: 'textarea', section: 'career', group: 'Career',
+    hint: 'One per line: 2023 AFCON, 2024 Olympics...' },
 ];
 
 export const playerConfig: RoleConfig = {

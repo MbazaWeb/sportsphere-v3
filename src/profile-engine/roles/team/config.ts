@@ -9,8 +9,10 @@ import type { RoleConfig, TabId } from '../../types';
 export const TEAM_TABS: Array<{ id: TabId; label: string }> = [
   { id: 'overview',    label: 'Overview'    },
   { id: 'feeds',       label: 'Feeds'       },
+  { id: 'fixtures',    label: 'Fixtures'    },
   { id: 'squad',       label: 'Squad'       },
   { id: 'performance', label: 'Performance' },
+  { id: 'standings',   label: 'Standings'   },
   { id: 'trophies',    label: 'Trophies'    },
   { id: 'shop',        label: 'Shop'        },
   { id: 'about',       label: 'About'       },
@@ -51,6 +53,31 @@ export const TEAM_FIELDS: RoleConfig['fields'] = [
   { key: 'historicPlayers', label: 'Historic Players', type: 'textarea', section: 'career', group: 'History',
     hint: 'Notable former players, one per line' },
   { key: 'historicCoaches', label: 'Historic Coaches', type: 'textarea', section: 'career', group: 'History' },
+
+  // ── Current Season Overview (2025-26) ──
+  { key: 'topScorer',       label: 'Top Scorer (Season)',  type: 'text',   section: 'performance', group: 'Current Season',
+    placeholder: 'Player Name' },
+  { key: 'mostAssists',     label: 'Most Assists (Season)',type: 'text',   section: 'performance', group: 'Current Season',
+    placeholder: 'Player Name' },
+  { key: 'seasonObjective', label: 'Season Objective',    type: 'select', section: 'performance', group: 'Current Season',
+    options: ['Win the League', 'Top 4 Finish', 'Cup Run', 'Avoid Relegation', 'Develop Youth', 'Champions League Qualification'] },
+
+  // ── Club History & Identity ──
+  { key: 'motto',          label: 'Club Motto / Slogan',  type: 'text',     section: 'identity', group: 'History' },
+  { key: 'rivalries',      label: 'Major Rivalries',      type: 'textarea', section: 'identity', group: 'History',
+    hint: 'One per line: Rival Club Name' },
+  { key: 'fanCulture',     label: 'Fan Culture',          type: 'textarea', section: 'identity', group: 'History',
+    placeholder: 'Brief description of the fanbase...' },
+  { key: 'clubLegends',    label: 'Club Legends / Icons',  type: 'textarea', section: 'identity', group: 'History',
+    hint: '3-5 all-time greats, one per line' },
+
+  // ── Playing Style & Philosophy ──
+  { key: 'tacticalFormation', label: 'Tactical Formation', type: 'select', section: 'performance', group: 'Playing Style',
+    options: ['4-3-3', '4-4-2', '4-2-3-1', '3-5-2', '3-4-3', '5-3-2', '4-1-4-1', '4-3-2-1'] },
+  { key: 'styleOfPlay',      label: 'Style of Play',       type: 'select', section: 'performance', group: 'Playing Style',
+    options: ['Possession-based', 'Counter-attacking', 'High-press', 'Direct', 'Defensive', 'Balanced'] },
+  { key: 'keyPrinciples',    label: 'Key Principles',       type: 'textarea', section: 'performance', group: 'Playing Style',
+    placeholder: 'What does this team always do well? e.g. Press immediately after losing the ball...' },
 ];
 
 export const teamConfig: RoleConfig = {

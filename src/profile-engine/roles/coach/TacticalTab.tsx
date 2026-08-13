@@ -6,7 +6,7 @@
 // philosophy, and pressing/possession/defensive/build-up styles.
 // The formation is rendered as a visual pitch diagram.
 
-import { Layout, Target, Shield, Zap, Layers, BookOpen } from 'lucide-react';
+import { Layout, Target, Shield, Zap, Layers, BookOpen, Swords, RefreshCw, Users } from 'lucide-react';
 import type { ApiUserLike } from '../../types';
 import {getRoleProfile, Card, SectionTitle, EmptyState, Badge, KeyValueRow, rpString, rpArray } from '../../shared/ui';
 
@@ -55,7 +55,14 @@ export function CoachTacticalTab({ apiUser }: { apiUser: ApiUserLike | null }) {
   const defensive = rpString(rp, 'defensiveApproach');
   const buildUp = rpString(rp, 'buildUpStyle');
 
-  const hasAny = formation || philosophy || pressing || possession || defensive || buildUp || alternates.length;
+  // New fields
+  const attackingPrinciples = rpString(rp, 'attackingPrinciples');
+  const defensivePrinciples = rpString(rp, 'defensivePrinciples');
+  const inGameManagement = rpString(rp, 'inGameManagement');
+  const manManagementStyle = rpString(rp, 'manManagementStyle');
+
+  const hasAny = formation || philosophy || pressing || possession || defensive || buildUp || alternates.length
+    || attackingPrinciples || defensivePrinciples || inGameManagement || manManagementStyle;
 
   if (!hasAny) {
     return (
@@ -99,6 +106,38 @@ export function CoachTacticalTab({ apiUser }: { apiUser: ApiUserLike | null }) {
           {possession && <KeyValueRow label="Possession Style"  value={<Badge color={possession === 'Dominant' ? 'gold' : 'muted'}>{possession}</Badge>} />}
           {defensive &&  <KeyValueRow label="Defensive Approach" value={<Badge color="muted">{defensive}</Badge>} />}
           {buildUp &&    <KeyValueRow label="Build-up Style"     value={<Badge color="muted">{buildUp}</Badge>} />}
+        </Card>
+      )}
+
+      {/* ── Attacking Principles ── */}
+      {attackingPrinciples && (
+        <Card hover>
+          <SectionTitle icon={Swords}>Attacking Principles</SectionTitle>
+          <p className="text-sm text-white leading-relaxed">{attackingPrinciples}</p>
+        </Card>
+      )}
+
+      {/* ── Defensive Principles ── */}
+      {defensivePrinciples && (
+        <Card hover>
+          <SectionTitle icon={Shield}>Defensive Principles</SectionTitle>
+          <p className="text-sm text-white leading-relaxed">{defensivePrinciples}</p>
+        </Card>
+      )}
+
+      {/* ── In-Game Management ── */}
+      {inGameManagement && (
+        <Card hover>
+          <SectionTitle icon={RefreshCw}>In-Game Management</SectionTitle>
+          <Badge color="gold">{inGameManagement}</Badge>
+        </Card>
+      )}
+
+      {/* ── Man-Management Style ── */}
+      {manManagementStyle && (
+        <Card hover>
+          <SectionTitle icon={Users}>Man-Management Style</SectionTitle>
+          <Badge color="blue">{manManagementStyle}</Badge>
         </Card>
       )}
     </div>

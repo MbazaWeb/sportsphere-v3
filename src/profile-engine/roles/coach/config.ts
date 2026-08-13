@@ -63,6 +63,38 @@ export const COACH_FIELDS: RoleConfig['fields'] = [
   { key: 'academyExperience',label: 'Academy Experience',  type: 'textarea', section: 'career', group: 'Career' },
   { key: 'playingCareer',    label: 'Playing Career',      type: 'textarea', section: 'career', group: 'Career',
     hint: 'Your own playing career before coaching' },
+
+  // ── Playing Position (as a player) ──
+  { key: 'playingPosition', label: 'Playing Position (as Player)', type: 'select', section: 'identity', group: 'Identity',
+    options: ['GK', 'RB', 'CB', 'LB', 'CDM', 'CM', 'CAM', 'RW', 'LW', 'ST'] },
+
+  // ── Management & Leadership ──
+  { key: 'inGameManagement',  label: 'In-Game Management',    type: 'select', section: 'performance', group: 'Management',
+    options: ['Proactive Substituter', 'Sticks to Plan', 'Adjusts Formation Mid-Game', 'Flexible & Reactive', 'Conservative'] },
+  { key: 'manManagementStyle',label: 'Man-Management Style',  type: 'select', section: 'performance', group: 'Management',
+    options: ['Authoritarian', 'Father-Figure', 'Tactical Innovator', 'Player\'s Coach', 'Motivator', 'Disciplinarian'] },
+  { key: 'strengths',         label: 'Key Strengths',         type: 'chips',   section: 'performance', group: 'Management',
+    hint: 'Press Enter to add — e.g. Tactical Flexibility, Youth Development' },
+  { key: 'weaknesses',        label: 'Areas for Improvement', type: 'chips',   section: 'performance', group: 'Management' },
+
+  // ── Attacking / Defensive Principles ──
+  { key: 'attackingPrinciples', label: 'Attacking Principles', type: 'textarea', section: 'performance', group: 'Tactical',
+    placeholder: 'e.g. Build from the back, overloads in wide areas, quick transitions...' },
+  { key: 'defensivePrinciples', label: 'Defensive Principles', type: 'textarea', section: 'performance', group: 'Tactical',
+    placeholder: 'e.g. High press, zonal marking, compact mid-block...' },
+
+  // ── Assistant Staff ──
+  { key: 'assistantCoach',    label: 'Assistant Coach',       type: 'text', section: 'career', group: 'Staff', placeholder: 'Name' },
+  { key: 'firstTeamCoach',    label: 'First-Team Coach',      type: 'text', section: 'career', group: 'Staff', placeholder: 'Name' },
+  { key: 'gkCoach',            label: 'Goalkeeping Coach',     type: 'text', section: 'career', group: 'Staff', placeholder: 'Name' },
+  { key: 'fitnessCoach',      label: 'Fitness / Conditioning Coach', type: 'text', section: 'career', group: 'Staff', placeholder: 'Name' },
+  { key: 'setPieceCoach',     label: 'Set-Piece Coach',       type: 'text', section: 'career', group: 'Staff', placeholder: 'Name' },
+
+  // ── Fun Facts / Trivia ──
+  { key: 'playingCareerHighlight', label: 'Playing Career Highlight', type: 'text', section: 'career', group: 'Trivia' },
+  { key: 'coachingIdol',     label: 'Coaching Idol / Inspiration', type: 'text', section: 'career', group: 'Trivia' },
+  { key: 'knownFor',         label: 'Known For',             type: 'text', section: 'career', group: 'Trivia',
+    placeholder: 'e.g. Always wears a tracksuit, Famous for half-time team talks' },
 ];
 
 export const coachConfig: RoleConfig = {
