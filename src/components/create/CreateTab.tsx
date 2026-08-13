@@ -220,7 +220,7 @@ function Composer({ type, onBack }: { type: string; onBack: () => void }) {
                 type === 'video' ? 'Describe your video...' : 'Add a caption for your reel...'
               }
               maxLength={MAX_CONTENT}
-              className="w-full min-h-[120px] rounded-xl bg-surface/60 border border-surface-border p-4 text-[13px] text-white placeholder:text-muted-foreground/60 resize-none focus:outline-none focus:ring-1 focus:ring-gold/50 transition-shadow"
+              className="w-full min-h-[120px] rounded-xl bg-surface/60 border border-surface-border p-4 text-[13px] text-white placeholder:text-muted-foreground/60 resize-none focus:outline-none focus:ring-1 focus:ring-gold/50 transition-shadow pointer-events-auto relative z-10"
             />
             <p className="mt-1.5 text-[11px] text-muted-foreground/50 text-right tabular-nums">{text.length}/{MAX_CONTENT}</p>
           </div>

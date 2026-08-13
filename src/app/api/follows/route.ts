@@ -38,21 +38,26 @@ export async function POST(request: NextRequest) {
     if (existing) {
       // Unfollow
       await db.follow.delete({ where: { followerId_followingId: { followerId: userId, followingId: String(targetUserId) } } });
-      await db.user.update({ where: { id: userId }, data: { followingCount: { decrement: 1 } } });
-      await db.user.update({ where: { id: String(targetUserId) }, data: { followerCount: { decrement: 1 } } });
-      return NextResponse.json({ following: false });
     } else {
       // Follow
       await db.follow.create({ data: { followerId: userId, followingId: String(targetUserId) } });
-      await db.user.update({ where: { id: userId }, data: { followingCount: { increment: 1 } } });
-      await db.user.update({ where: { id: String(targetUserId) }, data: { followerCount: { increment: 1 } } });
-      // Verify the count is accurate
-      const actualCount = await db.follow.count({ where: { followingId: String(targetUserId) } });
-      if (actualCount !== (target.followerCount || 0) + 1) {
-        await db.user.update({ where: { id: String(targetUserId) }, data: { followerCount: actualCount } });
-      }
-      return NextResponse.json({ following: true });
     }
+
+    // Always reconcile counts from source of truth (avoids negative drift)
+    const [myFollowing, theirFollowers] = await Promise.all([
+      db.follow.count({ where: { followerId: userId } }),
+      db.follow.count({ where: { followingId: String(targetUserId) } }),
+    ]);
+    await Promise.all([
+      db.user.update({ where: { id: userId }, data: { followingCount: myFollowing } }),
+      db.user.update({ where: { id: String(targetUserId) }, data: { followerCount: theirFollowers } }),
+    ]);
+
+    return NextResponse.json({
+      following: !existing,
+      followerCount: theirFollowers,
+      followingCount: myFollowing,
+    });
   } catch (error) {
     console.error('Follow error:', error);
     return NextResponse.json({ error: 'Failed to toggle follow' }, { status: 500 });
@@ -96,17 +101,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'userId is required.' }, { status: 400 });
     }
 
+    // Allow ?userId=me for the authenticated viewer
+    let resolvedUserId = userId;
+    if (userId === 'me') {
+      const me = await getUserIdFromRequest(request);
+      if (!me) {
+        return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+      }
+      resolvedUserId = me;
+    }
+
     let users;
     if (type === 'followers') {
       const follows = await db.follow.findMany({
-        where: { followingId: userId },
+        where: { followingId: resolvedUserId },
         select: { follower: { select: USER_SELECT } },
         orderBy: { createdAt: 'desc' },
       });
       users = follows.map((f: typeof follows[number]) => f.follower);
     } else {
       const follows = await db.follow.findMany({
-        where: { followerId: userId },
+        where: { followerId: resolvedUserId },
         select: { following: { select: USER_SELECT } },
         orderBy: { createdAt: 'desc' },
       });

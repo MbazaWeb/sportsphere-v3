@@ -31,9 +31,14 @@ export function ProfileActions({ role, following, setFollowing, targetUserId }: 
       });
       if (res.ok) {
         const data = await res.json();
-        setFollowing(data.following);
+        setFollowing(!!data.following);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        console.warn('Follow failed', res.status, err);
       }
-    } catch { /* ignore */ }
+    } catch (e) {
+      console.warn('Follow network error', e);
+    }
     setBusy(false);
   };
 

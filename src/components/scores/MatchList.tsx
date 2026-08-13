@@ -27,6 +27,7 @@ interface MatchListProps {
   matches: ApiMatch[];
   loading: boolean;
   label: string;
+  onMatchClick?: (match: ApiMatch) => void;
 }
 
 // ─── Status badge ────────────────────────────────────────────────────────────────────────────────────────────
@@ -109,13 +110,15 @@ function formatKickoff(isoStr: string): string {
 }
 
 // ─── Match row ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-function MatchRow({ m }: { m: ApiMatch }) {
+function MatchRow({ m, onClick }: { m: ApiMatch; onClick?: (match: ApiMatch) => void }) {
   const isLive = m.status === 'live' || m.status === 'ht';
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={() => onClick?.(m)}
       className={cn(
-        'flex items-center gap-3 px-4 py-3 transition-all duration-200',
+        'w-full flex items-center gap-3 px-4 py-3 transition-all duration-200 text-left',
         isLive && 'bg-red-500/[0.04] border-l-2 border-l-red-500/40',
         !isLive && 'hover:bg-surface-elevated/50',
       )}
@@ -165,7 +168,7 @@ function MatchRow({ m }: { m: ApiMatch }) {
         <span className="text-[13px] font-semibold text-foreground truncate text-right">{m.awayTeam}</span>
         <TeamBadge src={m.awayBadge} name={m.awayTeam} />
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -213,7 +216,7 @@ function LeagueGroup({
 }
 
 // ─── Main MatchList ───────────────────────────────────────────────────────────────────────────────────────────────────────
-export function MatchList({ matches, loading, label }: MatchListProps) {
+export function MatchList({ matches, loading, label, onMatchClick }: MatchListProps) {
   // Group matches by league
   const grouped = useMemo(() => {
     const map = new Map<string, ApiMatch[]>();
@@ -267,7 +270,7 @@ export function MatchList({ matches, loading, label }: MatchListProps) {
   return (
     <div className="space-y-3 p-4">
       {grouped.map((g) => (
-        <LeagueGroup key={g.league} league={g.league} badge={g.badge} matches={g.matches} />
+        <LeagueGroup key={g.league} league={g.league} badge={g.badge} matches={g.matches} onMatchClick={onMatchClick} />
       ))}
     </div>
   );

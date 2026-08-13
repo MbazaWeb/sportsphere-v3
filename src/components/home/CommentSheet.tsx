@@ -477,14 +477,17 @@ export function CommentSheet({ itemId, onClose }: CommentSheetProps) {
               onChange={handleTextChange}
               onKeyDown={handleKeyDown}
               rows={1}
-              disabled={submitting}
+              disabled={false}
+              readOnly={false}
               placeholder={
                 !isAuthenticated ? 'Sign in to comment...' :
                 replyTarget ? `Reply to ${replyTargetName}...` :
                 'Add a comment... (use @ to mention)'
               }
-              className="flex-1 resize-none bg-transparent text-sm text-white placeholder:text-muted-foreground focus:outline-none max-h-24 min-h-[24px]"
-              style={{ minHeight: '24px', maxHeight: '80px' }}
+              className="flex-1 resize-none bg-transparent text-sm text-white placeholder:text-muted-foreground focus:outline-none max-h-24 min-h-[24px] pointer-events-auto"
+              style={{ minHeight: '24px', maxHeight: '80px', pointerEvents: 'auto' }}
+              autoComplete="off"
+              enterKeyHint="send"
             />
           </div>
           <button

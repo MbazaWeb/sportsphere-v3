@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { ScoresHeader } from './ScoresHeader';
 import { MatchList } from './MatchList';
+import { MatchDetailModal } from '@/components/home/MatchDetailModal';
 import { StandingsList } from './StandingsList';
 
 function getTodayStr(): string {
@@ -22,6 +23,7 @@ export default function ScoresTab() {
   const [matches, setMatches] = useState<any[]>([]);
   const [standings, setStandings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState<any | null>(null);
 
   // Fetch matches
   useEffect(() => {
@@ -122,9 +124,22 @@ export default function ScoresTab() {
             matches={matches}
             loading={loading}
             label={labelMap[scoresSubTab] || 'matches'}
+            onMatchClick={setSelectedMatch}
           />
         )}
       </div>
+      {selectedMatch && (
+        <MatchDetailModal
+          match={{
+            ...selectedMatch,
+            venue: selectedMatch.venue ?? null,
+            events: selectedMatch.events || [],
+          }}
+          onClose={() => setSelectedMatch(null)}
+          onTeamClick={() => {}}
+          onPlayerClick={() => {}}
+        />
+      )}
     </div>
   );
 }

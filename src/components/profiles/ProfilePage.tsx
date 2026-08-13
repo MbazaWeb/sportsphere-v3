@@ -1,3 +1,4 @@
+import { apiFetch } from '@/lib/api';
 'use client';
 
 import { useState } from 'react';
