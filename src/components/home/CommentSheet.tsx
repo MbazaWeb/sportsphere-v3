@@ -3,9 +3,7 @@ import { apiFetch } from '@/lib/api';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import {
-  X, Send, MessageCircle, Heart, CornerDownRight, AtSign,
-} from 'lucide-react';
+import { X, Send, MessageCircle, Heart, CornerDownRight, AtSign, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
@@ -393,7 +391,7 @@ export function CommentSheet({ itemId, onClose }: CommentSheetProps) {
             Comments{comments.length > 0 && ` · ${comments.length}`}
           </h3>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-surface/50 transition-colors">
-            <X className="h-4 w-4 text-muted-foreground" />
+            <ChevronLeft className="h-5 w-5 text-foreground" />
           </button>
         </div>
 

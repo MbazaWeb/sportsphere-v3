@@ -3,10 +3,7 @@ import { apiFetch } from '@/lib/api';
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import {
-  FileText, Image as ImageIcon, Video, Zap, BarChart3, Target,
-  Plus, X, Hash, MapPin, WifiOff, Sparkles,
-} from 'lucide-react';
+import { FileText, Image as ImageIcon, Video, Zap, BarChart3, Target, Plus, X, Hash, MapPin, WifiOff, Sparkles, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
@@ -196,7 +193,7 @@ function Composer({ type, onBack }: { type: string; onBack: () => void }) {
       <header className="sticky top-0 z-40 border-b border-surface-border/60 bg-background/80 backdrop-blur-2xl">
         <div className="flex h-14 items-center px-4 gap-3">
           <button onClick={onBack} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-surface transition-colors" aria-label="Back">
-            <X className="h-5 w-5 text-foreground" />
+            <ChevronLeft className="h-5 w-5 text-foreground" />
           </button>
           <h1 className="text-lg font-extrabold text-foreground tracking-tight">Create {typeLabels[type] || 'Post'}</h1>
         </div>

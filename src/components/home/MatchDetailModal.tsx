@@ -2,10 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  X, BarChart3, Goal, Clock, Info, Users, MapPin, Trophy,
-  UserRound, Shirt,
-} from 'lucide-react';
+import { X, BarChart3, Goal, Clock, Info, Users, MapPin, Trophy, UserRound, Shirt, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface MatchEvent {
@@ -179,6 +176,14 @@ export function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }:
         <div className="sticky top-0 z-10 border-b border-white/10 bg-[#0B1220]/95 backdrop-blur px-4 py-3">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 min-w-0">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white/5 hover:bg-white/10"
+                aria-label="Back"
+              >
+                <ChevronLeft className="h-5 w-5 text-slate-200" />
+              </button>
               <Trophy className="h-4 w-4 text-amber-400 flex-shrink-0" />
               <div className="min-w-0">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-amber-400/90">

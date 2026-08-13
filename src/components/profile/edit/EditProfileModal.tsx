@@ -6,8 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Check, User, MapPin, Phone, Globe, Heart, Bell, Palette,
   ChevronRight, Plus, Save, Loader2, Camera, Shield, Trophy,
-  Users, Briefcase, Building, Star, Award, FileText,
-} from 'lucide-react';
+  Users, Briefcase, Building, Star, Award, FileText, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
@@ -166,7 +165,7 @@ export default function EditProfileModal({ open, onClose, initialSection }: Edit
         <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-surface-border">
           <div className="flex items-center gap-3">
             <button onClick={handleClose} className="flex h-8 w-8 items-center justify-center rounded-full bg-surface">
-              <X className="h-4 w-4 text-muted-foreground" />
+              <ChevronLeft className="h-5 w-5 text-foreground" />
             </button>
             <div>
               <h2 className="text-sm font-bold text-white">Edit Profile</h2>

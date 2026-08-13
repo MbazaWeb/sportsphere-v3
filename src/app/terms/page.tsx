@@ -11,6 +11,7 @@ export default function TermsOfServicePage() {
   return (
     <main className="min-h-screen bg-[#0A1628] text-white">
       <div className="mx-auto max-w-3xl px-6 py-16">
+          <a href="/" className="mb-6 inline-flex items-center gap-1 text-sm text-white/70 hover:text-[#F5C518] transition-colors">← Back to app</a>
         <header className="mb-12 border-b border-white/10 pb-8">
           <h1 className="font-sans text-4xl font-extrabold tracking-tight text-[#F5C518]">
             Terms of Service
