@@ -11,12 +11,11 @@
     },
     "preview": {
       "distribution": "internal",
-      "channel": "preview",
       "android": {
         "buildType": "apk",
         "withoutCredentials": true,
         "cache": {
-          "key": "v4-minimal-apk",
+          "key": "v5-ultra-minimal",
           "paths": [
             "~/.gradle/caches",
             "~/.gradle/wrapper"
