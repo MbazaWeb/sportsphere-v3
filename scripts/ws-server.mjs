@@ -19,7 +19,11 @@ const io = new Server(httpServer, {
   cors: {
     origin: "*", // Controlled by Nginx in production
     methods: ["GET", "POST"]
-  }
+  },
+  // Help clients detect dead connections and reconnect cleanly
+  pingInterval: 25000,
+  pingTimeout: 20000,
+  connectTimeout: 20000,
 });
 
 // Presence tracking

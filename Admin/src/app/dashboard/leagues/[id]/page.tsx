@@ -45,37 +45,52 @@ export default function LeagueDetailPage() {
     load();
   }, [load]);
 
-  // Optional: listen for live league updates in admin (browser)
+  // Live league updates with automatic reconnection + room rejoin
   useEffect(() => {
     let socket: any;
+    let cancelled = false;
+    const room = `league_${id}`;
+
+    const onLeague = (data: any) => {
+      setLiveLog((x) => [
+        `league_update: ${data?.action || "update"} @ ${new Date().toLocaleTimeString()}`,
+        ...x,
+      ].slice(0, 8));
+      load();
+    };
+    const onFeed = (data: any) => {
+      setLiveLog((x) => [
+        `scores_feed: ${data?.type || "?"} @ ${new Date().toLocaleTimeString()}`,
+        ...x,
+      ].slice(0, 8));
+    };
+    const rejoin = () => {
+      socket?.emit("join_room", room);
+      setLiveLog((x) => [`WS (re)connected ${new Date().toLocaleTimeString()}`, ...x].slice(0, 8));
+    };
+
     (async () => {
       try {
-        const { io } = await import("socket.io-client");
-        socket = io({ path: "/socket.io", transports: ["websocket", "polling"] });
-        socket.on("connect", () => {
-          socket.emit("join_room", `league_${id}`);
-          setLiveLog((x) => [`WS connected ${new Date().toLocaleTimeString()}`, ...x].slice(0, 8));
-        });
-        socket.on("league_update", (data: any) => {
-          setLiveLog((x) => [
-            `league_update: ${data?.action || "update"} @ ${new Date().toLocaleTimeString()}`,
-            ...x,
-          ].slice(0, 8));
-          load();
-        });
-        socket.on("scores_feed", (data: any) => {
-          setLiveLog((x) => [
-            `scores_feed: ${data?.type || "?"} @ ${new Date().toLocaleTimeString()}`,
-            ...x,
-          ].slice(0, 8));
-        });
+        const { getSharedSocket } = await import("@/lib/socket-client");
+        socket = await getSharedSocket();
+        if (cancelled) return;
+        socket.on("league_update", onLeague);
+        socket.on("scores_feed", onFeed);
+        socket.on("connect", rejoin);
+        if (socket.connected) rejoin();
+        else socket.connect();
       } catch {
-        /* socket.io-client may not be in admin package — ignore */
+        setLiveLog((x) => [`WS unavailable`, ...x].slice(0, 8));
       }
     })();
+
     return () => {
+      cancelled = true;
       try {
-        socket?.disconnect();
+        socket?.off("league_update", onLeague);
+        socket?.off("scores_feed", onFeed);
+        socket?.off("connect", rejoin);
+        socket?.emit("leave_room", room);
       } catch {}
     };
   }, [id, load]);
