@@ -67,6 +67,26 @@ interface TeamFromMatch {
   isSeeded?: boolean;
 }
 
+// Cache of team name → logo URL fetched from /api/teams/search
+const teamLogoCache = new Map<string, string | null>();
+async function getTeamLogo(teamName: string): Promise<string | null> {
+  const key = teamName.toLowerCase();
+  if (teamLogoCache.has(key)) return teamLogoCache.get(key)!;
+  try {
+    const res = await fetch(`/api/teams/search?q=${encodeURIComponent(teamName)}&type=TEAM&limit=1`);
+    if (res.ok) {
+      const data = await res.json();
+      // API returns { results: [...] }
+      const results = Array.isArray(data) ? data : (data?.results ?? []);
+      const logo = results[0]?.logoUrl ?? null;
+      teamLogoCache.set(key, logo);
+      return logo;
+    }
+  } catch { /* ignore */ }
+  teamLogoCache.set(key, null);
+  return null;
+}
+
 interface StandingsTeam {
   pos: number;
   name: string;
@@ -94,6 +114,33 @@ function resolveMediaUrl(url: string): string {
     return `${window.location.origin}${path}`;
   }
   return url;
+}
+
+// Team avatar: shows logo if available, otherwise 2-letter initials
+function TeamAvatar({ name, logoUrl, className = '' }: { name: string; logoUrl?: string | null; className?: string }) {
+  const [src, setSrc] = useState<string | null>(logoUrl ?? null);
+  const initials = name.slice(0, 2).toUpperCase();
+
+  useEffect(() => {
+    if (!logoUrl) {
+      getTeamLogo(name).then(setSrc);
+    } else {
+      setSrc(logoUrl);
+    }
+  }, [name, logoUrl]);
+
+  if (src) {
+    return (
+      /* eslint-disable-next-line @next/next/no-img-element */
+      <img
+        src={src}
+        alt={name}
+        className={`object-contain ${className}`}
+        onError={() => setSrc(null)}
+      />
+    );
+  }
+  return <span className="font-black">{initials}</span>;
 }
 
 export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
@@ -312,8 +359,8 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
             <div className="relative px-4 pb-4">
               <div className="flex items-center justify-between gap-3">
                 <button onClick={() => openTeamByName(featuredMatch.homeTeam)} className="flex flex-col items-center gap-1.5 flex-1 group">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 border-2 border-white/20 text-lg font-black text-white group-hover:border-gold group-hover:scale-105 transition-all">
-                    {featuredMatch.homeTeam.slice(0, 2).toUpperCase()}
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 border-2 border-white/20 text-lg text-white group-hover:border-gold group-hover:scale-105 transition-all overflow-hidden">
+                    <TeamAvatar name={featuredMatch.homeTeam} className="h-full w-full rounded-full" />
                   </div>
                   <p className="text-xs font-bold text-white text-center leading-tight group-hover:text-gold transition-colors">{featuredMatch.homeTeam}</p>
                 </button>
@@ -326,8 +373,8 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                   </p>
                 </button>
                 <button onClick={() => openTeamByName(featuredMatch.awayTeam)} className="flex flex-col items-center gap-1.5 flex-1 group">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 border-2 border-white/20 text-lg font-black text-white group-hover:border-gold group-hover:scale-105 transition-all">
-                    {featuredMatch.awayTeam.slice(0, 2).toUpperCase()}
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 border-2 border-white/20 text-lg text-white group-hover:border-gold group-hover:scale-105 transition-all overflow-hidden">
+                    <TeamAvatar name={featuredMatch.awayTeam} className="h-full w-full rounded-full" />
                   </div>
                   <p className="text-xs font-bold text-white text-center leading-tight group-hover:text-gold transition-colors">{featuredMatch.awayTeam}</p>
                 </button>
@@ -355,8 +402,8 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
             </div>
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex flex-col items-center gap-1.5 flex-1">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 border-2 border-gold/30 text-sm font-black text-white">
-                  {bigResult.homeTeam.slice(0, 2).toUpperCase()}
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 border-2 border-gold/30 text-sm text-white overflow-hidden">
+                  <TeamAvatar name={bigResult.homeTeam} className="h-full w-full rounded-full" />
                 </div>
                 <p className="text-[11px] font-bold text-white text-center leading-tight">{bigResult.homeTeam}</p>
               </div>
@@ -370,8 +417,8 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                 </div>
               </div>
               <div className="flex flex-col items-center gap-1.5 flex-1">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 border-2 border-gold/30 text-sm font-black text-white">
-                  {bigResult.awayTeam.slice(0, 2).toUpperCase()}
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 border-2 border-gold/30 text-sm text-white overflow-hidden">
+                  <TeamAvatar name={bigResult.awayTeam} className="h-full w-full rounded-full" />
                 </div>
                 <p className="text-[11px] font-bold text-white text-center leading-tight">{bigResult.awayTeam}</p>
               </div>
