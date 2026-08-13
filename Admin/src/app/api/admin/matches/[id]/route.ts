@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { verifyAdmin } from '@/lib/adminGuard';
+import { realtime } from '@/lib/realtime';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -103,6 +104,22 @@ export async function PATCH(
         console.warn('Fan match mirror update failed:', e);
       }
     }
+
+    // Live push to fan app clients
+    realtime.matchUpdate(id, {
+      id,
+      fanMatchId: fanId || null,
+      homeTeam: updated.homeTeamName,
+      awayTeam: updated.awayTeamName,
+      homeScore: updated.homeScore,
+      awayScore: updated.awayScore,
+      status: updated.status,
+      minute: updated.minute,
+      events: updated.events,
+      venue: updated.venue,
+      kickoffAt: updated.kickoffAt,
+      updatedAt: updated.updatedAt,
+    });
 
     return NextResponse.json({ ok: true, match: updated });
   } catch (e) {

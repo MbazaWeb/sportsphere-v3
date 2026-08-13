@@ -27,8 +27,14 @@ export async function emitRealtimeEvent(event: string, data: any, room?: string)
  */
 export const realtime = {
   // Notify match score update
-  matchUpdate: (matchId: string, matchData: any) =>
-    emitRealtimeEvent('match_update', matchData, `match_${matchId}`),
+  matchUpdate: (matchId: string, matchData: any) => {
+    emitRealtimeEvent('match_update', matchData, `match_${matchId}`);
+    emitRealtimeEvent('scores_feed', { type: 'match_update', match: matchData });
+  },
+  leagueUpdate: (leagueId: string, data: any) => {
+    emitRealtimeEvent('league_update', data, `league_${leagueId}`);
+    emitRealtimeEvent('scores_feed', { type: 'league_update', league: data });
+  },
 
   // Notify new comment in a post
   newComment: (postId: string, comment: any) =>

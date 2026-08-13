@@ -1,4 +1,6 @@
 'use client';
+
+import { useScoresLive } from '@/hooks/useScoresLive';
 import { apiFetch } from '@/lib/api';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -24,6 +26,50 @@ export default function ScoresTab() {
   const [standings, setStandings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<any | null>(null);
+
+
+  useScoresLive(useCallback((payload) => {
+    if (!payload) return;
+    // Soft refresh: re-run by flipping a version would be ideal; call fetch via status change no-op
+    if (payload.type === 'match_update' || payload.type === 'league_update') {
+      // Trigger existing effects by updating matches in place when possible
+      const m = payload.match;
+      if (m && (m.id || m.fanMatchId)) {
+        setMatches((prev) => {
+          const id = m.fanMatchId || m.id;
+          const idx = prev.findIndex((x: any) => x.id === id || x.id === m.id);
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = {
+              ...next[idx],
+              homeScore: m.homeScore ?? next[idx].homeScore,
+              awayScore: m.awayScore ?? next[idx].awayScore,
+              status: m.status || next[idx].status,
+              minute: m.minute ?? next[idx].minute,
+              events: m.events || next[idx].events,
+            };
+            return next;
+          }
+          // prepend unknown live/db match
+          return [{
+            id: m.fanMatchId || m.id,
+            homeTeam: m.homeTeam,
+            awayTeam: m.awayTeam,
+            homeScore: m.homeScore,
+            awayScore: m.awayScore,
+            status: m.status,
+            minute: m.minute,
+            league: m.league || 'Match',
+            kickoffAt: m.kickoffAt,
+            venue: m.venue,
+            events: m.events || [],
+            source: 'database',
+          }, ...prev];
+        });
+      }
+    }
+  }, []));
+
 
   // Fetch matches
   useEffect(() => {

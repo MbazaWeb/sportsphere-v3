@@ -2,7 +2,7 @@
   "name": "sportsphere-admin",
   "private": true,
   "version": "2.0.0",
-  "description": "Standalone admin console for SportSphere. Direct database access — issues its own JWT sessions, queries PostgreSQL directly via Prisma, talks to the fan web app only for shared user identity.",
+  "description": "Standalone admin console for SportSphere. Direct database access \u2014 issues its own JWT sessions, queries PostgreSQL directly via Prisma, talks to the fan web app only for shared user identity.",
   "type": "module",
   "scripts": {
     "dev": "next dev --turbopack -p 3003",
@@ -26,7 +26,8 @@
     "react-dom": "^19.2.8",
     "recharts": "^3.10.1",
     "systeminformation": "^5.33.1",
-    "tailwind-merge": "^2.5.5"
+    "tailwind-merge": "^2.5.5",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
