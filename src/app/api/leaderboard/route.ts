@@ -89,9 +89,16 @@ async function fetchPlayerLeaderboard(opts: {
 }) {
   const { position, playerType, categoryBucket, dimension, limit } = opts;
 
-  // All users with role=player (profiles optional — rank by points/PPI when present)
+  // Prefer players who already have performance or player profiles so
+  // high scorers are not dropped by an arbitrary take window.
   const users = await db.user.findMany({
-    where: { role: 'player' },
+    where: {
+      role: 'player',
+      OR: [
+        { performanceProfile: { isNot: null } },
+        { playerProfile: { isNot: null } },
+      ],
+    },
     select: {
       ...USER_SELECT,
       performanceProfile: {
@@ -123,7 +130,7 @@ async function fetchPlayerLeaderboard(opts: {
         },
       },
     },
-    take: 200, // rank in memory so PPI fallback works
+    take: 500,
   });
 
   let filtered = users;
