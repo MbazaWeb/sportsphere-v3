@@ -154,34 +154,60 @@ function Composer({ type, onBack }: { type: string; onBack: () => void }) {
     pollData?: { question: string; options: string[]; durationHours: number },
     predictionData?: { homeTeam: string; awayTeam: string; predictedHome: number; predictedAway: number; confidence: 'low' | 'medium' | 'high' }
   ) => {
-    setSubmitting(true); setError('');
+    if ((type === 'photo' || type === 'video' || type === 'spotlight') && (!mediaUrls || mediaUrls.length === 0)) {
+      setError('Add a photo or video before posting.');
+      return;
+    }
+    setSubmitting(true);
+    setError('');
     const body: Record<string, unknown> = {
-      content, postType: type, mediaUrls, hashtags,
-      location: location.trim() || undefined, isBreaking: breaking,
+      content: (content || text || '').trim(),
+      postType: type,
+      mediaUrls,
+      hashtags,
+      location: location.trim() || undefined,
+      isBreaking: breaking,
     };
     if (type === 'poll' && pollData) body.poll = { question: pollData.question, options: pollData.options, durationHours: pollData.durationHours };
     if (type === 'prediction' && predictionData) body.prediction = predictionData;
 
     if (isOffline()) {
       queuePost(body);
-      showToast('You\u2019re offline. Post saved \u2014 will publish when you reconnect.');
-      setText(''); setMediaUrls([]); setHashtags([]); setLocation(''); setBreaking(false);
+      showToast('You are offline. Post saved — will publish when you reconnect.');
+      setText('');
+      setMediaUrls([]);
+      setHashtags([]);
+      setLocation('');
+      setBreaking(false);
       setTimeout(() => { onBack(); setActiveTab('home'); }, 600);
-      setSubmitting(false); return;
+      setSubmitting(false);
+      return;
     }
 
     try {
       const res = await apiFetch('/api/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { setError(data?.error || `Failed to create post (HTTP ${res.status}).`); setSubmitting(false); return; }
-      showToast('Posted successfully! 🎉');
-      setText(''); setMediaUrls([]); setHashtags([]); setLocation(''); setBreaking(false);
+      if (!res.ok) {
+        setError(data?.error || `Failed to create post (HTTP ${res.status}).`);
+        setSubmitting(false);
+        return;
+      }
+      showToast('Posted successfully!');
+      setText('');
+      setMediaUrls([]);
+      setHashtags([]);
+      setLocation('');
+      setBreaking(false);
       setTimeout(() => { onBack(); setActiveTab('home'); }, 800);
     } catch (err) {
       console.error('Create post network error:', err);
       queuePost(body);
-      showToast('Network error. Post saved \u2014 will publish automatically.');
-      setText(''); setMediaUrls([]); setHashtags([]); setLocation(''); setBreaking(false);
+      showToast('Network error. Post saved — will publish automatically.');
+      setText('');
+      setMediaUrls([]);
+      setHashtags([]);
+      setLocation('');
+      setBreaking(false);
       setTimeout(() => { onBack(); setActiveTab('home'); }, 600);
     }
     setSubmitting(false);

@@ -56,6 +56,17 @@ interface FeedCardProps {
   formatTime: (s: string) => string;
 }
 
+
+function resolveMediaUrl(url: string): string {
+  if (!url) return url;
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("blob:") || url.startsWith("data:")) return url;
+  if (typeof window !== "undefined") {
+    const path = url.startsWith("/") ? url : `/${url}`;
+    return `${window.location.origin}${path}`;
+  }
+  return url;
+}
+
 export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps) {
   const setViewingUser = useUIStore((s) => s.setViewingUser);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -175,7 +186,7 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
               <div className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={item.mediaUrls[0]}
+                  src={resolveMediaUrl(item.mediaUrls[0])}
                   alt={item.content || 'Post image'}
                   className="w-full max-h-80 object-cover"
                   loading="lazy"
@@ -202,12 +213,12 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
         )}
 
         {/* Video */}
-        {item.postType === 'video' && (
+        {(item.postType === 'video' || item.postType === 'spotlight') && (
           <div className="mb-3 relative h-52 overflow-hidden rounded-xl bg-surface-elevated">
             {item.mediaUrls && item.mediaUrls.length > 0 ? (
               <div className="relative h-full w-full">
                 <video
-                  src={item.mediaUrls[0]}
+                  src={resolveMediaUrl(item.mediaUrls[0])}
                   className="h-full w-full object-cover"
                   controls
                   playsInline

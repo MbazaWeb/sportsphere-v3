@@ -85,6 +85,16 @@ interface SportlightsTabProps {
   onComment: (id: string) => void;
 }
 
+function resolveMediaUrl(url: string): string {
+  if (!url) return url;
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("blob:") || url.startsWith("data:")) return url;
+  if (typeof window !== "undefined") {
+    const path = url.startsWith("/") ? url : `/${url}`;
+    return `${window.location.origin}${path}`;
+  }
+  return url;
+}
+
 export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [liveMatches, setLiveMatches] = useState<ApiMatch[]>([]);
@@ -648,10 +658,10 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                 <div className="relative aspect-video rounded-xl overflow-hidden bg-black">
                   {item.mediaUrls && item.mediaUrls.length > 0 ? (
                     (item.postType === 'video' || item.postType === 'spotlight') ? (
-                      <video src={item.mediaUrls[0]} className="w-full h-full object-cover" controls playsInline preload="metadata" />
+                      <video src={resolveMediaUrl(item.mediaUrls[0])} className="w-full h-full object-cover bg-black" controls playsInline preload="metadata" />
                     ) : (
                       /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={item.mediaUrls[0]} alt={item.content || ''} className="w-full h-full object-cover" />
+                      <img src={resolveMediaUrl(item.mediaUrls[0])} alt={item.content || ''} className="w-full h-full object-cover" />
                     )
                   ) : (
                     <div className="h-full bg-gradient-to-br from-emerald-700 to-green-900 flex items-center justify-center">

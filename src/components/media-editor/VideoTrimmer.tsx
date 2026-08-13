@@ -321,7 +321,7 @@ export function VideoTrimmer({ file, objectUrl, type, onSave, onCancel }: VideoT
   const trimDuration = Math.max(0, endTime - startTime);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/90 backdrop-blur-sm p-0 sm:p-4"
       style={{ touchAction: 'none' }}>
       <div className="w-full max-w-2xl bg-surface-elevated rounded-2xl border border-surface-border overflow-hidden shadow-2xl"
         style={{ touchAction: 'pan-y' }}>

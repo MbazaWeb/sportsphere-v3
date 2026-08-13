@@ -99,7 +99,7 @@ export default function UserProfileViewer() {
         className="fixed inset-0 z-40 bg-background overflow-y-auto"
         style={{ touchAction: 'pan-y' }}
       >
-        <div className="sticky top-0 z-50 flex items-center gap-2 border-b border-surface-border/80 bg-background/95 px-3 py-2 backdrop-blur-xl">
+        <div className="sticky top-0 z-[60] flex items-center gap-2 border-b border-surface-border/80 bg-background/95 px-3 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 backdrop-blur-xl">
           <button
             type="button"
             onClick={() => setViewingUser(null)}

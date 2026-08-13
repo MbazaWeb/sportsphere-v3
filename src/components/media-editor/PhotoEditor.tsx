@@ -112,8 +112,8 @@ export function PhotoEditor({ file, objectUrl, onSave, onCancel }: PhotoEditorPr
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md bg-surface-elevated rounded-2xl border border-surface-border overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/90 backdrop-blur-sm p-0 sm:p-4">
+      <div className="w-full max-w-md bg-surface-elevated rounded-t-2xl sm:rounded-2xl border border-surface-border overflow-hidden h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col">
         
         {/* Header */}
         <div className="p-4 border-b border-surface-border flex items-center justify-between bg-surface-elevated flex-shrink-0">
@@ -126,7 +126,7 @@ export function PhotoEditor({ file, objectUrl, onSave, onCancel }: PhotoEditorPr
         </div>
 
         {/* Canvas */}
-        <div className="p-4 flex-shrink-0">
+        <div className="p-4 flex-1 overflow-y-auto min-h-0">
           <canvas ref={canvasRef} className="w-full max-h-56 rounded-xl object-contain bg-black/40" />
         </div>
 
@@ -232,7 +232,7 @@ export function PhotoEditor({ file, objectUrl, onSave, onCancel }: PhotoEditorPr
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-surface-border flex gap-3 bg-surface-elevated flex-shrink-0">
+        <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-surface-border flex gap-3 bg-surface-elevated flex-shrink-0 sticky bottom-0 z-10">
           <button
             onClick={resetEditor}
             className="flex items-center justify-center gap-1.5 rounded-xl bg-surface border border-surface-border px-4 py-2.5 text-sm font-semibold text-white hover:bg-surface-elevated transition-colors"
@@ -253,7 +253,7 @@ export function PhotoEditor({ file, objectUrl, onSave, onCancel }: PhotoEditorPr
             ) : (
               <>
                 <Save className="h-4 w-4" />
-                Apply & Continue
+                Use Photo
               </>
             )}
           </button>
