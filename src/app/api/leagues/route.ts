@@ -1,49 +1,47 @@
+// GET /api/leagues — Return Tanzania competitions from LOCAL DB
 import { NextResponse } from 'next/server';
-import { getLeagues, POPULAR_LEAGUE_IDS, type LeagueInfo } from '@/lib/sports-api';
+import { db } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const allLeagues = await getLeagues();
+    const leagues = await db.league.findMany({
+      where: { isActive: true },
+      orderBy: [{ type: 'asc' }, { name: 'asc' }],
+      include: {
+        sport: {
+          select: { name: true, slug: true, icon: true },
+        },
+      },
+    });
 
-    // Merge with our popular list to ensure key leagues are always present
-    const popularSet = new Set(Object.keys(POPULAR_LEAGUE_IDS));
-    const merged: LeagueInfo[] = [];
+    // Return available league names for the dropdown + full data
+    const available = leagues.map((l) => l.name);
+    const full = leagues.map((l) => ({
+      id: l.id,
+      name: l.name,
+      slug: l.slug,
+      type: l.type,
+      country: l.country,
+      countryCode: l.countryCode,
+      season: l.season,
+      description: l.description,
+      sport: l.sport,
+      verified: l.verified,
+    }));
 
-    // Popular leagues first
-    for (const name of Object.keys(POPULAR_LEAGUE_IDS)) {
-      const found = allLeagues.find(
-        (l) => l.name === name || l.id === POPULAR_LEAGUE_IDS[name]
-      );
-      merged.push(
-        found || {
-          id: POPULAR_LEAGUE_IDS[name],
-          name,
-          country: '',
-          sport: 'Soccer',
-        }
-      );
-    }
-
-    // Then the rest from the API
-    for (const l of allLeagues) {
-      if (!popularSet.has(l.name)) {
-        merged.push(l);
-      }
-    }
-
-    return NextResponse.json(merged);
+    return NextResponse.json({
+      available,
+      leagues: full,
+      total: full.length,
+      source: 'database',
+    });
   } catch (error) {
     console.error('Leagues API error:', error);
-    // Fallback: return popular leagues only
     return NextResponse.json(
-      Object.keys(POPULAR_LEAGUE_IDS).map((name) => ({
-        id: POPULAR_LEAGUE_IDS[name],
-        name,
-        country: '',
-        sport: 'Soccer',
-      }))
+      { available: [], leagues: [], error: 'Failed to fetch leagues.' },
+      { status: 500 }
     );
   }
 }

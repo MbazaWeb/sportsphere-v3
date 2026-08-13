@@ -18,9 +18,20 @@ const SUBTABS: { id: ScoresSubTab; label: string }[] = [
 ];
 
 const DEFAULT_LEAGUES = [
-  'All', 'English Premier League', 'Spanish La Liga', 'German Bundesliga',
-  'Italian Serie A', 'French Ligue 1', 'UEFA Champions League',
-  'UEFA Europa League', 'English Championship',
+  'All',
+  // Football — Tanzania
+  'Vodacom Premier League', 'NBC Premier League', 'Azam Sports Federation Cup',
+  'Community Shield', 'Mapinduzi Cup', 'Union Cup', 'Zanzibar Premier League',
+  // Basketball
+  'National Basketball League',
+  // Athletics
+  'Kilimanjaro Marathon', 'Dar es Salaam Marathon',
+  // Rugby
+  'National Rugby League', 'National Rugby Sevens Series',
+  // Volleyball
+  'National Volleyball League',
+  // Netball
+  'National Netball League',
 ];
 
 function formatDate(d: Date): string {

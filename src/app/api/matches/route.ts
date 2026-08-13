@@ -1,11 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  getLiveMatches,
-  getMatchesByDate,
-  getPastResults,
-  getUpcomingFixtures,
-  POPULAR_LEAGUE_IDS,
-} from '@/lib/sports-api';
 import { db } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
@@ -80,68 +73,24 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || 'live';
     const leagueName = searchParams.get('league');
 
-    let matches: any[] = [];
+    // Tanzania baseline: fetch matches from local database only
+    const matches = await loadDbMatches(status);
 
-    switch (status) {
-      case 'live': {
-        matches = await getLiveMatches();
-        break;
-      }
-      case 'today': {
-        const today = new Date().toISOString().slice(0, 10);
-        matches = await getMatchesByDate(today);
-        break;
-      }
-      case 'results': {
-        if (leagueName && leagueName !== 'All' && POPULAR_LEAGUE_IDS[leagueName]) {
-          matches = await getPastResults(POPULAR_LEAGUE_IDS[leagueName]);
-        } else {
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          matches = await getMatchesByDate(yesterday.toISOString().slice(0, 10));
-        }
-        break;
-      }
-      case 'upcoming': {
-        if (leagueName && leagueName !== 'All' && POPULAR_LEAGUE_IDS[leagueName]) {
-          matches = await getUpcomingFixtures(POPULAR_LEAGUE_IDS[leagueName]);
-        } else {
-          const tomorrow = new Date();
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          matches = await getMatchesByDate(tomorrow.toISOString().slice(0, 10));
-        }
-        break;
-      }
-      default:
-        matches = [];
-    }
-
-    // Merge admin/database matches (always include — source of truth for manual entries)
-    const dbMatches = await loadDbMatches(status);
-    if (dbMatches.length) {
-      const seen = new Set((matches || []).map((m: any) => `${m.homeTeam}|${m.awayTeam}|${m.kickoffAt}`));
-      for (const m of dbMatches) {
-        const key = `${m.homeTeam}|${m.awayTeam}|${m.kickoffAt}`;
-        if (!seen.has(key)) {
-          matches = [m, ...(matches || [])];
-          seen.add(key);
-        }
-      }
-    }
-
+    // Filter by league name if specified
+    let filtered = matches;
     if (leagueName && leagueName !== 'All' && Array.isArray(matches)) {
       const lower = leagueName.toLowerCase();
-      matches = matches.filter(
+      filtered = matches.filter(
         (m: { league: string }) => m.league.toLowerCase().includes(lower)
       );
     }
 
-    return NextResponse.json(matches || []);
+    return NextResponse.json(filtered || []);
   } catch (error) {
     console.error('Matches API error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch matches. The sports API may be temporarily unavailable.' },
-      { status: 502 }
+      { error: 'Failed to fetch matches.' },
+      { status: 500 }
     );
   }
 }

@@ -617,20 +617,32 @@ export async function getLeagues(): Promise<LeagueInfo[]> {
   });
 }
 
-/** Default popular league IDs — now uses football-data.org IDs as primary */
+/** Default popular league IDs — Tanzania leagues from local DB */
 export const POPULAR_LEAGUE_IDS: Record<string, string> = {
-  'English Premier League': '2021',
-  'Spanish La Liga': '2014',
-  'German Bundesliga': '2002',
-  'Italian Serie A': '2019',
-  'French Ligue 1': '2015',
-  'UEFA Champions League': '2001',
-  'UEFA Europa League': '2003',
-  'English Championship': '2016',
-  'Portuguese Primeira Liga': '2017',
-  'Dutch Eredivisie': '2003',
-  'Scottish Premiership': '2018',
-  'Major League Soccer': '4347',
-  'NBA': '4387',
-  'NFL': '4391',
+  // Tanzania — Football
+  'Vodacom Premier League': 'comp-vpl',
+  'NBC Premier League': 'comp-nbc-premier',
+  'Azam Sports Federation Cup': 'comp-federation-cup',
+  'Community Shield': 'comp-community-shield',
+  'Mapinduzi Cup': 'comp-mapinduzi-cup',
+  'Union Cup': 'comp-union-cup',
+  'Zanzibar Premier League': 'comp-zanzibar-premier',
+  'Kagame Interclub Cup': 'comp-kagame-interclub',
+  'Seria A Women\'s League': 'comp-womens-league',
+  'Taifa Stars': 'comp-taifa-stars',
+  // Tanzania — Basketball
+  'National Basketball League': 'comp-nbl',
+  // Tanzania — Rugby
+  'National Rugby League': 'comp-rugby-league',
+  'National Rugby Sevens Series': 'comp-rugby-sevens-series',
+  // Tanzania — Volleyball
+  'National Volleyball League': 'comp-volleyball-league',
+  'Women\'s Volleyball League': 'comp-womens-volleyball-league',
+  // Tanzania — Netball
+  'National Netball League': 'comp-netball-league',
+  // Tanzania — Athletics
+  'Kilimanjaro Marathon': 'comp-kilimanjaro-marathon',
+  'Dar es Salaam Marathon': 'comp-dsm-marathon',
+  // Tanzania — Boxing
+  'Tanzania National Boxing Championships': 'comp-national-boxing-champs',
 };
