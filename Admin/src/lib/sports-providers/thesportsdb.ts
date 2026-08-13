@@ -213,17 +213,26 @@ export class TheSportsDBProvider implements SportsDataProvider {
     sport: string,
     params: { team?: string; search?: string } = {}
   ): Promise<ProviderPlayer[]> {
+    const toList = (raw: any): any[] => {
+      if (Array.isArray(raw)) return raw;
+      if (raw && typeof raw === "object") return [raw];
+      return [];
+    };
     if (params.search) {
-      const data = await this.fetch<{ player?: any[] }>(
+      const data = await this.fetch<{ player?: any }>(
         `searchplayers.php?p=${encodeURIComponent(params.search)}`
       );
-      return (data?.player || []).map(this.normalizePlayer);
+      return toList(data?.player).map((row) => this.normalizePlayer(row));
     }
     if (params.team) {
-      const data = await this.fetch<{ player?: any[] }>(
+      // only numeric TheSportsDB ids work for lookup_all_players
+      if (!/^\d+$/.test(String(params.team))) {
+        return [];
+      }
+      const data = await this.fetch<{ player?: any }>(
         `lookup_all_players.php?id=${params.team}`
       );
-      return (data?.player || []).map(this.normalizePlayer);
+      return toList(data?.player).map((row) => this.normalizePlayer(row));
     }
     return [];
   }

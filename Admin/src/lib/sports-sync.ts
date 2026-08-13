@@ -284,8 +284,16 @@ async function upsertMatchLegacy(f: ProviderFixture, result: SyncResult) {
         minute: f.minute ?? null,
         venue: f.venue || null,
         kickoffAt: kickoffDate,
-        continent: null,
-        country: null,
+        continent: "Europe",
+        country: f.league?.toLowerCase().includes("premier")
+          ? "England"
+          : f.league?.toLowerCase().includes("serie")
+            ? "Italy"
+            : f.league?.toLowerCase().includes("bundesliga")
+              ? "Germany"
+              : f.league?.toLowerCase().includes("eredivisie")
+                ? "Netherlands"
+                : "International",
         events: f.events || [],
       },
     });
