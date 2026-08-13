@@ -56,33 +56,45 @@ export default function LoginModal() {
         setLoading(false);
         return;
       }
+      // API returns { user, token, expiresAt } — never read fields from the envelope
+      const u = data.user || data;
+      if (!u?.id) {
+        setError('Login succeeded but profile was empty. Please try again.');
+        setLoading(false);
+        return;
+      }
       setUserProfile({
-        id: data.id,
-        name: data.name,
-        email: data.email,
-        handle: data.handle,
-        avatar: data.avatar,
-        role: data.role,
-        verificationStatus: data.verificationStatus,
-        bio: data.bio,
-        sportsFollowing: data.sportsFollowing,
-        registeredAt: data.registeredAt || new Date().toISOString(),
-        roleData: data.roleData,
-        isVerified: data.isVerified,
-        followerCount: data.followerCount,
-        followingCount: data.followingCount,
-        postCount: data.postCount,
-        location: data.location,
-        coverGradient: data.coverGradient,
-        roleId: data.roleId,
-        roleTypeId: data.roleTypeId,
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        handle: u.handle,
+        avatar: u.avatar || u.avatarInitials || (u.name ? String(u.name).slice(0, 2).toUpperCase() : '?'),
+        avatarUrl: u.avatarUrl || null,
+        role: u.role,
+        verificationStatus: u.verificationStatus,
+        bio: u.bio,
+        sportsFollowing: u.sportsFollowing || [],
+        registeredAt: u.registeredAt || new Date().toISOString(),
+        roleData: u.roleData || {},
+        isVerified: u.isVerified,
+        emailVerified: u.emailVerified,
+        followerCount: u.followerCount ?? 0,
+        followingCount: u.followingCount ?? 0,
+        postCount: u.postCount ?? 0,
+        location: u.location,
+        coverGradient: u.coverGradient,
+        coverUrl: u.coverUrl || null,
+        roleId: u.roleId,
+        roleTypeId: u.roleTypeId,
+        typeName: u.typeName,
+        isPro: u.isPro,
       });
       setIsAuthenticated(true);
       setLoginModalOpen(false);
       setEmail('');
       setPassword('');
       // Admins go straight to admin panel
-      const role = (data.role || '').toLowerCase();
+      const role = (u.role || '').toLowerCase();
       if (role.includes('admin')) {
         window.location.href = '/admin';
       } else {
