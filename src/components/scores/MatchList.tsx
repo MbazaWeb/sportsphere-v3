@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Trophy, Radio, MapPin, Calendar } from 'lucide-react';
+import { Trophy, Radio, MapPin, Calendar, Handshake } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type MatchStatus = 'live' | 'ht' | 'ft' | 'upcoming' | 'postponed' | 'cancelled';
@@ -162,6 +162,12 @@ function MatchRow({
 }) {
   const isLive = m.status === 'live' || m.status === 'ht';
   const isUpcoming = m.status === 'upcoming';
+  const isFT = m.status === 'ft';
+
+  // Determine outcome for finished matches
+  const isDraw = isFT && m.homeScore != null && m.awayScore != null && m.homeScore === m.awayScore;
+  const homeWon = isFT && m.homeScore != null && m.awayScore != null && m.homeScore > m.awayScore;
+  const awayWon = isFT && m.homeScore != null && m.awayScore != null && m.awayScore > m.homeScore;
 
   return (
     <button
@@ -169,7 +175,6 @@ function MatchRow({
       onClick={() => onClick?.(m)}
       className={cn(
         'w-full grid items-center gap-2 px-4 py-3 transition-all duration-200 text-left',
-        // 3-column grid: home (flex) | centre fixed | away (flex)
         'grid-cols-[1fr_auto_1fr]',
         isLive && 'bg-red-500/[0.04] border-l-2 border-l-red-500/40',
         !isLive && 'hover:bg-surface-elevated/50',
@@ -177,11 +182,28 @@ function MatchRow({
     >
       {/* Home team */}
       <div className="flex items-center gap-2 min-w-0">
-        <TeamBadge src={m.homeBadge} name={m.homeTeam} />
-        <span className="text-[13px] font-semibold text-foreground truncate">{m.homeTeam}</span>
+        <div className="relative flex-shrink-0">
+          <TeamBadge src={m.homeBadge} name={m.homeTeam} />
+          {homeWon && (
+            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold shadow-sm shadow-gold/40">
+              <Trophy className="h-2.5 w-2.5 text-black" />
+            </span>
+          )}
+          {isDraw && (
+            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-surface-elevated border border-surface-border">
+              <Handshake className="h-2.5 w-2.5 text-muted-foreground" />
+            </span>
+          )}
+        </div>
+        <span className={cn(
+          'text-[13px] font-semibold truncate',
+          homeWon ? 'text-foreground font-bold' : isFT && !isDraw ? 'text-muted-foreground' : 'text-foreground',
+        )}>
+          {m.homeTeam}
+        </span>
       </div>
 
-      {/* Centre: score / time / status — fixed width so it never shifts */}
+      {/* Centre: score / time / status */}
       <div className="flex flex-col items-center gap-0.5 w-[90px] flex-shrink-0">
         {isUpcoming ? (
           <>
@@ -202,14 +224,14 @@ function MatchRow({
             <div className="flex items-center gap-1.5 tabular-nums">
               <span className={cn(
                 'text-lg font-extrabold tracking-tight',
-                isLive ? 'text-white' : 'text-foreground',
+                isLive ? 'text-white' : homeWon ? 'text-gold' : awayWon ? 'text-muted-foreground' : 'text-foreground',
               )}>
                 {m.homeScore ?? 0}
               </span>
               <span className="text-xs text-muted-foreground font-medium">–</span>
               <span className={cn(
                 'text-lg font-extrabold tracking-tight',
-                isLive ? 'text-white' : 'text-foreground',
+                isLive ? 'text-white' : awayWon ? 'text-gold' : homeWon ? 'text-muted-foreground' : 'text-foreground',
               )}>
                 {m.awayScore ?? 0}
               </span>
@@ -221,8 +243,25 @@ function MatchRow({
 
       {/* Away team — right-aligned */}
       <div className="flex items-center gap-2 min-w-0 justify-end">
-        <span className="text-[13px] font-semibold text-foreground truncate text-right">{m.awayTeam}</span>
-        <TeamBadge src={m.awayBadge} name={m.awayTeam} />
+        <span className={cn(
+          'text-[13px] font-semibold truncate text-right',
+          awayWon ? 'text-foreground font-bold' : isFT && !isDraw ? 'text-muted-foreground' : 'text-foreground',
+        )}>
+          {m.awayTeam}
+        </span>
+        <div className="relative flex-shrink-0">
+          <TeamBadge src={m.awayBadge} name={m.awayTeam} />
+          {awayWon && (
+            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold shadow-sm shadow-gold/40">
+              <Trophy className="h-2.5 w-2.5 text-black" />
+            </span>
+          )}
+          {isDraw && (
+            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-surface-elevated border border-surface-border">
+              <Handshake className="h-2.5 w-2.5 text-muted-foreground" />
+            </span>
+          )}
+        </div>
       </div>
     </button>
   );
