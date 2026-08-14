@@ -1655,3 +1655,162 @@ model BusinessCoach {
   @@index([businessId])
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// COMMERCIAL PARTNER SYSTEM — First-class sponsorship & brand partnership entity
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model CommercialPartner {
+  id            String   @id
+  name          String
+  slug          String   @unique
+  partnerType   String   @default("brand")          // title_sponsor | kit_sponsor | sleeve_sponsor | stadium_naming | broadcast_partner | digital_partner | community_partner | brand
+  industry      String?                               // Fintech | Telecom | Beverage | Automotive | Apparel | Betting | etc.
+  website       String?
+  logoUrl       String?
+  coverUrl      String?
+  country       String?
+  city          String?
+  description   String?                              // Rich text / markdown
+  contactName   String?                              // Primary contact person
+  contactEmail  String?
+  contactPhone  String?
+  contractStart DateTime?                           // Sponsorship period start
+  contractEnd   DateTime?                           // Sponsorship period end
+  contractValue Float?                              // Annual contract value (USD)
+  currency      String   @default("USD")
+  status        String   @default("pending")         // pending | active | expired | terminated | paused
+  tier          String   @default("bronze")          // platinum | gold | silver | bronze | community
+  isActive      Boolean  @default(true)
+  metadata      Json     @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  campaigns     SponsorCampaign[]
+  sponsorships  PartnerSponsorship[]
+  assets        BrandAsset[]
+  metricSnapshots PartnerMetricSnapshot[]
+
+  @@index([status])
+  @@index([partnerType])
+  @@index([tier])
+  @@index([isActive])
+  @@index([name])
+}
+
+model SponsorCampaign {
+  id             String   @id
+  partnerId      String
+  name           String
+  campaignType   String   @default("brand_awareness") // brand_awareness | product_launch | seasonal | event_specific | content_series
+  status         String   @default("draft")          // draft | active | paused | completed | cancelled
+  startDate      DateTime?
+  endDate        DateTime?
+  budget         Float?                              // Campaign budget
+  currency       String   @default("USD")
+  description    String?
+  objectives     String?                              // What the campaign aims to achieve
+  targetAudience String?                              // e.g. "18-35 football fans in East Africa"
+  creatives      Json     @default("[]")             // [{url, type, alt, width, height}]
+  totalImpressions  Int @default(0)
+  totalClicks      Int @default(0)
+  totalConversions Int @default(0)
+  totalEngagement   Int @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  Partner        CommercialPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  dailyMetrics   CampaignDailyMetric[]
+
+  @@index([partnerId])
+  @@index([status])
+  @@index([startDate])
+}
+
+model CampaignDailyMetric {
+  id          String   @id
+  campaignId  String
+  date        DateTime @db.Date
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  conversions Int      @default(0)
+  engagement  Int      @default(0)
+  spend       Float?   // Daily ad spend
+  createdAt   DateTime @default(now())
+
+  Campaign    SponsorCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, date])
+  @@index([campaignId])
+  @@index([date])
+}
+
+model PartnerSponsorship {
+  id               String   @id
+  partnerId        String
+  entityType       String                           // team | competition | athlete | event
+  entityId         String                           // FK to Team, Competition, Player, or MatchProfile
+  sponsorshipType  String   @default("sponsor")     // title | kit | sleeve | stadium | broadcast | digital | official_partner | supplier
+  startDate        DateTime?
+  endDate          DateTime?
+  value            Float?                           // Sponsorship deal value
+  currency         String   @default("USD")
+  isVisible        Boolean  @default(true)           // Show to fans
+  displayLabel     String?                           // e.g. "Official Title Sponsor" shown to fans
+  notes            String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  Partner          CommercialPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@unique([partnerId, entityType, entityId, sponsorshipType])
+  @@index([partnerId])
+  @@index([entityType, entityId])
+  @@index([isActive])
+  @@index([isVisible])
+}
+
+model BrandAsset {
+  id          String   @id
+  partnerId   String
+  assetType   String                           // logo | banner | brand_guidelines | sponsorship_mark | video | social_template | press_kit
+  url         String
+  mimeType    String?
+  fileSize    Int?                             // bytes
+  alt         String?
+  description String?
+  isPrimary   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  Partner     CommercialPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@index([partnerId])
+  @@index([assetType])
+  @@index([isPrimary])
+}
+
+model PartnerMetricSnapshot {
+  id          String   @id
+  partnerId   String
+  period      String                           // daily | weekly | monthly | quarterly | yearly
+  date        DateTime @db.Date
+  impressions BigInt   @default(0)
+  clicks      BigInt   @default(0)
+  conversions BigInt   @default(0)
+  engagement  BigInt   @default(0)
+  ctr         Float?                            // click-through rate %
+  spend       Float?
+  revenue     Float?
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  Partner     CommercialPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@unique([partnerId, period, date])
+  @@index([partnerId])
+  @@index([period])
+  @@index([date])
+}
+
