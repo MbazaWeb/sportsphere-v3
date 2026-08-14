@@ -197,22 +197,50 @@ export function MediaBadge({ mediaName, size = 'sm', className }: {
 }
 
 /**
+ * OfficialBadge — shown on posts from the SportSphere system account (@sportsphere).
+ * Distinct from VerifiedBadge — indicates the post came from the platform itself.
+ */
+export function OfficialBadge({ size = 'sm', className }: { size?: 'xs' | 'sm' | 'md'; className?: string }) {
+  const sizeClasses = {
+    xs: 'px-1.5 py-0.5 text-[9px] gap-0.5',
+    sm: 'px-2 py-0.5 text-[10px] gap-1',
+    md: 'px-2.5 py-1 text-xs gap-1',
+  };
+  const iconSizes = { xs: 'h-2.5 w-2.5', sm: 'h-3 w-3', md: 'h-3.5 w-3.5' };
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full border font-bold uppercase tracking-wider',
+        'bg-gradient-to-r from-gold/20 to-amber-500/20 text-gold border-gold/40',
+        sizeClasses[size],
+        className
+      )}
+    >
+      <Crown className={iconSizes[size]} />
+      <span>Official</span>
+    </span>
+  );
+}
+
+/**
  * BadgeStack — renders Pro + verified + role + type badges together.
  * Spec: Phase 6 — "Profile must always display Role badge, Type badge."
  */
-export function BadgeStack({ role, isVerified, isPro, typeName, mediaName, size = 'sm' }: {
+export function BadgeStack({ role, isVerified, isPro, typeName, mediaName, isOfficial, size = 'sm' }: {
   role: string;
   isVerified?: boolean;
   isPro?: boolean;
   typeName?: string;
   mediaName?: string;
+  isOfficial?: boolean;
   size?: 'xs' | 'sm' | 'md';
 }) {
   return (
     <div className="flex items-center gap-1 flex-wrap">
+      {isOfficial && <OfficialBadge size={size} />}
       {isPro && <ProBadge size={size} />}
-      {isVerified && <VerifiedBadge size={size} />}
-      <RoleBadge role={role} size={size} />
+      {isVerified && !isOfficial && <VerifiedBadge size={size} />}
+      {!isOfficial && <RoleBadge role={role} size={size} />}
       {mediaName && <MediaBadge mediaName={mediaName} size={size} />}
       {typeName && <TypeBadge typeName={typeName} size={size} />}
     </div>

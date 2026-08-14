@@ -3,7 +3,7 @@ import { apiFetch } from '@/lib/api';
 
 import { Heart, MessageCircle, Share2, Bookmark, Check, RotateCcw, Pencil, ImageOff, VideoOff, Eye, TrendingUp, MoreHorizontal, Trophy, MapPin, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { BadgeStack } from '@/components/ui/RoleBadge';
+import { BadgeStack, OfficialBadge } from '@/components/ui/RoleBadge';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { formatCount } from '@/store/useAppStore';
@@ -77,6 +77,7 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
   const [hidden, setHidden] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const user = item.user;
+  const isOfficialPost = user.handle === 'sportsphere';
 
   const handleViewUser = useCallback(() => {
     setViewingUser({
@@ -146,7 +147,10 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
 
   // Content to show — suppress raw match ref string
   const displayContent = matchRefParsed ? '' : (item.content || '');
+  const contentHashtags = (displayContent.match(/#(\w+)/g) || []).map(t => t.slice(1));
   const isLongPost = displayContent.length > 200;
+
+  return (
     <article className="glass-card premium-card rounded-2xl overflow-hidden">
       {/* Breaking news banner */}
       {item.isBreaking && (
@@ -182,7 +186,7 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
         <button onClick={handleViewUser} className="mb-3 flex items-center gap-3 text-left w-full">
           <div className={cn(
             'flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold ring-2 ring-transparent transition-all',
-            user.isVerified ? 'bg-gold text-black ring-gold/20' : 'bg-surface-elevated text-white'
+            isOfficialPost ? 'bg-gradient-to-br from-gold to-amber-500 text-black ring-gold/30' : user.isVerified ? 'bg-gold text-black ring-gold/20' : 'bg-surface-elevated text-white'
           )}>
             {user.avatarUrl ? (
               <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
@@ -193,7 +197,7 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="text-[13px] font-bold text-white truncate">{user.name}</span>
-              <BadgeStack role={user.role} isVerified={user.isVerified} isPro={user.isPro} size="xs" />
+              <BadgeStack role={user.role} isVerified={user.isVerified} isPro={user.isPro} isOfficial={isOfficialPost} size="xs" />
             </div>
             <span className="text-[11px] text-muted-foreground">{user.handle} · {formatTime(item.createdAt)}</span>
           </div>

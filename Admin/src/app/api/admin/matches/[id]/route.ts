@@ -149,12 +149,27 @@ export async function POST(
     });
     if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
 
-    // Find or create a system user for admin posts
-    let adminUser = await db.user.findFirst({ where: { role: 'admin' } });
+    // Use a dedicated SportSphere Official account for admin feed posts.
+    // This ensures admin posts don't appear as personal posts from any fan user.
+    const OFFICIAL_HANDLE = 'sportsphere';
+    let adminUser = await db.user.findUnique({ where: { handle: OFFICIAL_HANDLE } });
     if (!adminUser) {
-      adminUser = await db.user.findFirst({ orderBy: { createdAt: 'asc' } });
+      // Create the official system account on-the-fly
+      adminUser = await db.user.create({
+        data: {
+          email: 'official@sportsphere.app',
+          name: 'SportSphere',
+          handle: OFFICIAL_HANDLE,
+          password: 'no-login-' + Date.now(), // unusable password
+          avatarInitials: 'SS',
+          isVerified: true,
+          verificationStatus: 'verified',
+          role: 'official',
+          bio: 'Official SportSphere account — match updates, news, and announcements.',
+          coverGradient: 'from-amber-500 to-orange-600',
+        },
+      });
     }
-    if (!adminUser) return NextResponse.json({ error: 'No user available to post.' }, { status: 500 });
 
     const homeBadge = match.Team_MatchProfile_homeTeamIdToTeam?.logoUrl || null;
     const awayBadge = match.Team_MatchProfile_awayTeamIdToTeam?.logoUrl || null;
