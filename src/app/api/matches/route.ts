@@ -99,6 +99,70 @@ async function resolveMissingBadges(matches: any[]): Promise<any[]> {
   return matches;
 }
 
+// ─── Auto-derive match status from kickoff time ───────────────────────────
+// When admin forgets to update status, matches whose kickoff time has passed
+// but are still 'upcoming' will automatically show as 'live' to fans.
+// A football match is considered auto-finished 105 minutes after kickoff.
+function deriveStatus(match: { status: string; kickoffAt: string }): {
+  status: string;
+  minute: number | null;
+} {
+  if (match.status !== 'upcoming') return { status: match.status, minute: null };
+
+  const now = Date.now();
+  const kickoff = new Date(match.kickoffAt).getTime();
+  const elapsed = now - kickoff;
+
+  // Match hasn't started yet
+  if (elapsed < 0) return { status: 'upcoming', minute: null };
+
+  // Match is within 105 min window — auto-live
+  if (elapsed < 105 * 60 * 1000) {
+    const mins = Math.floor(elapsed / 60000);
+    // Half-time is around 45-60 min
+    if (mins >= 45 && mins < 60) {
+      return { status: 'ht', minute: 45 };
+    }
+    return { status: 'live', minute: mins };
+  }
+
+  // Over 105 min — auto-finished
+  return { status: 'ft', minute: 90 };
+}
+
+// Background: auto-update stale MatchProfile records in DB
+async function autoUpdateStaleMatches(matches: any[]): Promise<void> {
+  const stale = matches.filter(
+    (m: any) => m.status === 'upcoming' && new Date(m.kickoffAt).getTime() < Date.now()
+  );
+  if (stale.length === 0) return;
+
+  const ids = stale.map((m: any) => m.id);
+  try {
+    // Update matches past 105 min to 'ft', others to 'live'
+    const ftCutoff = Date.now() - 105 * 60 * 1000;
+    const ftIds = stale.filter((m: any) => new Date(m.kickoffAt).getTime() < ftCutoff).map((m: any) => m.id);
+    const liveIds = stale.filter((m: any) => new Date(m.kickoffAt).getTime() >= ftCutoff).map((m: any) => m.id);
+
+    if (ftIds.length > 0) {
+      await db.matchProfile.updateMany({
+        where: { id: { in: ftIds }, status: 'upcoming' },
+        data: { status: 'ft', updatedAt: new Date() },
+      });
+      console.log(`[auto-status] Updated ${ftIds.length} matches to ft`);
+    }
+    if (liveIds.length > 0) {
+      await db.matchProfile.updateMany({
+        where: { id: { in: liveIds }, status: 'upcoming' },
+        data: { status: 'live', updatedAt: new Date() },
+      });
+      console.log(`[auto-status] Updated ${liveIds.length} matches to live`);
+    }
+  } catch (e) {
+    console.warn('[auto-status] Batch update failed:', e);
+  }
+}
+
 export const dynamic = 'force-dynamic';
 
 // ─── Map MatchProfile (admin source-of-truth) to fan API shape ───────────
@@ -146,7 +210,13 @@ async function loadAdminMatches(status: string, leagueName?: string | null, date
     }
 
     if (status === 'live') {
-      where.status = { in: ['live', 'ht'] };
+      // Also fetch 'upcoming' matches that may have started but not updated yet
+      // (kickoff within last 120 min)
+      const recentCutoff = new Date(Date.now() - 120 * 60 * 1000);
+      where.OR = [
+        { status: { in: ['live', 'ht'] } },
+        { status: 'upcoming', kickoffAt: { gte: recentCutoff, lte: new Date() } },
+      ];
     } else if (status === 'upcoming') {
       where.status = 'upcoming';
       // No date filter for upcoming — always show next 14 days so
@@ -206,6 +276,18 @@ async function loadAdminMatches(status: string, leagueName?: string | null, date
     });
 
     let results = rows.map(mapProfileMatch);
+
+    // Auto-derive status from kickoff time for 'upcoming' matches
+    for (const m of results) {
+      const derived = deriveStatus(m);
+      if (derived.status !== m.status) {
+        m.status = derived.status;
+        if (derived.minute != null && m.minute == null) m.minute = derived.minute;
+      }
+    }
+
+    // Background: persist auto-derived statuses to DB
+    autoUpdateStaleMatches(results).catch(() => {});
 
     // Resolve missing team badges by looking up teams by name
     results = await resolveMissingBadges(results);
@@ -301,6 +383,15 @@ export async function GET(request: NextRequest) {
           period: undefined,
           metadata: {},
         }));
+
+        // Auto-derive status for legacy matches too
+        for (const m of matches) {
+          const derived = deriveStatus(m);
+          if (derived.status !== m.status) {
+            m.status = derived.status;
+            if (derived.minute != null && m.minute == null) m.minute = derived.minute;
+          }
+        }
 
         // Filter legacy by league name
         if (leagueName && leagueName !== 'All' && Array.isArray(matches)) {
