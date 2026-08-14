@@ -91,8 +91,10 @@ export default function ScoresTab() {
       try {
         const params = new URLSearchParams({ status: scoresSubTab });
         if (tournament !== 'All') params.append('league', tournament);
-        // Send date filter for today/upcoming/results tabs
-        if ((scoresSubTab === 'today' || scoresSubTab === 'upcoming' || scoresSubTab === 'results') && selectedDate) {
+
+        // Only send date filter for today and results tabs (single-day browse)
+        // Upcoming fetches a rolling window — no date filter, let API decide range
+        if ((scoresSubTab === 'today' || scoresSubTab === 'results') && selectedDate) {
           params.append('date', selectedDate);
         }
 
@@ -163,9 +165,8 @@ export default function ScoresTab() {
     results: 'past results',
   };
 
-  // Show date on match cards when results tab or browsing a non-today date
-  const todayStr = getTodayStr();
-  const showDateOnCards = scoresSubTab === 'results' || !!selectedDate && selectedDate !== todayStr;
+  // Always show date sections for multi-day tabs
+  const showDateOnCards = scoresSubTab === 'upcoming' || scoresSubTab === 'results';
 
   return (
     <div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Trophy, Radio, MapPin, Calendar, Handshake } from 'lucide-react';
+import { Trophy, Radio, MapPin, Handshake } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type MatchStatus = 'live' | 'ht' | 'ft' | 'upcoming' | 'postponed' | 'cancelled';
@@ -49,20 +49,6 @@ function formatMatchDate(isoStr: string): string {
   const d = new Date(isoStr);
   if (isNaN(d.getTime())) return '';
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-}
-
-/** "Today · Fri, Aug 14", "Yesterday · …", "Fri, Aug 14" */
-function formatDateGroupLabel(dateKey: string): string {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(dateKey + 'T00:00:00');
-  target.setHours(0, 0, 0, 0);
-  const diff = Math.round((target.getTime() - today.getTime()) / 86400000);
-  const label = target.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-  if (diff === 0) return `Today · ${label}`;
-  if (diff === 1) return `Tomorrow · ${label}`;
-  if (diff === -1) return `Yesterday · ${label}`;
-  return label;
 }
 
 /** "15:30" */
@@ -322,19 +308,48 @@ function DateSection({
   groups: { league: string; badge?: string; matches: ApiMatch[] }[];
   onMatchClick?: (match: ApiMatch) => void;
 }) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(dateKey + 'T00:00:00');
+  target.setHours(0, 0, 0, 0);
+  const diff = Math.round((target.getTime() - today.getTime()) / 86400000);
+  const isToday = diff === 0;
+  const isPast = diff < 0;
+
   return (
-    <div className="space-y-3">
-      {/* Date label */}
-      <div className="flex items-center gap-2 px-1">
-        <Calendar className="h-3.5 w-3.5 text-gold flex-shrink-0" />
-        <span className="text-xs font-bold text-gold uppercase tracking-wide">
-          {formatDateGroupLabel(dateKey)}
-        </span>
+    <div className="space-y-2">
+      {/* Sticky date pill */}
+      <div className={cn(
+        'flex items-center gap-2.5 px-1 py-1 rounded-xl',
+        isToday && 'bg-gold/8',
+      )}>
+        <div className={cn(
+          'flex items-center justify-center h-7 w-7 rounded-lg flex-shrink-0',
+          isToday ? 'bg-gold text-black' : isPast ? 'bg-surface-elevated text-muted-foreground' : 'bg-surface-elevated text-foreground',
+        )}>
+          <span className="text-[10px] font-extrabold leading-none">
+            {target.getDate()}
+          </span>
+        </div>
+        <div className="flex flex-col min-w-0">
+          <span className={cn(
+            'text-[11px] font-extrabold uppercase tracking-widest leading-tight',
+            isToday ? 'text-gold' : 'text-foreground/80',
+          )}>
+            {isToday ? 'Today' : diff === 1 ? 'Tomorrow' : diff === -1 ? 'Yesterday' : target.toLocaleDateString('en-US', { weekday: 'long' })}
+          </span>
+          <span className="text-[10px] text-muted-foreground font-medium leading-tight">
+            {target.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          </span>
+        </div>
         <div className="flex-1 h-px bg-surface-border/60" />
+        <span className="text-[10px] text-muted-foreground font-medium flex-shrink-0">
+          {groups.reduce((t, g) => t + g.matches.length, 0)} match{groups.reduce((t, g) => t + g.matches.length, 0) !== 1 ? 'es' : ''}
+        </span>
       </div>
 
       {/* League groups for this day */}
-      <div className="space-y-3">
+      <div className="space-y-2 pl-0">
         {groups.map((g) => (
           <LeagueGroup
             key={g.league}
@@ -356,12 +371,12 @@ export function MatchList({ matches, loading, label, onMatchClick, showDate }: M
    * For live matches (no meaningful date diff), just group by league only.
    */
   const sections = useMemo(() => {
-    // Detect if all matches are the same date (live tab) — skip date grouping
-    const dateKeys = new Set(matches.map((m) => localDateStr(m.kickoffAt)).filter(Boolean));
-    const multiDay = dateKeys.size > 1 || showDate;
+    // Always group by date for upcoming/results (showDate=true)
+    // Only skip date grouping for live tab (showDate=false)
+    const multiDay = showDate;
 
     if (!multiDay) {
-      // Single-day or live: just league groups
+      // Live / today: just league groups, no date header
       const map = new Map<string, ApiMatch[]>();
       for (const m of matches) {
         const key = m.league || 'Other';
@@ -378,7 +393,7 @@ export function MatchList({ matches, loading, label, onMatchClick, showDate }: M
       }];
     }
 
-    // Multi-day: group by date → league
+    // Multi-day: group by local date → league
     const dateMap = new Map<string, Map<string, ApiMatch[]>>();
     for (const m of matches) {
       const dateKey = localDateStr(m.kickoffAt) || 'Unknown';
@@ -389,7 +404,7 @@ export function MatchList({ matches, loading, label, onMatchClick, showDate }: M
       leagueMap.get(league)!.push(m);
     }
 
-    // Sort dates ascending (upcoming) or descending (results based on kickoff sort from API)
+    // Sort dates ascending always (results come desc from API but date keys sort correctly)
     const sortedDates = Array.from(dateMap.keys()).sort();
 
     return sortedDates.map((dateKey) => {

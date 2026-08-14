@@ -148,20 +148,21 @@ async function loadAdminMatches(status: string, leagueName?: string | null, date
       where.status = { in: ['live', 'ht'] };
     } else if (status === 'upcoming') {
       where.status = 'upcoming';
-      if (dateStart && dateEnd) {
-        // When a specific date is selected, show upcoming matches on THAT date
-        where.kickoffAt = { gte: dateStart, lte: dateEnd };
-      } else {
-        // Default: show all future upcoming matches
-        where.kickoffAt = { gte: now };
-      }
+      // No date filter for upcoming — always show next 14 days so
+      // the client can group by date properly
+      const nowUtc = new Date();
+      const in14 = new Date(nowUtc.getTime() + 14 * 24 * 60 * 60 * 1000);
+      where.kickoffAt = { gte: nowUtc, lte: in14 };
     } else if (status === 'results') {
       where.status = 'ft';
       if (dateStart && dateEnd) {
-        // When a specific date is selected, show results for THAT date only
         where.kickoffAt = { gte: dateStart, lte: dateEnd };
+      } else {
+        // Default: last 14 days so client can group by date
+        const nowUtc = new Date();
+        const ago14 = new Date(nowUtc.getTime() - 14 * 24 * 60 * 60 * 1000);
+        where.kickoffAt = { gte: ago14, lte: nowUtc };
       }
-      // else: show all results (most recent first, limited by take)
     } else if (status === 'today') {
       if (dateStart && dateEnd) {
         where.kickoffAt = { gte: dateStart, lte: dateEnd };
@@ -246,15 +247,17 @@ export async function GET(request: NextRequest) {
           where.status = { in: ['live', 'ht'] };
         } else if (status === 'upcoming') {
           where.status = 'upcoming';
-          if (legacyDateStart && legacyDateEnd) {
-            where.kickoffAt = { gte: legacyDateStart, lte: legacyDateEnd };
-          } else {
-            where.kickoffAt = { gte: now };
-          }
+          const nowUtc = new Date();
+          const in14 = new Date(nowUtc.getTime() + 14 * 24 * 60 * 60 * 1000);
+          where.kickoffAt = { gte: nowUtc, lte: in14 };
         } else if (status === 'results') {
           where.status = 'ft';
           if (legacyDateStart && legacyDateEnd) {
             where.kickoffAt = { gte: legacyDateStart, lte: legacyDateEnd };
+          } else {
+            const nowUtc = new Date();
+            const ago14 = new Date(nowUtc.getTime() - 14 * 24 * 60 * 60 * 1000);
+            where.kickoffAt = { gte: ago14, lte: nowUtc };
           }
         } else if (status === 'today') {
           if (legacyDateStart && legacyDateEnd) {
