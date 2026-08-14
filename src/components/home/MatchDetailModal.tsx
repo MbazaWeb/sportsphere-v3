@@ -444,15 +444,29 @@ export function MatchDetailModal({ match, onClose, onTeamClick, onPlayerClick }:
     if (!isAuthenticated) { setLoginModalOpen(true); return; }
     setLiked(!liked);
     setLikeCount((c) => c + (liked ? -1 : 1));
-    // Post a like-type engagement post
+    // Post a match engagement card to the feed
     try {
+      const matchCard = JSON.stringify({
+        type: 'match-card',
+        matchId: match.id,
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        homeScore: match.homeScore,
+        awayScore: match.awayScore,
+        homeBadge: match.homeBadge,
+        awayBadge: match.awayBadge,
+        league: match.league,
+        status: match.status,
+        kickoffAt: match.kickoffAt,
+      });
       await apiFetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          content: `\u2764\uFE0F ${match.homeTeam} vs ${match.awayTeam} - ${match.league}`,
-          postType: 'post',
-          hashtags: ['MatchLike', match.league, match.homeTeam, match.awayTeam].filter(Boolean),
+          content: `${match.homeTeam} ${match.homeScore ?? 0} – ${match.awayScore ?? 0} ${match.awayTeam}`,
+          postType: 'match',
+          mediaUrls: [matchCard],
+          hashtags: [match.league, match.homeTeam, match.awayTeam].filter(Boolean),
         }),
       });
     } catch { /* ignore */ }

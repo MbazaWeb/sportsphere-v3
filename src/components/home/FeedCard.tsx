@@ -76,7 +76,6 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
   const [saved, setSaved] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [expanded, setExpanded] = useState(true);
-  const isLongPost = item.content.length > 200;
   const user = item.user;
 
   const handleViewUser = useCallback(() => {
@@ -129,9 +128,25 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
       }
     } catch { /* ignore malformed metadata */ }
   }
-  const contentHashtags = (item as any).hashtags || [];
+  // Detect "match:UUID:HomeTeam Score - AwayTeam" stored in content
+  // Parse it into structured data so we can render a card instead of raw text
+  const MATCH_REF_RE = /^match:([^:]+):(.+?)\s+(\d+)\s*-\s*(\d+)\s+(.+)$/;
+  const matchRefParsed = (() => {
+    const raw = item.content?.trim() || '';
+    const m = MATCH_REF_RE.exec(raw);
+    if (!m) return null;
+    return {
+      matchId: m[1],
+      homeTeam: m[2].trim(),
+      homeScore: parseInt(m[3], 10),
+      awayScore: parseInt(m[4], 10),
+      awayTeam: m[5].trim(),
+    };
+  })();
 
-  return (
+  // Content to show — suppress raw match ref string
+  const displayContent = matchRefParsed ? '' : (item.content || '');
+  const isLongPost = displayContent.length > 200;
     <article className="glass-card premium-card rounded-2xl overflow-hidden">
       {/* Breaking news banner */}
       {item.isBreaking && (
@@ -184,18 +199,54 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
           </div>
         </button>
 
-        {/* Content */}
-        {isLongPost && !expanded ? (
+        {/* Inline match card — shown when post content was stored as "match:UUID:..." */}
+        {matchRefParsed && (
+          <div className="mb-3 rounded-2xl border border-surface-border bg-surface/60 overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-2 border-b border-surface-border/60 bg-surface-border/20">
+              <Trophy className="h-3.5 w-3.5 text-gold flex-shrink-0" />
+              <span className="text-xs font-bold text-foreground truncate flex-1">Match Result</span>
+              <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">FT</span>
+            </div>
+            <div className="flex items-center justify-between px-4 py-4 gap-2">
+              <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
+                <div className="h-10 w-10 rounded-full bg-gold/10 flex items-center justify-center">
+                  <span className="text-xs font-bold text-gold">
+                    {matchRefParsed.homeTeam.split(' ').map((w: string) => w[0]).slice(0, 2).join('')}
+                  </span>
+                </div>
+                <span className="text-[11px] font-semibold text-foreground text-center leading-tight line-clamp-2">{matchRefParsed.homeTeam}</span>
+              </div>
+              <div className="flex flex-col items-center px-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-black tabular-nums text-foreground">{matchRefParsed.homeScore}</span>
+                  <span className="text-sm text-muted-foreground font-bold">–</span>
+                  <span className="text-2xl font-black tabular-nums text-foreground">{matchRefParsed.awayScore}</span>
+                </div>
+              </div>
+              <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
+                <div className="h-10 w-10 rounded-full bg-gold/10 flex items-center justify-center">
+                  <span className="text-xs font-bold text-gold">
+                    {matchRefParsed.awayTeam.split(' ').map((w: string) => w[0]).slice(0, 2).join('')}
+                  </span>
+                </div>
+                <span className="text-[11px] font-semibold text-foreground text-center leading-tight line-clamp-2">{matchRefParsed.awayTeam}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Regular text content */}
+        {!matchRefParsed && isLongPost && !expanded ? (
           <div className="mb-3">
-            <p className="text-[13px] leading-relaxed text-foreground/90">{item.content.slice(0, 200)}...</p>
+            <p className="text-[13px] leading-relaxed text-foreground/90">{displayContent.slice(0, 200)}...</p>
             <button onClick={() => setExpanded(true)} className="text-xs font-bold text-gold hover:text-gold/80 transition-colors mt-1">
               See more
             </button>
           </div>
-        ) : (
-          <p className="mb-3 text-[13px] leading-relaxed text-foreground/90 whitespace-pre-wrap">{item.content}</p>
-        )}
-        {isLongPost && expanded && (
+        ) : !matchRefParsed ? (
+          <p className="mb-3 text-[13px] leading-relaxed text-foreground/90 whitespace-pre-wrap">{displayContent}</p>
+        ) : null}
+        {!matchRefParsed && isLongPost && expanded && (
           <button onClick={() => setExpanded(false)} className="mb-3 text-xs font-semibold text-muted-foreground hover:text-gold transition-colors">
             Show less
           </button>
