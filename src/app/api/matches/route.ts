@@ -134,12 +134,14 @@ async function loadAdminMatches(status: string, leagueName?: string | null, date
     const where: any = { source: 'admin' };
     const now = new Date();
 
-    // Parse date parameter into start/end of day (UTC-aware)
+    // Parse date parameter into UTC start/end of day
+    // dateStr is always YYYY-MM-DD in LOCAL time — treat it as UTC midnight
+    // so queries are consistent regardless of server timezone
     let dateStart: Date | null = null;
     let dateEnd: Date | null = null;
     if (dateStr) {
-      dateStart = new Date(dateStr + 'T00:00:00');
-      dateEnd = new Date(dateStr + 'T23:59:59.999');
+      dateStart = new Date(dateStr + 'T00:00:00.000Z');
+      dateEnd = new Date(dateStr + 'T23:59:59.999Z');
     }
 
     if (status === 'live') {
@@ -164,11 +166,13 @@ async function loadAdminMatches(status: string, leagueName?: string | null, date
       if (dateStart && dateEnd) {
         where.kickoffAt = { gte: dateStart, lte: dateEnd };
       } else {
-        const start = new Date();
-        start.setHours(0, 0, 0, 0);
-        const end = new Date();
-        end.setHours(23, 59, 59, 999);
-        where.kickoffAt = { gte: start, lte: end };
+        // Default: UTC today
+        const nowUtc = new Date();
+        const todayUtc = nowUtc.toISOString().split('T')[0];
+        where.kickoffAt = {
+          gte: new Date(todayUtc + 'T00:00:00.000Z'),
+          lte: new Date(todayUtc + 'T23:59:59.999Z'),
+        };
       }
     }
 
@@ -235,8 +239,8 @@ export async function GET(request: NextRequest) {
         let legacyDateStart: Date | null = null;
         let legacyDateEnd: Date | null = null;
         if (dateStr) {
-          legacyDateStart = new Date(dateStr + 'T00:00:00');
-          legacyDateEnd = new Date(dateStr + 'T23:59:59.999');
+          legacyDateStart = new Date(dateStr + 'T00:00:00.000Z');
+          legacyDateEnd = new Date(dateStr + 'T23:59:59.999Z');
         }
         if (status === 'live') {
           where.status = { in: ['live', 'ht'] };
@@ -256,11 +260,12 @@ export async function GET(request: NextRequest) {
           if (legacyDateStart && legacyDateEnd) {
             where.kickoffAt = { gte: legacyDateStart, lte: legacyDateEnd };
           } else {
-            const start = new Date();
-            start.setHours(0, 0, 0, 0);
-            const end = new Date();
-            end.setHours(23, 59, 59, 999);
-            where.kickoffAt = { gte: start, lte: end };
+            const nowUtc = new Date();
+            const todayUtc = nowUtc.toISOString().split('T')[0];
+            where.kickoffAt = {
+              gte: new Date(todayUtc + 'T00:00:00.000Z'),
+              lte: new Date(todayUtc + 'T23:59:59.999Z'),
+            };
           }
         }
 
