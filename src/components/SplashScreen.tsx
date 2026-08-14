@@ -7,6 +7,9 @@ const LOADING_WORDS = [
   'Community', 'Competition', 'Content', 'Reputation', 'Opportunities',
 ];
 
+const BASE = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) || '/sportsphere';
+const LOGO_URL = `${BASE}/logo.svg`;
+
 export default function SplashScreen({ onDone }: { onDone: () => void }) {
   const splashRef = useRef<HTMLDivElement>(null);
   const onDoneRef = useRef(onDone);
@@ -15,8 +18,7 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
   const [progress, setProgress] = useState(0);
   const [wordIndex, setWordIndex] = useState(-1);
   const [wordVisible, setWordVisible] = useState(false);
-  const [logoSrc, setLogoSrc] = useState<string | null>(null);
-  const [logoFailed, setLogoFailed] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   // Progress runs once — do NOT depend on onDone (parent often recreates it)
   useEffect(() => {
@@ -69,34 +71,7 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
   }, [progress, wordIndex]);
 
   // Resolve logo with basePath + fallbacks
-  useEffect(() => {
-    const base =
-      (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) ||
-      '/sportsphere';
-    const candidates = [
-      `${base}/logo.svg`,
-      '/sportsphere/logo.svg',
-      '/logo.svg',
-    ];
-    let cancelled = false;
-    (async () => {
-      for (const url of candidates) {
-        try {
-          const res = await fetch(url, { method: 'HEAD', cache: 'force-cache' });
-          if (res.ok && !cancelled) {
-            setLogoSrc(url);
-            return;
-          }
-        } catch {
-          /* try next */
-        }
-      }
-      if (!cancelled) setLogoFailed(true);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  
 
   return (
     <div
@@ -217,11 +192,12 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
           animation: 'logoEnter 0.8s ease-out forwards',
         }}
       >
-        {logoSrc && !logoFailed ? (
+        {/* Logo — always rendered immediately, no async probe */}
+        {!logoError ? (
           <img
-            src={logoSrc}
+            src={LOGO_URL}
             alt="SportSphere"
-            onError={() => setLogoFailed(true)}
+            onError={() => setLogoError(true)}
             style={{
               width: '100%',
               height: 'auto',
@@ -230,16 +206,23 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
             }}
           />
         ) : (
+          /* Silent S-icon fallback if logo file is genuinely missing */
           <div
             style={{
-              fontSize: 'clamp(2rem, 8vw, 3.2rem)',
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #F5C518 0%, #FFD700 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '2.5rem',
               fontWeight: 900,
-              letterSpacing: '2px',
-              color: '#F5C518',
-              textShadow: '0 0 24px rgba(245,197,24,0.35)',
+              color: '#030812',
+              fontStyle: 'italic',
             }}
           >
-            SportSphere
+            S
           </div>
         )}
       </div>
