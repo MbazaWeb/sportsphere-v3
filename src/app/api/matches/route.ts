@@ -140,8 +140,9 @@ async function loadAdminMatches(status: string, leagueName?: string | null, date
     let dateStart: Date | null = null;
     let dateEnd: Date | null = null;
     if (dateStr) {
-      dateStart = new Date(dateStr + 'T00:00:00.000Z');
-      dateEnd = new Date(dateStr + 'T23:59:59.999Z');
+      // Use EAT (UTC+3) day boundaries: midnight EAT = T21:00:00Z previous day
+      dateStart = new Date(dateStr + 'T00:00:00.000+03:00');
+      dateEnd = new Date(dateStr + 'T23:59:59.999+03:00');
     }
 
     if (status === 'live') {
@@ -171,8 +172,8 @@ async function loadAdminMatches(status: string, leagueName?: string | null, date
         const nowUtc = new Date();
         const todayUtc = nowUtc.toISOString().split('T')[0];
         where.kickoffAt = {
-          gte: new Date(todayUtc + 'T00:00:00.000Z'),
-          lte: new Date(todayUtc + 'T23:59:59.999Z'),
+          gte: new Date(todayUtc + 'T00:00:00.000+03:00'),
+          lte: new Date(todayUtc + 'T23:59:59.999+03:00'),
         };
       }
     }
@@ -240,8 +241,8 @@ export async function GET(request: NextRequest) {
         let legacyDateStart: Date | null = null;
         let legacyDateEnd: Date | null = null;
         if (dateStr) {
-          legacyDateStart = new Date(dateStr + 'T00:00:00.000Z');
-          legacyDateEnd = new Date(dateStr + 'T23:59:59.999Z');
+          legacyDateStart = new Date(dateStr + 'T00:00:00.000+03:00');
+          legacyDateEnd = new Date(dateStr + 'T23:59:59.999+03:00');
         }
         if (status === 'live') {
           where.status = { in: ['live', 'ht'] };

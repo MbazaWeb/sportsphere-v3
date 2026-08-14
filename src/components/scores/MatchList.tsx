@@ -33,13 +33,16 @@ interface MatchListProps {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** YYYY-MM-DD in LOCAL timezone */
+/** YYYY-MM-DD in EAT (UTC+3) — must match the API's day boundary offset */
 function localDateStr(isoStr: string): string {
+  if (!isoStr) return '';
   const d = new Date(isoStr);
   if (isNaN(d.getTime())) return '';
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  // Shift to EAT (UTC+3) by adding 3 hours before extracting date parts
+  const eat = new Date(d.getTime() + 3 * 60 * 60 * 1000);
+  const y = eat.getUTCFullYear();
+  const m = String(eat.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(eat.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
 
@@ -51,12 +54,16 @@ function formatMatchDate(isoStr: string): string {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-/** "15:30" */
+/** "15:30" in EAT */
 function formatKickoff(isoStr: string): string {
   if (!isoStr) return '';
   const d = new Date(isoStr);
   if (isNaN(d.getTime())) return '';
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  // EAT = UTC+3
+  const eat = new Date(d.getTime() + 3 * 60 * 60 * 1000);
+  const h = String(eat.getUTCHours()).padStart(2, '0');
+  const min = String(eat.getUTCMinutes()).padStart(2, '0');
+  return `${h}:${min}`;
 }
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
@@ -308,11 +315,15 @@ function DateSection({
   groups: { league: string; badge?: string; matches: ApiMatch[] }[];
   onMatchClick?: (match: ApiMatch) => void;
 }) {
+  // Parse dateKey as EAT midnight (add +03:00 so it's timezone-aware)
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(dateKey + 'T00:00:00');
-  target.setHours(0, 0, 0, 0);
-  const diff = Math.round((target.getTime() - today.getTime()) / 86400000);
+  const todayEATStr = (() => {
+    const eat = new Date(today.getTime() + 3 * 60 * 60 * 1000);
+    return `${eat.getUTCFullYear()}-${String(eat.getUTCMonth()+1).padStart(2,'0')}-${String(eat.getUTCDate()).padStart(2,'0')}`;
+  })();
+  const target = new Date(dateKey + 'T00:00:00+03:00');
+  const todayMidnight = new Date(todayEATStr + 'T00:00:00+03:00');
+  const diff = Math.round((target.getTime() - todayMidnight.getTime()) / 86400000);
   const isToday = diff === 0;
   const isPast = diff < 0;
 

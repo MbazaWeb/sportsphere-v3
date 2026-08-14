@@ -121,8 +121,11 @@ export default function CreateMatchPage() {
   const kickoffISO = useMemo(() => {
     if (!form.kickoffDate) return "";
     const time = form.kickoffTime || "00:00";
-    // treat as local → ISO
-    const dt = new Date(`${form.kickoffDate}T${time}:00`);
+    // Admin is in EAT (UTC+3). Store the time as entered by appending
+    // the UTC+3 offset so the DB always has the correct UTC equivalent.
+    // e.g. "2026-08-14" + "15:00" → "2026-08-14T15:00:00+03:00" → stored as 12:00 UTC
+    const isoWithOffset = `${form.kickoffDate}T${time}:00+03:00`;
+    const dt = new Date(isoWithOffset);
     return Number.isNaN(dt.getTime()) ? "" : dt.toISOString();
   }, [form.kickoffDate, form.kickoffTime]);
 

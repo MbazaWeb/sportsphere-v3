@@ -35,10 +35,11 @@ const DEFAULT_LEAGUES = [
 ];
 
 function formatDate(d: Date): string {
-  // Use local date parts to avoid UTC offset shifting the day
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  // Shift to EAT (UTC+3) before extracting date parts
+  const eat = new Date(d.getTime() + 3 * 60 * 60 * 1000);
+  const year = eat.getUTCFullYear();
+  const month = String(eat.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(eat.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 

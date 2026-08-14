@@ -11,11 +11,11 @@ import { MatchDetailModal } from '@/components/home/MatchDetailModal';
 import { StandingsList } from './StandingsList';
 
 function getTodayStr(): string {
-  // Use local date parts to avoid UTC offset shifting the day
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  // Use EAT (UTC+3) — must match API and MatchList bucketing
+  const eat = new Date(Date.now() + 3 * 60 * 60 * 1000);
+  const year = eat.getUTCFullYear();
+  const month = String(eat.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(eat.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
