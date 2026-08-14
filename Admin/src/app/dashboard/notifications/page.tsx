@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { adminFetch } from '@/lib/admin-api';
 
 export default function NotificationsPage() {
   const [title, setTitle] = useState('');
@@ -23,7 +24,7 @@ export default function NotificationsPage() {
     setResult(null);
 
     try {
-      const res = await fetch('/api/admin/notifications/broadcast', {
+      const res = await adminFetch('/api/admin/notifications/broadcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, body, role }),

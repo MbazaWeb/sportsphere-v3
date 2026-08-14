@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { adminFetch } from '@/lib/admin-api';
 
 export default function MatchLiveEditorPage() {
   const params = useParams();
@@ -30,7 +31,7 @@ export default function MatchLiveEditorPage() {
     if (!id) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/matches/${id}`, { credentials: "include", cache: "no-store" });
+      const res = await adminFetch(`/api/admin/matches/${id}`, { credentials: "include", cache: "no-store" });
       const data = await res.json();
       if (!res.ok) {
         setErr(data.error || "Failed to load");
@@ -59,7 +60,7 @@ export default function MatchLiveEditorPage() {
     setMsg(null);
     setErr(null);
     try {
-      const res = await fetch(`/api/admin/matches/${id}`, {
+      const res = await adminFetch(`/api/admin/matches/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -233,7 +234,7 @@ export default function MatchLiveEditorPage() {
             onClick={async () => {
               setPublishing(true);
               try {
-                const res = await fetch(`/api/admin/matches/${id}`, {
+                const res = await adminFetch(`/api/admin/matches/${id}`, {
                   method: 'POST',
                   credentials: 'include',
                 });

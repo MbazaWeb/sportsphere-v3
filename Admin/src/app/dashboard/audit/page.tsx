@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { adminFetch } from '@/lib/admin-api';
 
 interface AuditEntry {
   id: string;
@@ -72,7 +73,7 @@ export default function AuditPage() {
       params.set('offset', String(offset));
       if (moduleFilter !== 'ALL') params.set('module', moduleFilter);
       if (actionFilter) params.set('action', actionFilter);
-      const res = await fetch(`/api/admin/audit?${params.toString()}`, { cache: 'no-store' });
+      const res = await adminFetch(`/api/admin/audit?${params.toString()}`, { cache: 'no-store' });
       const json = await res.json();
       if (!res.ok) {
         setError(json?.error || 'Failed to load audit log.');

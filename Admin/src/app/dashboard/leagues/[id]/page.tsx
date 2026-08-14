@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { adminFetch } from '@/lib/admin-api';
 
 type Team = { id: string; name: string; logoUrl?: string | null; city?: string | null };
 
@@ -24,8 +25,8 @@ export default function LeagueDetailPage() {
     setLoading(true);
     try {
       const [l, t] = await Promise.all([
-        fetch(`/api/admin/leagues/${id}`, { credentials: "include", cache: "no-store" }).then((r) => r.json()),
-        fetch("/api/admin/teams?limit=300", { credentials: "include" }).then((r) => r.json()),
+        adminFetch(`/api/admin/leagues/${id}`, { credentials: "include", cache: "no-store" }).then((r) => r.json()),
+        adminFetch("/api/admin/teams?limit=300", { credentials: "include" }).then((r) => r.json()),
       ]);
       if (l.error) {
         setErr(l.error);
@@ -107,7 +108,7 @@ export default function LeagueDetailPage() {
     setMsg(null);
     setErr(null);
     try {
-      const res = await fetch(`/api/admin/leagues/${id}`, {
+      const res = await adminFetch(`/api/admin/leagues/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -131,7 +132,7 @@ export default function LeagueDetailPage() {
   const removeTeam = async (teamId: string) => {
     setSaving(true);
     try {
-      await fetch(`/api/admin/leagues/${id}`, {
+      await adminFetch(`/api/admin/leagues/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

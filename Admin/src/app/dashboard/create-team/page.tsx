@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { displayPhoto } from "@/lib/placeholder-avatar";
+import { adminFetch } from '@/lib/admin-api';
 
 type Opt = { id: string; name: string };
 
@@ -33,8 +34,8 @@ export default function CreateTeamPage() {
     (async () => {
       try {
         const [s, l] = await Promise.all([
-          fetch("/api/admin/sports").then((r) => r.json()),
-          fetch("/api/admin/leagues?limit=200").then((r) => r.json()),
+          adminFetch("/api/admin/sports").then((r) => r.json()),
+          adminFetch("/api/admin/leagues?limit=200").then((r) => r.json()),
         ]);
         setSports((s.sports || s.data || []).map((x: any) => ({ id: x.id, name: x.name })));
         setLeagues((l.data || l.leagues || []).map((x: any) => ({ id: x.id, name: x.name })));
@@ -50,7 +51,7 @@ export default function CreateTeamPage() {
     setMsg(null);
     setErr(null);
     try {
-      const res = await fetch("/api/admin/teams", {
+      const res = await adminFetch("/api/admin/teams", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

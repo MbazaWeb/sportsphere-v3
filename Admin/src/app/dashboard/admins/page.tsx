@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { MetricCard } from "@/components/AdminMetrics";
+import { adminFetch } from '@/lib/admin-api';
 
 export default function CreateAdminPage() {
   const [name, setName] = useState("");
@@ -14,7 +15,7 @@ export default function CreateAdminPage() {
   async function fetchAdmins() {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/admins/list");
+      const res = await adminFetch("/api/admin/admins/list");
       if (res.ok) {
         const json = await res.json();
         setAdmins(json.admins || []);
@@ -34,7 +35,7 @@ export default function CreateAdminPage() {
     e.preventDefault();
     setStatus("Provisioning sub-assistant...");
     try {
-      const res = await fetch("/api/admin/admins/create", {
+      const res = await adminFetch("/api/admin/admins/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, role, scopeId }),

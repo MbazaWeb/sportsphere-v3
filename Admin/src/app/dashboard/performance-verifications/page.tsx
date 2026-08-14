@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { adminFetch } from '@/lib/admin-api';
 
 interface PerformanceEvent {
   id: string;
@@ -32,7 +33,7 @@ export default function PerformanceVerificationsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/performance/events?status=${tab}`, { cache: 'no-store' });
+      const res = await adminFetch(`/api/admin/performance/events?status=${tab}`, { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load');
       setEvents(data);
@@ -56,7 +57,7 @@ export default function PerformanceVerificationsPage() {
 
     setProcessingId(eventId);
     try {
-      const res = await fetch('/api/admin/performance/events', {
+      const res = await adminFetch('/api/admin/performance/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ eventId, action, notes }),

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { adminFetch } from '@/lib/admin-api';
 
 const TYPES = [
   { id: "brand", label: "Brand (e.g. Nike Sport)" },
@@ -28,7 +29,7 @@ export default function CreateBusinessPage() {
 
   const load = async () => {
     try {
-      const res = await fetch("/api/admin/businesses");
+      const res = await adminFetch("/api/admin/businesses");
       const data = await res.json();
       if (res.ok) setList(data.businesses || []);
     } catch {}
@@ -46,7 +47,7 @@ export default function CreateBusinessPage() {
     setMsg(null);
     setErr(null);
     try {
-      const res = await fetch("/api/admin/businesses", {
+      const res = await adminFetch("/api/admin/businesses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

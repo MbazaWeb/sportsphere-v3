@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Plus, Trash2, Save, Key, Link2, Plug } from "lucide-react";
+import { adminFetch } from '@/lib/admin-api';
 
 export type CustomProviderForm = {
   id: string;
@@ -66,7 +67,7 @@ export default function ApiProviderManager({
 
   const load = async () => {
     try {
-      const res = await fetch("/api/admin/api-providers", { cache: "no-store" });
+      const res = await adminFetch("/api/admin/api-providers", { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Failed to load providers");
@@ -115,7 +116,7 @@ export default function ApiProviderManager({
     setError(null);
     setMsg(null);
     try {
-      const res = await fetch("/api/admin/api-providers", {
+      const res = await adminFetch("/api/admin/api-providers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -140,7 +141,7 @@ export default function ApiProviderManager({
 
   const remove = async (id: string) => {
     if (!confirm(`Delete provider ${id}?`)) return;
-    const res = await fetch(`/api/admin/api-providers?id=${encodeURIComponent(id)}`, {
+    const res = await adminFetch(`/api/admin/api-providers?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
     });
     const data = await res.json();

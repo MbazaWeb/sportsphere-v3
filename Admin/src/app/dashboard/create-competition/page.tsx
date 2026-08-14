@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { adminFetch } from '@/lib/admin-api';
 
 type Opt = { id: string; name: string };
 
@@ -43,8 +44,8 @@ export default function CreateCompetitionPage() {
     (async () => {
       try {
         const [s, t] = await Promise.all([
-          fetch("/api/admin/sports", { credentials: "include" }).then((r) => r.json()),
-          fetch("/api/admin/teams?limit=300", { credentials: "include" }).then((r) => r.json()),
+          adminFetch("/api/admin/sports", { credentials: "include" }).then((r) => r.json()),
+          adminFetch("/api/admin/teams?limit=300", { credentials: "include" }).then((r) => r.json()),
         ]);
         setSports((s.sports || s.data || []).map((x: any) => ({ id: x.id, name: x.name })));
         setTeams((t.data || t.teams || []).map((x: any) => ({ id: x.id, name: x.name })));
@@ -70,7 +71,7 @@ export default function CreateCompetitionPage() {
     setMsg(null);
     setErr(null);
     try {
-      const res = await fetch("/api/admin/leagues", {
+      const res = await adminFetch("/api/admin/leagues", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

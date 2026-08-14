@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState, useCallback } from "react";
 import { MetricCard } from "@/components/AdminMetrics";
+import { adminFetch } from '@/lib/admin-api';
 
 interface IngestResult {
   format: string;
@@ -37,14 +38,14 @@ export default function SportsDataManagementPage() {
   async function loadMetrics() {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/sports-data/stats");
+      const res = await adminFetch("/api/admin/sports-data/stats");
       if (res.ok) setData(await res.json());
     } catch { /* ignore */ } finally { setLoading(false); }
   }
 
   const loadIngestLogs = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/ingest?limit=20");
+      const res = await adminFetch("/api/admin/ingest?limit=20");
       if (res.ok) {
         const json = await res.json();
         setIngestLogs(json.entries || []);
@@ -59,7 +60,7 @@ export default function SportsDataManagementPage() {
     setIngesting(true);
     setIngestResult(null);
     try {
-      const res = await fetch("/api/admin/ingest", {
+      const res = await adminFetch("/api/admin/ingest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: feedUrl.trim(), format: feedFormat }),

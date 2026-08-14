@@ -198,7 +198,7 @@ export default function DelegationPage() {
       try {
         const [meRes, rolesRes] = await Promise.all([
           adminFetch('/api/auth/me', { cache: 'no-store' }),
-          fetch('/api/admin/delegation/roles', { cache: 'no-store' }),
+          adminFetch('/api/admin/delegation/roles', { cache: 'no-store' }),
         ]);
         if (cancelled) return;
         if (meRes.ok) {
@@ -251,8 +251,7 @@ export default function DelegationPage() {
     setUserSearchLoading(true);
     const t = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `/api/admin/delegation/search-users?q=${encodeURIComponent(userQuery.trim())}`,
+        const res = await adminFetch(`/api/admin/delegation/search-users?q=${encodeURIComponent(userQuery.trim())}`,
           { cache: 'no-store' }
         );
         if (res.ok) {
@@ -272,7 +271,7 @@ export default function DelegationPage() {
   const loadLogs = useCallback(async () => {
     setLogsLoading(true);
     try {
-      const res = await fetch('/api/admin/delegation/logs?limit=20', { cache: 'no-store' });
+      const res = await adminFetch('/api/admin/delegation/logs?limit=20', { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
         setLogs(json?.data || []);
@@ -299,8 +298,7 @@ export default function DelegationPage() {
     setLookupLoading(true);
     const t = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `/api/admin/delegation/search-users?q=${encodeURIComponent(lookupQuery.trim())}`,
+        const res = await adminFetch(`/api/admin/delegation/search-users?q=${encodeURIComponent(lookupQuery.trim())}`,
           { cache: 'no-store' }
         );
         if (res.ok) {
@@ -324,8 +322,7 @@ export default function DelegationPage() {
     }
     setUserGrantsLoading(true);
     try {
-      const res = await fetch(
-        `/api/admin/delegation/user-roles?userId=${encodeURIComponent(lookupSelected.id)}`,
+      const res = await adminFetch(`/api/admin/delegation/user-roles?userId=${encodeURIComponent(lookupSelected.id)}`,
         { cache: 'no-store' }
       );
       if (res.ok) {
@@ -374,7 +371,7 @@ export default function DelegationPage() {
     }
     setGranting(true);
     try {
-      const res = await fetch('/api/admin/delegation/grant', {
+      const res = await adminFetch('/api/admin/delegation/grant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -418,7 +415,7 @@ export default function DelegationPage() {
     if (!revokeTarget) return;
     setRevoking(true);
     try {
-      const res = await fetch('/api/admin/delegation/revoke', {
+      const res = await adminFetch('/api/admin/delegation/revoke', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -10,9 +10,19 @@ export function adminApi(path: string): string {
   const p = path.startsWith('/') ? path : `/${path}`;
   // Avoid double-prefix if already absolute to admin
   if (p.startsWith(ADMIN_BASE_PATH)) return p;
+  // Absolute URL — leave alone
+  if (/^https?:\/\//i.test(p)) return p;
   return `${ADMIN_BASE_PATH}${p}`;
 }
 
 export function adminFetch(path: string, init?: RequestInit): Promise<Response> {
-  return fetch(adminApi(path), init);
+  const headers = new Headers(init?.headers || {});
+  if (init?.body && !headers.has('Content-Type') && typeof init.body === 'string') {
+    headers.set('Content-Type', 'application/json');
+  }
+  return fetch(adminApi(path), {
+    credentials: 'include',
+    ...init,
+    headers,
+  });
 }

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { Link2, Trash2, RefreshCw } from "lucide-react";
+import { adminFetch } from '@/lib/admin-api';
 
 type Opt = { id: string; name: string; type?: string };
 
@@ -33,10 +34,10 @@ export default function BusinessLinksPage() {
   const loadOptions = useCallback(async () => {
     try {
       const [b, t, p, c] = await Promise.all([
-        fetch("/api/admin/businesses").then((r) => r.json()),
-        fetch("/api/admin/teams?limit=300").then((r) => r.json()),
-        fetch("/api/admin/players?limit=300").then((r) => r.json()),
-        fetch("/api/admin/coaches?limit=300").then((r) => r.json()),
+        adminFetch("/api/admin/businesses").then((r) => r.json()),
+        adminFetch("/api/admin/teams?limit=300").then((r) => r.json()),
+        adminFetch("/api/admin/players?limit=300").then((r) => r.json()),
+        adminFetch("/api/admin/coaches?limit=300").then((r) => r.json()),
       ]);
       setBusinesses((b.businesses || []).map((x: any) => ({ id: x.id, name: x.name, type: x.type })));
       setTeams((t.data || []).map((x: any) => ({ id: x.id, name: x.name })));
@@ -50,7 +51,7 @@ export default function BusinessLinksPage() {
   const loadLinks = useCallback(async () => {
     try {
       const q = filterBiz ? `?businessId=${encodeURIComponent(filterBiz)}` : "";
-      const res = await fetch(`/api/admin/business-links${q}`, { cache: "no-store" });
+      const res = await adminFetch(`/api/admin/business-links${q}`, { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) {
         setErr(data.error || "Failed to load links");
@@ -88,7 +89,7 @@ export default function BusinessLinksPage() {
     setMsg(null);
     setErr(null);
     try {
-      const res = await fetch("/api/admin/business-links", {
+      const res = await adminFetch("/api/admin/business-links", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ entityType, businessId, entityId, role, notes }),
@@ -110,8 +111,7 @@ export default function BusinessLinksPage() {
 
   const remove = async (entityType: string, id: string) => {
     if (!confirm("Remove this link?")) return;
-    const res = await fetch(
-      `/api/admin/business-links?entityType=${entityType}&id=${encodeURIComponent(id)}`,
+    const res = await adminFetch(`/api/admin/business-links?entityType=${entityType}&id=${encodeURIComponent(id)}`,
       { method: "DELETE" }
     );
     const data = await res.json();

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Newspaper, Plus, Sparkles, Filter, RefreshCw, FileText, CheckCircle2, Clock, Tag } from 'lucide-react';
+import { adminFetch } from '@/lib/admin-api';
 
 interface Article {
   id: string;
@@ -31,7 +32,7 @@ export default function NewsManagerPage() {
   const fetchNews = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/news');
+      const res = await adminFetch('/api/admin/news');
       const data = await res.json();
       if (data.ok) setArticles(data.articles);
     } catch (err) {
@@ -50,7 +51,7 @@ export default function NewsManagerPage() {
     if (!title.trim() || !content.trim()) return;
     setSubmitting(true);
     try {
-      const res = await fetch('/api/admin/news', {
+      const res = await adminFetch('/api/admin/news', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, content, category, isAiGenerated: isAi }),

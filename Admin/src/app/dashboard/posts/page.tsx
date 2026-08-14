@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { adminFetch } from '@/lib/admin-api';
 
 interface PostItem {
   id: string;
@@ -23,7 +24,7 @@ export default function PostsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/admin/posts?limit=50', {
+      const res = await adminFetch('/api/admin/posts?limit=50', {
         cache: 'no-store',
       });
       const data = await res.json();
@@ -51,7 +52,7 @@ export default function PostsPage() {
     }
     setDeletingId(post.id);
     try {
-      const res = await fetch(`/api/admin/posts/${post.id}`, {
+      const res = await adminFetch(`/api/admin/posts/${post.id}`, {
         method: 'DELETE',
       });
       if (res.ok) {

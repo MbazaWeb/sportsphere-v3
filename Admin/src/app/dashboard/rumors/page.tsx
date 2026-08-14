@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Flame, Plus, Sparkles, RefreshCw, ArrowRight, ShieldAlert, CheckCircle, HelpCircle } from 'lucide-react';
+import { adminFetch } from '@/lib/admin-api';
 
 interface Rumor {
   id: string;
@@ -33,7 +34,7 @@ export default function RumorsManagerPage() {
   const fetchRumors = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/rumors');
+      const res = await adminFetch('/api/admin/rumors');
       const data = await res.json();
       if (data.ok) setRumors(data.rumors);
     } catch (err) {
@@ -52,7 +53,7 @@ export default function RumorsManagerPage() {
     if (!player.trim() || !toClub.trim()) return;
     setSubmitting(true);
     try {
-      const res = await fetch('/api/admin/rumors', {
+      const res = await adminFetch('/api/admin/rumors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

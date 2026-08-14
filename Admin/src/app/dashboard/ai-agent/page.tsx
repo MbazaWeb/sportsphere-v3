@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Bot, Sparkles, RefreshCcw, Image, CheckCircle, Cpu } from "lucide-react";
+import { adminFetch } from '@/lib/admin-api';
 
 type JobRow = {
   id: string;
@@ -31,7 +32,7 @@ export default function AiAgentPage() {
 
   const loadJobs = async () => {
     try {
-      const res = await fetch("/api/admin/ai/jobs?limit=30", { cache: "no-store" });
+      const res = await adminFetch("/api/admin/ai/jobs?limit=30", { cache: "no-store" });
       const data = await res.json();
       if (res.ok && Array.isArray(data.data)) setJobs(data.data);
     } catch {

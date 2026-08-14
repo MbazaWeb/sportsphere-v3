@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { adminFetch } from '@/lib/admin-api';
 
 interface RoleRequest {
   id: string;
@@ -26,7 +27,7 @@ export default function RolesPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/admin/roles?status=pending', {
+      const res = await adminFetch('/api/admin/roles?status=pending', {
         cache: 'no-store',
       });
       const data = await res.json();
@@ -51,7 +52,7 @@ export default function RolesPage() {
   async function act(req: RoleRequest, action: 'approved' | 'rejected') {
     setActingId(req.id);
     try {
-      const res = await fetch(`/api/admin/roles/${req.id}`, {
+      const res = await adminFetch(`/api/admin/roles/${req.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: action }),

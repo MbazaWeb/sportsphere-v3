@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { displayPhoto } from "@/lib/placeholder-avatar";
+import { adminFetch } from '@/lib/admin-api';
 
 type Member = {
   id: string;
@@ -84,7 +85,7 @@ export default function TeamRosterPage() {
     setLoading(true);
     setErr(null);
     try {
-      const res = await fetch(`/api/admin/teams/${teamId}`, { credentials: "include", cache: "no-store" });
+      const res = await adminFetch(`/api/admin/teams/${teamId}`, { credentials: "include", cache: "no-store" });
       const data = await res.json();
       if (!res.ok) {
         setErr(data.error || "Failed to load team");
@@ -171,7 +172,7 @@ export default function TeamRosterPage() {
       try {
         const q = new URLSearchParams({ limit: '20' });
         if (teamQuery.trim()) q.set('search', teamQuery.trim());
-        const res = await fetch('/api/admin/teams?' + q.toString(), { credentials: 'include', cache: 'no-store' });
+        const res = await adminFetch('/api/admin/teams?' + q.toString(), { credentials: 'include', cache: 'no-store' });
         const data = await res.json();
         const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
         setTeamOptions(list.filter((x: any) => x.id !== teamId).map((x: any) => ({ id: x.id, name: x.name, city: x.city })));
@@ -190,7 +191,7 @@ export default function TeamRosterPage() {
     setTeamQuery('');
     setHistory([]);
     try {
-      const res = await fetch('/api/admin/players/' + player.id + '/transfer', { credentials: 'include', cache: 'no-store' });
+      const res = await adminFetch('/api/admin/players/' + player.id + '/transfer', { credentials: 'include', cache: 'no-store' });
       const data = await res.json();
       if (res.ok) setHistory(Array.isArray(data.transfers) ? data.transfers : []);
     } catch { setHistory([]); }
@@ -216,7 +217,7 @@ export default function TeamRosterPage() {
       };
       if (transferType === 'free') body.toTeamId = null;
       else if (transferType !== 'loan_return') body.toTeamId = toTeamId;
-      const res = await fetch('/api/admin/players/' + transferPlayer.id + '/transfer', {
+      const res = await adminFetch('/api/admin/players/' + transferPlayer.id + '/transfer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

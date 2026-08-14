@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { adminFetch } from '@/lib/admin-api';
 
 type Opt = { id: string; name: string };
 type EventRow = {
@@ -80,9 +81,9 @@ export default function CreateMatchPage() {
     (async () => {
       try {
         const [t, l, s] = await Promise.all([
-          fetch("/api/admin/teams?limit=300").then((r) => r.json()),
-          fetch("/api/admin/leagues?limit=200").then((r) => r.json()),
-          fetch("/api/admin/sports").then((r) => r.json()),
+          adminFetch("/api/admin/teams?limit=300").then((r) => r.json()),
+          adminFetch("/api/admin/leagues?limit=200").then((r) => r.json()),
+          adminFetch("/api/admin/sports").then((r) => r.json()),
         ]);
         setTeams((t.data || t.teams || []).map((x: any) => ({ id: x.id, name: x.name })));
         setLeagues((l.data || l.leagues || []).map((x: any) => ({ id: x.id, name: x.name })));
@@ -198,7 +199,7 @@ export default function CreateMatchPage() {
         publishToFan: form.publishToFan,
       };
 
-      const res = await fetch("/api/admin/matches", {
+      const res = await adminFetch("/api/admin/matches", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

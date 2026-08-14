@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Plus, Eye, EyeOff, Users, Hash, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
+import { adminFetch } from '@/lib/admin-api';
 
 interface SportItem {
   id: string;
@@ -25,7 +26,7 @@ export default function SportsManagerPage() {
   const fetchSports = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/sports');
+      const res = await adminFetch('/api/admin/sports');
       const data = await res.json();
       if (data.ok) {
         setSports(data.sports);
@@ -43,7 +44,7 @@ export default function SportsManagerPage() {
 
   const handleToggleActive = async (id: string, currentState: boolean) => {
     try {
-      const res = await fetch('/api/admin/sports', {
+      const res = await adminFetch('/api/admin/sports', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, isActive: !currentState }),
@@ -63,7 +64,7 @@ export default function SportsManagerPage() {
     if (!formName.trim()) return;
     setSubmitting(true);
     try {
-      const res = await fetch('/api/admin/sports', {
+      const res = await adminFetch('/api/admin/sports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: formName, icon: formIcon }),

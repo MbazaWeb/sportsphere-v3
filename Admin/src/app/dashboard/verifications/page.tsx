@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, XCircle, Clock, ShieldCheck, RefreshCw, UserCheck, Search } from 'lucide-react';
+import { adminFetch } from '@/lib/admin-api';
 
 interface VerificationItem {
   id: string;
@@ -27,7 +28,7 @@ export default function PerformanceVerificationsPage() {
   const fetchVerifications = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/verifications');
+      const res = await adminFetch('/api/admin/verifications');
       const data = await res.json();
       if (data.ok) {
         setItems(data.requests);
@@ -45,7 +46,7 @@ export default function PerformanceVerificationsPage() {
 
   const handleUpdateStatus = async (id: string, newStatus: 'verified' | 'rejected') => {
     try {
-      const res = await fetch('/api/admin/verifications', {
+      const res = await adminFetch('/api/admin/verifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status: newStatus }),

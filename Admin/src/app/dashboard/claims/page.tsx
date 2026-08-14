@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ShieldAlert, RefreshCw, CheckCircle2, XCircle, HelpCircle, User, Award, Shield, Flag } from 'lucide-react';
+import { adminFetch } from '@/lib/admin-api';
 
 interface Claim {
   id: string;
@@ -22,7 +23,7 @@ export default function ClaimsQueuePage() {
   const fetchClaims = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/claims');
+      const res = await adminFetch('/api/admin/claims');
       const data = await res.json();
       if (data.ok) setClaims(data.claims);
     } catch (err) {
@@ -38,7 +39,7 @@ export default function ClaimsQueuePage() {
 
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
-      const res = await fetch('/api/admin/claims', {
+      const res = await adminFetch('/api/admin/claims', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status }),

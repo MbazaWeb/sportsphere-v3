@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { adminFetch } from '@/lib/admin-api';
 
 interface ClaimedBy {
   id: string;
@@ -101,7 +102,7 @@ export default function UsersPage() {
       if (roleFilter !== "ALL") params.set("role", roleFilter);
       if (typeFilter !== "ALL") params.set("type", typeFilter);
       params.set("limit", "80");
-      const res = await fetch(`/api/admin/users?${params.toString()}`, {
+      const res = await adminFetch(`/api/admin/users?${params.toString()}`, {
         cache: "no-store",
       });
       const data = await res.json();
@@ -129,7 +130,7 @@ export default function UsersPage() {
     if (user.entityType !== "USER") return;
     setUpdatingId(user.id);
     try {
-      const res = await fetch(`/api/admin/users/${user.id}`, {
+      const res = await adminFetch(`/api/admin/users/${user.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: newRole }),
@@ -153,7 +154,7 @@ export default function UsersPage() {
     if (user.entityType !== "USER") return;
     setUpdatingId(user.id);
     try {
-      const res = await fetch(`/api/admin/users/${user.id}`, {
+      const res = await adminFetch(`/api/admin/users/${user.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isVerified: !user.isVerified }),

@@ -3,6 +3,23 @@
 import React, { useState, useEffect, useCallback } from "react";
 import ApiProviderManager from "./ApiProviderManager";
 import {
+import { adminFetch } from '@/lib/admin-api';
+
+async function readJson(res: Response) {
+  const ct = res.headers.get("content-type") || "";
+  const text = await res.text();
+  if (!ct.includes("application/json")) {
+    throw new Error(
+      `Expected JSON from ${res.url || "API"} but got ${res.status} ${ct || "unknown"} (HTML/redirect). Check admin basePath routing.`
+    );
+  }
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error(`Invalid JSON (${res.status}): ${text.slice(0, 120)}`);
+  }
+}
+
   RefreshCw,
   Database,
   Activity,
@@ -107,8 +124,8 @@ export default function SportsSyncDashboard() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch("/api/admin/sports-sync", { cache: "no-store" });
-      const data = await res.json();
+      const res = await adminFetch("/api/admin/sports-sync", { cache: "no-store" });
+      const data = await readJson(res);
       if (!res.ok) {
         setError(data.error || `Failed to load (${res.status})`);
         return;
@@ -138,7 +155,7 @@ export default function SportsSyncDashboard() {
       setLastSyncResult(null);
       setSummary(null);
 
-      const res = await fetch("/api/admin/sports-sync", {
+      const res = await adminFetch("/api/admin/sports-sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -159,7 +176,7 @@ export default function SportsSyncDashboard() {
           );
           return;
         }
-        data = await res.json();
+        data = await readJson(res);
       } catch {
         setError(`Sync returned non-JSON response (HTTP ${res.status})`);
         return;

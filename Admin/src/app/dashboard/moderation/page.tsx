@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { adminFetch } from '@/lib/admin-api';
 
 interface ModPost {
   id: string;
@@ -64,7 +65,7 @@ export default function ModerationPage() {
       params.set('sort', sort);
       params.set('type', type);
       if (q) params.set('q', q);
-      const res = await fetch(`/api/admin/moderation?${params.toString()}`, { cache: 'no-store' });
+      const res = await adminFetch(`/api/admin/moderation?${params.toString()}`, { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) {
         setError(data?.error || 'Failed to load moderation queue.');
@@ -90,7 +91,7 @@ export default function ModerationPage() {
     if (!confirm(`Delete this post by ${post.user.name}?\n\n"${post.content.slice(0, 100)}${post.content.length > 100 ? '...' : ''}"\n\nThis cannot be undone.`)) return;
     setDeletingId(post.id);
     try {
-      const res = await fetch(`/api/admin/posts/${post.id}`, { method: 'DELETE' });
+      const res = await adminFetch(`/api/admin/posts/${post.id}`, { method: 'DELETE' });
       if (res.ok) {
         setPosts((prev) => prev.filter((p) => p.id !== post.id));
       } else {

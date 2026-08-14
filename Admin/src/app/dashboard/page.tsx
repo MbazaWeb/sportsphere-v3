@@ -26,6 +26,7 @@ import {
   PolarRadiusAxis,
 } from "recharts";
 import {
+import { adminFetch } from '@/lib/admin-api';
   Activity,
   Users,
   FileText,
@@ -216,7 +217,7 @@ export default function AnimatedOverviewDashboard() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/overview-stats", { cache: "no-store", credentials: "include" });
+      const res = await adminFetch("/api/admin/overview-stats", { cache: "no-store", credentials: "include" });
       const result = await res.json();
       if (!res.ok) {
         setError(result.error || "Failed to load stats");
