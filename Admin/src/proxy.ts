@@ -2,18 +2,13 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyAdminSession, ADMIN_COOKIE } from '@/lib/session';
 
-/**
- * Next.js 16 proxy (formerly middleware) — runs on the Edge runtime.
- *
- * Routing rules:
- *   - /login             → public
- *   - /api/auth/*        → public (login/logout/me manage their own auth)
- *   - /api/admin/*       → public (the routes themselves call verifyAdmin)
- *   - everything else    → requires a valid admin_session cookie with an
- *                           admin role claim; otherwise redirect to /login.
- */
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  let { pathname } = request.nextUrl;
+
+  // Normalize path if basePath prefix is passed directly by proxy
+  if (pathname.startsWith('/sportsphere-admin')) {
+    pathname = pathname.replace('/sportsphere-admin', '') || '/';
+  }
 
   if (
     pathname === '/login' ||
@@ -33,7 +28,7 @@ export async function proxy(request: NextRequest) {
   const payload = await verifyAdminSession(cookie);
 
   if (!payload?.sub) {
-    const loginUrl = new URL('/login', request.url);
+    const loginUrl = new URL('/sportsphere-admin/login', request.url);
     loginUrl.searchParams.set('next', pathname);
     return NextResponse.redirect(loginUrl);
   }
@@ -46,7 +41,7 @@ export async function proxy(request: NextRequest) {
     role.includes('ADMIN');
 
   if (!isAdmin) {
-    const loginUrl = new URL('/login', request.url);
+    const loginUrl = new URL('/sportsphere-admin/login', request.url);
     loginUrl.searchParams.set('next', pathname);
     loginUrl.searchParams.set('reason', 'forbidden');
     return NextResponse.redirect(loginUrl);

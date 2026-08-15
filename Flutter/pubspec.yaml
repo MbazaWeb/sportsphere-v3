@@ -1,0 +1,36 @@
+name: sportsphere
+description: Sportsphere - Premium sports social platform (Flutter 1:1 migration)
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+  flutter_animate: ^4.5.2
+  flutter_svg: ^2.0.17
+  gap: ^3.0.1
+  http: ^1.2.2
+  flutter_riverpod: ^2.6.1
+  shared_preferences: ^2.3.3
+  flutter_secure_storage: ^9.2.2
+  image_picker: ^1.1.2
+  local_auth: ^2.3.0
+  crypto: ^3.0.6
+  http_parser: ^4.0.2
+  socket_io_client: ^3.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
