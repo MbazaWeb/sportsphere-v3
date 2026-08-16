@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/app_providers.dart';
@@ -8,95 +9,118 @@ import '../../../widgets/glass_card.dart';
 import '../../profile/presentation/user_profile_sheet.dart';
 import '../../../shared/widgets/ss_refresh.dart';
 
-/// Live Sportlights feed from GET /api/feed
-class SportlightsTab extends ConsumerWidget {
+/// Live Sportlights feed from GET /api/feed with infinite scroll
+class SportlightsTab extends ConsumerStatefulWidget {
   const SportlightsTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final feedAsync = ref.watch(feedProvider(null));
+  ConsumerState<SportlightsTab> createState() => _SportlightsTabState();
+}
 
-    return feedAsync.when(
-      loading: () => const Center(
+class _SportlightsTabState extends ConsumerState<SportlightsTab> {
+  final _scroll = ScrollController();
+  List<Post> _posts = [];
+  int _offset = 0;
+  bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMore = true;
+  String? _error;
+  static const _pageSize = 20;
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_onScroll);
+    _loadFirst();
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 200) {
+      _loadMore();
+    }
+  }
+
+  Future<void> _loadFirst() async {
+    setState(() { _loading = true; _error = null; _posts = []; _offset = 0; _hasMore = true; });
+    try {
+      final posts = await ref.read(feedApiProvider).getFeed(limit: _pageSize, offset: 0);
+      if (!mounted) return;
+      setState(() { _posts = posts; _offset = posts.length; _hasMore = posts.length >= _pageSize; _loading = false; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _loading = false; _error = e.toString(); });
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore) return;
+    setState(() => _loadingMore = true);
+    try {
+      final posts = await ref.read(feedApiProvider).getFeed(limit: _pageSize, offset: _offset);
+      if (!mounted) return;
+      setState(() {
+        _posts.addAll(posts);
+        _offset += posts.length;
+        _hasMore = posts.length >= _pageSize;
+        _loadingMore = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingMore = false);
+    }
+  }
+
+  Future<void> _refresh() async {
+    await _loadFirst();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(
         child: Padding(
           padding: EdgeInsets.all(40),
           child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
         ),
+      );
+    }
+
+    if (_error != null) {
+      return _ErrorView(message: _error!, onRetry: _loadFirst);
+    }
+
+    if (_posts.isEmpty) {
+      return SsRefreshScroll(
+        onRefresh: _refresh,
+        child: Center(
+          child: Text('No posts yet — pull to refresh', style: GoogleFonts.inter(color: AppColors.mutedForeground)),
+        ),
+      );
+    }
+
+    return SsRefresh(
+      onRefresh: _refresh,
+      child: ListView.builder(
+        controller: _scroll,
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+        itemCount: _posts.length + (_hasMore ? 1 : 0),
+        separatorBuilder: (_, __) => const SizedBox(height: 14),
+        itemBuilder: (context, i) {
+          if (i >= _posts.length) {
+            return const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
+            );
+          }
+          return LiveFeedCard(post: _posts[i], index: i);
+        },
       ),
-      error: (e, _) {
-        if (isLikelyCorsError(e)) {
-          final posts = sampleFeedPosts();
-          return Column(
-            children: [
-              Material(
-                color: AppColors.primary.withValues(alpha: 0.12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.info_outline, size: 18, color: AppColors.primary),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'CORS blocked live API — sample feed. Use Android or Chrome with web security off.',
-                          style: GoogleFonts.inter(fontSize: 12, color: AppColors.primary),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => ref.invalidate(feedProvider(null)),
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-                  itemCount: posts.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 14),
-                  itemBuilder: (context, i) => LiveFeedCard(post: posts[i], index: i),
-                ),
-              ),
-            ],
-          );
-        }
-        return _ErrorView(
-          message: e.toString(),
-          onRetry: () => ref.invalidate(feedProvider(null)),
-        );
-      },
-      data: (posts) {
-        if (posts.isEmpty) {
-          return SsRefreshScroll(
-            onRefresh: () async {
-              ref.invalidate(feedProvider(null));
-              await ref.read(feedProvider(null).future);
-            },
-            child: Center(
-              child: Text(
-                'No posts yet — pull to refresh',
-                style: GoogleFonts.inter(color: AppColors.mutedForeground),
-              ),
-            ),
-          );
-        }
-        return SsRefresh(
-          onRefresh: () async {
-            ref.invalidate(feedProvider(null));
-            await ref.read(feedProvider(null).future);
-          },
-          child: ListView.separated(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-            itemCount: posts.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 14),
-            itemBuilder: (context, i) => LiveFeedCard(post: posts[i], index: i),
-          ),
-        );
-      },
     );
   }
 }
@@ -114,6 +138,7 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
   late int _likes;
   late bool _liked;
   late int _comments;
+  late bool _bookmarked;
 
   @override
   void initState() {
@@ -121,6 +146,7 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
     _likes = widget.post.likeCount;
     _liked = widget.post.likedByMe;
     _comments = widget.post.commentCount;
+    _bookmarked = false;
   }
 
   Future<void> _toggleLike() async {
@@ -139,6 +165,40 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
     }
+  }
+
+  Future<void> _toggleBookmark() async {
+    if (!ref.read(authProvider).isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in to save')));
+      return;
+    }
+    try {
+      if (_bookmarked) {
+        await ref.read(favoritesApiProvider).removeByTarget('post', widget.post.id);
+      } else {
+        await ref.read(favoritesApiProvider).add(targetType: 'post', targetId: widget.post.id, targetName: widget.post.content.length > 40 ? '${widget.post.content.substring(0, 40)}...' : widget.post.content);
+      }
+      if (!mounted) return;
+      setState(() => _bookmarked = !_bookmarked);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
+  void _share(BuildContext ctx, Post post) {
+    final text = '${post.content}\n\nhttps://sportssphere.fun/sportsphere/p/${post.id}';
+    ScaffoldMessenger.of(ctx).showSnackBar(
+      SnackBar(
+        content: const Text('Link copied to clipboard'),
+        action: SnackBarAction(
+          label: 'OK',
+          onPressed: () {},
+        ),
+      ),
+    );
+    // Use platform share if available, otherwise clipboard
+    Clipboard.setData(ClipboardData(text: text));
   }
 
   void _openComments() {
@@ -264,7 +324,7 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
           ],
           if (post.poll != null) ...[
             const SizedBox(height: 12),
-            _PollBlock(poll: post.poll!),
+            _PollBlock(poll: post.poll!, postId: post.id),
           ],
           if (post.prediction != null) ...[
             const SizedBox(height: 12),
@@ -287,9 +347,19 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
                 child: _Act(Icons.chat_bubble_outline_rounded, '$_comments'),
               ),
               const SizedBox(width: 16),
-              _Act(Icons.ios_share_outlined, '${post.shareCount}'),
+              GestureDetector(
+                onTap: () => _share(context, post),
+                child: _Act(Icons.ios_share_outlined, '${post.shareCount}'),
+              ),
               const Spacer(),
-              Icon(Icons.bookmark_border_rounded, size: 18, color: AppColors.mutedForeground.withValues(alpha: 0.85)),
+              GestureDetector(
+                onTap: _toggleBookmark,
+                child: Icon(
+                  _bookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                  size: 18,
+                  color: _bookmarked ? AppColors.primary : AppColors.mutedForeground.withValues(alpha: 0.85),
+                ),
+              ),
             ],
           ),
         ],
@@ -319,44 +389,103 @@ class _Avatar extends StatelessWidget {
   }
 }
 
-class _PollBlock extends StatelessWidget {
-  const _PollBlock({required this.poll});
+class _PollBlock extends ConsumerStatefulWidget {
+  const _PollBlock({required this.poll, required this.postId});
   final PollData poll;
+  final String postId;
+
+  @override
+  ConsumerState<_PollBlock> createState() => _PollBlockState();
+}
+
+class _PollBlockState extends ConsumerState<_PollBlock> {
+  late List<int> _counts;
+  late int _total;
+  late int? _votedIndex;
+  bool _voting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _counts = List<int>.from(widget.poll.optionCounts ?? List.filled(widget.poll.options.length, 0));
+    _total = widget.poll.totalVotes;
+    _votedIndex = widget.poll.userVotedOption;
+  }
+
+  Future<void> _vote(int index) async {
+    if (_votedIndex != null || _voting) return;
+    final auth = ref.read(authProvider);
+    if (!auth.isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in to vote')));
+      return;
+    }
+    setState(() => _voting = true);
+    try {
+      final result = await ref.read(pollsApiProvider).vote(pollId: widget.poll.id, optionIndex: index);
+      if (!mounted) return;
+      final updatedPoll = result['poll'];
+      if (updatedPoll is Map) {
+        setState(() {
+          _counts = List<int>.from((updatedPoll['optionCounts'] as List?)?.map((e) => (e as num).toInt()) ?? _counts);
+          _total = (updatedPoll['totalVotes'] as num?)?.toInt() ?? _total + 1;
+          _votedIndex = (updatedPoll['userVotedOption'] as num?)?.toInt() ?? index;
+        });
+      } else {
+        // Fallback: optimistically update
+        setState(() {
+          _counts[index]++;
+          _total++;
+          _votedIndex = index;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Vote failed: $e')));
+    } finally {
+      if (mounted) setState(() => _voting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final total = poll.totalVotes == 0 ? 1 : poll.totalVotes;
+    final total = _total == 0 ? 1 : _total;
+    final hasVoted = _votedIndex != null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(poll.question, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
+        Text(widget.poll.question, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
         const SizedBox(height: 8),
-        ...List.generate(poll.options.length, (i) {
-          final count = (poll.optionCounts != null && i < poll.optionCounts!.length)
-              ? poll.optionCounts![i]
-              : 0;
+        ...List.generate(widget.poll.options.length, (i) {
+          final count = i < _counts.length ? _counts[i] : 0;
           final pct = ((count / total) * 100).round();
-          final selected = poll.userVotedOption == i;
+          final selected = _votedIndex == i;
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: selected ? const Color(0xFF8B7355).withValues(alpha: 0.45) : AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: selected ? AppColors.primary.withValues(alpha: 0.35) : AppColors.border,
+            child: GestureDetector(
+              onTap: hasVoted ? null : () => _vote(i),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: selected ? const Color(0xFF8B7355).withValues(alpha: 0.45) : AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: selected ? AppColors.primary.withValues(alpha: 0.35) : AppColors.border,
+                  ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(child: Text(poll.options[i], style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600))),
-                  Text('$pct%', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: selected ? AppColors.primary : AppColors.mutedForeground)),
-                ],
+                child: Row(
+                  children: [
+                    Expanded(child: Text(widget.poll.options[i], style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600))),
+                    if (hasVoted)
+                      Text('$pct%', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: selected ? AppColors.primary : AppColors.mutedForeground)),
+                  ],
+                ),
               ),
             ),
           );
         }),
+        if (!hasVoted)
+          Text('Tap to vote', style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedForeground)),
       ],
     );
   }

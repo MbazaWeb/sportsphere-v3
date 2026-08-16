@@ -9,6 +9,7 @@ import '../../features/messages/data/messages_api.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/data/roles_api.dart';
 import '../../features/profile/data/profile_data_api.dart';
+import '../../features/profile/data/favorites_api.dart';
 import '../../features/media/data/upload_api.dart';
 import '../../shared/models/user_profile.dart';
 import '../../shared/models/post.dart';
@@ -42,6 +43,7 @@ final messagesApiProvider = Provider((ref) => MessagesApi(ref.watch(apiClientPro
 final profileApiProvider = Provider((ref) => ProfileApi(ref.watch(apiClientProvider)));
 final rolesApiProvider = Provider((ref) => RolesApi(ref.watch(apiClientProvider)));
 final profileDataApiProvider = Provider((ref) => ProfileDataApi(ref.watch(apiClientProvider)));
+final favoritesApiProvider = Provider((ref) => FavoritesApi(ref.watch(apiClientProvider)));
 final uploadApiProvider = Provider((ref) {
   final storage = ref.watch(tokenStorageProvider);
   return UploadApi(tokenProvider: storage.readToken);

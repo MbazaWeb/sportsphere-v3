@@ -36,14 +36,14 @@ class FavoritesApi {
 
   Future<FavoriteItem> add({
     required String targetType,
-    required String targetName,
     required String targetId,
+    String? targetName,
     String? targetHandle,
   }) async {
     final data = await _client.postJson('/profile/favorites', body: {
       'targetType': targetType,
-      'targetName': targetName,
       'targetId': targetId,
+      if (targetName != null) 'targetName': targetName,
       if (targetHandle != null) 'targetHandle': targetHandle,
     });
     return FavoriteItem.fromJson(Map<String, dynamic>.from(data as Map));
@@ -51,5 +51,15 @@ class FavoritesApi {
 
   Future<void> remove(String id) async {
     await _client.deleteJson('/profile/favorites?id=${Uri.encodeComponent(id)}');
+  }
+
+  /// Convenience: remove by targetId (used when we don't have the favorite record id)
+  Future<void> removeByTarget(String targetType, String targetId) async {
+    // Fetch all favorites and find the one to remove
+    final items = await list();
+    final match = items.where((f) => f.targetType == targetType && f.targetId == targetId);
+    for (final f in match) {
+      await remove(f.id);
+    }
   }
 }

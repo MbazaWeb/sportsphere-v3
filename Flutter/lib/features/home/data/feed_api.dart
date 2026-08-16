@@ -77,6 +77,16 @@ class PollsApi {
     final list = data is List ? data : <dynamic>[];
     return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
+
+  /// POST /api/polls/vote — vote on a poll option.
+  /// Returns updated poll data with new totals.
+  Future<Map<String, dynamic>> vote({required String pollId, required int optionIndex}) async {
+    final data = await _client.postJson('/polls/vote', body: {
+      'pollId': pollId,
+      'optionIndex': optionIndex,
+    });
+    return data is Map<String, dynamic> ? data : Map<String, dynamic>.from(data as Map);
+  }
 }
 
 class PredictionsApi {

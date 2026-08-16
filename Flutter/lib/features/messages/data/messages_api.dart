@@ -11,6 +11,13 @@ class MessagesApi {
     return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
+  /// GET /api/messages?partnerId= — thread history with a specific user
+  Future<List<Map<String, dynamic>>> getThread(String partnerId) async {
+    final data = await _client.getJson('/messages?partnerId=${Uri.encodeComponent(partnerId)}');
+    final list = data is List ? data : [];
+    return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
   /// POST /api/messages — { recipientId, content }
   Future<Map<String, dynamic>> send({
     required String recipientId,

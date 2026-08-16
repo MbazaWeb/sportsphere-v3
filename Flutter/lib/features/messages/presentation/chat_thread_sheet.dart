@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../theme/app_colors.dart';
 
-/// 1:1 chat thread — POST /api/messages (API has no thread GET; local + send).
+/// 1:1 chat thread — loads history + sends via POST /api/messages.
 class ChatThreadSheet extends ConsumerStatefulWidget {
   const ChatThreadSheet({
     super.key,
@@ -35,16 +35,50 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
   final _scroll = ScrollController();
   final List<_ChatBubble> _bubbles = [];
   bool _sending = false;
+  bool _loadingHistory = true;
+  String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
-    if (widget.seedMessage != null && widget.seedMessage!.trim().isNotEmpty) {
-      _bubbles.add(_ChatBubble(
-        text: widget.seedMessage!,
-        mine: false,
-        at: DateTime.now(),
-      ));
+    // Get current user ID for bubble alignment
+    final auth = ref.read(authProvider);
+    _currentUserId = auth.user?.id;
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    try {
+      final messages = await ref.read(messagesApiProvider).getThread(widget.partnerId);
+      if (!mounted) return;
+      final auth = ref.read(authProvider);
+      _currentUserId = auth.user?.id;
+      setState(() {
+        _bubbles.clear();
+        for (final m in messages) {
+          final senderId = m['senderId']?.toString() ?? '';
+          final receiverId = m['receiverId']?.toString() ?? '';
+          final isMine = senderId == _currentUserId;
+          final text = m['content']?.toString() ?? '';
+          final createdAt = m['createdAt'];
+          DateTime at;
+          if (createdAt is DateTime) {
+            at = createdAt;
+          } else if (createdAt is String && createdAt.isNotEmpty) {
+            try { at = DateTime.parse(createdAt).toLocal(); } catch (_) { at = DateTime.now(); }
+          } else {
+            at = DateTime.now();
+          }
+          if (text.isNotEmpty) {
+            _bubbles.add(_ChatBubble(text: text, mine: isMine, at: at));
+          }
+        }
+        _loadingHistory = false;
+      });
+      _scrollToEnd();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingHistory = false);
     }
   }
 
@@ -140,7 +174,11 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
             ),
             const Divider(height: 1, color: AppColors.border),
             Expanded(
-              child: ListView.builder(
+              child: _loadingHistory
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2))
+                  : _bubbles.isEmpty
+                      ? Center(child: Text('No messages yet. Say hi!', style: GoogleFonts.inter(color: AppColors.mutedForeground)))
+                      : ListView.builder(
                 controller: _scroll,
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                 itemCount: _bubbles.length,
