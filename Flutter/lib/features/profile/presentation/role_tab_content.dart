@@ -104,11 +104,70 @@ class _RoleTabContentState extends ConsumerState<RoleTabContent> {
       case 'career':
         return _CareerView(payload);
       case 'statistics':
+      case 'stats':
         return _StatsView(payload);
       case 'achievements':
+      case 'honours':
+      case 'trophies':
         return _HonoursView(payload);
       case 'overview':
         return _OverviewExtra(payload);
+      case 'squad':
+      case 'lineups':
+        return _ListCardsView(
+          title: 'Squad',
+          items: _asList(payload['squad'] ?? payload['lineups'] ?? payload['players']),
+          titleKey: 'name',
+          subtitleKeys: const ['pos', 'number', 'nat', 'role'],
+        );
+      case 'fixtures':
+      case 'results':
+        return _ListCardsView(
+          title: widget.tabId == 'results' ? 'Results' : 'Fixtures',
+          items: _asList(payload['fixtures'] ?? payload['results'] ?? payload['matches']),
+          titleKey: 'home',
+          subtitleKeys: const ['away', 'date', 'score', 'competition'],
+        );
+      case 'standings':
+        return _ListCardsView(
+          title: 'Standings',
+          items: _asList(payload['standings'] ?? payload['table']),
+          titleKey: 'team',
+          subtitleKeys: const ['played', 'pts', 'gd', 'position'],
+        );
+      case 'shop':
+      case 'tickets':
+        return _ListCardsView(
+          title: widget.tabId == 'tickets' ? 'Tickets' : 'Shop',
+          items: _asList(payload['shop'] ?? payload['tickets'] ?? payload['products']),
+          titleKey: 'name',
+          subtitleKeys: const ['price', 'role', 'category'],
+        );
+      case 'sponsors':
+        return _ListCardsView(
+          title: 'Sponsors',
+          items: _asList(payload['sponsors']),
+          titleKey: 'name',
+          subtitleKeys: const ['role'],
+        );
+      case 'media':
+      case 'highlights':
+        return _ListCardsView(
+          title: 'Media',
+          items: _asList(payload['media'] ?? payload['highlights']),
+          titleKey: 'title',
+          subtitleKeys: const ['type', 'date'],
+        );
+      case 'feed':
+      case 'timeline':
+        return _ListCardsView(
+          title: 'Feed',
+          items: _asList(payload['feed'] ?? payload['posts'] ?? payload['timeline']),
+          titleKey: 'content',
+          subtitleKeys: const ['createdAt', 'type'],
+        );
+      case 'about':
+        return _AboutView(payload);
       default:
         return _KeyValueList(
           title: widget.tabId,
@@ -360,6 +419,143 @@ class _KeyValueList extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+      ],
+    );
+  }
+}
+
+
+List<Map<String, dynamic>> _asList(dynamic v) {
+  if (v is! List) return [];
+  return v.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+}
+
+class _ListCardsView extends StatelessWidget {
+  const _ListCardsView({
+    required this.title,
+    required this.items,
+    required this.titleKey,
+    this.subtitleKeys = const [],
+  });
+
+  final String title;
+  final List<Map<String, dynamic>> items;
+  final String titleKey;
+  final List<String> subtitleKeys;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      children: [
+        Text(title, style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 16)),
+        const SizedBox(height: 10),
+        if (items.isEmpty)
+          GlassCard(
+            borderRadius: 16,
+            padding: const EdgeInsets.all(20),
+            child: Text('No $title data yet', style: GoogleFonts.inter(color: AppColors.mutedForeground)),
+          )
+        else
+          ...items.map((item) {
+            final main = item[titleKey]?.toString() ??
+                item['name']?.toString() ??
+                item['title']?.toString() ??
+                item.values.map((e) => e.toString()).take(1).join();
+            final subs = subtitleKeys
+                .map((k) => item[k])
+                .where((v) => v != null && v.toString().isNotEmpty)
+                .map((v) => v.toString())
+                .toList();
+            // For fixtures without single titleKey, compose home vs away
+            final composed = (item['home'] != null && item['away'] != null)
+                ? '${item['home']} vs ${item['away']}'
+                : main;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: GlassCard(
+                borderRadius: 14,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                      child: Text(
+                        composed.isNotEmpty ? composed[0].toUpperCase() : '•',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w800, color: AppColors.primary),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(composed, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14)),
+                          if (subs.isNotEmpty)
+                            Text(subs.join(' · '), style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+      ],
+    );
+  }
+}
+
+class _AboutView extends StatelessWidget {
+  const _AboutView(this.data);
+  final Map<String, dynamic> data;
+
+  @override
+  Widget build(BuildContext context) {
+    final about = data['about']?.toString() ??
+        data['description']?.toString() ??
+        data['bio']?.toString() ??
+        '';
+    final facts = <MapEntry<String, String>>[];
+    for (final k in ['founded', 'stadium', 'manager', 'league', 'country', 'team', 'position', 'currentTeam', 'nationality']) {
+      if (data[k] != null && data[k].toString().isNotEmpty) {
+        facts.add(MapEntry(k, data[k].toString()));
+      }
+    }
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      children: [
+        if (about.isNotEmpty)
+          GlassCard(
+            borderRadius: 16,
+            padding: const EdgeInsets.all(16),
+            child: Text(about, style: GoogleFonts.inter(fontSize: 14, height: 1.45)),
+          ),
+        if (facts.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          ...facts.map((e) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: GlassCard(
+                  borderRadius: 12,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(e.key, style: GoogleFonts.inter(color: AppColors.mutedForeground, fontSize: 13)),
+                      ),
+                      Text(e.value, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13)),
+                    ],
+                  ),
+                ),
+              )),
+        ],
+        if (about.isEmpty && facts.isEmpty)
+          GlassCard(
+            borderRadius: 16,
+            padding: const EdgeInsets.all(20),
+            child: Text('No about data', style: GoogleFonts.inter(color: AppColors.mutedForeground)),
           ),
       ],
     );
