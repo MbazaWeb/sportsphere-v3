@@ -7,8 +7,10 @@ import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
 import '../../shared/widgets/ss_refresh.dart';
 import '../../core/realtime/scores_live.dart';
+import 'presentation/team_detail_sheet.dart';
 
 /// Scores tab — live matches + standings from API
+
 class ScoresTab extends ConsumerStatefulWidget {
   const ScoresTab({super.key});
 
@@ -20,6 +22,8 @@ class _ScoresTabState extends ConsumerState<ScoresTab> {
   String _sub = 'live'; // live | today | upcoming | results | standings
   final _live = ScoresLiveClient();
   String _liveStatus = 'idle';
+  String? _selectedLeague;
+  DateTime? _selectedDate;
 
   static const _subs = [
     ('live', 'Live'),
@@ -29,15 +33,25 @@ class _ScoresTabState extends ConsumerState<ScoresTab> {
     ('standings', 'Standings'),
   ];
 
+  MatchesKey get _currentKey {
+    final status = _mapStatus(_sub);
+    final dateStr = _selectedDate?.toIso8601String().split('T').first;
+    // Don't send date for 'live' — live matches are always now
+    return MatchesKey(
+      status: status,
+      date: (status == 'live') ? null : dateStr,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     _live.connect(onUpdate: (payload) {
       // Soft refresh match lists on any live event
-      ref.invalidate(matchesProvider('live'));
-      ref.invalidate(matchesProvider('today'));
+      ref.invalidate(matchesProvider(const MatchesKey(status: 'live')));
+      ref.invalidate(matchesProvider(const MatchesKey(status: 'today')));
       if (payload['type'] == 'match_update') {
-        ref.invalidate(matchesProvider(null));
+        ref.invalidate(matchesProvider(const MatchesKey()));
       }
     });
     _live.status$.listen((s) {
@@ -55,11 +69,23 @@ class _ScoresTabState extends ConsumerState<ScoresTab> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _Header(sub: _sub, liveStatus: _liveStatus, onChanged: (s) => setState(() => _sub = s)),
+        _Header(
+          sub: _sub,
+          liveStatus: _liveStatus,
+          selectedDate: _selectedDate,
+          onChanged: (s) {
+            setState(() {
+              _sub = s;
+              _selectedDate = null; // reset date filter on tab change
+            });
+          },
+          onFilterTap: _showLeagueFilter,
+          onDateSelected: (d) => setState(() => _selectedDate = d),
+        ),
         Expanded(
           child: _sub == 'standings'
               ? const _StandingsView()
-              : _MatchesView(status: _mapStatus(_sub)),
+              : _MatchesView(key: ValueKey(_currentKey), matchesKey: _currentKey, selectedLeague: _selectedLeague),
         ),
       ],
     );
@@ -79,13 +105,66 @@ class _ScoresTabState extends ConsumerState<ScoresTab> {
         return null;
     }
   }
+
+  void _showLeagueFilter() {
+    // Extract unique leagues from currently loaded matches
+    final matchesAsync = ref.read(matchesProvider(_currentKey));
+    final leagues = <String>{};
+    matchesAsync.whenData((matches) {
+      for (final m in matches) {
+        if (m.league != null && m.league!.isNotEmpty) leagues.add(m.league!);
+      }
+    });
+    if (leagues.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No leagues available to filter')),
+      );
+      return;
+    }
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.backgroundSecondary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(4))),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Text('Filter by league', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.clear_all_rounded, size: 20),
+              title: Text('All leagues', style: GoogleFonts.inter(fontWeight: _selectedLeague == null ? FontWeight.w700 : FontWeight.w500)),
+              trailing: _selectedLeague == null ? const Icon(Icons.check_rounded, color: AppColors.primary) : null,
+              onTap: () { Navigator.pop(ctx); setState(() => _selectedLeague = null); },
+            ),
+            ...leagues.map((league) => ListTile(
+              leading: const Icon(Icons.sports_rounded, size: 20),
+              title: Text(league, style: GoogleFonts.inter(fontWeight: _selectedLeague == league ? FontWeight.w700 : FontWeight.w500)),
+              trailing: _selectedLeague == league ? const Icon(Icons.check_rounded, color: AppColors.primary) : null,
+              onTap: () { Navigator.pop(ctx); setState(() => _selectedLeague = league); },
+            )),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.sub, required this.onChanged, this.liveStatus = 'idle'});
+  const _Header({required this.sub, required this.onChanged, this.liveStatus = 'idle', this.onFilterTap, this.selectedDate, this.onDateSelected});
   final String sub;
   final String liveStatus;
   final ValueChanged<String> onChanged;
+  final VoidCallback? onFilterTap;
+  final DateTime? selectedDate;
+  final ValueChanged<DateTime?>? onDateSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +210,33 @@ class _Header extends StatelessWidget {
                       ],
                     ),
                     const Spacer(),
-                    Icon(Icons.tune_rounded, color: AppColors.mutedForeground, size: 22),
+                    if (selectedDate != null)
+                      GestureDetector(
+                        onTap: () => onDateSelected?.call(null),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.close_rounded, size: 12, color: AppColors.primary),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${selectedDate!.day}/${selectedDate!.month}',
+                                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: onFilterTap,
+                      child: Icon(Icons.tune_rounded, color: AppColors.mutedForeground, size: 22),
+                    ),
                   ],
                 ),
               ),
@@ -184,23 +289,42 @@ class _Header extends StatelessWidget {
                   itemBuilder: (context, i) {
                     final d = dates[i];
                     final isToday = d.year == now.year && d.month == now.month && d.day == now.day;
+                    final isSelected = selectedDate != null &&
+                        d.year == selectedDate!.year &&
+                        d.month == selectedDate!.month &&
+                        d.day == selectedDate!.day;
                     final wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d.weekday - 1];
-                    return Container(
-                      width: 52,
-                      decoration: BoxDecoration(
-                        color: isToday ? AppColors.primary.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.03),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: isToday ? AppColors.primary.withValues(alpha: 0.45) : Colors.white.withValues(alpha: 0.06),
+                    final isTapped = isSelected || (selectedDate == null && isToday);
+                    return GestureDetector(
+                      onTap: () => onDateSelected?.call(isToday ? null : d),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        width: 52,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.primary.withValues(alpha: 0.25)
+                              : isTapped
+                                  ? AppColors.primary.withValues(alpha: 0.15)
+                                  : Colors.white.withValues(alpha: 0.03),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.primary
+                                : isTapped
+                                    ? AppColors.primary.withValues(alpha: 0.45)
+                                    : Colors.white.withValues(alpha: 0.06),
+                            width: isSelected ? 1.5 : 1,
+                          ),
                         ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(wd, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: isToday ? AppColors.primary : AppColors.mutedForeground)),
-                          const SizedBox(height: 2),
-                          Text('${d.day}', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: isToday ? AppColors.primary : AppColors.foreground)),
-                        ],
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(wd, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: isSelected || isTapped ? AppColors.primary : AppColors.mutedForeground)),
+                            const SizedBox(height: 2),
+                            Text('${d.day}', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: isSelected || isTapped ? AppColors.primary : AppColors.foreground)),
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -214,12 +338,13 @@ class _Header extends StatelessWidget {
 }
 
 class _MatchesView extends ConsumerWidget {
-  const _MatchesView({this.status});
-  final String? status;
+  const _MatchesView({required this.matchesKey, this.selectedLeague, super.key});
+  final MatchesKey matchesKey;
+  final String? selectedLeague;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(matchesProvider(status));
+    final async = ref.watch(matchesProvider(matchesKey));
 
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
@@ -228,16 +353,19 @@ class _MatchesView extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text('Could not load matches', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-            TextButton(onPressed: () => ref.invalidate(matchesProvider(status)), child: const Text('Retry')),
+            TextButton(onPressed: () => ref.invalidate(matchesProvider(matchesKey)), child: const Text('Retry')),
           ],
         ),
       ),
       data: (matches) {
-        if (matches.isEmpty) {
+        final filtered = selectedLeague != null
+            ? matches.where((m) => m.league == selectedLeague).toList()
+            : matches;
+        if (filtered.isEmpty) {
           return SsRefreshScroll(
             onRefresh: () async {
-              ref.invalidate(matchesProvider(status));
-              await ref.read(matchesProvider(status).future);
+              ref.invalidate(matchesProvider(matchesKey));
+              await ref.read(matchesProvider(matchesKey).future);
             },
             child: Center(
               child: Padding(
@@ -248,7 +376,9 @@ class _MatchesView extends ConsumerWidget {
                     Icon(Icons.sports_soccer, size: 48, color: AppColors.mutedForeground.withValues(alpha: 0.5)),
                     const SizedBox(height: 12),
                     Text(
-                      status == 'live' ? 'No live matches right now' : 'No matches found',
+                      selectedLeague != null
+                          ? 'No $selectedLeague matches right now'
+                          : (matchesKey.status == 'live' ? 'No live matches right now' : 'No matches found'),
                       style: GoogleFonts.inter(color: AppColors.mutedForeground),
                     ),
                     const SizedBox(height: 8),
@@ -261,17 +391,17 @@ class _MatchesView extends ConsumerWidget {
         }
         return SsRefresh(
           onRefresh: () async {
-            ref.invalidate(matchesProvider(status));
-            await ref.read(matchesProvider(status).future);
+            ref.invalidate(matchesProvider(matchesKey));
+            await ref.read(matchesProvider(matchesKey).future);
           },
           child: ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
             ),
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-            itemCount: matches.length,
+            itemCount: filtered.length,
             separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, i) => _MatchCard(m: matches[i]),
+            itemBuilder: (context, i) => _MatchCard(m: filtered[i]),
           ),
         );
       },
@@ -292,6 +422,19 @@ class _MatchCard extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
       builder: (ctx) => _MatchDetailSheet(m: m),
+    );
+  }
+
+  void _openTeamDetail(BuildContext context, String teamName, String? badge, String? league) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => TeamDetailSheet(
+        teamName: teamName,
+        teamBadge: badge,
+        league: league,
+      ),
     );
   }
 
@@ -340,7 +483,10 @@ class _MatchCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(m.homeTeam, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
+                child: GestureDetector(
+                  onTap: () => _openTeamDetail(context, m.homeTeam, m.homeBadge, m.league),
+                  child: Text(m.homeTeam, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
+                ),
               ),
               Text(
                 score,
@@ -351,7 +497,10 @@ class _MatchCard extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: Text(m.awayTeam, textAlign: TextAlign.right, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
+                child: GestureDetector(
+                  onTap: () => _openTeamDetail(context, m.awayTeam, m.awayBadge, m.league),
+                  child: Text(m.awayTeam, textAlign: TextAlign.right, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
+                ),
               ),
             ],
           ),
@@ -393,7 +542,7 @@ class _StandingsView extends ConsumerWidget {
                   children: [
                     _StandingsHeader(),
                     const Divider(height: 16, color: AppColors.border),
-                    ...rows.map((r) => _StandingRowWidget(r: r)),
+                    ...rows.map((r) => _StandingRowWidget(r: r, context: context)),
                   ],
                 ),
               ),
@@ -424,8 +573,9 @@ class _StandingsHeader extends StatelessWidget {
 }
 
 class _StandingRowWidget extends StatelessWidget {
-  const _StandingRowWidget({required this.r});
+  const _StandingRowWidget({required this.r, required this.context});
   final StandingRow r;
+  final BuildContext context;
 
   @override
   Widget build(BuildContext context) {
@@ -452,7 +602,19 @@ class _StandingRowWidget extends StatelessWidget {
                     padding: const EdgeInsets.only(right: 8),
                     child: Image.network(r.badge!, width: 20, height: 20, errorBuilder: (_, __, ___) => const SizedBox(width: 20)),
                   ),
-                Flexible(child: Text(r.team, overflow: TextOverflow.ellipsis, style: style)),
+                Flexible(
+                  child: GestureDetector(
+                    onTap: () {
+                      showModalBottomSheet<void>(
+                        context: this.context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => TeamDetailSheet(teamName: r.team, teamBadge: r.badge),
+                      );
+                    },
+                    child: Text(r.team, overflow: TextOverflow.ellipsis, style: style),
+                  ),
+                ),
               ],
             ),
           ),
@@ -540,7 +702,7 @@ class _MatchDetailSheet extends StatelessWidget {
             ),
             child: Text(
               m.isLive
-                  ? (m.minute != null ? "LIVE · ${m.minute}'" : 'LIVE')
+                  ? (m.minute != null ? "LIVE \u00b7 ${m.minute}'" : 'LIVE')
                   : m.isFinished
                       ? 'Full time'
                       : (m.kickoff ?? m.status),
@@ -586,7 +748,7 @@ class _MatchDetailSheet extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        [e.player, e.type, e.team, e.detail].where((x) => x != null && x.toString().isNotEmpty).join(' · '),
+                        [e.player, e.type, e.team, e.detail].where((x) => x != null && x.toString().isNotEmpty).join(' \u00b7 '),
                         style: GoogleFonts.inter(fontSize: 13),
                       ),
                     ),

@@ -2,19 +2,32 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'core/security/biometric_lock.dart';
 import 'core/security/http_overrides_stub.dart'
     if (dart.library.io) 'core/security/http_overrides_io.dart' as pinning;
 import 'core/storage/token_storage.dart';
+import 'core/push/push_service.dart';
+import 'core/deep_links/deep_link_service.dart';
+import 'core/deep_links/deep_link_navigator.dart';
 import 'theme/app_theme.dart';
 import 'core/providers/appearance_prefs.dart';
 import 'theme/app_colors.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/shell/app_shell.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase (required for push notifications)
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('Firebase init skipped: $e');
+  }
+
   pinning.installCertPinning();
+  PushService().init();
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -140,6 +153,6 @@ class _RootState extends State<_Root> {
         ),
       );
     }
-    return const AppShell();
+    return DeepLinkNavigator(child: const AppShell());
   }
 }

@@ -12,6 +12,7 @@ import '../../features/profile/data/profile_data_api.dart';
 import '../../features/profile/data/favorites_api.dart';
 import '../../features/media/data/upload_api.dart';
 import '../../features/social/data/follows_api.dart';
+import '../../core/push/push_api.dart';
 import '../../shared/models/user_profile.dart';
 import '../../shared/models/post.dart';
 import '../../shared/models/match.dart';
@@ -51,6 +52,7 @@ final uploadApiProvider = Provider((ref) {
 });
 
 final followsApiProvider = Provider((ref) => FollowsApi(ref.watch(apiClientProvider)));
+final pushApiProvider = Provider((ref) => PushApi(ref.watch(apiClientProvider)));
 
 class AuthState {
   const AuthState({
@@ -213,8 +215,17 @@ List<Post> sampleFeedPosts() {
   ];
 }
 
-final matchesProvider = FutureProvider.family<List<MatchItem>, String?>((ref, status) async {
-  return ref.watch(matchesApiProvider).getMatches(status: status);
+/// Key for matchesProvider — supports optional status and date filtering.
+class MatchesKey {
+  const MatchesKey({this.status, this.date});
+  final String? status;
+  final String? date;
+  @override bool operator ==(Object o) => o is MatchesKey && o.status == status && o.date == date;
+  @override int get hashCode => Object.hash(status, date);
+}
+
+final matchesProvider = FutureProvider.family<List<MatchItem>, MatchesKey>((ref, key) async {
+  return ref.watch(matchesApiProvider).getMatches(status: key.status, date: key.date);
 });
 
 final standingsProvider = FutureProvider((ref) async {

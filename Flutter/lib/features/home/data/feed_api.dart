@@ -32,8 +32,12 @@ class MatchesApi {
   MatchesApi(this._client);
   final ApiClient _client;
 
-  Future<List<MatchItem>> getMatches({String? status}) async {
-    final qs = status != null ? '?status=${Uri.encodeComponent(status)}' : '';
+  Future<List<MatchItem>> getMatches({String? status, String? date}) async {
+    final params = <String, String>{
+      if (status != null) 'status': status,
+      if (date != null) 'date': date,
+    };
+    final qs = params.isEmpty ? '' : '?${params.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&')}';
     final data = await _client.getJson('/matches$qs');
     final list = data is List
         ? data

@@ -8,6 +8,7 @@ import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
 import '../../profile/presentation/user_profile_sheet.dart';
 import '../../../shared/widgets/ss_refresh.dart';
+import '../../../shared/widgets/media_gallery.dart';
 
 /// Live Sportlights feed from GET /api/feed with infinite scroll
 class SportlightsTab extends ConsumerStatefulWidget {
@@ -306,20 +307,9 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
           ],
           if (post.mediaUrls.isNotEmpty) ...[
             const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: AspectRatio(
-                aspectRatio: 16 / 10,
-                child: Image.network(
-                  post.mediaUrls.first,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: AppColors.surface,
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.image_not_supported, color: AppColors.mutedForeground),
-                  ),
-                ),
-              ),
+            MediaGallery(
+              imageUrls: post.mediaUrls,
+              onTapImage: (i, url) => MediaGallery.showViewer(context, post.mediaUrls, initialIndex: i),
             ),
           ],
           if (post.poll != null) ...[

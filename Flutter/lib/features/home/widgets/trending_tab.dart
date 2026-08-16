@@ -14,17 +14,17 @@ class TrendingTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final feedAsync = ref.watch(feedProvider('trending'));
-    final liveAsync = ref.watch(matchesProvider('live'));
+    final liveAsync = ref.watch(matchesProvider(const MatchesKey(status: 'live')));
     final commAsync = ref.watch(communitiesProvider);
 
     return SsRefresh(
       onRefresh: () async {
         ref.invalidate(feedProvider('trending'));
-        ref.invalidate(matchesProvider('live'));
+        ref.invalidate(matchesProvider(const MatchesKey(status: 'live')));
         ref.invalidate(communitiesProvider);
         await Future.wait([
           ref.read(feedProvider('trending').future).catchError((_) => []),
-          ref.read(matchesProvider('live').future).catchError((_) => []),
+          ref.read(matchesProvider(const MatchesKey(status: 'live')).future).catchError((_) => []),
           ref.read(communitiesProvider.future).catchError((_) => []),
         ]);
       },
@@ -160,13 +160,27 @@ class TrendingTab extends ConsumerWidget {
                             ),
                           ),
                           TextButton(
-                            onPressed: () {
+                            onPressed: () async {
                               final authed = ref.read(authProvider).isAuthenticated;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(authed ? 'Join community — coming next' : 'Sign in to join communities'),
-                                ),
-                              );
+                              if (!authed) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Sign in to join communities')),
+                                );
+                                return;
+                              }
+                              try {
+                                await ref.read(communitiesApiProvider).join(c.id);
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Joined ${c.name}!')),
+                                );
+                                ref.invalidate(communitiesProvider);
+                              } catch (e) {
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(e.toString().replaceFirst(RegExp(r'^ApiException\(\d+\):\s*'), ''))),
+                                );
+                              }
                             },
                             child: Text('Join', style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppColors.primary)),
                           ),

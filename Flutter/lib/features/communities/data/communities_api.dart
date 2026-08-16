@@ -33,4 +33,14 @@ class CommunitiesApi {
     final list = data is List ? data : [];
     return list.map((e) => CommunityItem.fromJson(Map<String, dynamic>.from(e as Map))).toList();
   }
+
+  /// POST /api/communities/:id/join — join a community
+  Future<void> join(String communityId) async {
+    await _client.postJson('/communities/$communityId/join', body: {});
+  }
+
+  /// POST /api/communities/:id/leave — leave a community
+  Future<void> leave(String communityId) async {
+    await _client.postJson('/communities/$communityId/leave', body: {});
+  }
 }
