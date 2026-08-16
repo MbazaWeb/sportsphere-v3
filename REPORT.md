@@ -3,29 +3,31 @@
 **Date**: 2026-08-09
 **Repo**: `MbazaWeb/sportsphere-v3`
 **VPS**: `104.152.50.173:3002` (live)
-**Status**: Backend deployed · Mobile app live-wired to VPS (Phase C complete) · Store submission assets ready (Phase F complete) · Push notifications in progress (Phase D) · Phase F follow-up complete: credentials populated + Privacy/ToS hosted + screenshots generated + HTTPS config + scripts staged (run on VPS to activate) · Post-HTTPS app.json cleanup complete (ATS exception + cleartext traffic removed — app is now HTTPS-only and App Store review-ready) · HTTPS setup script hardened after first + second VPS run (F.6 — removed `--stapling-ocsp` for certbot 1.21 compat + added DNS-vs-VPS-IP preflight sanity check + IPv4/IPv6 split detection so A records aren't compared against the VPS's IPv6) · **DNS ISSUE FOUND on VPS run**: `sportssphere.fun` and `www.sportssphere.fun` currently resolve to AWS Global Accelerator IPs (`13.248.243.5` + `76.223.105.230`), NOT the VPS (`104.152.50.173` IPv4 / `2602:fc16:6:4::bd8c` IPv6) — Let's Encrypt verification cannot proceed until the user repoints DNS at the VPS
+**Status**: Backend deployed · Flutter mobile is the sole native client (Expo path removed 2026-08-16) · Store submission assets ready (Phase F complete) · Push notifications in progress (Phase D) · Phase F follow-up complete: credentials populated + Privacy/ToS hosted + screenshots generated + HTTPS config + scripts staged (run on VPS to activate) · Post-HTTPS app.json cleanup complete (ATS exception + cleartext traffic removed — app is now HTTPS-only and App Store review-ready) · HTTPS setup script hardened after first + second VPS run (F.6 — removed `--stapling-ocsp` for certbot 1.21 compat + added DNS-vs-VPS-IP preflight sanity check + IPv4/IPv6 split detection so A records aren't compared against the VPS's IPv6) · **DNS ISSUE FOUND on VPS run**: `sportssphere.fun` and `www.sportssphere.fun` currently resolve to AWS Global Accelerator IPs (`13.248.243.5` + `76.223.105.230`), NOT the VPS (`104.152.50.173` IPv4 / `2602:fc16:6:4::bd8c` IPv6) — Let's Encrypt verification cannot proceed until the user repoints DNS at the VPS
 
 ---
 
 ## 1. Architecture (Locked)
 
-**4-client platform** sharing one backend, one identity, one design language:
+**Platform** sharing one backend, one identity, one design language:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    SHARED BACKEND                            │
 │   Next.js 16 · PostgreSQL · Prisma · PM2 (port 3002)        │
-│   basePath: /sportsphere · 70+ routes · 50 DB tables        │
+│   basePath: /sportsphere · 70+ routes · 50+ DB tables       │
 └─────────────────────────────────────────────────────────────┘
-       ▲              ▲                ▲                ▲
-       │              │                │                │
-┌──────┴──────┐ ┌─────┴─────┐ ┌────────┴────────┐ ┌─────┴─────┐
-│ Android     │ │ iOS       │ │ Web (user)      │ │ Admin Web │
-│ Expo RN     │ │ Expo RN   │ │ Next.js         │ │ Next.js   │
-│ SDK 52      │ │ SDK 52    │ │ /sportsphere/*  │ │ /admin/*  │
-│ NativeWind  │ │ NativeWind│ │ Tailwind v4     │ │ RBAC      │
-└─────────────┘ └───────────┘ └─────────────────┘ └───────────┘
+       ▲                              ▲                ▲
+       │                              │                │
+┌──────┴──────────────┐      ┌────────┴────────┐ ┌─────┴─────┐
+│ Flutter (Android+iOS)│      │ Web (user)      │ │ Admin Web │
+│ Riverpod + custom UI │      │ Next.js         │ │ Next.js   │
+│ Sole native client   │      │ /sportsphere/*  │ │ /admin/*  │
+└─────────────────────┘      │ Tailwind v4     │ │ RBAC      │
+                             └─────────────────┘ └───────────┘
 ```
+
+> Note (2026-08-16): Expo / React Native and Capacitor mobile paths have been removed. Flutter is the sole native mobile client.
 
 **Shared monorepo packages**:
 - `@sportsphere/design-system` — platform-agnostic brand tokens (colors, gradients, radii, typography, shadows) + Tailwind preset
