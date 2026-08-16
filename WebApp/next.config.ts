@@ -34,6 +34,19 @@ const nextConfig: NextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
         ],
       },
+      // CORS for Flutter Web / cross-origin clients (feed, profile-data, etc.)
+      // Prefer setting CORS_ORIGIN env to a specific origin (e.g. https://sportsphere.app)
+      // when credentials are required. Wildcard is used only as a development fallback.
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: process.env.CORS_ORIGIN || 'https://sportsphere.app' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, PATCH, DELETE, OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization, X-Requested-With, Cookie' },
+          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+          { key: 'Access-Control-Max-Age', value: '86400' },
+        ],
+      },
     ];
   },
 };

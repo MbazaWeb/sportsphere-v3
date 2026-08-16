@@ -1,6 +1,91 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+
+/** Live feed posts for a given author handle or userId (falls back to seed). */
+async function fetchLiveFeed(authorKey: string, limit = 10) {
+  try {
+    // Resolve handle → userId if needed
+    let userId = authorKey;
+    if (authorKey && !authorKey.includes('-')) {
+      const user = await db.user.findFirst({
+        where: {
+          OR: [
+            { handle: authorKey },
+            { handle: `@${authorKey}` },
+            { name: { contains: authorKey, mode: 'insensitive' } },
+          ],
+        },
+        select: { id: true },
+      });
+      if (user) userId = user.id;
+    }
+    const posts = await db.post.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        content: true,
+        postType: true,
+        createdAt: true,
+        likeCount: true,
+        commentCount: true,
+        mediaUrls: true,
+      },
+    });
+    if (posts.length === 0) return null;
+    return posts.map((p) => ({
+      id: p.id,
+      content: p.content,
+      type: p.postType || 'post',
+      createdAt: p.createdAt.toISOString(),
+      likeCount: p.likeCount,
+      commentCount: p.commentCount,
+      mediaUrls: p.mediaUrls,
+    }));
+  } catch (e) {
+    console.warn('[profile-data] live feed query failed, using seed', e);
+    return null;
+  }
+}
+
+/** Live fixtures from Match table (upcoming + recent). */
+async function fetchLiveFixtures(limit = 8) {
+  try {
+    const now = new Date();
+    const matches = await db.match.findMany({
+      orderBy: { kickoffAt: 'asc' },
+      take: limit * 2,
+      select: {
+        id: true,
+        homeTeam: true,
+        awayTeam: true,
+        homeScore: true,
+        awayScore: true,
+        status: true,
+        kickoffAt: true,
+        league: true,
+        venue: true,
+      },
+    });
+    if (matches.length === 0) return null;
+    return matches.slice(0, limit).map((m) => ({
+      id: m.id,
+      home: m.homeTeam,
+      away: m.awayTeam,
+      date: m.kickoffAt.toISOString(),
+      competition: m.league,
+      score: m.homeScore != null && m.awayScore != null ? `${m.homeScore}-${m.awayScore}` : null,
+      status: m.status,
+      venue: m.venue,
+    }));
+  } catch (e) {
+    console.warn('[profile-data] live fixtures query failed, using seed', e);
+    return null;
+  }
+}
 
 const SHOP_SEED = [
   { name: 'Home Kit 24/25', price: '$89.99', category: 'Kit', role: 'Official' },
@@ -178,13 +263,28 @@ const COMPETITION_DATA: Record<string, Record<string, unknown>> = {
   },
 };
 
-function withDefaults(base: Record<string, unknown> | null, label: string): Record<string, unknown> {
+async function withDefaults(
+  base: Record<string, unknown> | null,
+  label: string,
+  opts?: { authorKey?: string },
+): Promise<Record<string, unknown>> {
   const data = { ...(base || {}) };
   if (!Array.isArray(data.shop) || (data.shop as unknown[]).length === 0) data.shop = SHOP_SEED;
   if (!Array.isArray(data.tickets) || (data.tickets as unknown[]).length === 0) data.tickets = TICKETS_SEED;
   if (!Array.isArray(data.media) || (data.media as unknown[]).length === 0) data.media = MEDIA_SEED;
-  if (!Array.isArray(data.feed) || (data.feed as unknown[]).length === 0) data.feed = FEED_SEED;
-  if (!Array.isArray(data.fixtures) || (data.fixtures as unknown[]).length === 0) data.fixtures = FIXTURES_SEED;
+
+  // Prefer live feed from Post table when available
+  if (!Array.isArray(data.feed) || (data.feed as unknown[]).length === 0) {
+    const live = opts?.authorKey ? await fetchLiveFeed(opts.authorKey) : null;
+    data.feed = live || FEED_SEED;
+  }
+
+  // Prefer live fixtures from Match table
+  if (!Array.isArray(data.fixtures) || (data.fixtures as unknown[]).length === 0) {
+    const liveFx = await fetchLiveFixtures();
+    data.fixtures = liveFx || FIXTURES_SEED;
+  }
+
   if (!data.about) data.about = `${label} profile on SportSphere — stats, media, shop and tickets.`;
   if (!data.name) data.name = label;
   return data;
@@ -201,24 +301,24 @@ export async function GET(request: NextRequest) {
     switch (type) {
       case 'player':
         data = (key && PLAYER_DATA[key]) || PLAYER_DATA.rashford;
-        data = withDefaults(data, key || 'Player');
+        data = await withDefaults(data, key || 'Player', { authorKey: key });
         break;
       case 'team':
         data = (key && TEAM_DATA[key]) || TEAM_DATA.manchesterunited;
-        data = withDefaults(data, key || 'Team');
+        data = await withDefaults(data, key || 'Team', { authorKey: key });
         break;
       case 'coach':
         data = (key && COACH_DATA[key]) || COACH_DATA.default;
-        data = withDefaults(data, key || 'Coach');
+        data = await withDefaults(data, key || 'Coach', { authorKey: key });
         break;
       case 'competition':
       case 'league':
         data = (key && COMPETITION_DATA[key]) || COMPETITION_DATA.premierLeague;
-        data = withDefaults(data, key || 'Competition');
+        data = await withDefaults(data, key || 'Competition');
         break;
       default:
         // Fan / generic roles still get interactive sections
-        data = withDefaults(
+        data = await withDefaults(
           {
             name: key || 'Profile',
             feed: FEED_SEED,
@@ -227,6 +327,7 @@ export async function GET(request: NextRequest) {
             tickets: TICKETS_SEED,
           },
           key || 'Profile',
+          { authorKey: key },
         );
         break;
     }

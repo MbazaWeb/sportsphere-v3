@@ -33,12 +33,17 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Fast pre-check: reject non-admins at the edge
+  // Fast pre-check: reject non-admins at the edge.
+  // CRITICAL: use exact string matching only. The previous role.includes('ADMIN')
+  // allowed any role containing the substring "ADMIN" (auth bypass).
   const role = (payload.role || '').toUpperCase();
-  const isAdmin =
-    role === 'ADMINISTRATOR' ||
-    role === 'ADMIN' ||
-    role.includes('ADMIN');
+  const ALLOWED_ADMIN_ROLES = new Set([
+    'ADMINISTRATOR',
+    'ADMIN',
+    'SUPER_ADMIN',
+    'PLATFORM_ADMIN',
+  ]);
+  const isAdmin = ALLOWED_ADMIN_ROLES.has(role);
 
   if (!isAdmin) {
     const loginUrl = new URL('/sportsphere-admin/login', request.url);
