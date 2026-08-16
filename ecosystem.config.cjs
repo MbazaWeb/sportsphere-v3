@@ -4,7 +4,7 @@ module.exports = {
       name: 'sportsphere',
       script: '.next/standalone/server.js',
       interpreter: 'node',
-      cwd: '/var/www/sportsphere-nextjs',
+      cwd: '/var/www/sportsphere-nextjs/WebApp',
       instances: 1,
       exec_mode: 'fork',
       env: {

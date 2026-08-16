@@ -1,6 +1,6 @@
 # Sportsphere Platform Architecture
 
-> Locked architecture: **three user clients + one separate admin client**, sharing one backend and one source of truth.
+> Locked architecture: **Flutter (Android + iOS) + Web + Admin**, sharing one backend and one source of truth.
 
 ```
                               SPORTSPHERE
@@ -30,13 +30,18 @@
 
 ## 1. Current Repo Mapping
 
-The existing `sportsphere-v3` repository is currently a single Next.js 16 application that contains **both** the user web client and the admin portal. The mobile story is currently a Capacitor web-wrapper (`capacitor.config.ts`), which we are deprecating in favour of a true native Expo React Native app.
+The repository is organized as three main clients sharing one backend and database:
+- **WebApp/** — Fan-facing Next.js web application
+- **Admin/** — Standalone admin console
+- **Flutter/** — Sole native mobile client (Android + iOS)
+
+The previous Expo/React Native and Capacitor approaches have been removed.
 
 | Target                                  | Current Location                                          | Status                                  |
 | --------------------------------------- | --------------------------------------------------------- | --------------------------------------- |
-| User Web App                            | `/` (Next.js app at repo root)                            | **Production-ready** — keep as-is       |
+| User Web App                            | `WebApp/` (Next.js)                                       | **Production-ready**                   |
 | Admin Web Portal                        | `/src/app/admin/*` (co-deployed in same Next.js app)      | **Functional** — RBAC-isolated          |
-| Android / iOS Native App                | Capacitor config only — no real native code               | **Bootstrap in progress** (`/mobile/`)  |
+| Android / iOS Native App                | `/Flutter/` (Flutter + Riverpod)                          | **Active development** — primary mobile client |
 | Shared Design System                    | Hardcoded in `/src/app/globals.css`                       | **Extracting** to `/packages/design-system/` |
 | Shared TypeScript Types                 | Inline in `/src/types/`, `/src/lib/performance-engine/types.ts` | **Extracting** to `/packages/types/`    |
 | Shared API Client                       | Inline fetch calls scattered across components            | **Extracting** to `/packages/api-client/` |
@@ -45,60 +50,55 @@ The existing `sportsphere-v3` repository is currently a single Next.js 16 applic
 
 ## 2. Target Repository Structure
 
-We are moving toward this layout **incrementally** — the existing Next.js app is NOT being moved or restructured. New top-level directories are being added alongside the existing app:
+Current top-level layout:
 
 ```
 sportsphere-v3/
 │
-├── src/                          # ← EXISTING Next.js app (User Web + Admin Web, co-deployed)
-│   ├── app/
-│   │   ├── (user)/               #     User-facing routes (future split marker)
-│   │   ├── admin/                #     Admin portal routes (already RBAC-isolated)
-│   │   └── api/                  #     Shared backend API
-│   ├── components/
-│   └── lib/
+├── WebApp/                       # Fan-facing Web App (Next.js 16)
+│   ├── src/
+│   │   ├── app/                  #     User routes + shared API
+│   │   ├── components/
+│   │   └── lib/
+│   ├── public/
+│   └── package.json
 │
-├── mobile/                       # ← NEW: Expo React Native app (Android + iOS)
-│   ├── app/                      #     Expo Router (file-based, like Next.js)
-│   ├── components/               #     Native UI components (glass cards, gold buttons, etc.)
-│   ├── assets/                   #     Logo, fonts, splash
-│   ├── app.config.ts             #     Expo config (appId, splash, etc.)
-│   ├── package.json              #     Self-contained — own deps
-│   ├── tsconfig.json
-│   └── tailwind.config.ts        #     NativeWind v4 (Tailwind for RN)
+├── Admin/                        # Admin Console (separate Next.js process, port 3003)
+│   ├── src/app/admin/
+│   └── package.json
 │
-├── packages/                     # ← NEW: Shared code consumed by both web and mobile
-│   ├── design-system/            #     Brand tokens (colors, type, spacing) as platform-agnostic JS
-│   ├── types/                    #     Shared TS types (User, Player, Match, PerformanceProfile, ...)
-│   ├── api-client/               #     Typed fetch wrapper targeting the Next.js API
-│   ├── validation/               #     Zod schemas (planned)
-│   └── config/                   #     Shared env/runtime config (planned)
+├── Flutter/                      # Sole native mobile client (Android + iOS)
+│   ├── lib/
+│   ├── android/ / ios/
+│   └── pubspec.yaml
 │
-├── prisma/                       # ← EXISTING: shared database schema + migrations
-├── public/                       # ← EXISTING: web static assets
-├── scripts/                      # ← EXISTING: deployment + ops scripts
+├── packages/                     # Shared TypeScript packages
+│   ├── design-system/
+│   ├── types/
+│   └── api-client/
 │
-├── capacitor.config.ts           # ← DEPRECATED — kept for backward compat, will be removed
-├── ARCHITECTURE.md               # ← This document
-└── package.json                  # ← EXISTING: web app deps
+├── prisma/                       # Shared database schema + migrations
+├── scripts/                      # Deployment & ops
+├── nginx/
+└── ARCHITECTURE.md
 ```
 
 ## 3. Client Responsibilities
 
 | Platform      | Purpose                            | Tech                                             | Status            |
 | ------------- | ---------------------------------- | ------------------------------------------------ | ----------------- |
-| **Android**   | Primary mobile user experience     | Expo + React Native + NativeWind v4 + Expo Router | Bootstrap in progress |
-| **iOS**       | Apple mobile user experience       | Same Expo codebase (single source)               | Bootstrap in progress |
+| **Android**   | Primary mobile user experience     | Flutter + Riverpod + Material / custom theme     | Active development |
+| **iOS**       | Apple mobile user experience       | Same Flutter codebase (single source)            | Active development |
 | **Web App**   | User browser experience            | Next.js 16 + React 19 + Tailwind v4 + Radix UI   | Production-ready  |
 | **Admin Web** | Platform operations and management | Same Next.js codebase, `/admin/*` routes, RBAC-gated | Production-ready  |
 
 ## 4. Shared Backend
 
-One backend serves all four clients. The Next.js Route Handlers at `/src/app/api/*` are the single API surface:
+One backend serves all clients (Flutter mobile, Web, Admin). The Next.js Route Handlers at `/src/app/api/*` are the single API surface:
 
 ```
-Android ──────┐
-iOS ──────────┼──> Next.js API (/api/*) ──> Prisma ──> Database
+Flutter ──────┐
+(Android/iOS)  ├──> Next.js API (/api/*) ──> Prisma ──> Database
 Web ──────────┤
 Admin Web ────┘
 ```
@@ -112,7 +112,7 @@ Admin routes (`/api/admin/*`) live in the same Next.js app but are protected by 
 A single `User` record (Prisma model in `prisma/schema.prisma`) backs every client. The same JWT session can be issued to mobile clients via the existing `/api/auth/*` endpoints — mobile only needs to:
 
 1. POST `/api/auth/login` with email + password → receive JWT
-2. Store JWT in SecureStore (Expo) / httpOnly cookie (web)
+2. Store JWT in flutter_secure_storage / httpOnly cookie (web)
 3. Send `Authorization: Bearer <jwt>` on every API call
 
 ```
@@ -151,12 +151,12 @@ The Sportsphere brand identity is extracted into `packages/design-system/` as **
 
 The same visual language — dark navy gradient bg, gold gradient text, glass cards, gold glow, premium rotating border — is replicated on every platform.
 
-## 7. Mobile App Stack (Expo + React Native)
+## 7. Mobile App Stack (Flutter)
 
 | Concern              | Library                                             | Why                                          |
 | -------------------- | --------------------------------------------------- | -------------------------------------------- |
-| Framework            | Expo SDK 52                                         | Cross-platform native (Android+iOS)          |
-| Routing              | Expo Router v4                                      | File-based — matches Next.js mental model    |
+| Framework            | Flutter                                         | Cross-platform native (Android+iOS)          |
+| Routing              | Flutter navigation / go_router (or equivalent)                                      | File-based — matches Next.js mental model    |
 | Styling              | NativeWind v4                                       | Tailwind syntax on RN — preserves brand CSS  |
 | Animations           | React Native Reanimated v3                          | Native-feeling gestures, springs, layout     |
 | Icons                | `lucide-react-native`                               | Same icon set as web (`lucide-react`)        |
@@ -179,7 +179,7 @@ The migration is **non-breaking**. Each phase ships independently.
 - Web app continues to import from `src/` as before; new code can opt into `packages/`
 
 ### Phase B — Mobile Bootstrap (current)
-- Initialize Expo app at `mobile/`
+- Flutter app lives at `Flutter/`
 - Configure NativeWind with brand tokens
 - Build 5-tab navigation shell (Home, Scores, Create, Activity, Profile) — matches web `BottomNav`
 - Build Home screen with mock feed showing Sportsphere glass-card aesthetic
@@ -201,7 +201,7 @@ The migration is **non-breaking**. Each phase ships independently.
 ### Phase E — Capacitor Removal (after Phase C)
 - Delete `capacitor.config.ts` and `@capacitor/*` deps from `package.json`
 - Remove `mobile:*` npm scripts
-- Mobile is now exclusively Expo
+- Mobile is exclusively Flutter
 
 ## 9. Build & Deploy
 
@@ -218,8 +218,8 @@ This architecture scales to:
 
 ```
 User Ecosystem
-├── Android         (Expo RN — current)
-├── iOS             (Expo RN — current)
+├── Android         (Flutter — current)
+├── iOS             (Flutter — current)
 ├── Web             (Next.js — current)
 ├── Wearables       (future — Expo RN can target Wear OS / watchOS)
 └── TV/Smart TV     (future — RN for TV or separate Next.js TV app)

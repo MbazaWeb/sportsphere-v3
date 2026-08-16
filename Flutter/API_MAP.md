@@ -1,3 +1,7 @@
+## Shared backend
+
+Flutter, WebApp, and Admin all use the same PostgreSQL + `/sportsphere/api/*`.
+
 # SportSphere API Map (from api.zip)
 
 **Base:** `https://sportssphere.fun/sportsphere/api`
