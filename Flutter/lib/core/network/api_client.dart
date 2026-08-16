@@ -98,4 +98,17 @@ class ApiClient {
         : 'Request failed (${res.statusCode})';
     throw ApiException(msg, statusCode: res.statusCode, body: data);
   }
+
+  /// Lightweight connectivity check against GET /api/health
+  Future<bool> checkHealth() async {
+    try {
+      final res = await _client.get(
+        Uri.parse(ApiConfig.healthUrl),
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 8));
+      return res.statusCode >= 200 && res.statusCode < 300;
+    } catch (_) {
+      return false;
+    }
+  }
 }
