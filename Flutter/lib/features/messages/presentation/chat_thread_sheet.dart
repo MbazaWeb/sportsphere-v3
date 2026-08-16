@@ -58,8 +58,7 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
         _bubbles.clear();
         for (final m in messages) {
           final senderId = m['senderId']?.toString() ?? '';
-          final receiverId = m['receiverId']?.toString() ?? '';
-          final isMine = senderId == _currentUserId;
+          final isMine = m['mine'] == true || senderId == _currentUserId;
           final text = m['content']?.toString() ?? '';
           final senderName = isMine
               ? (auth.user?.name ?? 'You')
