@@ -1560,6 +1560,7 @@ enum FavoriteTargetType {
   NATIONAL_TEAM
   STADIUM
   SPORT
+  POST
 }
 
 
