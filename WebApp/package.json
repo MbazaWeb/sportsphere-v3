@@ -5,17 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build && cp -r .next/static .next/standalone/.next/ && rm -rf .next/standalone/public && ln -sfn /var/www/sportsphere-nextjs/public .next/standalone/public",
+    "build": "next build && cp -r .next/static .next/standalone/.next/ && rm -rf .next/standalone/public && ln -sfn ../../public .next/standalone/public || true",
     "start": "NODE_ENV=production node .next/standalone/server.js",
     "lint": "eslint .",
     "build:pwa": "next build",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate deploy",
-    "db:seed": "npx tsx prisma/seed.ts",
-    "db:studio": "prisma studio",
-    "db:push": "prisma db push",
-    "db:setup": "prisma generate && prisma db push && npx tsx prisma/seed.ts",
-    "postinstall": "prisma generate",
+    "db:generate": "prisma generate --schema=../prisma/schema.prisma",
+    "db:migrate": "prisma migrate deploy --schema=../prisma/schema.prisma",
+    "db:seed": "npx tsx ../prisma/seed.ts",
+    "db:studio": "prisma studio --schema=../prisma/schema.prisma",
+    "db:push": "prisma db push --schema=../prisma/schema.prisma",
+    "db:setup": "prisma generate --schema=../prisma/schema.prisma && prisma db push --schema=../prisma/schema.prisma && npx tsx ../prisma/seed.ts",
+    "postinstall": "prisma generate --schema=../prisma/schema.prisma",
     "start:dev": "next start"
   },
   "dependencies": {
@@ -101,7 +101,7 @@
     "typescript": "^5"
   },
   "prisma": {
-    "seed": "npx tsx prisma/seed.ts"
+    "seed": "npx tsx ../prisma/seed.ts"
   },
   "allowScripts": {
     "esbuild@0.28.1": true,
