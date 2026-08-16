@@ -12,7 +12,8 @@ import 'domain/profile_role_registry.dart';
 import 'presentation/edit_profile_sheet.dart';
 import 'presentation/settings_sheet.dart';
 import 'presentation/saved_sheet.dart';
-import 'presentation/role_upgrade_sheet.dart';
+import 'presentation/fans_list_page.dart';
+
 import 'presentation/role_tab_content.dart';
 
 /// Own profile — structure matches web ProfileTab + profileConfig role tabs.
@@ -411,6 +412,14 @@ class _RoleTabBody extends StatelessWidget {
     }
     if (tabId == 'about') {
       return _AboutBody(user: user, roleCfg: roleCfg);
+    }
+    if (tabId == 'fans' || tabId == 'followers') {
+      return FansListPage(
+        userId: user.id,
+        title: tabId == 'fans' ? 'My Fans' : 'Followers',
+        listType: tabId,
+        embedded: true,
+      );
     }
     if (tabId == 'feed' || tabId == 'posts') {
       return _UserPostsFeed(userId: user.id);
