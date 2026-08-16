@@ -6,6 +6,7 @@ import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
 import '../../../shared/widgets/ss_refresh.dart';
 import 'sportlights_tab.dart';
+import '../../communities/presentation/communities_sheet.dart';
 
 /// Trending tab — matches web: Live Now · Communities · Trending posts.
 class TrendingTab extends ConsumerWidget {
@@ -114,9 +115,28 @@ class TrendingTab extends ConsumerWidget {
           const SizedBox(height: 22),
 
           // Communities
-          Text(
-            'COMMUNITIES',
-            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: AppColors.mutedForeground),
+          Row(
+            children: [
+              Text(
+                'COMMUNITIES',
+                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: AppColors.mutedForeground),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: () {
+                  showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => const CommunitiesSheet(),
+                  );
+                },
+                child: Text(
+                  'See all',
+                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           commAsync.when(

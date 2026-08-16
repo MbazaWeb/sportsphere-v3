@@ -11,6 +11,7 @@ import 'sports_interests_sheet.dart';
 import 'notif_prefs_sheet.dart';
 import 'privacy_sheet.dart';
 import 'appearance_sheet.dart';
+import '../../communities/presentation/communities_sheet.dart';
 
 /// Settings — mirrors web SettingsSection groups.
 class SettingsSheet extends ConsumerWidget {
@@ -129,6 +130,14 @@ class SettingsSheet extends ConsumerWidget {
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
                           builder: (_) => const AppearanceSheet(),
+                        );
+                      }),
+                      _tile(Icons.groups_outlined, 'Communities', () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => const CommunitiesSheet(),
                         );
                       }),
                       if (isFan)

@@ -7,6 +7,7 @@ class CommunityItem {
     this.description,
     this.topic,
     this.memberCount = 0,
+    this.isMember = false,
   });
 
   final String id;
@@ -14,6 +15,7 @@ class CommunityItem {
   final String? description;
   final String? topic;
   final int memberCount;
+  final bool isMember;
 
   factory CommunityItem.fromJson(Map<String, dynamic> j) => CommunityItem(
         id: j['id']?.toString() ?? '',
@@ -21,6 +23,16 @@ class CommunityItem {
         description: j['description']?.toString(),
         topic: j['topic']?.toString(),
         memberCount: (j['memberCount'] as num?)?.toInt() ?? 0,
+        isMember: j['isMember'] == true,
+      );
+
+  CommunityItem copyWith({bool? isMember, int? memberCount}) => CommunityItem(
+        id: id,
+        name: name,
+        description: description,
+        topic: topic,
+        memberCount: memberCount ?? this.memberCount,
+        isMember: isMember ?? this.isMember,
       );
 }
 
@@ -31,15 +43,17 @@ class CommunitiesApi {
   Future<List<CommunityItem>> list() async {
     final data = await _client.getJson('/communities');
     final list = data is List ? data : [];
-    return list.map((e) => CommunityItem.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+    return list
+        .map((e) => CommunityItem.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
   }
 
-  /// POST /api/communities/:id/join — join a community
+  /// POST /api/communities/:id/join
   Future<void> join(String communityId) async {
     await _client.postJson('/communities/$communityId/join', body: {});
   }
 
-  /// POST /api/communities/:id/leave — leave a community
+  /// POST /api/communities/:id/leave
   Future<void> leave(String communityId) async {
     await _client.postJson('/communities/$communityId/leave', body: {});
   }
