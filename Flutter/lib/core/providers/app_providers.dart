@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../network/api_client.dart';
 import '../storage/token_storage.dart';
+import '../push/push_service.dart';
 import '../../features/auth/data/auth_api.dart';
 import '../../features/home/data/feed_api.dart';
 import '../../features/social/data/social_api.dart';
@@ -103,6 +104,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final user = await _authApi.me();
       state = AuthState(user: user, hydrated: true);
+      await PushService().onLogin();
     } catch (_) {
       await _storage.clear();
       state = const AuthState(hydrated: true);
@@ -115,6 +117,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final result = await _authApi.login(email: email, handle: handle, password: password);
       await _storage.saveToken(result.token, expiresAt: result.expiresAt);
       state = AuthState(user: result.user, hydrated: true);
+      await PushService().onLogin();
       return true;
     } catch (e) {
       state = state.copyWith(isLoading: false, error: _friendly(e));
@@ -135,6 +138,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       await _storage.saveToken(result.token, expiresAt: result.expiresAt);
       state = AuthState(user: result.user, hydrated: true);
+      await PushService().onLogin();
       return true;
     } catch (e) {
       state = state.copyWith(isLoading: false, error: _friendly(e));
@@ -155,6 +159,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
+    await PushService().onLogout();
     await _authApi.logout();
     await _storage.clear();
     state = const AuthState(hydrated: true);
