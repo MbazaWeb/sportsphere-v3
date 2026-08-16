@@ -4,8 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/providers/app_providers.dart';
 import '../../core/security/biometric_lock.dart';
 import '../../shared/models/user_profile.dart';
+import '../../shared/models/post.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
+import '../home/widgets/sportlights_tab.dart' show LiveFeedCard, FeedErrorView;
 import 'domain/profile_role_registry.dart';
 import 'presentation/edit_profile_sheet.dart';
 import 'presentation/settings_sheet.dart';
@@ -411,10 +413,7 @@ class _RoleTabBody extends StatelessWidget {
       return _AboutBody(user: user, roleCfg: roleCfg);
     }
     if (tabId == 'feed' || tabId == 'posts') {
-      return _PlaceholderBody(
-        title: 'Posts',
-        subtitle: 'Your posts will appear here — same feed filter as web.',
-      );
+      return _UserPostsFeed(userId: user.id);
     }
     if (usesProfileData) {
       return RoleTabContent(tabId: tabId, role: role);
@@ -590,6 +589,89 @@ class _AboutRow extends StatelessWidget {
           SizedBox(width: 100, child: Text(k, style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground))),
           Expanded(child: Text(v, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600))),
         ],
+      ),
+    );
+  }
+}
+
+/// Shows a user's posts by fetching the feed and filtering by userId.
+class _UserPostsFeed extends ConsumerStatefulWidget {
+  const _UserPostsFeed({required this.userId});
+  final String userId;
+
+  @override
+  ConsumerState<_UserPostsFeed> createState() => _UserPostsFeedState();
+}
+
+class _UserPostsFeedState extends ConsumerState<_UserPostsFeed> {
+  List<Post> _posts = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      // Load feed and filter by userId — the API doesn't have a userId filter,
+      // so we load a large batch and filter client-side.
+      final allPosts = await ref.read(feedApiProvider).getFeed(limit: 50, offset: 0);
+      if (!mounted) return;
+      setState(() {
+        _posts = allPosts.where((p) => p.userId == widget.userId).toList();
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _loading = false; _error = e.toString(); });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
+        ),
+      );
+    }
+    if (_error != null) {
+      return FeedErrorView(message: _error!, onRetry: _load);
+    }
+    if (_posts.isEmpty) {
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(16, 24, 16, 100),
+        children: [
+          GlassCard(
+            borderRadius: 16,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Icon(Icons.article_outlined, size: 32, color: AppColors.mutedForeground.withValues(alpha: 0.5)),
+                const SizedBox(height: 12),
+                Text('No posts yet', style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 16)),
+                const SizedBox(height: 4),
+                Text('Create your first post from the Create tab!',
+                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground)),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _load,
+      color: AppColors.primary,
+      child: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+        itemCount: _posts.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 14),
+        itemBuilder: (context, i) => LiveFeedCard(post: _posts[i], index: i),
       ),
     );
   }

@@ -91,7 +91,7 @@ class _SportlightsTabState extends ConsumerState<SportlightsTab> {
     }
 
     if (_error != null) {
-      return _ErrorView(message: _error!, onRetry: _loadFirst);
+      return FeedErrorView(message: _error!, onRetry: _loadFirst);
     }
 
     if (_posts.isEmpty) {
@@ -674,8 +674,8 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
 }
 
 
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
+class FeedErrorView extends StatelessWidget {
+  const FeedErrorView({required this.message, required this.onRetry});
   final String message;
   final VoidCallback onRetry;
 

@@ -8,6 +8,7 @@ import 'widgets/sportlights_tab.dart';
 import 'widgets/trending_tab.dart';
 import 'widgets/predictions_tab.dart';
 import 'widgets/polls_tab.dart';
+import 'widgets/following_tab.dart';
 
 /// Home matching web HomeTab + screenshots (Sportlights / Trending / Predictions / Polls).
 class HomeTab extends StatefulWidget {
@@ -66,6 +67,7 @@ class _HomeTabState extends State<HomeTab> {
               child: KeyedSubtree(
                 key: ValueKey(_subTab),
                 child: switch (_subTab) {
+                  'following' => const FollowingTab(),
                   'trending' => const TrendingTab(),
                   'predictions' => const PredictionsTab(),
                   'polls' => const PollsTab(),

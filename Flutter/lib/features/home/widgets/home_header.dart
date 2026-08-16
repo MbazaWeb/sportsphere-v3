@@ -23,6 +23,7 @@ class HomeHeader extends StatelessWidget {
 
   static const subTabs = [
     ('for-you', 'Sportlights'),
+    ('following', 'Following'),
     ('trending', 'Trending'),
     ('predictions', 'Predictions'),
     ('polls', 'Polls'),
