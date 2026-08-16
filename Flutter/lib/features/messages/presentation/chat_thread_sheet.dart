@@ -5,6 +5,7 @@ import '../../../core/providers/app_providers.dart';
 import '../../../theme/app_colors.dart';
 
 /// 1:1 chat thread — loads history + sends via POST /api/messages.
+/// Enhanced with timestamps, delivery status, better layout.
 class ChatThreadSheet extends ConsumerStatefulWidget {
   const ChatThreadSheet({
     super.key,
@@ -24,10 +25,11 @@ class ChatThreadSheet extends ConsumerStatefulWidget {
 }
 
 class _ChatBubble {
-  _ChatBubble({required this.text, required this.mine, required this.at});
+  _ChatBubble({required this.text, required this.mine, required this.at, this.senderName = ''});
   final String text;
   final bool mine;
   final DateTime at;
+  final String senderName;
 }
 
 class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
@@ -41,7 +43,6 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
   @override
   void initState() {
     super.initState();
-    // Get current user ID for bubble alignment
     final auth = ref.read(authProvider);
     _currentUserId = auth.user?.id;
     _loadHistory();
@@ -60,6 +61,9 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
           final receiverId = m['receiverId']?.toString() ?? '';
           final isMine = senderId == _currentUserId;
           final text = m['content']?.toString() ?? '';
+          final senderName = isMine
+              ? (auth.user?.name ?? 'You')
+              : widget.partnerName;
           final createdAt = m['createdAt'];
           DateTime at;
           if (createdAt is DateTime) {
@@ -70,7 +74,7 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
             at = DateTime.now();
           }
           if (text.isNotEmpty) {
-            _bubbles.add(_ChatBubble(text: text, mine: isMine, at: at));
+            _bubbles.add(_ChatBubble(text: text, mine: isMine, at: at, senderName: senderName));
           }
         }
         _loadingHistory = false;
@@ -94,7 +98,7 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
     if (text.isEmpty || _sending) return;
     setState(() {
       _sending = true;
-      _bubbles.add(_ChatBubble(text: text, mine: true, at: DateTime.now()));
+      _bubbles.add(_ChatBubble(text: text, mine: true, at: DateTime.now(), senderName: 'You'));
       _ctrl.clear();
     });
     _scrollToEnd();
@@ -125,15 +129,47 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
     });
   }
 
+  String _formatTime(DateTime at) {
+    final now = DateTime.now();
+    final isToday = now.year == at.year && now.month == at.month && now.day == at.day;
+    final h = at.hour > 12 ? at.hour - 12 : (at.hour == 0 ? 12 : at.hour);
+    final m = at.minute.toString().padLeft(2, '0');
+    final ampm = at.hour >= 12 ? 'PM' : 'AM';
+    final time = '$h:$m $ampm';
+    if (isToday) return time;
+    return '${at.day}/${at.month} $time';
+  }
+
+  bool _showDateSeparator(int index) {
+    if (index == 0) return true;
+    final prev = _bubbles[index - 1].at;
+    final curr = _bubbles[index].at;
+    return prev.year != curr.year || prev.month != curr.month || prev.day != curr.day;
+  }
+
+  String _dateLabel(DateTime at) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final msgDay = DateTime(at.year, at.month, at.day);
+    final diff = today.difference(msgDay).inDays;
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Yesterday';
+    return '${at.day}/${at.month}/${at.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
     final handle = widget.partnerHandle ?? '';
+    final auth = ref.watch(authProvider);
+    final avatarUrl = auth.user?.avatarUrl;
+    final myName = auth.user?.name ?? '';
+    final myInitial = myName.isNotEmpty ? myName[0].toUpperCase() : '?';
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
       child: Container(
-        height: MediaQuery.sizeOf(context).height * 0.85,
+        height: MediaQuery.sizeOf(context).height * 0.88,
         decoration: const BoxDecoration(
           color: AppColors.backgroundSecondary,
           borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
@@ -177,50 +213,80 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
               child: _loadingHistory
                   ? const Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2))
                   : _bubbles.isEmpty
-                      ? Center(child: Text('No messages yet. Say hi!', style: GoogleFonts.inter(color: AppColors.mutedForeground)))
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.chat_bubble_outline_rounded, size: 48, color: AppColors.mutedForeground.withValues(alpha: 0.3)),
+                              const SizedBox(height: 12),
+                              Text('No messages yet. Say hi!', style: GoogleFonts.inter(color: AppColors.mutedForeground)),
+                            ],
+                          ),
+                        )
                       : ListView.builder(
-                controller: _scroll,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                itemCount: _bubbles.length,
-                itemBuilder: (context, i) {
-                  final b = _bubbles[i];
-                  return Align(
-                    alignment: b.mine ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.75),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: b.mine ? AppColors.primary : AppColors.surface,
-                        borderRadius: BorderRadius.only(
-                          topLeft: const Radius.circular(16),
-                          topRight: const Radius.circular(16),
-                          bottomLeft: Radius.circular(b.mine ? 16 : 4),
-                          bottomRight: Radius.circular(b.mine ? 4 : 16),
+                          controller: _scroll,
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                          itemCount: _bubbles.length * 2, // items + potential separators
+                          itemBuilder: (context, rawIndex) {
+                            final i = rawIndex ~/ 2;
+                            if (i >= _bubbles.length) return const SizedBox.shrink();
+                            final isSeparator = rawIndex.isOdd;
+                            if (isSeparator) return const SizedBox(height: 4);
+
+                            // Date separator
+                            if (_showDateSeparator(i)) {
+                              return Column(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    child: Center(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.surface,
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          _dateLabel(_bubbles[i].at),
+                                          style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedForeground, fontWeight: FontWeight.w600),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  _buildBubble(i),
+                                ],
+                              );
+                            }
+
+                            return _buildBubble(i);
+                          },
                         ),
-                      ),
-                      child: Text(
-                        b.text,
-                        style: GoogleFonts.inter(
-                          fontSize: 14.5,
-                          height: 1.35,
-                          color: b.mine ? AppColors.primaryForeground : AppColors.foreground,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+            // Message input
+            Container(
+              padding: const EdgeInsets.fromLTRB(12, 8, 8, 16),
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: AppColors.border)),
+              ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                    backgroundColor: AppColors.surfaceElevated,
+                    child: avatarUrl == null || avatarUrl.isEmpty
+                        ? Text(myInitial, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 11, color: AppColors.primary))
+                        : null,
+                  ),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: TextField(
                       controller: _ctrl,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _send(),
+                      maxLines: 4,
+                      minLines: 1,
                       decoration: InputDecoration(
                         hintText: 'Message…',
                         isDense: true,
@@ -229,13 +295,75 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: _sending ? null : _send,
-                    icon: Icon(Icons.send_rounded, color: _sending ? AppColors.mutedForeground : AppColors.primary),
+                  const SizedBox(width: 6),
+                  Container(
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      onPressed: _sending ? null : _send,
+                      icon: _sending
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryForeground))
+                          : const Icon(Icons.send_rounded, color: AppColors.primaryForeground, size: 18),
+                    ),
                   ),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBubble(int i) {
+    final b = _bubbles[i];
+    final time = _formatTime(b.at);
+    return Align(
+      alignment: b.mine ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 6),
+        constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.72),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: b.mine ? AppColors.primary : AppColors.surface,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(b.mine ? 16 : 4),
+            bottomRight: Radius.circular(b.mine ? 4 : 16),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: b.mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            Text(
+              b.text,
+              style: GoogleFonts.inter(
+                fontSize: 14.5,
+                height: 1.35,
+                color: b.mine ? AppColors.primaryForeground : AppColors.foreground,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  time,
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    color: b.mine
+                        ? AppColors.primaryForeground.withValues(alpha: 0.7)
+                        : AppColors.mutedForeground.withValues(alpha: 0.7),
+                  ),
+                ),
+                if (b.mine) ...[
+                  const SizedBox(width: 4),
+                  Icon(Icons.check, size: 12, color: AppColors.primaryForeground.withValues(alpha: 0.7)),
+                ],
+              ],
             ),
           ],
         ),

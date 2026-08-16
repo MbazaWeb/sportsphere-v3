@@ -4,13 +4,17 @@ class SocialApi {
   SocialApi(this._client);
   final ApiClient _client;
 
-  /// POST /api/posts
+  /// POST /api/posts — full create with all options
   Future<Map<String, dynamic>> createPost({
     required String content,
     String postType = 'post',
     List<String> mediaUrls = const [],
     Map<String, dynamic>? poll,
     Map<String, dynamic>? prediction,
+    String? teamTag,
+    String? playerTag,
+    List<String> hashtags = const [],
+    String? location,
     bool isBreaking = false,
   }) async {
     final data = await _client.postJson('/posts', body: {
@@ -19,6 +23,10 @@ class SocialApi {
       if (mediaUrls.isNotEmpty) 'mediaUrls': mediaUrls,
       if (poll != null) 'poll': poll,
       if (prediction != null) 'prediction': prediction,
+      if (teamTag != null) 'teamTag': teamTag,
+      if (playerTag != null) 'playerTag': playerTag,
+      if (hashtags.isNotEmpty) 'hashtags': hashtags,
+      if (location != null) 'location': location,
       'isBreaking': isBreaking,
     });
     return data is Map<String, dynamic> ? data : Map<String, dynamic>.from(data as Map);
@@ -62,6 +70,16 @@ class SocialApi {
     return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
+  /// POST /api/notifications/read — mark all as read
+  Future<void> markNotificationsRead() async {
+    await _client.postJson('/notifications/read', body: {});
+  }
+
+  /// POST /api/notifications/read — mark single notification as read
+  Future<void> markNotificationRead(String notificationId) async {
+    await _client.postJson('/notifications/read', body: {'id': notificationId});
+  }
+
   /// GET /api/users?q=
   Future<List<Map<String, dynamic>>> searchUsers(String q) async {
     final data = await _client.getJson('/users?q=${Uri.encodeComponent(q)}&limit=20');
@@ -72,6 +90,13 @@ class SocialApi {
             : (data is Map && data['data'] is List)
                 ? data['data'] as List
                 : [];
+    return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  /// GET /api/posts?search=  or /api/feed?search=
+  Future<List<Map<String, dynamic>>> searchPosts(String q) async {
+    final data = await _client.getJson('/feed?search=${Uri.encodeComponent(q)}&limit=20');
+    final list = data is List ? data : (data is Map && data['data'] is List ? data['data'] as List : []);
     return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 }

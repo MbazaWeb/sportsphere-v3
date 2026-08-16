@@ -565,8 +565,11 @@ class _CommentsSheet extends ConsumerStatefulWidget {
 
 class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
   final _ctrl = TextEditingController();
+  final _scroll = ScrollController();
   List<Map<String, dynamic>> _items = [];
   bool _loading = true;
+  bool _sending = false;
+  String? _replyingTo;
 
   @override
   void initState() {
@@ -577,7 +580,23 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
   @override
   void dispose() {
     _ctrl.dispose();
+    _scroll.dispose();
     super.dispose();
+  }
+
+  String _relTime(String? iso) {
+    if (iso == null || iso.isEmpty) return '';
+    try {
+      final d = DateTime.parse(iso).toLocal();
+      final diff = DateTime.now().difference(d);
+      if (diff.inMinutes < 1) return 'now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+      if (diff.inHours < 24) return '${diff.inHours}h';
+      if (diff.inDays < 7) return '${diff.inDays}d';
+      return '${d.day}/${d.month}/${d.year}';
+    } catch (_) {
+      return '';
+    }
   }
 
   Future<void> _load() async {
@@ -597,72 +616,220 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
 
   Future<void> _send() async {
     final text = _ctrl.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _sending) return;
     final auth = ref.read(authProvider);
     if (!auth.isAuthenticated) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in to comment')));
       return;
     }
+    setState(() => _sending = true);
     try {
-      await ref.read(socialApiProvider).addComment(postId: widget.postId, content: text);
+      await ref.read(socialApiProvider).addComment(
+        postId: widget.postId,
+        content: text,
+        parentId: _replyingTo,
+      );
       _ctrl.clear();
+      setState(() => _replyingTo = null);
       await _load();
+      _scrollToEnd();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    } finally {
+      if (mounted) setState(() => _sending = false);
     }
+  }
+
+  void _scrollToEnd() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scroll.hasClients) {
+        _scroll.animateTo(
+          0,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  void _setReply(String commentId, String userName) {
+    setState(() => _replyingTo = commentId);
+    _ctrl.text = '@$userName ';
+    FocusScope.of(context).requestFocus(FocusNode());
   }
 
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
+    final auth = ref.watch(authProvider);
+    final avatarUrl = auth.user?.avatarUrl;
+    final name = auth.user?.name ?? '';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
       child: SizedBox(
-        height: MediaQuery.sizeOf(context).height * 0.55,
+        height: MediaQuery.sizeOf(context).height * 0.65,
         child: Column(
           children: [
             const SizedBox(height: 10),
             Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(4))),
             Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text('Comments', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18)),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              child: Row(
+                children: [
+                  Text('Comments', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18)),
+                  const Spacer(),
+                  Text(
+                    '${_items.length}',
+                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground),
+                  ),
+                ],
+              ),
             ),
+            if (_replyingTo != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                color: AppColors.surface,
+                child: Row(
+                  children: [
+                    Icon(Icons.reply, size: 14, color: AppColors.primary),
+                    const SizedBox(width: 6),
+                    Text('Replying...', style: GoogleFonts.inter(fontSize: 12, color: AppColors.primary, fontStyle: FontStyle.italic)),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => setState(() {
+                        _replyingTo = null;
+                        _ctrl.clear();
+                      }),
+                      child: Icon(Icons.close, size: 16, color: AppColors.mutedForeground),
+                    ),
+                  ],
+                ),
+              ),
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2))
                   : _items.isEmpty
-                      ? Center(child: Text('No comments yet', style: GoogleFonts.inter(color: AppColors.mutedForeground)))
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.chat_bubble_outline_rounded, size: 40, color: AppColors.mutedForeground.withValues(alpha: 0.4)),
+                              const SizedBox(height: 10),
+                              Text('No comments yet', style: GoogleFonts.inter(color: AppColors.mutedForeground)),
+                              const SizedBox(height: 4),
+                              Text('Be the first to share your thoughts', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground.withValues(alpha: 0.7))),
+                            ],
+                          ),
+                        )
                       : ListView.builder(
+                          controller: _scroll,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           itemCount: _items.length,
                           itemBuilder: (context, i) {
                             final c = _items[i];
                             final user = c['user'] is Map ? Map<String, dynamic>.from(c['user'] as Map) : {};
-                            return ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(user['name']?.toString() ?? 'User', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13)),
-                              subtitle: Text(c['content']?.toString() ?? '', style: GoogleFonts.inter(fontSize: 14)),
+                            final userName = user['name']?.toString() ?? 'User';
+                            final userHandle = user['handle']?.toString() ?? '';
+                            final userAvatar = user['avatarUrl']?.toString() ?? user['avatar']?.toString();
+                            final content = c['content']?.toString() ?? '';
+                            final createdAt = c['createdAt']?.toString();
+                            final time = _relTime(createdAt);
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 14),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 16,
+                                    backgroundImage: userAvatar != null && userAvatar.isNotEmpty ? NetworkImage(userAvatar) : null,
+                                    backgroundColor: AppColors.surfaceElevated,
+                                    child: userAvatar == null || userAvatar.isEmpty
+                                        ? Text(userName.isNotEmpty ? userName[0].toUpperCase() : '?',
+                                            style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 11, color: AppColors.primary))
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text(userName, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13)),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              time,
+                                              style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedForeground),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(content, style: GoogleFonts.inter(fontSize: 14, height: 1.4)),
+                                        const SizedBox(height: 4),
+                                        GestureDetector(
+                                          onTap: auth.isAuthenticated
+                                              ? () => _setReply(c['id']?.toString() ?? '', userName)
+                                              : null,
+                                          child: Text(
+                                            'Reply',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: auth.isAuthenticated ? AppColors.primary : AppColors.mutedForeground.withValues(alpha: 0.5),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             );
                           },
                         ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+            // Comment input
+            Container(
+              padding: const EdgeInsets.fromLTRB(12, 8, 8, 16),
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: AppColors.border)),
+              ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                    backgroundColor: AppColors.surfaceElevated,
+                    child: avatarUrl == null || avatarUrl.isEmpty
+                        ? Text(initial, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 11, color: AppColors.primary))
+                        : null,
+                  ),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: TextField(
                       controller: _ctrl,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _send(),
+                      maxLines: 3,
+                      minLines: 1,
                       decoration: InputDecoration(
-                        hintText: 'Add a comment…',
+                        hintText: _replyingTo != null ? 'Write a reply...' : 'Add a comment...',
                         isDense: true,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  IconButton(onPressed: _send, icon: const Icon(Icons.send_rounded, color: AppColors.primary)),
+                  const SizedBox(width: 6),
+                  IconButton(
+                    onPressed: _sending ? null : _send,
+                    icon: _sending
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
+                        : const Icon(Icons.send_rounded, color: AppColors.primary),
+                  ),
                 ],
               ),
             ),
