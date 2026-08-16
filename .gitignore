@@ -25,6 +25,7 @@ tsconfig.tsbuildinfo
 
 # Native mobile build output
 android/
+!Flutter/android/
 ios/
 .expo/
 mobile/.expo/
