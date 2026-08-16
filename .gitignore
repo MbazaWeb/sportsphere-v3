@@ -67,3 +67,4 @@ skills/
 tool-results/
 .session-secret
 backup_*.sql
+secrets/
