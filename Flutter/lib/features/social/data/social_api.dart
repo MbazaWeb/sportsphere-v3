@@ -72,12 +72,12 @@ class SocialApi {
 
   /// POST /api/notifications/read — mark all as read
   Future<void> markNotificationsRead() async {
-    await _client.postJson('/notifications/read', body: {});
+    await _client.postJson('/notifications', body: {});
   }
 
   /// POST /api/notifications/read — mark single notification as read
   Future<void> markNotificationRead(String notificationId) async {
-    await _client.postJson('/notifications/read', body: {'id': notificationId});
+    await _client.postJson('/notifications', body: {'id': notificationId});
   }
 
   /// GET /api/users?q=

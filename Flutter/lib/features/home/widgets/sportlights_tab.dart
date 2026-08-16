@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/app_providers.dart';
@@ -188,18 +189,17 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
   }
 
   void _share(BuildContext ctx, Post post) {
-    final text = '${post.content}\n\nhttps://sportssphere.fun/sportsphere/p/${post.id}';
-    ScaffoldMessenger.of(ctx).showSnackBar(
-      SnackBar(
-        content: const Text('Link copied to clipboard'),
-        action: SnackBarAction(
-          label: 'OK',
-          onPressed: () {},
-        ),
-      ),
-    );
-    // Use platform share if available, otherwise clipboard
-    Clipboard.setData(ClipboardData(text: text));
+    final handle = post.user.handle.startsWith('@') ? post.user.handle : '@${post.user.handle}';
+    final url = 'https://sportssphere.fun/sportsphere/p/${post.id}';
+    final text = '${post.user.name} ($handle) on SportSphere:\n${post.content}\n\n$url';
+    try {
+      Share.share(text, subject: 'SportSphere post');
+    } catch (_) {
+      Clipboard.setData(ClipboardData(text: text));
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        const SnackBar(content: Text('Link copied')),
+      );
+    }
   }
 
   void _openComments() {

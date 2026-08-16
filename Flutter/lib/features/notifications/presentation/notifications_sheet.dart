@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../theme/app_colors.dart';
 import '../../profile/presentation/user_profile_sheet.dart';
+import '../../messages/presentation/chat_thread_sheet.dart';
 
 class NotificationsSheet extends ConsumerStatefulWidget {
   const NotificationsSheet({super.key, this.onNeedLogin});
@@ -63,51 +64,58 @@ class _NotificationsSheetState extends ConsumerState<NotificationsSheet> {
     }
   }
 
-  void _onTapNotification(Map<String, dynamic> n) {
+  Future<void> _onTapNotification(Map<String, dynamic> n) async {
     final type = n['type']?.toString() ?? '';
+    final id = n['id']?.toString();
     final actor = n['actor'] is Map ? Map<String, dynamic>.from(n['actor'] as Map) : null;
-    final actorId = actor?['id']?.toString();
+    final actorId = actor?['id']?.toString() ?? n['actorId']?.toString();
     final actorHandle = actor?['handle']?.toString();
-    final postId = n['postId']?.toString();
+    final actorName = actor?['name']?.toString() ?? n['title']?.toString() ?? 'User';
 
-    // Mark this notification as read locally
-    final idx = _items.indexOf(n);
+    // Mark read locally + server
+    final idx = _items.indexWhere((e) => e['id'] == n['id']);
     if (idx >= 0) {
       setState(() {
         _items[idx] = Map<String, dynamic>.from(_items[idx])..['isRead'] = true;
       });
     }
+    if (id != null && id.isNotEmpty) {
+      try {
+        await ref.read(socialApiProvider).markNotificationRead(id);
+      } catch (_) {}
+    }
 
+    if (!mounted) return;
     Navigator.pop(context);
 
-    // Navigate based on type
-    if (type == 'follow' && actorId != null && actorHandle != null) {
-      Future.delayed(const Duration(milliseconds: 300), () {
+    Future.delayed(const Duration(milliseconds: 280), () {
+      if (!mounted) return;
+      if (type == 'message' && actorId != null) {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => ChatThreadSheet(
+            partnerId: actorId,
+            partnerName: actorName,
+            partnerHandle: actorHandle,
+          ),
+        );
+        return;
+      }
+      if (actorId != null && (actorHandle != null || type == 'follow' || type == 'like' || type == 'comment')) {
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
           builder: (_) => UserProfileSheet(
-            handle: actorHandle,
+            handle: actorHandle ?? '',
             userId: actorId,
-            initialName: actor?['name']?.toString() ?? '',
+            initialName: actorName,
           ),
         );
-      });
-    } else if ((type == 'like' || type == 'comment') && actorId != null && actorHandle != null) {
-      Future.delayed(const Duration(milliseconds: 300), () {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) => UserProfileSheet(
-            handle: actorHandle,
-            userId: actorId,
-            initialName: actor?['name']?.toString() ?? '',
-          ),
-        );
-      });
-    }
+      }
+    });
   }
 
   String _relTime(String? iso) {
@@ -245,7 +253,7 @@ class _NotificationsSheetState extends ConsumerState<NotificationsSheet> {
                               final time = _relTime(createdAt);
 
                               return GestureDetector(
-                                onTap: () => _onTapNotification(n),
+                                onTap: () { _onTapNotification(n); },
                                 child: Container(
                                   margin: const EdgeInsets.only(bottom: 2),
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
