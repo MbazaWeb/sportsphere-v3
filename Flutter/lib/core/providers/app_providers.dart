@@ -11,6 +11,7 @@ import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/data/roles_api.dart';
 import '../../features/profile/data/profile_data_api.dart';
 import '../../features/profile/data/favorites_api.dart';
+import '../../features/profile/data/performance_api.dart';
 import '../../features/media/data/upload_api.dart';
 import '../../features/social/data/follows_api.dart';
 import '../../core/push/push_api.dart';
@@ -47,6 +48,7 @@ final profileApiProvider = Provider((ref) => ProfileApi(ref.watch(apiClientProvi
 final rolesApiProvider = Provider((ref) => RolesApi(ref.watch(apiClientProvider)));
 final profileDataApiProvider = Provider((ref) => ProfileDataApi(ref.watch(apiClientProvider)));
 final favoritesApiProvider = Provider((ref) => FavoritesApi(ref.watch(apiClientProvider)));
+final performanceApiProvider = Provider((ref) => PerformanceApi(ref.watch(apiClientProvider)));
 final uploadApiProvider = Provider((ref) {
   final storage = ref.watch(tokenStorageProvider);
   return UploadApi(tokenProvider: storage.readToken);

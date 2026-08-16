@@ -15,6 +15,7 @@ import 'presentation/saved_sheet.dart';
 import 'presentation/fans_list_page.dart';
 
 import 'presentation/role_tab_content.dart';
+import 'presentation/performance_card.dart';
 
 /// Own profile — structure matches web ProfileTab + profileConfig role tabs.
 class ProfileTab extends ConsumerStatefulWidget {
@@ -397,16 +398,40 @@ class _RoleTabBody extends StatelessWidget {
     final role = roleCfg.role;
     final usesProfileData = {
       'career', 'statistics', 'achievements', 'matches', 'overview',
+      'performance', 'rankings', 'squad', 'fixtures', 'standings',
     }.contains(tabId) && role != 'fan';
 
     if (tabId == 'overview') {
-      return Column(
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
         children: [
-          Expanded(
+          // Ranks & points — reason for fans to open profiles
+          if (user.id.isNotEmpty && role != 'fan')
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: PerformanceCard(userId: user.id),
+            ),
+          if (user.id.isNotEmpty && role == 'fan')
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: PerformanceCard(userId: user.id, compact: true),
+            ),
+          SizedBox(
+            height: 480,
             child: usesProfileData
                 ? RoleTabContent(tabId: 'overview', role: role)
                 : _OverviewBody(user: user, roleCfg: roleCfg, onEdit: onEdit, onSignOut: onSignOut),
           ),
+        ],
+      );
+    }
+    if (tabId == 'performance' || tabId == 'rankings') {
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        children: [
+          if (user.id.isNotEmpty) PerformanceCard(userId: user.id),
+          const SizedBox(height: 12),
+          RoleTabContent(tabId: tabId, role: role),
         ],
       );
     }

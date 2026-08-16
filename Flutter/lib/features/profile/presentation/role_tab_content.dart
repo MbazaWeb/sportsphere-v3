@@ -112,6 +112,9 @@ class _RoleTabContentState extends ConsumerState<RoleTabContent> {
         return _HonoursView(payload);
       case 'overview':
         return _OverviewExtra(payload);
+      case 'performance':
+      case 'rankings':
+        return _OverviewExtra(payload);
       case 'squad':
       case 'lineups':
         return _ListCardsView(
