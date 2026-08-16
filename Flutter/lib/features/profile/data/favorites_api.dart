@@ -22,6 +22,8 @@ class FavoriteItem {
         targetHandle: j['targetHandle']?.toString(),
         targetId: j['targetId']?.toString(),
       );
+
+  bool get isPost => targetType.toUpperCase() == 'POST';
 }
 
 class FavoritesApi {
@@ -31,7 +33,9 @@ class FavoritesApi {
   Future<List<FavoriteItem>> list() async {
     final data = await _client.getJson('/profile/favorites');
     final list = data is List ? data : [];
-    return list.map((e) => FavoriteItem.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+    return list
+        .map((e) => FavoriteItem.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
   }
 
   Future<FavoriteItem> add({
@@ -41,7 +45,7 @@ class FavoritesApi {
     String? targetHandle,
   }) async {
     final data = await _client.postJson('/profile/favorites', body: {
-      'targetType': targetType,
+      'targetType': targetType.toUpperCase(),
       'targetId': targetId,
       if (targetName != null) 'targetName': targetName,
       if (targetHandle != null) 'targetHandle': targetHandle,
@@ -53,13 +57,25 @@ class FavoritesApi {
     await _client.deleteJson('/profile/favorites?id=${Uri.encodeComponent(id)}');
   }
 
-  /// Convenience: remove by targetId (used when we don't have the favorite record id)
   Future<void> removeByTarget(String targetType, String targetId) async {
-    // Fetch all favorites and find the one to remove
-    final items = await list();
-    final match = items.where((f) => f.targetType == targetType && f.targetId == targetId);
-    for (final f in match) {
-      await remove(f.id);
+    await _client.deleteJson(
+      '/profile/favorites?targetType=${Uri.encodeComponent(targetType.toUpperCase())}&targetId=${Uri.encodeComponent(targetId)}',
+    );
+  }
+
+  /// Toggle save for a post. Returns new bookmarked state.
+  Future<bool> togglePost(String postId, {required bool currentlySaved, String? preview}) async {
+    if (currentlySaved) {
+      await removeByTarget('POST', postId);
+      return false;
     }
+    await add(
+      targetType: 'POST',
+      targetId: postId,
+      targetName: (preview != null && preview.isNotEmpty)
+          ? (preview.length > 80 ? '${preview.substring(0, 80)}…' : preview)
+          : 'Saved post',
+    );
+    return true;
   }
 }

@@ -140,6 +140,7 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
   late bool _liked;
   late int _comments;
   late bool _bookmarked;
+  bool _hydratedSaved = false;
 
   @override
   void initState() {
@@ -148,6 +149,19 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
     _liked = widget.post.likedByMe;
     _comments = widget.post.commentCount;
     _bookmarked = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || _hydratedSaved) return;
+      try {
+        final ids = await ref.read(savedPostIdsProvider.future);
+        if (!mounted) return;
+        setState(() {
+          _bookmarked = ids.contains(widget.post.id);
+          _hydratedSaved = true;
+        });
+      } catch (_) {
+        if (mounted) setState(() => _hydratedSaved = true);
+      }
+    });
   }
 
   Future<void> _toggleLike() async {
@@ -173,17 +187,26 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in to save')));
       return;
     }
+    final prev = _bookmarked;
+    setState(() => _bookmarked = !prev); // optimistic
     try {
-      if (_bookmarked) {
-        await ref.read(favoritesApiProvider).removeByTarget('post', widget.post.id);
-      } else {
-        await ref.read(favoritesApiProvider).add(targetType: 'post', targetId: widget.post.id, targetName: widget.post.content.length > 40 ? '${widget.post.content.substring(0, 40)}...' : widget.post.content);
-      }
+      final next = await ref.read(favoritesApiProvider).togglePost(
+            widget.post.id,
+            currentlySaved: prev,
+            preview: widget.post.content,
+          );
       if (!mounted) return;
-      setState(() => _bookmarked = !_bookmarked);
+      setState(() => _bookmarked = next);
+      ref.invalidate(savedPostIdsProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(next ? 'Saved' : 'Removed from saved')),
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      setState(() => _bookmarked = prev);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst(RegExp(r'^ApiException\(\d+\):\s*'), ''))),
+      );
     }
   }
 
@@ -233,7 +256,11 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
   }
 
   @override
+
+  @override
   Widget build(BuildContext context) {
+    // Keep provider watched so cache stays warm across cards
+    ref.watch(savedPostIdsProvider);
     final post = widget.post;
     final u = post.user;
     final time = _relTime(post.createdAt);

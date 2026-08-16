@@ -4,9 +4,9 @@ import { db } from '@/lib/db';
 export const dynamic = 'force-dynamic';
 
 // Enum values mirrored from schema.prisma (Prisma client not generated in CI)
-type FavoriteTargetType = 'TEAM' | 'PLAYER' | 'COACH' | 'STADIUM' | 'LEAGUE' | 'NATIONAL_TEAM' | 'COMPETITION' | 'SPORT';
+type FavoriteTargetType = 'TEAM' | 'PLAYER' | 'COACH' | 'STADIUM' | 'LEAGUE' | 'NATIONAL_TEAM' | 'COMPETITION' | 'SPORT' | 'POST';
 const VALID_TYPES: FavoriteTargetType[] = [
-  'TEAM', 'PLAYER', 'COACH', 'STADIUM', 'LEAGUE', 'NATIONAL_TEAM', 'COMPETITION', 'SPORT'
+  'TEAM', 'PLAYER', 'COACH', 'STADIUM', 'LEAGUE', 'NATIONAL_TEAM', 'COMPETITION', 'SPORT', 'POST'
 ];
 
 // GET /api/profile/favorites — list favorites
@@ -53,9 +53,10 @@ export async function POST(request: NextRequest) {
 
     const { targetType, targetName, targetHandle, targetId } = await request.json();
 
-    if (!targetType || !targetName || !targetId) {
-      return NextResponse.json({ error: 'targetType, targetName and targetId are required.' }, { status: 400 });
+    if (!targetType || !targetId) {
+      return NextResponse.json({ error: 'targetType and targetId are required.' }, { status: 400 });
     }
+    const name = (targetName && String(targetName).trim()) || String(targetId);
 
     const enumType = String(targetType).toUpperCase() as FavoriteTargetType;
     if (!VALID_TYPES.includes(enumType)) {
@@ -70,12 +71,12 @@ export async function POST(request: NextRequest) {
           targetId: String(targetId),
         },
       },
-      update: { targetName: String(targetName), targetHandle: targetHandle || null },
+      update: { targetName: name, targetHandle: targetHandle || null },
       create: {
         userId,
         targetType: enumType,
         targetId: String(targetId),
-        targetName: String(targetName),
+        targetName: name,
         targetHandle: targetHandle || null,
       },
     });
@@ -97,14 +98,24 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = request.nextUrl;
     const id = searchParams.get('id');
+    const targetType = searchParams.get('targetType');
+    const targetId = searchParams.get('targetId');
 
-    if (!id) {
-      return NextResponse.json({ error: 'Favorite id is required.' }, { status: 400 });
+    if (id) {
+      await db.userFavorite.deleteMany({
+        where: { id: String(id), userId },
+      });
+    } else if (targetType && targetId) {
+      await db.userFavorite.deleteMany({
+        where: {
+          userId,
+          targetType: String(targetType).toUpperCase() as FavoriteTargetType,
+          targetId: String(targetId),
+        },
+      });
+    } else {
+      return NextResponse.json({ error: 'id or targetType+targetId required.' }, { status: 400 });
     }
-
-    await db.userFavorite.deleteMany({
-      where: { id: String(id), userId },
-    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {

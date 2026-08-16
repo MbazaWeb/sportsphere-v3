@@ -236,3 +236,19 @@ final matchesProvider = FutureProvider.family<List<MatchItem>, MatchesKey>((ref,
 final standingsProvider = FutureProvider((ref) async {
   return ref.watch(standingsApiProvider).getStandings();
 });
+
+
+/// Cached set of saved post IDs for the current user (server-backed).
+final savedPostIdsProvider = FutureProvider<Set<String>>((ref) async {
+  final auth = ref.watch(authProvider);
+  if (!auth.isAuthenticated) return <String>{};
+  try {
+    final list = await ref.watch(favoritesApiProvider).list();
+    return list
+        .where((f) => f.targetType.toUpperCase() == 'POST' && (f.targetId?.isNotEmpty ?? false))
+        .map((f) => f.targetId!)
+        .toSet();
+  } catch (_) {
+    return <String>{};
+  }
+});
