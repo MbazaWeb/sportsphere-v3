@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "000000000000",
+    "project_number": "996558146187",
     "project_id": "sportsphere-v1",
-    "storage_bucket": "sportsphere-v1.appspot.com"
+    "storage_bucket": "sportsphere-v1.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "mobilesdk_app_id": "1:996558146187:android:2d85fb4bf455d01750a28e",
         "android_client_info": {
           "package_name": "com.sportsphere.app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "REPLACE_ME_RUN_FLUTTERFIRE_CONFIGURE"
+          "current_key": "AIzaSyCBHu0iroFq_cl0TzdHsGXoNTijv39XNHc"
         }
       ],
       "services": {

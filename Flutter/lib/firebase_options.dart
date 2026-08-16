@@ -46,32 +46,32 @@ class DefaultFirebaseOptions {
   }
 
   // Placeholder values — run `flutterfire configure --project=sportsphere-v1`
+
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'REPLACE_ME',
-    appId: 'REPLACE_ME',
-    messagingSenderId: 'REPLACE_ME',
+    apiKey: 'AIzaSyC0ICXMDANhDGFTl7csLlPlUPUhqmOqF4I',
+    appId: '1:996558146187:web:95c4ce80e1aa440e50a28e',
+    messagingSenderId: '996558146187',
     projectId: 'sportsphere-v1',
     authDomain: 'sportsphere-v1.firebaseapp.com',
-    storageBucket: 'sportsphere-v1.appspot.com',
+    storageBucket: 'sportsphere-v1.firebasestorage.app',
+    measurementId: 'G-62W25YYRE8',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'REPLACE_ME',
-    appId: 'REPLACE_ME',
-    messagingSenderId: 'REPLACE_ME',
+    apiKey: 'AIzaSyCBHu0iroFq_cl0TzdHsGXoNTijv39XNHc',
+    appId: '1:996558146187:android:2d85fb4bf455d01750a28e',
+    messagingSenderId: '996558146187',
     projectId: 'sportsphere-v1',
-    storageBucket: 'sportsphere-v1.appspot.com',
+    storageBucket: 'sportsphere-v1.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'REPLACE_ME',
-    appId: 'REPLACE_ME',
-    messagingSenderId: 'REPLACE_ME',
+    apiKey: 'AIzaSyBzX9zdTeFRCGXHphU0wzbxktEPhmxDRSw',
+    appId: '1:996558146187:ios:bcd4d53463c7bda650a28e',
+    messagingSenderId: '996558146187',
     projectId: 'sportsphere-v1',
-    storageBucket: 'sportsphere-v1.appspot.com',
-    iosBundleId: 'com.sportsphere.app',
+    storageBucket: 'sportsphere-v1.firebasestorage.app',
+    iosBundleId: 'com.sportsphere.sportsphere',
   );
-
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'REPLACE_ME',
     appId: 'REPLACE_ME',
