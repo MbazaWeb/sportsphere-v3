@@ -6,6 +6,8 @@ import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
 import '../domain/profile_role_registry.dart';
 import '../../messages/presentation/chat_thread_sheet.dart';
+import 'performance_card.dart';
+import 'role_tab_content.dart';
 import '../../social/data/follows_api.dart';
 import 'fans_list_page.dart';
 
@@ -911,12 +913,52 @@ class _TabContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final role = (user['role'] ?? roleCfg.role).toString().toLowerCase();
+    final liveTabs = {
+      'career', 'statistics', 'achievements', 'matches', 'overview',
+      'performance', 'rankings', 'squad', 'fixtures', 'standings', 'about',
+      'feed', 'media', 'shop', 'tickets',
+    };
+
     if (tabId == 'fans') {
       return _FansPreview(userId: userId, user: user);
     }
+
     if (tabId == 'overview') {
-      return _OverviewTab(user: user, roleCfg: roleCfg);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (userId.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: PerformanceCard(userId: userId),
+            ),
+          _OverviewTab(user: user, roleCfg: roleCfg),
+        ],
+      );
     }
+
+    if (tabId == 'performance' || tabId == 'rankings') {
+      return Column(
+        children: [
+          if (userId.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: PerformanceCard(userId: userId),
+            ),
+          Expanded(child: RoleTabContent(tabId: tabId, role: role, profileKey: user['handle']?.toString())),
+        ],
+      );
+    }
+
+    if (liveTabs.contains(tabId) && role != 'fan') {
+      return RoleTabContent(
+        tabId: tabId,
+        role: role,
+        profileKey: user['handle']?.toString(),
+      );
+    }
+
     return _PlaceholderTab(
       title: roleCfg.tabs
           .firstWhere((t) => t.id == tabId,

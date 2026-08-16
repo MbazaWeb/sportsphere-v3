@@ -2,8 +2,20 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import ApiProviderManager from "./ApiProviderManager";
+import { adminFetch } from "@/lib/admin-api";
 import {
-import { adminFetch } from '@/lib/admin-api';
+  RefreshCw,
+  Database,
+  Activity,
+  CheckCircle2,
+  AlertCircle,
+  Play,
+  Layers,
+  Users,
+  Shield,
+  Trophy,
+  UserCircle,
+} from "lucide-react";
 
 async function readJson(res: Response) {
   const ct = res.headers.get("content-type") || "";
@@ -19,19 +31,6 @@ async function readJson(res: Response) {
     throw new Error(`Invalid JSON (${res.status}): ${text.slice(0, 120)}`);
   }
 }
-
-  RefreshCw,
-  Database,
-  Activity,
-  CheckCircle2,
-  AlertCircle,
-  Play,
-  Layers,
-  Users,
-  Shield,
-  Trophy,
-  UserCircle,
-} from "lucide-react";
 
 interface Stats {
   totalMatches: number;
