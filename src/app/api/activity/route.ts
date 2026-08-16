@@ -8,8 +8,12 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    // Resolve user from session cookie (no proxy required)
-    const token = request.cookies.get(SESSION_COOKIE)?.value;
+    // Resolve user from session cookie or Bearer token (mobile)
+    let token = request.cookies.get(SESSION_COOKIE)?.value;
+    if (!token) {
+      const authHeader = request.headers.get('Authorization');
+      if (authHeader?.startsWith('Bearer ')) token = authHeader.slice(7);
+    }
     const payload = await verifySession(token);
     if (!payload) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });

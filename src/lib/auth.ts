@@ -19,10 +19,20 @@ export {
 } from './session';
 export type { SessionPayload } from './session';
 
-// ─── Convenience: extract user ID from request session cookie ─
-// Use this in API routes instead of relying on the middleware x-user-id header.
+// ─── Convenience: extract user ID from request session cookie OR Bearer token ─
+// Web clients send the JWT in an httpOnly cookie; mobile/Flutter clients send
+// it via the Authorization: Bearer header. This helper supports both.
 export async function getUserIdFromRequest(request: NextRequest): Promise<string | null> {
-  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  let token = request.cookies.get(SESSION_COOKIE)?.value;
+
+  // Fallback: mobile clients (Flutter, etc.) send JWT via Authorization header
+  if (!token) {
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.slice(7);
+    }
+  }
+
   const payload = await verifySession(token);
   return payload?.sub ?? null;
 }

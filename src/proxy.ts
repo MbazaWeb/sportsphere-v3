@@ -71,7 +71,11 @@ export async function proxy(request: NextRequest) {
       return NextResponse.next({ request: { headers: requestHeaders } });
     }
 
-    const token = request.cookies.get(SESSION_COOKIE)?.value;
+    let token = request.cookies.get(SESSION_COOKIE)?.value;
+    if (!token) {
+      const authHeader = request.headers.get('Authorization');
+      if (authHeader?.startsWith('Bearer ')) token = authHeader.slice(7);
+    }
     if (!token) {
       const loginUrl = new URL('/admin/login', request.url);
       loginUrl.searchParams.set('next', pathname);
@@ -96,7 +100,11 @@ export async function proxy(request: NextRequest) {
   const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
   if (isProtected) {
-    const token = request.cookies.get(SESSION_COOKIE)?.value;
+    let token = request.cookies.get(SESSION_COOKIE)?.value;
+    if (!token) {
+      const authHeader = request.headers.get('Authorization');
+      if (authHeader?.startsWith('Bearer ')) token = authHeader.slice(7);
+    }
     const payload = await verifySession(token);
 
     if (!payload) {

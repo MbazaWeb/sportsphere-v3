@@ -6,7 +6,11 @@ import { isTypedProfileRole, fetchTypedProfileRecord } from '@/lib/typed-profile
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  let token = request.cookies.get(SESSION_COOKIE)?.value;
+  if (!token) {
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader?.startsWith('Bearer ')) token = authHeader.slice(7);
+  }
   const payload = await verifySession(token);
   if (!payload) {
     return NextResponse.json({ user: null }, { status: 200 });

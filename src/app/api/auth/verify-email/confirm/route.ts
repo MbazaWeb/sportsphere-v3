@@ -8,7 +8,11 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     // Authenticate
-    const token = request.cookies.get(SESSION_COOKIE)?.value;
+    let token = request.cookies.get(SESSION_COOKIE)?.value;
+    if (!token) {
+      const authHeader = request.headers.get('Authorization');
+      if (authHeader?.startsWith('Bearer ')) token = authHeader.slice(7);
+    }
     const session = await verifySession(token);
     if (!session?.sub) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
