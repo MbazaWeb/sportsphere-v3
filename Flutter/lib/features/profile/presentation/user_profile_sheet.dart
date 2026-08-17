@@ -504,6 +504,8 @@ class _ProfileContent extends ConsumerWidget {
   );
 }
 
+}
+
 class _StatCard extends StatelessWidget {
   const _StatCard({required this.value, required this.label, required this.color, this.onTap});
   final String value, label;
