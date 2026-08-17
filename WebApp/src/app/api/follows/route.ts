@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       await db.follow.delete({ where: { followerId_followingId: { followerId: userId, followingId: String(targetUserId) } } });
     } else {
       // Follow
-      const sportsRoles = new Set(["player", "team", "coach", "club", "league", "scout", "agent", "referee", "commentator", "academy", "competition", "organization", "national_team"]);
+      const sportsRoles = new Set(["player", "team", "coach", "national_team", "club"]);
       // Use explicit action from client if provided, else auto-detect from role
       const kind = explicitAction === 'fan' ? 'fan'
         : explicitAction === 'follow' ? 'follow'

@@ -16,17 +16,14 @@ import '../../../core/network/api_client.dart';
 
 // ─── Role classification ──────────────────────────────────────────────────────
 
-/// Roles that support "Become a Fan" (exclusive sports identity)
+/// Roles that support "Become a Fan" (personal sports identity only)
 const fanRoles = <String>{
-  'player', 'team', 'coach', 'club', 'league',
-  'referee', 'commentator', 'academy', 'competition',
-  'national_team', 'organization',
+  'player', 'team', 'coach', 'national_team', 'club',
 };
 
 /// Roles that show "Join" instead of follow
 const joinRoles = <String>{
-  'community', 'business', 'media', 'creator',
-  'commercial-partner',
+  'community',
 };
 
 /// Get the primary action label for a role

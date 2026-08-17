@@ -11,11 +11,16 @@ import 'role_tab_content.dart';
 import '../../social/data/follows_api.dart';
 import 'fans_list_page.dart';
 
-/// Sports roles that show "Become a Fan" instead of generic "Follow".
+/// Roles that show "Become a Fan" (personal sports identity — player, coach, team, national team).
 const _sportsRoles = <String>{
-  'player', 'team', 'coach', 'club', 'league', 'scout',
-  'agent', 'referee', 'commentator', 'stadium', 'venue',
-  'academy', 'competition', 'national_team', 'organization',
+  'player', 'team', 'coach', 'national_team', 'club',
+};
+
+/// Roles that show "Follow" only (institutions, orgs, media).
+const _followOnlyRoles = <String>{
+  'academy', 'competition', 'league', 'organization', 'referee',
+  'commentator', 'journalist', 'analyst', 'creator', 'scout',
+  'agent', 'stadium', 'venue', 'business', 'commercial-partner', 'fan',
 };
 
 /// Role-based cover gradient colors (mirrors web TYPE_CONFIG gradients).
