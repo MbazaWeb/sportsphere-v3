@@ -5,16 +5,22 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/constants/api_config.dart';
 import '../../../shared/models/post.dart';
+import '../../../shared/models/match.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
 import '../../profile/presentation/user_profile_sheet.dart';
 import '../../../shared/widgets/ss_refresh.dart';
 import '../../../shared/widgets/media_gallery.dart';
 
-/// Live Sportlights feed from GET /api/feed with infinite scroll
+// ─── Helper ──────────────────────────────────────────────────────────────────
+String _resolveUrl(String url) =>
+    (url.startsWith('http://') || url.startsWith('https://'))
+        ? url
+        : '${ApiConfig.baseUrl}$url';
+
+// ─── SportlightsTab ───────────────────────────────────────────────────────────
 class SportlightsTab extends ConsumerStatefulWidget {
   const SportlightsTab({super.key});
-
   @override
   ConsumerState<SportlightsTab> createState() => _SportlightsTabState();
 }
@@ -28,6 +34,10 @@ class _SportlightsTabState extends ConsumerState<SportlightsTab> {
   bool _hasMore = true;
   String? _error;
   static const _pageSize = 20;
+
+  // Inline suggestion/result cards shown at fixed positions in feed
+  // Position 0 = after 3rd post, position 1 = after 8th, etc.
+  static const _injectPositions = {3: 'results', 8: 'suggestions', 14: 'accounts'};
 
   @override
   void initState() {
@@ -77,56 +87,502 @@ class _SportlightsTabState extends ConsumerState<SportlightsTab> {
     }
   }
 
-  Future<void> _refresh() async {
-    await _loadFirst();
+  Future<void> _refresh() async => _loadFirst();
+
+  // Build a virtual list: posts + injected cards
+  List<dynamic> _buildItems() {
+    final items = <dynamic>[];
+    for (var i = 0; i < _posts.length; i++) {
+      items.add(_posts[i]);
+      if (_injectPositions.containsKey(i + 1)) {
+        items.add(_InjectCard(type: _injectPositions[i + 1]!));
+      }
+    }
+    if (_hasMore) items.add(_LoadMore());
+    return items;
   }
 
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(40),
-          child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
-        ),
-      );
+      return const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)));
     }
-
-    if (_error != null) {
-      return FeedErrorView(message: _error!, onRetry: _loadFirst);
-    }
-
+    if (_error != null) return FeedErrorView(message: _error!, onRetry: _loadFirst);
     if (_posts.isEmpty) {
-      return SsRefreshScroll(
-        onRefresh: _refresh,
-        child: Center(
-          child: Text('No posts yet — pull to refresh', style: GoogleFonts.inter(color: AppColors.mutedForeground)),
-        ),
-      );
+      return SsRefreshScroll(onRefresh: _refresh, child: Center(child: Text('No posts yet — pull to refresh', style: GoogleFonts.inter(color: AppColors.mutedForeground))));
     }
 
+    final items = _buildItems();
     return SsRefresh(
       onRefresh: _refresh,
-      child: ListView.builder(
+      child: ListView.separated(
         controller: _scroll,
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-        itemCount: _posts.length + (_hasMore ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: 14),
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 100),
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 1),
         itemBuilder: (context, i) {
-          if (i >= _posts.length) {
-            return const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
-            );
-          }
-          return LiveFeedCard(post: _posts[i], index: i);
+          final item = items[i];
+          if (item is Post) return LiveFeedCard(post: item, index: i);
+          if (item is _InjectCard) return _buildInjected(item.type);
+          return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)));
         },
+      ),
+    );
+  }
+
+  Widget _buildInjected(String type) {
+    switch (type) {
+      case 'results': return const _RecentResultsCard();
+      case 'suggestions': return const _SuggestedAccountsCard();
+      case 'accounts': return const _TopAccountsCard();
+      default: return const SizedBox.shrink();
+    }
+  }
+}
+
+class _InjectCard { const _InjectCard({required this.type}); final String type; }
+class _LoadMore { const _LoadMore(); }
+
+// ─── RECENT RESULTS CARD ──────────────────────────────────────────────────────
+class _RecentResultsCard extends ConsumerWidget {
+  const _RecentResultsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final matchesAsync = ref.watch(matchesProvider(const MatchesKey(status: 'results')));
+    return Container(
+      color: AppColors.background,
+      padding: const EdgeInsets.fromLTRB(0, 12, 0, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            child: Row(
+              children: [
+                const Icon(Icons.emoji_events_outlined, size: 16, color: AppColors.primary),
+                const SizedBox(width: 6),
+                Text('Recent Results', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: -0.3)),
+                const Spacer(),
+                Text('See all', style: GoogleFonts.inter(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          matchesAsync.when(
+            loading: () => const SizedBox(height: 80, child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2))),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (matches) {
+              final recent = matches.take(5).toList();
+              if (recent.isEmpty) return const SizedBox.shrink();
+              return SizedBox(
+                height: 110,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                  itemCount: recent.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 10),
+                  itemBuilder: (context, i) => _ResultChip(m: recent[i]),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
+        ],
       ),
     );
   }
 }
 
+class _ResultChip extends StatelessWidget {
+  const _ResultChip({required this.m});
+  final MatchItem m;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 160,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(m.league ?? 'Match', style: GoogleFonts.inter(fontSize: 9, color: AppColors.primary, fontWeight: FontWeight.w700, letterSpacing: 0.5), maxLines: 1, overflow: TextOverflow.ellipsis),
+          const Spacer(),
+          Row(
+            children: [
+              Expanded(child: Text(m.homeTeam, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Text('${m.homeScore ?? 0} - ${m.awayScore ?? 0}', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.foreground)),
+              ),
+              Expanded(child: Text(m.awayTeam, textAlign: TextAlign.right, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis)),
+            ],
+          ),
+          const Spacer(),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(6)),
+              child: Text('FT', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.mutedForeground)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── SUGGESTED ACCOUNTS CARD ─────────────────────────────────────────────────
+class _SuggestedAccountsCard extends StatefulWidget {
+  const _SuggestedAccountsCard();
+  @override
+  State<_SuggestedAccountsCard> createState() => _SuggestedAccountsCardState();
+}
+
+class _SuggestedAccountsCardState extends State<_SuggestedAccountsCard> {
+  // Static sample suggestions — replace with API call when endpoint ready
+  final _suggestions = [
+    _SuggestItem(name: 'Simba SC', handle: '@simbasc', badge: 'Team', emoji: '👥', isTeam: true),
+    _SuggestItem(name: 'Young Africans SC', handle: '@yanga', badge: 'Team', emoji: '👥', isTeam: true),
+    _SuggestItem(name: 'NBC Premier League', handle: '@nbcpremier', badge: 'League', emoji: '🏆', isTeam: false),
+    _SuggestItem(name: 'Mbwana Samatta', handle: '@samatta', badge: 'Player', emoji: '⚽', isTeam: false),
+  ];
+
+  final _followed = <int>{};
+  final _fanned = <int>{};
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.background,
+      padding: const EdgeInsets.fromLTRB(0, 12, 0, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            child: Row(
+              children: [
+                const Icon(Icons.auto_awesome_outlined, size: 16, color: AppColors.primary),
+                const SizedBox(width: 6),
+                Text('Suggested For You', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: -0.3)),
+              ],
+            ),
+          ),
+          ..._suggestions.asMap().entries.map((e) => _SuggestionRow(
+            item: e.value,
+            index: e.key,
+            followed: _followed.contains(e.key),
+            fanned: _fanned.contains(e.key),
+            onFollow: () => setState(() {
+              if (_followed.contains(e.key)) _followed.remove(e.key);
+              else _followed.add(e.key);
+            }),
+            onFan: () => setState(() {
+              if (_fanned.contains(e.key)) _fanned.remove(e.key);
+              else _fanned.add(e.key);
+            }),
+          )),
+          const SizedBox(height: 8),
+          Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
+        ],
+      ),
+    );
+  }
+}
+
+class _SuggestItem {
+  const _SuggestItem({required this.name, required this.handle, required this.badge, required this.emoji, required this.isTeam});
+  final String name, handle, badge, emoji;
+  final bool isTeam;
+}
+
+class _SuggestionRow extends StatelessWidget {
+  const _SuggestionRow({required this.item, required this.index, required this.followed, required this.fanned, required this.onFollow, required this.onFan});
+  final _SuggestItem item;
+  final int index;
+  final bool followed, fanned;
+  final VoidCallback onFollow, onFan;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Badge header — "@SportSphere · Suggestion"
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+                  child: Text('@SportSphere', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                ),
+                const SizedBox(width: 6),
+                Text('· Suggestion', style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            // Account info
+            Row(
+              children: [
+                // Logo / avatar
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                  ),
+                  child: Center(child: Text(item.emoji, style: const TextStyle(fontSize: 20))),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(item.name, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14)),
+                      Text('${item.handle} · ${item.badge}', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            // Action buttons
+            Row(
+              children: [
+                if (item.isTeam)
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: onFan,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: fanned ? AppColors.primary : AppColors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          fanned ? 'Fan ✓' : 'Become a Fan',
+                          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: fanned ? AppColors.primaryForeground : AppColors.primary),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (item.isTeam) const SizedBox(width: 8),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: onFollow,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: followed ? Colors.white.withValues(alpha: 0.08) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white.withValues(alpha: followed ? 0.12 : 0.15)),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        followed ? 'Following' : 'Follow',
+                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: followed ? AppColors.mutedForeground : AppColors.foreground),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── TOP ACCOUNTS ─────────────────────────────────────────────────────────────
+class _TopAccountsCard extends StatefulWidget {
+  const _TopAccountsCard();
+  @override
+  State<_TopAccountsCard> createState() => _TopAccountsCardState();
+}
+
+class _TopAccountsCardState extends State<_TopAccountsCard> {
+  final _followed = <int>{};
+  final _accounts = [
+    _SuggestItem(name: 'Pamba Jiji FC', handle: '@pambajiji', badge: 'Team', emoji: '⚽', isTeam: true),
+    _SuggestItem(name: 'Dodoma FC', handle: '@dodomafc', badge: 'Team', emoji: '⚽', isTeam: true),
+    _SuggestItem(name: 'TFF Tanzania', handle: '@tff_tz', badge: 'League', emoji: '🏆', isTeam: false),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.background,
+      padding: const EdgeInsets.fromLTRB(0, 12, 0, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            child: Row(
+              children: [
+                const Icon(Icons.leaderboard_outlined, size: 16, color: AppColors.primary),
+                const SizedBox(width: 6),
+                Text('Top Accounts', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: -0.3)),
+              ],
+            ),
+          ),
+          ..._accounts.asMap().entries.map((e) => Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 40, height: 40,
+                  decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.primary.withValues(alpha: 0.2))),
+                  child: Center(child: Text(e.value.emoji, style: const TextStyle(fontSize: 18))),
+                ),
+                const SizedBox(width: 10),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(e.value.name, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13)),
+                  Text('${e.value.handle} · ${e.value.badge}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedForeground)),
+                ])),
+                GestureDetector(
+                  onTap: () => setState(() { if (_followed.contains(e.key)) _followed.remove(e.key); else _followed.add(e.key); }),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: _followed.contains(e.key) ? Colors.white.withValues(alpha: 0.06) : AppColors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: _followed.contains(e.key) ? Colors.white.withValues(alpha: 0.1) : AppColors.primary.withValues(alpha: 0.4)),
+                    ),
+                    child: Text(_followed.contains(e.key) ? 'Following' : 'Follow', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: _followed.contains(e.key) ? AppColors.mutedForeground : AppColors.primary)),
+                  ),
+                ),
+              ],
+            ),
+          )),
+          const SizedBox(height: 8),
+          Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── MATCH CARD in Feed (Image 1 style) ─────────────────────────────────────
+class MatchFeedCard extends StatelessWidget {
+  const MatchFeedCard({super.key, required this.m});
+  final MatchItem m;
+
+  @override
+  Widget build(BuildContext context) {
+    final score = (m.isFinished || m.isLive) ? '${m.homeScore ?? 0} - ${m.awayScore ?? 0}' : 'vs';
+    final statusLabel = m.isLive ? (m.minute != null ? "${m.minute}'" : 'LIVE') : m.isFinished ? 'FT' : (m.kickoff ?? m.status).toUpperCase();
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        children: [
+          // League header
+          Row(
+            children: [
+              const Icon(Icons.emoji_events_outlined, size: 14, color: AppColors.primary),
+              const SizedBox(width: 6),
+              Text(m.league ?? 'Match', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: m.isLive ? AppColors.primary.withValues(alpha: 0.15) : AppColors.surface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: m.isLive ? AppColors.primary.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.08)),
+                ),
+                child: Text(statusLabel, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w800, color: m.isLive ? AppColors.primary : AppColors.mutedForeground)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Teams + score
+          Row(
+            children: [
+              // Home team
+              Expanded(
+                child: Column(
+                  children: [
+                    if (m.homeBadge != null && m.homeBadge!.isNotEmpty)
+                      Image.network(_resolveUrl(m.homeBadge!), width: 44, height: 44, errorBuilder: (_, __, ___) => const Icon(Icons.sports_soccer, size: 36, color: AppColors.mutedForeground))
+                    else
+                      Container(width: 44, height: 44, decoration: BoxDecoration(color: AppColors.surface, shape: BoxShape.circle), child: const Icon(Icons.sports_soccer, size: 22, color: AppColors.mutedForeground)),
+                    const SizedBox(height: 8),
+                    Text(m.homeTeam, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  ],
+                ),
+              ),
+              // Score
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(score, style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.w900, color: m.isLive ? AppColors.primary : AppColors.foreground, letterSpacing: -0.5)),
+              ),
+              // Away team
+              Expanded(
+                child: Column(
+                  children: [
+                    if (m.awayBadge != null && m.awayBadge!.isNotEmpty)
+                      Image.network(_resolveUrl(m.awayBadge!), width: 44, height: 44, errorBuilder: (_, __, ___) => const Icon(Icons.sports_soccer, size: 36, color: AppColors.mutedForeground))
+                    else
+                      Container(width: 44, height: 44, decoration: BoxDecoration(color: AppColors.surface, shape: BoxShape.circle), child: const Icon(Icons.sports_soccer, size: 22, color: AppColors.mutedForeground)),
+                    const SizedBox(height: 8),
+                    Text(m.awayTeam, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // Actions
+          Row(
+            children: [
+              _Act(Icons.favorite_border_rounded, '0'),
+              const SizedBox(width: 16),
+              _Act(Icons.chat_bubble_outline_rounded, '0'),
+              const SizedBox(width: 16),
+              _Act(Icons.ios_share_outlined, '0'),
+              const Spacer(),
+              Icon(Icons.bookmark_border_rounded, size: 18, color: AppColors.mutedForeground.withValues(alpha: 0.85)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── LiveFeedCard ────────────────────────────────────────────────────────────
 class LiveFeedCard extends ConsumerStatefulWidget {
   const LiveFeedCard({super.key, required this.post, this.index = 0});
   final Post post;
@@ -155,10 +611,7 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
       try {
         final ids = await ref.read(savedPostIdsProvider.future);
         if (!mounted) return;
-        setState(() {
-          _bookmarked = ids.contains(widget.post.id);
-          _hydratedSaved = true;
-        });
+        setState(() { _bookmarked = ids.contains(widget.post.id); _hydratedSaved = true; });
       } catch (_) {
         if (mounted) setState(() => _hydratedSaved = true);
       }
@@ -173,10 +626,7 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
     try {
       final r = await ref.read(socialApiProvider).toggleLike(widget.post.id);
       if (!mounted) return;
-      setState(() {
-        _liked = r.liked;
-        _likes = r.likeCount;
-      });
+      setState(() { _liked = r.liked; _likes = r.likeCount; });
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
@@ -189,41 +639,24 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
       return;
     }
     final prev = _bookmarked;
-    setState(() => _bookmarked = !prev); // optimistic
+    setState(() => _bookmarked = !prev);
     try {
-      final next = await ref.read(favoritesApiProvider).togglePost(
-            widget.post.id,
-            currentlySaved: prev,
-            preview: widget.post.content,
-          );
+      final next = await ref.read(favoritesApiProvider).togglePost(widget.post.id, currentlySaved: prev, preview: widget.post.content);
       if (!mounted) return;
       setState(() => _bookmarked = next);
       ref.invalidate(savedPostIdsProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(next ? 'Saved' : 'Removed from saved')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(next ? 'Saved' : 'Removed from saved')));
     } catch (e) {
       if (!mounted) return;
       setState(() => _bookmarked = prev);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst(RegExp(r'^ApiException\(\d+\):\s*'), ''))),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst(RegExp(r'^ApiException\(\d+\):\s*'), ''))));
     }
   }
 
   void _share(BuildContext ctx, Post post) {
     final text = '${post.content}\n\nhttps://sportssphere.fun/sportsphere/p/${post.id}';
-    ScaffoldMessenger.of(ctx).showSnackBar(
-      SnackBar(
-        content: const Text('Link copied to clipboard'),
-        action: SnackBarAction(
-          label: 'OK',
-          onPressed: () {},
-        ),
-      ),
-    );
-    // Use platform share if available, otherwise clipboard
     Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Link copied to clipboard')));
   }
 
   void _openComments() {
@@ -231,15 +664,8 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.backgroundSecondary,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => _CommentsSheet(
-        postId: widget.post.id,
-        onCount: (n) {
-          if (mounted) setState(() => _comments = n);
-        },
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => _CommentsSheet(postId: widget.post.id, onCount: (n) { if (mounted) setState(() => _comments = n); }),
     );
   }
 
@@ -251,141 +677,86 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
       if (diff.inHours < 24) return '${diff.inHours}h ago';
       if (diff.inDays < 7) return '${diff.inDays}d ago';
       return '${d.day}/${d.month}/${d.year}';
-    } catch (_) {
-      return '';
-    }
+    } catch (_) { return ''; }
   }
 
   @override
-
-  @override
   Widget build(BuildContext context) {
-    // Keep provider watched so cache stays warm across cards
     ref.watch(savedPostIdsProvider);
     final post = widget.post;
     final u = post.user;
     final time = _relTime(post.createdAt);
 
-    return AnimatedGlassCard(
-      index: widget.index,
-      borderRadius: 20,
-      padding: const EdgeInsets.fromLTRB(16, 15, 16, 14),
+    return Container(
+      color: AppColors.background,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Author row
           GestureDetector(
-            onTap: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => UserProfileSheet(
-                  handle: u.handle,
-                  userId: post.userId,
-                  initialName: u.name,
-                ),
-              );
-            },
+            onTap: () => showModalBottomSheet(
+              context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
+              builder: (_) => UserProfileSheet(handle: u.handle, userId: post.userId, initialName: u.name),
+            ),
             child: Row(
-            children: [
-              _Avatar(url: u.avatarUrl, name: u.name),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            u.name,
-                            style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 15, letterSpacing: -0.2, height: 1.2),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
+              children: [
+                _Avatar(url: u.avatarUrl, name: u.name),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Flexible(child: Text(u.name, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14, letterSpacing: -0.2), overflow: TextOverflow.ellipsis)),
                         if (u.isVerified) ...[
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 5),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF22C55E).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'VERIFIED',
-                              style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: const Color(0xFF22C55E)),
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(color: const Color(0xFF22C55E).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
+                            child: Text('VERIFIED', style: GoogleFonts.inter(fontSize: 8, fontWeight: FontWeight.w800, color: const Color(0xFF22C55E))),
                           ),
                         ],
-                      ],
-                    ),
-                    Text(
-                      '${u.handle.startsWith('@') ? u.handle : '@${u.handle}'} · $time',
-                      style: GoogleFonts.inter(fontSize: 12.5, color: AppColors.mutedForeground, letterSpacing: -0.1, height: 1.25),
-                    ),
-                  ],
+                      ]),
+                      Text('${u.handle.startsWith('@') ? u.handle : '@${u.handle}'} · $time', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground)),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+                Icon(Icons.more_horiz, size: 18, color: AppColors.mutedForeground.withValues(alpha: 0.6)),
+              ],
+            ),
           ),
           if (post.content.isNotEmpty) ...[
             const SizedBox(height: 10),
-            Text(post.content, style: GoogleFonts.inter(fontSize: 15.5, height: 1.45, letterSpacing: -0.15, fontWeight: FontWeight.w400)),
+            Text(post.content, style: GoogleFonts.inter(fontSize: 15, height: 1.45, letterSpacing: -0.1)),
           ],
           if (post.mediaUrls.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            MediaGallery(
-              imageUrls: post.mediaUrls,
-              onTapImage: (i, url) => MediaGallery.showViewer(context, post.mediaUrls, initialIndex: i),
-            ),
+            const SizedBox(height: 10),
+            MediaGallery(imageUrls: post.mediaUrls, onTapImage: (i, url) => MediaGallery.showViewer(context, post.mediaUrls, initialIndex: i)),
           ],
-          if (post.poll != null) ...[
-            const SizedBox(height: 12),
-            _PollBlock(poll: post.poll!, postId: post.id),
-          ],
-          if (post.prediction != null) ...[
-            const SizedBox(height: 12),
-            _PredictionBlock(pred: post.prediction!),
-          ],
+          if (post.poll != null) ...[const SizedBox(height: 10), _PollBlock(poll: post.poll!, postId: post.id)],
+          if (post.prediction != null) ...[const SizedBox(height: 10), _PredictionBlock(pred: post.prediction!)],
           const SizedBox(height: 12),
           Row(
             children: [
-              GestureDetector(
-                onTap: _toggleLike,
-                child: _Act(
-                  _liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                  '$_likes',
-                  color: _liked ? const Color(0xFFF43F5E) : null,
-                ),
-              ),
-              const SizedBox(width: 16),
-              GestureDetector(
-                onTap: _openComments,
-                child: _Act(Icons.chat_bubble_outline_rounded, '$_comments'),
-              ),
-              const SizedBox(width: 16),
-              GestureDetector(
-                onTap: () => _share(context, post),
-                child: _Act(Icons.ios_share_outlined, '${post.shareCount}'),
-              ),
+              GestureDetector(onTap: _toggleLike, child: _Act(_liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, '$_likes', color: _liked ? const Color(0xFFF43F5E) : null)),
+              const SizedBox(width: 18),
+              GestureDetector(onTap: _openComments, child: _Act(Icons.chat_bubble_outline_rounded, '$_comments')),
+              const SizedBox(width: 18),
+              GestureDetector(onTap: () => _share(context, post), child: _Act(Icons.ios_share_outlined, '${post.shareCount}')),
               const Spacer(),
-              GestureDetector(
-                onTap: _toggleBookmark,
-                child: Icon(
-                  _bookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                  size: 18,
-                  color: _bookmarked ? AppColors.primary : AppColors.mutedForeground.withValues(alpha: 0.85),
-                ),
-              ),
+              GestureDetector(onTap: _toggleBookmark, child: Icon(_bookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, size: 18, color: _bookmarked ? AppColors.primary : AppColors.mutedForeground.withValues(alpha: 0.85))),
             ],
           ),
+          const SizedBox(height: 14),
+          Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
         ],
       ),
     );
   }
 }
 
+// Keep rest of file (Avatar, Act, Poll, Prediction, Comments, AnimatedGlassCard, FeedErrorView)
 class _Avatar extends StatelessWidget {
   const _Avatar({this.url, required this.name});
   final String? url;
@@ -394,16 +765,26 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (url != null && url!.isNotEmpty) {
-      return CircleAvatar(radius: 20, backgroundImage: NetworkImage((url!.startsWith('http://') || url!.startsWith('https://')) ? url! : '\${ApiConfig.baseUrl}\$url!'));
+      return CircleAvatar(radius: 20, backgroundImage: NetworkImage(_resolveUrl(url!)));
     }
-    final initials = name.isNotEmpty
-        ? name.trim().split(RegExp(r'\s+')).take(2).map((e) => e[0]).join().toUpperCase()
-        : '?';
-    return CircleAvatar(
-      radius: 20,
-      backgroundColor: AppColors.surfaceElevated,
-      child: Text(initials, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.primary)),
-    );
+    final initials = name.isNotEmpty ? name.trim().split(RegExp(r'\s+')).take(2).map((e) => e[0]).join().toUpperCase() : '?';
+    return CircleAvatar(radius: 20, backgroundColor: AppColors.surfaceElevated, child: Text(initials, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.primary)));
+  }
+}
+
+class _Act extends StatelessWidget {
+  const _Act(this.icon, this.label, {this.color});
+  final IconData icon;
+  final String label;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 18, color: color ?? AppColors.mutedForeground.withValues(alpha: 0.85)),
+      const SizedBox(width: 5),
+      Text(label, style: GoogleFonts.inter(fontSize: 13, color: color ?? AppColors.mutedForeground, fontWeight: FontWeight.w500)),
+    ]);
   }
 }
 
