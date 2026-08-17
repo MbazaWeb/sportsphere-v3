@@ -490,24 +490,42 @@ class _MatchCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
+              // Home team
               Expanded(
                 child: GestureDetector(
                   onTap: () => _openTeamDetail(context, m.homeTeam, m.homeBadge, m.league),
-                  child: Text(m.homeTeam, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
+                  child: Row(
+                    children: [
+                      _TeamLogo(url: m.homeBadge),
+                      const SizedBox(width: 8),
+                      Flexible(child: Text(m.homeTeam, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13), overflow: TextOverflow.ellipsis)),
+                    ],
+                  ),
                 ),
               ),
-              Text(
-                score,
-                style: GoogleFonts.outfit(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: m.isLive ? AppColors.primary : AppColors.foreground,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  score,
+                  style: GoogleFonts.outfit(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: m.isLive ? AppColors.primary : AppColors.foreground,
+                  ),
                 ),
               ),
+              // Away team
               Expanded(
                 child: GestureDetector(
                   onTap: () => _openTeamDetail(context, m.awayTeam, m.awayBadge, m.league),
-                  child: Text(m.awayTeam, textAlign: TextAlign.right, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Flexible(child: Text(m.awayTeam, textAlign: TextAlign.right, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13), overflow: TextOverflow.ellipsis)),
+                      const SizedBox(width: 8),
+                      _TeamLogo(url: m.awayBadge),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -516,6 +534,43 @@ class _MatchCard extends StatelessWidget {
       ),
     );
   }
+}
+
+
+class _TeamLogo extends StatelessWidget {
+  const _TeamLogo({this.url, this.size = 28});
+  final String? url;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    if (url != null && url!.isNotEmpty) {
+      final resolved = (url!.startsWith('http://') || url!.startsWith('https://'))
+          ? url!
+          : '\${ApiConfig.baseUrl}\$url!';
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Image.network(
+          resolved,
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => _fallback(),
+        ),
+      );
+    }
+    return _fallback();
+  }
+
+  Widget _fallback() => Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(6),
+    ),
+    child: Icon(Icons.shield_outlined, size: size * 0.6, color: AppColors.mutedForeground),
+  );
 }
 
 class _StandingsView extends ConsumerWidget {

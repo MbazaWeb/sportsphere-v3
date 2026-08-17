@@ -241,26 +241,43 @@ class _ResultChip extends StatelessWidget {
 }
 
 // ─── SUGGESTED ACCOUNTS CARD ─────────────────────────────────────────────────
-class _SuggestedAccountsCard extends StatefulWidget {
+class _SuggestedAccountsCard extends ConsumerStatefulWidget {
   const _SuggestedAccountsCard();
   @override
-  State<_SuggestedAccountsCard> createState() => _SuggestedAccountsCardState();
+  ConsumerState<_SuggestedAccountsCard> createState() => _SuggestedAccountsCardState();
 }
 
-class _SuggestedAccountsCardState extends State<_SuggestedAccountsCard> {
-  // Static sample suggestions — replace with API call when endpoint ready
-  final _suggestions = [
-    _SuggestItem(name: 'Simba SC', handle: '@simbasc', badge: 'Team', emoji: '👥', isTeam: true),
-    _SuggestItem(name: 'Young Africans SC', handle: '@yanga', badge: 'Team', emoji: '👥', isTeam: true),
-    _SuggestItem(name: 'NBC Premier League', handle: '@nbcpremier', badge: 'League', emoji: '🏆', isTeam: false),
-    _SuggestItem(name: 'Mbwana Samatta', handle: '@samatta', badge: 'Player', emoji: '⚽', isTeam: false),
-  ];
+class _SuggestedAccountsCardState extends ConsumerState<_SuggestedAccountsCard> {
+  List<Map<String, dynamic>> _suggestions = [];
+  bool _loading = true;
+  final _followed = <String>{};
+  final _fanned = <String>{};
 
-  final _followed = <int>{};
-  final _fanned = <int>{};
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final api = ref.read(apiClientProvider);
+      final data = await api.getJson('/users/suggested?limit=6');
+      if (!mounted) return;
+      final list = data is List ? data : (data is Map && data['users'] is List ? data['users'] : []);
+      setState(() {
+        _suggestions = list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) return const SizedBox(height: 80, child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)));
+    if (_suggestions.isEmpty) return const SizedBox.shrink();
     return Container(
       color: AppColors.background,
       padding: const EdgeInsets.fromLTRB(0, 12, 0, 4),
@@ -277,25 +294,92 @@ class _SuggestedAccountsCardState extends State<_SuggestedAccountsCard> {
               ],
             ),
           ),
-          ..._suggestions.asMap().entries.map((e) => _SuggestionRow(
-            item: e.value,
-            index: e.key,
-            followed: _followed.contains(e.key),
-            fanned: _fanned.contains(e.key),
-            onFollow: () => setState(() {
-              if (_followed.contains(e.key)) _followed.remove(e.key);
-              else _followed.add(e.key);
-            }),
-            onFan: () => setState(() {
-              if (_fanned.contains(e.key)) _fanned.remove(e.key);
-              else _fanned.add(e.key);
-            }),
-          )),
+          ..._suggestions.map((u) {
+            final uid = u['id']?.toString() ?? '';
+            final name = u['name']?.toString() ?? '';
+            final handle = u['handle']?.toString() ?? '';
+            final role = u['role']?.toString() ?? 'fan';
+            final avatarUrl = u['avatarUrl']?.toString();
+            final isFanRole = {'player','team','coach','national_team','club'}.contains(role.toLowerCase());
+            final isFollowed = _followed.contains(uid);
+            final isFanned = _fanned.contains(uid);
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+                        child: Text('@SportSphere', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.primary))),
+                      const SizedBox(width: 6),
+                      Text('· Suggestion', style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground)),
+                    ]),
+                    const SizedBox(height: 10),
+                    Row(children: [
+                      // Real avatar/logo
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: avatarUrl != null && avatarUrl.isNotEmpty
+                          ? Image.network(_resolveUrl(avatarUrl), width: 44, height: 44, fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => _roleAvatar(role))
+                          : _roleAvatar(role),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(name, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14)),
+                        Text('\${handle.startsWith('@') ? handle : '@\$handle'} · \${_roleLabel(role)}',
+                          style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground)),
+                      ])),
+                    ]),
+                    const SizedBox(height: 10),
+                    Row(children: [
+                      if (isFanRole) ...[
+                        Expanded(child: GestureDetector(
+                          onTap: () => setState(() { if (isFanned) _fanned.remove(uid); else _fanned.add(uid); }),
+                          child: AnimatedContainer(duration: const Duration(milliseconds: 180),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(color: isFanned ? AppColors.primary : AppColors.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.primary.withValues(alpha: 0.4))),
+                            alignment: Alignment.center,
+                            child: Text(isFanned ? 'Fan ✓' : 'Become a Fan', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: isFanned ? AppColors.primaryForeground : AppColors.primary))),
+                        )),
+                        const SizedBox(width: 8),
+                      ],
+                      Expanded(child: GestureDetector(
+                        onTap: () => setState(() { if (isFollowed) _followed.remove(uid); else _followed.add(uid); }),
+                        child: AnimatedContainer(duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(color: isFollowed ? Colors.white.withValues(alpha: 0.08) : Colors.transparent, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white.withValues(alpha: isFollowed ? 0.12 : 0.15))),
+                          alignment: Alignment.center,
+                          child: Text(isFollowed ? 'Following' : 'Follow', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: isFollowed ? AppColors.mutedForeground : AppColors.foreground))),
+                      )),
+                    ]),
+                  ],
+                ),
+              ),
+            );
+          }),
           const SizedBox(height: 8),
           Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
         ],
       ),
     );
+  }
+
+  Widget _roleAvatar(String role) {
+    final emoji = {'player':'⚽','team':'👥','coach':'👨‍🏫','league':'🏆','competition':'🏆','academy':'🧒','media':'📺','journalist':'📰','creator':'🎥','community':'👥','business':'💼'}[role.toLowerCase()] ?? '👤';
+    return Container(width: 44, height: 44, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.primary.withValues(alpha: 0.2))), child: Center(child: Text(emoji, style: const TextStyle(fontSize: 20))));
+  }
+
+  String _roleLabel(String role) {
+    const labels = {'player':'Player','team':'Team','coach':'Coach','national_team':'National Team','league':'League','competition':'Competition','academy':'Academy','media':'Media','journalist':'Journalist','creator':'Creator','community':'Community','business':'Business','fan':'Fan'};
+    return labels[role.toLowerCase()] ?? role;
   }
 }
 
@@ -419,19 +503,37 @@ class _SuggestionRow extends StatelessWidget {
 }
 
 // ─── TOP ACCOUNTS ─────────────────────────────────────────────────────────────
-class _TopAccountsCard extends StatefulWidget {
+class _TopAccountsCard extends ConsumerStatefulWidget {
   const _TopAccountsCard();
   @override
-  State<_TopAccountsCard> createState() => _TopAccountsCardState();
+  ConsumerState<_TopAccountsCard> createState() => _TopAccountsCardState();
 }
 
-class _TopAccountsCardState extends State<_TopAccountsCard> {
-  final _followed = <int>{};
-  final _accounts = [
-    _SuggestItem(name: 'Pamba Jiji FC', handle: '@pambajiji', badge: 'Team', emoji: '⚽', isTeam: true),
-    _SuggestItem(name: 'Dodoma FC', handle: '@dodomafc', badge: 'Team', emoji: '⚽', isTeam: true),
-    _SuggestItem(name: 'TFF Tanzania', handle: '@tff_tz', badge: 'League', emoji: '🏆', isTeam: false),
-  ];
+class _TopAccountsCardState extends ConsumerState<_TopAccountsCard> {
+  final _followed = <String>{};
+  List<Map<String, dynamic>> _accounts = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final api = ref.read(apiClientProvider);
+      final data = await api.getJson('/users/top?limit=5');
+      if (!mounted) return;
+      final list = data is List ? data : (data is Map && data['users'] is List ? data['users'] : []);
+      setState(() {
+        _accounts = list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
