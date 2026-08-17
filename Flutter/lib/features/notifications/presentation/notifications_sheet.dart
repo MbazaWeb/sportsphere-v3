@@ -4,6 +4,14 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../theme/app_colors.dart';
 import '../../profile/presentation/user_profile_sheet.dart';
+import '../../../core/constants/api_config.dart';
+
+
+String _resolveUrl(String url) =>
+    (url.startsWith('http://') || url.startsWith('https://'))
+        ? url
+        : '\${ApiConfig.baseUrl}\$url';
+
 
 class NotificationsSheet extends ConsumerStatefulWidget {
   const NotificationsSheet({super.key, this.onNeedLogin});
@@ -260,7 +268,7 @@ class _NotificationsSheetState extends ConsumerState<NotificationsSheet> {
                                         children: [
                                           CircleAvatar(
                                             radius: 20,
-                                            backgroundImage: actorAvatar != null && actorAvatar.isNotEmpty ? NetworkImage(actorAvatar) : null,
+                                            backgroundImage: actorAvatar != null && actorAvatar.isNotEmpty ? NetworkImage(_resolveUrl(actorAvatar)) : null,
                                             backgroundColor: _colorFor(type).withValues(alpha: 0.12),
                                             child: actorAvatar == null || actorAvatar.isEmpty
                                                 ? Icon(_iconFor(type), size: 18, color: _colorFor(type))

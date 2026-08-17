@@ -283,13 +283,14 @@ class _SplashScreenState extends State<SplashScreen>
                                     child: SizedBox(
                                       width: math.min(size.width * 0.58, 300),
                                       height: math.min(size.height * 0.28, 200),
-                                      child: SvgPicture.asset(
-                                        'assets/images/logo.svg',
+                                      child: Image.asset(
+                                        'assets/images/logo.png',
                                         fit: BoxFit.contain,
-                                        alignment: Alignment.center,
-                                        allowDrawingOutsideViewBox: false,
-                                        placeholderBuilder: (_) =>
-                                            const _FallbackS(),
+                                        errorBuilder: (_, __, ___) =>
+                                            SvgPicture.asset(
+                                              'assets/images/logo.svg',
+                                              fit: BoxFit.contain,
+                                            ),
                                       ),
                                     ),
                                   ),

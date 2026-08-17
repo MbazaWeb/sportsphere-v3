@@ -13,8 +13,9 @@ class AuthLogo extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.only(bottom: 12),
-        child: SvgPicture.asset(
-          'assets/images/logo.svg',
+        child: Image.asset(
+          'assets/images/logo.png',
+          errorBuilder: (_, __, ___) => SvgPicture.asset('assets/images/logo.svg'),
           height: height,
           fit: BoxFit.contain,
           placeholderBuilder: (_) => Text(

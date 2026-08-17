@@ -50,17 +50,14 @@ class HomeHeader extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
                       children: [
-                        SvgPicture.asset(
-                          'assets/images/logo.svg',
+                        Image.asset(
+                          'assets/images/logo.png',
                           height: 26,
                           fit: BoxFit.contain,
-                          placeholderBuilder: (_) => Text(
-                            'S',
-                            style: GoogleFonts.outfit(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.primary,
-                            ),
+                          errorBuilder: (_, __, ___) => SvgPicture.asset(
+                            'assets/images/logo.svg',
+                            height: 26,
+                            fit: BoxFit.contain,
                           ),
                         ),
                         const Spacer(),

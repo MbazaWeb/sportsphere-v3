@@ -7,6 +7,14 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
+import '../../../core/constants/api_config.dart';
+
+
+String _resolveUrl(String url) =>
+    (url.startsWith('http://') || url.startsWith('https://'))
+        ? url
+        : '\${ApiConfig.baseUrl}\$url';
+
 
 class EditProfileSheet extends ConsumerStatefulWidget {
   const EditProfileSheet({super.key});
@@ -145,7 +153,7 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                   children: [
                     CircleAvatar(
                       radius: 48,
-                      backgroundImage: displayAvatar != null && displayAvatar.isNotEmpty ? NetworkImage(displayAvatar) : null,
+                      backgroundImage: displayAvatar != null && displayAvatar.isNotEmpty ? NetworkImage(_resolveUrl(displayAvatar)) : null,
                       backgroundColor: AppColors.surfaceElevated,
                       child: displayAvatar == null || displayAvatar.isEmpty
                           ? Text(initial, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 24, color: AppColors.primary))

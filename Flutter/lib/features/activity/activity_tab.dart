@@ -7,6 +7,14 @@ import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
 import '../messages/presentation/chat_thread_sheet.dart';
 import '../profile/presentation/user_profile_sheet.dart';
+import '../../../core/constants/api_config.dart';
+
+
+String _resolveUrl(String url) =>
+    (url.startsWith('http://') || url.startsWith('https://'))
+        ? url
+        : '\${ApiConfig.baseUrl}\$url';
+
 
 /// Activity tab — guest gate + notifications, messages, grouped by type.
 class ActivityTab extends ConsumerStatefulWidget {
@@ -332,7 +340,7 @@ class _ActivityTabState extends ConsumerState<ActivityTab> {
                     children: [
                       CircleAvatar(
                         radius: 24,
-                        backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
+                        backgroundImage: avatar.isNotEmpty ? NetworkImage(_resolveUrl(avatar)) : null,
                         backgroundColor: AppColors.surfaceElevated,
                         child: avatar.isEmpty ? Text(name.isNotEmpty ? name[0].toUpperCase() : '?', style: GoogleFonts.inter(fontWeight: FontWeight.w700)) : null,
                       ),
@@ -399,7 +407,7 @@ class _ActivityTabState extends ConsumerState<ActivityTab> {
                 children: [
                   CircleAvatar(
                     radius: 20,
-                    backgroundImage: actorAvatar != null && actorAvatar.isNotEmpty ? NetworkImage(actorAvatar) : null,
+                    backgroundImage: actorAvatar != null && actorAvatar.isNotEmpty ? NetworkImage(_resolveUrl(actorAvatar)) : null,
                     backgroundColor: _colorFor(type).withValues(alpha: 0.12),
                     child: actorAvatar == null || actorAvatar.isEmpty
                         ? Icon(_iconFor(type), size: 18, color: _colorFor(type))

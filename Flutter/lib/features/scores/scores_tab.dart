@@ -8,6 +8,14 @@ import '../../widgets/glass_card.dart';
 import '../../shared/widgets/ss_refresh.dart';
 import '../../core/realtime/scores_live.dart';
 import 'presentation/team_detail_sheet.dart';
+import '../../../core/constants/api_config.dart';
+
+
+String _resolveUrl(String url) =>
+    (url.startsWith('http://') || url.startsWith('https://'))
+        ? url
+        : '\${ApiConfig.baseUrl}\$url';
+
 
 /// Scores tab — live matches + standings from API
 
@@ -600,7 +608,7 @@ class _StandingRowWidget extends StatelessWidget {
                 if (r.badge != null && r.badge!.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: Image.network(r.badge!, width: 20, height: 20, errorBuilder: (_, __, ___) => const SizedBox(width: 20)),
+                    child: Image.network(_resolveUrl(r.badge!), width: 20, height: 20, errorBuilder: (_, __, ___) => const SizedBox(width: 20)),
                   ),
                 Flexible(
                   child: GestureDetector(
