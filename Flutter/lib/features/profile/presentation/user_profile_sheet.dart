@@ -220,7 +220,9 @@ class _UserProfileSheetState extends ConsumerState<UserProfileSheet> {
     }
     setState(() => _fanBusy = true);
     try {
-      final res = await FollowsApi(ref.read(apiClientProvider)).becomeFan(id);
+      final uid = _user?['id']?.toString() ?? widget.userId ?? '';
+      if (uid.isEmpty) return;
+      final res = await FollowsApi(ref.read(apiClientProvider)).becomeFan(uid);
       if (!mounted) return;
       final nowFan = res['isFan'] == true || res['following'] == true;
       setState(() {
