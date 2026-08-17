@@ -247,8 +247,9 @@ class _EventRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = _iconFor(event.type);
-    final color = _colorFor(event.type);
+    final type = event.type ?? 'event';
+    final icon = _iconFor(type);
+    final color = _colorFor(type);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -262,7 +263,7 @@ class _EventRow extends StatelessWidget {
               child: Icon(icon, size: 16, color: color)),
           const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(event.player ?? event.type,
+            Text(event.player ?? event.detail ?? type,
                 style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
             if (event.team != null)
               Text(event.team!, style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedForeground)),

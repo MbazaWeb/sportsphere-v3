@@ -28,8 +28,17 @@ class _RoleDef {
 }
 
 class RegisterSheet extends ConsumerStatefulWidget {
-  const RegisterSheet({super.key, this.onDone, this.initialRole});
-  final VoidCallback? onDone;
+  const RegisterSheet({
+    super.key,
+    required this.onClose,
+    required this.onSuccess,
+    required this.onOpenLogin,
+    this.initialRole,
+  });
+
+  final VoidCallback onClose;
+  final VoidCallback onSuccess;
+  final VoidCallback onOpenLogin;
   final String? initialRole;
 
   @override
@@ -82,10 +91,10 @@ class _RegisterSheetState extends ConsumerState<RegisterSheet> {
     try {
       await ref.read(authApiProvider).register(
         name: name, email: email, handle: handle, password: pw,
-        role: _role, sports: _sports.toList(),
+        roleId: _role, sports: _sports.toList(),
       );
       if (!mounted) return;
-      widget.onDone?.call();
+      widget.onSuccess();
     } catch (e) {
       if (!mounted) return;
       setState(() { _error = e.toString().replaceFirst(RegExp(r'^ApiException\(\d+\):\s*'), ''); _loading = false; });
@@ -119,7 +128,13 @@ class _RegisterSheetState extends ConsumerState<RegisterSheet> {
                           decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withValues(alpha: 0.08))),
                           child: const Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: Colors.white)),
                       )
-                    else const SizedBox(width: 36),
+                    else
+                      GestureDetector(
+                        onTap: widget.onClose,
+                        child: Container(width: 36, height: 36,
+                          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withValues(alpha: 0.08))),
+                          child: const Icon(Icons.close, size: 16, color: Colors.white)),
+                      ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -193,7 +208,8 @@ class _RegisterSheetState extends ConsumerState<RegisterSheet> {
           }),
     _ => _StepSports(selected: _sports, loading: _loading, error: _error,
           onToggle: (s) => setState(() { if (_sports.contains(s)) _sports.remove(s); else _sports.add(s); }),
-          onRegister: _register),
+          onRegister: _register,
+          onOpenLogin: widget.onOpenLogin),
   };
 }
 
@@ -338,10 +354,10 @@ class _Field extends StatelessWidget {
 
 // ─── Step 3: Sports interests ─────────────────────────────────────────────────
 class _StepSports extends StatelessWidget {
-  const _StepSports({required this.selected, required this.onToggle, required this.onRegister, required this.loading, required this.error});
+  const _StepSports({required this.selected, required this.onToggle, required this.onRegister, required this.loading, required this.error, required this.onOpenLogin});
   final Set<String> selected;
   final ValueChanged<String> onToggle;
-  final VoidCallback onRegister;
+  final VoidCallback onRegister, onOpenLogin;
   final bool loading;
   final String? error;
 
@@ -383,6 +399,17 @@ class _StepSports extends StatelessWidget {
           ),
         ],
         _GoldBtn(label: 'Create Account', loading: loading, onTap: onRegister),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Already have an account? ', style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground)),
+            GestureDetector(
+              onTap: onOpenLogin,
+              child: Text('Login', style: GoogleFonts.inter(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
         const SizedBox(height: 8),
         Center(child: Text('You can skip and add sports later',
             style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground))),

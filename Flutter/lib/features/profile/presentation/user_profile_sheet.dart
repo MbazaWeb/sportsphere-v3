@@ -466,10 +466,8 @@ class _ProfileContent extends ConsumerWidget {
           ),
         ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 }
 
 class _StatCard extends StatelessWidget {

@@ -7,6 +7,9 @@ import '../../../widgets/glass_card.dart';
 import '../../../shared/widgets/ss_refresh.dart';
 import 'sportlights_tab.dart';
 import '../../communities/presentation/communities_sheet.dart';
+import '../../communities/data/communities_api.dart';
+import '../../../shared/models/post.dart';
+import '../../../shared/models/match.dart';
 
 /// Trending tab — matches web: Live Now · Communities · Trending posts.
 class TrendingTab extends ConsumerWidget {
@@ -24,9 +27,9 @@ class TrendingTab extends ConsumerWidget {
         ref.invalidate(matchesProvider(const MatchesKey(status: 'live')));
         ref.invalidate(communitiesProvider);
         await Future.wait([
-          ref.read(feedProvider('trending').future).catchError((_) => []),
-          ref.read(matchesProvider(const MatchesKey(status: 'live')).future).catchError((_) => []),
-          ref.read(communitiesProvider.future).catchError((_) => []),
+          ref.read(feedProvider('trending').future).catchError((_) => <Post>[]),
+          ref.read(matchesProvider(const MatchesKey(status: 'live')).future).catchError((_) => <MatchItem>[]),
+          ref.read(communitiesProvider.future).catchError((_) => <CommunityItem>[]),
         ]);
       },
       child: ListView(
