@@ -58,6 +58,58 @@ const _coverGradients = <String, List<Color>>{
 /// Full-screen profile page for viewing another user's profile.
 /// Matches the web EntityProfileSheet / UserProfileViewer with
 /// role-aware "Become a Fan" button, fan stats, and tabbed content.
+// ─── Tailwind gradient → Flutter Color mapping ───────────────────────────────
+const Map<String, List<Color>> _tailwindGradientMap = {
+  'from-emerald-600 to-emerald-900': [Color(0xFF059669), Color(0xFF064E3B)],
+  'from-blue-600 to-blue-900':       [Color(0xFF2563EB), Color(0xFF1E3A8A)],
+  'from-orange-600 to-orange-900':   [Color(0xFFEA580C), Color(0xFF7C2D12)],
+  'from-purple-600 to-purple-900':   [Color(0xFF9333EA), Color(0xFF581C87)],
+  'from-cyan-600 to-cyan-900':       [Color(0xFF0891B2), Color(0xFF164E63)],
+  'from-pink-600 to-pink-900':       [Color(0xFFDB2777), Color(0xFF831843)],
+  'from-yellow-600 to-yellow-900':   [Color(0xFFCA8A04), Color(0xFF713F12)],
+  'from-red-600 to-red-900':         [Color(0xFFDC2626), Color(0xFF7F1D1D)],
+  'from-green-600 to-green-900':     [Color(0xFF16A34A), Color(0xFF14532D)],
+  'from-indigo-600 to-indigo-900':   [Color(0xFF4F46E5), Color(0xFF312E81)],
+  'from-teal-600 to-teal-900':       [Color(0xFF0D9488), Color(0xFF134E4A)],
+  'from-rose-600 to-rose-900':       [Color(0xFFE11D48), Color(0xFF881337)],
+  'from-slate-600 to-slate-900':     [Color(0xFF475569), Color(0xFF0F172A)],
+  'from-[#0F1D3A] via-[#1A2A4A] to-[#0A1628]': [Color(0xFF0F1D3A), Color(0xFF0A1628)],
+};
+
+// ─── Role-based default cover gradients ──────────────────────────────────────
+const Map<String, List<Color>> _roleCoverGradient = {
+  'player':        [Color(0xFF1D4ED8), Color(0xFF1E3A8A)],
+  'team':          [Color(0xFF059669), Color(0xFF064E3B)],
+  'coach':         [Color(0xFFEA580C), Color(0xFF7C2D12)],
+  'national_team': [Color(0xFF0891B2), Color(0xFF164E63)],
+  'club':          [Color(0xFF059669), Color(0xFF064E3B)],
+  'league':        [Color(0xFF9333EA), Color(0xFF581C87)],
+  'competition':   [Color(0xFF9333EA), Color(0xFF581C87)],
+  'academy':       [Color(0xFF16A34A), Color(0xFF14532D)],
+  'media':         [Color(0xFF0369A1), Color(0xFF0C4A6E)],
+  'journalist':    [Color(0xFF0369A1), Color(0xFF0C4A6E)],
+  'commentator':   [Color(0xFF0369A1), Color(0xFF0C4A6E)],
+  'creator':       [Color(0xFFDB2777), Color(0xFF831843)],
+  'analyst':       [Color(0xFF0D9488), Color(0xFF134E4A)],
+  'referee':       [Color(0xFF475569), Color(0xFF0F172A)],
+  'community':     [Color(0xFF7C3AED), Color(0xFF4C1D95)],
+  'business':      [Color(0xFF65A30D), Color(0xFF365314)],
+  'scout':         [Color(0xFF64748B), Color(0xFF1E293B)],
+  'agent':         [Color(0xFF64748B), Color(0xFF1E293B)],
+  'stadium':       [Color(0xFFCA8A04), Color(0xFF713F12)],
+  'venue':         [Color(0xFFCA8A04), Color(0xFF713F12)],
+  'fan':           [Color(0xFF0F1D3A), Color(0xFF0A1628)],
+};
+
+List<Color> _gradientForProfile(String? coverGradient, String role) {
+  if (coverGradient != null && coverGradient.isNotEmpty) {
+    final mapped = _tailwindGradientMap[coverGradient];
+    if (mapped != null) return mapped;
+  }
+  return _roleCoverGradient[role.toLowerCase()] ??
+      [const Color(0xFF0F1D3A), const Color(0xFF0A1628)];
+}
+
 class UserProfileSheet extends ConsumerStatefulWidget {
   const UserProfileSheet({
     super.key,
@@ -332,7 +384,8 @@ class _ProfileContent extends ConsumerWidget {
     final registeredAt = user['registeredAt']?.toString() ?? user['createdAt']?.toString() ?? '';
     final id = user['id']?.toString() ?? '';
 
-    final gradient = _coverGradients[role.toLowerCase()] ?? _coverGradients['fan']!;
+    final coverGradient = _user?['coverGradient']?.toString();
+    final gradient = _gradientForProfile(coverGradient, role);
     final isFan = isFanOverride ?? (following == true && isSportsRole);
 
     return CustomScrollView(

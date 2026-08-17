@@ -222,12 +222,8 @@ class _ProfileHeader extends StatelessWidget {
           height: 150,
           width: double.infinity,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [
-                Color(0xFF0F1D3A), // --background-secondary
-                Color(0xFF1A2A4A),
-                Color(0xFF0A1628), // --background
-              ],
+            gradient: LinearGradient(
+              colors: _coverColors(user.role ?? roleCfg.role),
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
