@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { adminFetch } from '@/lib/admin-api';
+import AiAssistantBubble from '@/components/AiAssistantBubble';
 
 interface AdminUser {
   id: string;
@@ -243,6 +244,7 @@ export default function DashboardLayout({
         </header>
         <main className="flex-1 p-8 overflow-y-auto">{children}</main>
       </div>
+      <AiAssistantBubble />
     </div>
   );
 }
