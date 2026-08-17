@@ -100,7 +100,7 @@ class _ScoresTabState extends ConsumerState<ScoresTab> {
       case 'upcoming':
         return 'upcoming';
       case 'results':
-        return 'finished';
+        return 'results';
       default:
         return null;
     }

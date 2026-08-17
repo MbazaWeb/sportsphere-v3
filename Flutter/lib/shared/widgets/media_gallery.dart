@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/api_config.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_colors.dart';
 
@@ -109,7 +110,11 @@ class MediaGallery extends StatelessWidget {
 
   Widget _imageTile(int index) {
     if (index >= imageUrls.length) return Container(color: AppColors.surface);
-    final url = imageUrls[index];
+    final raw = imageUrls[index];
+    // Resolve relative URLs using the configured base URL
+    final url = (raw.startsWith('http://') || raw.startsWith('https://'))
+        ? raw
+        : '\${ApiConfig.baseUrl}\$raw';
     return GestureDetector(
       onTap: () {
         onTapImage?.call(index, url);
@@ -178,7 +183,11 @@ class _FullScreenViewerState extends State<_FullScreenViewer> {
           onPageChanged: (i) => setState(() => _currentIndex = i),
           itemCount: widget.urls.length,
           itemBuilder: (_, index) => Center(
-            child: Image.network(widget.urls[index], fit: BoxFit.contain,
+            child: Image.network(
+                  (widget.urls[index].startsWith('http://') || widget.urls[index].startsWith('https://'))
+                      ? widget.urls[index]
+                      : '\${ApiConfig.baseUrl}\${widget.urls[index]}',
+                  fit: BoxFit.contain,
                 loadingBuilder: (_, child, progress) => progress == null
                     ? child
                     : const CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),

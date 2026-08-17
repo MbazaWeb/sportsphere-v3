@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/app_providers.dart';
+import '../../../core/constants/api_config.dart';
 import '../../../shared/models/post.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
@@ -393,7 +394,7 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (url != null && url!.isNotEmpty) {
-      return CircleAvatar(radius: 20, backgroundImage: NetworkImage(url!));
+      return CircleAvatar(radius: 20, backgroundImage: NetworkImage((url!.startsWith('http://') || url!.startsWith('https://')) ? url! : '\${ApiConfig.baseUrl}\$url!'));
     }
     final initials = name.isNotEmpty
         ? name.trim().split(RegExp(r'\s+')).take(2).map((e) => e[0]).join().toUpperCase()
@@ -761,7 +762,7 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                                 children: [
                                   CircleAvatar(
                                     radius: 16,
-                                    backgroundImage: userAvatar != null && userAvatar.isNotEmpty ? NetworkImage(userAvatar) : null,
+                                    backgroundImage: userAvatar != null && userAvatar.isNotEmpty ? NetworkImage((userAvatar.startsWith('http://') || userAvatar.startsWith('https://')) ? userAvatar : '\${ApiConfig.baseUrl}\$userAvatar') : null,
                                     backgroundColor: AppColors.surfaceElevated,
                                     child: userAvatar == null || userAvatar.isEmpty
                                         ? Text(userName.isNotEmpty ? userName[0].toUpperCase() : '?',
@@ -819,7 +820,7 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                 children: [
                   CircleAvatar(
                     radius: 16,
-                    backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                    backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty ? NetworkImage((avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) ? avatarUrl : '\${ApiConfig.baseUrl}\$avatarUrl') : null,
                     backgroundColor: AppColors.surfaceElevated,
                     child: avatarUrl == null || avatarUrl.isEmpty
                         ? Text(initial, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 11, color: AppColors.primary))
