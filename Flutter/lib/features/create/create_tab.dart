@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/providers/app_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
+import '../media/presentation/photo_editor_sheet.dart';
+import '../media/presentation/video_trimmer_sheet.dart';
 import 'post_analysis_sheet.dart';
 
 /// Create Post composer — text + attach + poll + prediction + sport tag + hashtags + location + breaking.
