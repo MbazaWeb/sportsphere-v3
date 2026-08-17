@@ -5,6 +5,7 @@ class PostUser {
     required this.handle,
     this.avatarUrl,
     this.isVerified = false,
+    this.role = 'fan',
   });
 
   final String id;
@@ -12,6 +13,7 @@ class PostUser {
   final String handle;
   final String? avatarUrl;
   final bool isVerified;
+  final String role;
 
   factory PostUser.fromJson(Map<String, dynamic> j) => PostUser(
         id: j['id']?.toString() ?? '',
