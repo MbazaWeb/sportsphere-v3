@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { verifyAdmin } from '@/lib/session';
+import { verifyAdminSession } from '@/lib/session';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
@@ -9,7 +9,7 @@ const SYSTEM_PROMPT = `You are SportSphere's AI admin assistant. You help manage
 
 export async function POST(req: NextRequest) {
   try {
-    const admin = await verifyAdmin(req);
+    const admin = await verifyAdminSession(req);
     if (!admin) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401, headers: { 'Content-Type': 'application/json' },
