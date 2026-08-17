@@ -185,11 +185,28 @@ class _UserProfileSheetState extends ConsumerState<UserProfileSheet> {
         data = {};
       }
       if (!mounted) return;
+      // Load follow/fan status
+      bool isFollowing = data['isFollowing'] == true;
+      bool isFan = data['isFan'] == true;
+      
+      // If not returned by user endpoint, fetch from follows/status
+      if (!isFollowing && !isFan) {
+        try {
+          final userId = data['id']?.toString() ?? '';
+          if (userId.isNotEmpty) {
+            final status = await FollowsApi(ref.read(apiClientProvider)).getStatus(userId);
+            isFollowing = status['following'] == true;
+            isFan = status['isFan'] == true;
+          }
+        } catch (_) {}
+      }
+      
+      if (!mounted) return;
       setState(() {
         _user = data;
         _loading = false;
-        _following = data['isFollowing'] == true;
-        _isFan = data['isFan'] == true;
+        _following = isFollowing;
+        _isFan = isFan;
       });
     } catch (e) {
       if (!mounted) return;

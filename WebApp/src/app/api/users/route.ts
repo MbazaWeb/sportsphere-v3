@@ -63,6 +63,24 @@ export async function GET(request: NextRequest) {
       const user = await db.user.findUnique({ where: { handle }, select: USER_SELECT });
       if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
       const [enriched] = await enrichWithLogos([serializePublicUser(user)]);
+      
+      // Attach follow/fan status for the requesting user
+      const requestingUserId = await import('@/lib/auth').then(m => 
+        m.getUserIdFromRequest(request).catch(() => null)
+      ).catch(() => null);
+      
+      if (requestingUserId && requestingUserId !== user.id) {
+        const followRecord = await db.follow.findFirst({
+          where: { followerId: requestingUserId, followingId: user.id },
+          select: { kind: true },
+        });
+        enriched.isFollowing = !!followRecord;
+        enriched.isFan = followRecord?.kind === 'fan';
+      } else {
+        enriched.isFollowing = false;
+        enriched.isFan = false;
+      }
+      
       return NextResponse.json(enriched);
     }
 

@@ -92,14 +92,13 @@ class ProfileRoleRegistry {
     label: 'Team',
     emoji: '👥',
     tabs: [
-      ProfileTabDef('overview',   'Overview'),
       ProfileTabDef('spotlights', 'Spotlights'),
       ProfileTabDef('squad',      'Squad'),
       ProfileTabDef('fixtures',   'Fixtures'),
       ProfileTabDef('standings',  'Standings'),
-      ProfileTabDef('community',  'Community'),
+      ProfileTabDef('overview',   'Overview'),
     ],
-    statLabels: ['Trophies', 'Fans', 'Founded', 'League'],
+    statLabels: ['Trophies', 'Fans', 'Followers', 'Posts'],
   );
 
   // ─── MEDIA ──────────────────────────────────────────────────────────────────
