@@ -10,11 +10,7 @@ import '../../home/widgets/sportlights_tab.dart' show LiveFeedCard;
 import '../../../core/constants/api_config.dart';
 
 
-String _resolveUrl(String url) {
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  final base = ApiConfig.baseUrl;
-  return url.startsWith('/') ? '$base$url' : '$base/$url';
-}
+String _resolveUrl(String url) => ApiConfig.resolveUrl(url);
 
 class SearchSheet extends ConsumerStatefulWidget {
   const SearchSheet({super.key});

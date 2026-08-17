@@ -29,6 +29,31 @@ class UploadApi {
       filename: filename,
       contentType: MediaType.parse(contentType),
     ));
+    return _sendRequest(req);
+  }
+
+  /// Upload file from path (streaming)
+  Future<String> uploadFile({
+    required String path,
+    required String filename,
+    String contentType = 'video/mp4',
+  }) async {
+    final uri = Uri.parse(ApiConfig.path('/uploads'));
+    final req = http.MultipartRequest('POST', uri);
+    final token = tokenProvider != null ? await tokenProvider!() : null;
+    if (token != null && token.isNotEmpty) {
+      req.headers['Authorization'] = 'Bearer $token';
+    }
+    req.files.add(await http.MultipartFile.fromPath(
+      'file',
+      path,
+      filename: filename,
+      contentType: MediaType.parse(contentType),
+    ));
+    return _sendRequest(req);
+  }
+
+  Future<String> _sendRequest(http.MultipartRequest req) async {
     final streamed = await req.send();
     final res = await http.Response.fromStream(streamed);
     dynamic data;

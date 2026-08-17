@@ -7,11 +7,7 @@ import '../../../shared/models/match.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
 
-String _resolveUrl(String url) {
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  final base = ApiConfig.baseUrl;
-  return url.startsWith('/') ? '$base$url' : '$base/$url';
-}
+String _resolveUrl(String url) => ApiConfig.resolveUrl(url);
 
 // ─── Match Detail Bottom Sheet ─────────────────────────────────────────────────
 // Shows: score header, events timeline, lineups, stats

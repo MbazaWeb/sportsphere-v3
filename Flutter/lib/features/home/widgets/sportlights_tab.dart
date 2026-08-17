@@ -17,10 +17,7 @@ import '../../../shared/widgets/skeleton_loader.dart';
 import '../../../shared/widgets/role_badge.dart';
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
-String _resolveUrl(String url) =>
-    (url.startsWith('http://') || url.startsWith('https://'))
-        ? url
-        : '${ApiConfig.baseUrl}$url';
+String _resolveUrl(String url) => ApiConfig.resolveUrl(url);
 
 // ─── SportlightsTab ───────────────────────────────────────────────────────────
 class SportlightsTab extends ConsumerStatefulWidget {
@@ -899,11 +896,7 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
           ],
           if (post.mediaUrls.isNotEmpty) ...[
             const SizedBox(height: 10),
-            MediaGallery(
-              imageUrls: post.mediaUrls,
-              postType: post.postType,
-              onTapImage: (i, url) => MediaGallery.showViewer(context, post.mediaUrls, initialIndex: i),
-            ),
+            _MediaRenderer(post: post),
           ],
           if (post.poll != null) ...[const SizedBox(height: 10), _PollBlock(poll: post.poll!, postId: post.id)],
           if (post.prediction != null) ...[const SizedBox(height: 10), _PredictionBlock(pred: post.prediction!, postId: post.id)],

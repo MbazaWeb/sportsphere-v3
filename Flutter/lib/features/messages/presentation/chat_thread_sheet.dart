@@ -9,11 +9,7 @@ import '../../../core/constants/api_config.dart';
 /// 1:1 chat thread — loads history + sends via POST /api/messages.
 /// Enhanced with timestamps, delivery status, better layout.
 
-String _resolveUrl(String url) {
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  final base = ApiConfig.baseUrl;
-  return url.startsWith('/') ? '$base$url' : '$base/$url';
-}
+String _resolveUrl(String url) => ApiConfig.resolveUrl(url);
 
 class ChatThreadSheet extends ConsumerStatefulWidget {
   const ChatThreadSheet({

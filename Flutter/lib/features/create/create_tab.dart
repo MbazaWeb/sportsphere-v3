@@ -10,8 +10,6 @@ import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
 import '../media/presentation/photo_editor_sheet.dart';
 import '../communities/data/communities_api.dart';
-import '../media/presentation/video_trimmer_sheet.dart';
-import 'post_analysis_sheet.dart';
 
 /// Create Post composer — text + attach + poll + prediction + sport tag + hashtags + location + breaking.
 class CreateTab extends ConsumerStatefulWidget {
@@ -200,13 +198,19 @@ class _CreateTabState extends ConsumerState<CreateTab> {
         file = await _picker.pickVideo(source: ImageSource.gallery);
       }
       if (file == null) return;
-      final bytes = await file.readAsBytes();
-      if (!mounted) return;
 
-      Uint8List? finalBytes = bytes;
-      if (choice == 'gallery' || choice == 'camera') {
+      final isVideo = choice == 'video';
+      Uint8List? finalBytes;
+
+      if (!isVideo) {
+        final bytes = await file.readAsBytes();
+        if (!mounted) return;
         final edited = await PhotoEditorSheet.open(context, bytes);
-        if (edited != null) finalBytes = edited;
+        finalBytes = edited ?? bytes;
+      } else {
+        // For videos, we don't read bytes into memory to avoid OOM.
+        // We just use a dummy empty byte array for the _previews list slot.
+        finalBytes = Uint8List(0);
       }
 
       setState(() {
@@ -290,37 +294,47 @@ class _CreateTabState extends ConsumerState<CreateTab> {
         );
         return;
       }
-      if (_files.isNotEmpty) postType = 'photo';
-    }
-
-    setState(() => _publishing = true);
-    try {
-      final mediaUrls = <String>[];
-      for (var i = 0; i < _previews.length; i++) {
-        final bytes = _previews[i];
-        final name = _files[i].name.isNotEmpty ? _files[i].name : 'upload_$i.jpg';
-        final lower = name.toLowerCase();
-        final ct = lower.endsWith('.png')
-            ? 'image/png'
-            : lower.endsWith('.webp')
-                ? 'image/webp'
-                : lower.endsWith('.mp4') || lower.endsWith('.mov')
-                    ? 'video/mp4'
-                    : 'image/jpeg';
-        final url = await ref.read(uploadApiProvider).uploadBytes(
-              bytes: bytes,
-              filename: name,
-              contentType: ct,
-            );
-        mediaUrls.add(url);
-      }
-      if (mediaUrls.isNotEmpty && postType == 'post') {
-        // Check if any file is a video
+      if (_files.isNotEmpty) {
         final hasVideo = _files.any((f) {
           final n = f.name.toLowerCase();
           return n.endsWith('.mp4') || n.endsWith('.mov') || n.endsWith('.avi') || n.endsWith('.mkv');
         });
         postType = hasVideo ? 'video' : 'photo';
+      }
+    }
+
+    setState(() => _publishing = true);
+    try {
+      final mediaUrls = <String>[];
+      for (var i = 0; i < _files.length; i++) {
+        final file = _files[i];
+        final name = file.name.isNotEmpty ? file.name : 'upload_$i.jpg';
+        final lower = name.toLowerCase();
+        final isVid = lower.endsWith('.mp4') || lower.endsWith('.mov') || lower.endsWith('.avi') || lower.endsWith('.mkv');
+
+        final ct = lower.endsWith('.png')
+            ? 'image/png'
+            : lower.endsWith('.webp')
+                ? 'image/webp'
+                : isVid
+                    ? 'video/mp4'
+                    : 'image/jpeg';
+
+        String url;
+        if (isVid) {
+          url = await ref.read(uploadApiProvider).uploadFile(
+                path: file.path,
+                filename: name,
+                contentType: ct,
+              );
+        } else {
+          url = await ref.read(uploadApiProvider).uploadBytes(
+                bytes: _previews[i],
+                filename: name,
+                contentType: ct,
+              );
+        }
+        mediaUrls.add(url);
       }
       await ref.read(socialApiProvider).createPost(
             content: content.isEmpty ? ' ' : content,

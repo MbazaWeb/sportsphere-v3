@@ -10,11 +10,7 @@ import '../../../core/constants/api_config.dart';
 
 /// Shows a list of fans / followers / following for a profile.
 
-String _resolveUrl(String url) {
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  final base = ApiConfig.baseUrl;
-  return url.startsWith('/') ? '$base$url' : '$base/$url';
-}
+String _resolveUrl(String url) => ApiConfig.resolveUrl(url);
 
 class FansListPage extends ConsumerStatefulWidget {
   const FansListPage({

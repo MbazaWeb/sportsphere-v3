@@ -10,11 +10,7 @@ import '../profile/presentation/user_profile_sheet.dart';
 import '../../../core/constants/api_config.dart';
 
 
-String _resolveUrl(String url) {
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  final base = ApiConfig.baseUrl;
-  return url.startsWith('/') ? '\$base\$url' : '\$base/\$url';
-}
+String _resolveUrl(String url) => ApiConfig.resolveUrl(url);
 
 
 /// Activity tab — guest gate + notifications, messages, grouped by type.
