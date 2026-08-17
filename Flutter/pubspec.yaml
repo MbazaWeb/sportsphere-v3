@@ -30,7 +30,7 @@ dependencies:
   google_sign_in: ^6.2.2
   video_player: ^2.9.2
   chewie: ^1.8.5
-  image_editor_plus: ^3.0.0
+  image_editor_plus: ^1.0.8
   share_plus: ^10.0.3
 
 dev_dependencies:
