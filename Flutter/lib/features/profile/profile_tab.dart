@@ -326,22 +326,46 @@ class _ProfileHeader extends StatelessWidget {
                 // Stats bar — gold values, matching web StatCard style
                 Row(
                   children: stats
+                      .asMap()
+                      .entries
                       .map(
-                        (s) => Expanded(
-                          child: Column(
-                            children: [
-                              Text(s.$1,
-                                  style: GoogleFonts.outfit(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 16,
-                                      color: AppColors.primary)),
-                              Text(s.$2,
-                                  style: GoogleFonts.inter(
-                                      fontSize: 11,
-                                      color: AppColors.mutedForeground)),
-                            ],
-                          ),
-                        ),
+                        (e) {
+                          final i = e.key;
+                          final s = e.value;
+                          VoidCallback? onTap;
+                          if (s.$2 == 'Fans' && user.id.isNotEmpty) {
+                            onTap = () => _openProfileList(context, user.id, 'fans', 'Fans');
+                          } else if (s.$2 == 'Fans' || s.$2 == 'Followers') {
+                            onTap = () => _openProfileList(context, user.id, 'followers', 'Followers');
+                          } else if (s.$2 == 'Following') {
+                            onTap = () => _openProfileList(context, user.id, 'following', 'Following');
+                          }
+                          return Expanded(
+                            child: GestureDetector(
+                              onTap: onTap,
+                              child: Column(
+                                children: [
+                                  Text(s.$1,
+                                      style: GoogleFonts.outfit(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 16,
+                                          color: AppColors.primary)),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(s.$2,
+                                          style: GoogleFonts.inter(
+                                              fontSize: 11,
+                                              color: AppColors.mutedForeground)),
+                                      if (onTap != null)
+                                        Icon(Icons.chevron_right, size: 10, color: AppColors.primary.withValues(alpha: 0.5)),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                       )
                       .toList(),
                 ),

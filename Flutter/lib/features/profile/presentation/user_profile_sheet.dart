@@ -454,9 +454,27 @@ class _ProfileContent extends ConsumerWidget {
                   // ── Stats row (4 stats) ──
                   Row(
                     children: [
-                      _StatCard(value: '$fanCount', label: 'Fans', icon: Icons.favorite, color: AppColors.primary),
-                      _StatCard(value: '$followerCount', label: 'Followers', icon: Icons.people, color: AppColors.primary),
-                      _StatCard(value: '$followingCount', label: 'Following', icon: Icons.person_add, color: AppColors.primary),
+                      _StatCard(
+                        value: '$fanCount',
+                        label: 'Fans',
+                        icon: Icons.favorite,
+                        color: AppColors.primary,
+                        onTap: userId.isNotEmpty ? () => _openList(context, userId, 'fans', 'Fans') : null,
+                      ),
+                      _StatCard(
+                        value: '$followerCount',
+                        label: 'Followers',
+                        icon: Icons.people,
+                        color: AppColors.primary,
+                        onTap: userId.isNotEmpty ? () => _openList(context, userId, 'followers', 'Followers') : null,
+                      ),
+                      _StatCard(
+                        value: '$followingCount',
+                        label: 'Following',
+                        icon: Icons.person_add,
+                        color: AppColors.primary,
+                        onTap: userId.isNotEmpty ? () => _openList(context, userId, 'following', 'Following') : null,
+                      ),
                       _StatCard(value: '$postCount', label: 'Posts', icon: Icons.article, color: AppColors.primary),
                     ],
                   ),
@@ -599,51 +617,127 @@ class _StatCard extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.color,
+    this.onTap,
   });
 
   final String value;
   final String label;
   final IconData icon;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 3),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: onTap != null
+                  ? AppColors.primary.withValues(alpha: 0.18)
+                  : AppColors.border.withValues(alpha: 0.5),
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                  color: color,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    label.toUpperCase(),
+                    style: GoogleFonts.inter(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.mutedForeground,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  if (onTap != null) ...[
+                    const SizedBox(width: 2),
+                    Icon(Icons.chevron_right, size: 10, color: AppColors.primary.withValues(alpha: 0.6)),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+void _openList(BuildContext context, String userId, String listType, String title) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      maxChildSize: 0.95,
+      minChildSize: 0.5,
+      builder: (_, scrollCtrl) => Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+          color: AppColors.backgroundSecondary,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
         child: Column(
           children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: GoogleFonts.outfit(
-                fontWeight: FontWeight.w800,
-                fontSize: 16,
-                color: color,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              child: Column(
+                children: [
+                  Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(4)))),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 36, height: 36,
+                          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withValues(alpha: 0.08))),
+                          child: const Icon(Icons.close, size: 16, color: Colors.white),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(title, style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w800)),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              label.toUpperCase(),
-              style: GoogleFonts.inter(
-                fontSize: 9,
-                fontWeight: FontWeight.w500,
-                color: AppColors.mutedForeground,
-                letterSpacing: 0.3,
+            const SizedBox(height: 8),
+            Expanded(
+              child: FansListPage(
+                userId: userId,
+                title: title,
+                listType: listType,
+                embedded: true,
               ),
             ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
 }
 
 // ── Action buttons: Follow + Become a Fan + Message + Share ──
