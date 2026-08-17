@@ -1,7 +1,7 @@
 name: sportsphere
 description: Sportsphere - Premium sports social platform (Flutter 1:1 migration)
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.1.0+3
 
 environment:
   sdk: ^3.8.1
@@ -26,6 +26,8 @@ dependencies:
   uni_links: ^0.5.1
   firebase_core: ^3.12.1
   firebase_messaging: ^15.1.4
+  video_player: ^2.9.2
+  chewie: ^1.8.5
 
 dev_dependencies:
   flutter_test:

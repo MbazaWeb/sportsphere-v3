@@ -8,6 +8,7 @@ import '../../widgets/glass_card.dart';
 import '../../shared/widgets/ss_refresh.dart';
 import '../../core/realtime/scores_live.dart';
 import 'presentation/team_detail_sheet.dart';
+import 'presentation/match_detail_sheet.dart';
 import '../../../core/constants/api_config.dart';
 
 

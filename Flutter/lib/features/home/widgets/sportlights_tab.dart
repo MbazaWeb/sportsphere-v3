@@ -11,6 +11,7 @@ import '../../../widgets/glass_card.dart';
 import '../../profile/presentation/user_profile_sheet.dart';
 import '../../../shared/widgets/ss_refresh.dart';
 import '../../../shared/widgets/media_gallery.dart';
+import '../../../shared/widgets/ss_video_player.dart';
 import '../../../shared/widgets/role_badge.dart';
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
@@ -870,7 +871,13 @@ class _MediaRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (_isVideo && post.mediaUrls.isNotEmpty) {
-      return _VideoPlayer(url: _resolveUrl(post.mediaUrls.first));
+      // First URL is video, second (if any) is thumbnail
+      final videoUrl = _resolveUrl(post.mediaUrls.first);
+      final thumb = post.mediaUrls.length > 1 ? _resolveUrl(post.mediaUrls[1]) : null;
+      return GestureDetector(
+        onTap: () => SsVideoPage.open(context, videoUrl, thumbnailUrl: thumb),
+        child: _VideoPlayer(url: videoUrl, thumbnailUrl: thumb),
+      );
     }
     return MediaGallery(
       imageUrls: post.mediaUrls,
@@ -879,101 +886,21 @@ class _MediaRenderer extends StatelessWidget {
   }
 }
 
-// ─── Video Player Widget ──────────────────────────────────────────────────────
-class _VideoPlayer extends StatefulWidget {
-  const _VideoPlayer({required this.url});
+// ─── Video Player Widget — uses real SsVideoPlayer ───────────────────────────
+class _VideoPlayer extends StatelessWidget {
+  const _VideoPlayer({required this.url, this.thumbnailUrl});
   final String url;
-
-  @override
-  State<_VideoPlayer> createState() => _VideoPlayerState();
-}
-
-class _VideoPlayerState extends State<_VideoPlayer> {
-  bool _playing = false;
+  final String? thumbnailUrl;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: AspectRatio(
-        aspectRatio: 16 / 9,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Video thumbnail background
-            Container(
-              color: const Color(0xFF0A1628),
-              child: const Icon(Icons.videocam_rounded, size: 48, color: Color(0x33FFFFFF)),
-            ),
-            // Native video element via HTML for web, or show play button for mobile
-            if (!_playing)
-              Positioned.fill(
-                child: GestureDetector(
-                  onTap: () => setState(() => _playing = true),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.black.withValues(alpha: 0.2), Colors.black.withValues(alpha: 0.5)],
-                      ),
-                    ),
-                    child: Center(
-                      child: Container(
-                        width: 60, height: 60,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                          boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.4), blurRadius: 20, spreadRadius: 2)],
-                        ),
-                        child: const Icon(Icons.play_arrow_rounded, size: 32, color: AppColors.primaryForeground),
-                      ),
-                    ),
-                  ),
-                ),
-              )
-            else
-              // Show URL hint to open externally when tapped
-              Positioned.fill(
-                child: GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                    color: Colors.black,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.video_library_outlined, size: 48, color: AppColors.primary),
-                        const SizedBox(height: 12),
-                        Text('Video post', style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground)),
-                        const SizedBox(height: 4),
-                        GestureDetector(
-                          onTap: () => setState(() => _playing = false),
-                          child: Text('Tap to close', style: GoogleFonts.inter(fontSize: 11, color: AppColors.primary)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            // Duration badge
-            Positioned(
-              bottom: 8, right: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(6)),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.videocam_rounded, size: 10, color: Colors.white70),
-                    const SizedBox(width: 3),
-                    Text('VIDEO', style: GoogleFonts.inter(fontSize: 8, fontWeight: FontWeight.w800, color: Colors.white70)),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return SsVideoPlayer(
+      url: url,
+      thumbnailUrl: thumbnailUrl,
+      autoPlay: false,
+      muted: true,
+      showControls: false, // tap to play, full controls in full-screen
+      borderRadius: 14,
     );
   }
 }
