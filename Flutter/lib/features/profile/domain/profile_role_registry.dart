@@ -102,6 +102,20 @@ class ProfileRoleRegistry {
     statLabels: ['Trophies', 'Fans', 'Founded', 'League'],
   );
 
+  // ─── MEDIA ──────────────────────────────────────────────────────────────────
+  // Media orgs: BBC Sport, ESPN, SuperSport, etc.
+  static const _media = RoleProfileConfig(
+    role: 'media',
+    label: 'Media',
+    emoji: '📺',
+    tabs: [
+      ProfileTabDef('overview',   'Overview'),
+      ProfileTabDef('spotlights', 'Spotlights'),
+      ProfileTabDef('community',  'Community'),
+    ],
+    statLabels: ['Articles', 'Followers', 'Views', 'Reach'],
+  );
+
   // ─── JOURNALIST ─────────────────────────────────────────────────────────────
   static const _journalist = RoleProfileConfig(
     role: 'journalist',
@@ -272,6 +286,7 @@ class ProfileRoleRegistry {
     'commentator':        _journalist,
     'agent':              _scout,
     'league':             _competition,
+    'media':              _media,
   };
 
   static RoleProfileConfig forRole(String role) =>

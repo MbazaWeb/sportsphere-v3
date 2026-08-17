@@ -7,6 +7,7 @@ import '../../shared/models/user_profile.dart';
 import '../../shared/models/post.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
+import '../../shared/widgets/role_badge.dart';
 import '../home/widgets/sportlights_tab.dart' show LiveFeedCard, FeedErrorView;
 import 'domain/profile_role_registry.dart';
 import 'presentation/edit_profile_sheet.dart';
@@ -268,15 +269,12 @@ class _ProfileHeader extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    _Badge(label: roleCfg.label, emoji: roleCfg.emoji),
-                    if (user.isVerified) ...[
-                      const SizedBox(width: 6),
-                      const _Badge(label: 'Verified', gold: true),
-                    ],
-                    if (user.isPro) ...[
-                      const SizedBox(width: 6),
-                      const _Badge(label: 'PRO', gold: true),
-                    ],
+                    BadgeStack(
+                      role: user.role ?? roleCfg.role,
+                      isVerified: user.isVerified,
+                      isPro: user.isPro,
+                      typeName: user.typeName,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),

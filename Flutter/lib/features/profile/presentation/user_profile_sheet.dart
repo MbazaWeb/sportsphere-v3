@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../theme/app_colors.dart';
+import '../../../shared/widgets/role_badge.dart';
 import '../../../widgets/glass_card.dart';
 import '../domain/profile_role_registry.dart';
 import '../../messages/presentation/chat_thread_sheet.dart';
@@ -280,7 +281,9 @@ class _ProfileContent extends ConsumerWidget {
     final bio = user['bio']?.toString() ?? '';
     final avatar = user['avatarUrl']?.toString();
     final verified = user['isVerified'] == true;
+    final isPro = user['isPro'] == true;
     final role = user['role']?.toString() ?? 'fan';
+    final typeName = user['typeName']?.toString();
     final location = user['location']?.toString();
     final registeredAt = user['registeredAt']?.toString() ?? user['createdAt']?.toString() ?? '';
     final id = user['id']?.toString() ?? '';
@@ -375,15 +378,13 @@ class _ProfileContent extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      // Badges
-                      if (verified) ...[
-                        _Badge(label: 'VERIFIED', color: AppColors.primary, icon: Icons.verified),
-                      ],
-                      const SizedBox(width: 6),
-                      _Badge(
-                        label: roleCfg.label.toUpperCase(),
-                        color: _roleBadgeColor(role),
-                        icon: _roleIcon(role),
+                      // Badges — unified BadgeStack
+                      BadgeStack(
+                        role: role,
+                        isVerified: verified,
+                        isPro: isPro,
+                        typeName: typeName,
+                        size: BadgeSize.normal,
                       ),
                     ],
                   ),

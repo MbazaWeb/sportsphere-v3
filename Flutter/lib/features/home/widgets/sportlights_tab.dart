@@ -11,6 +11,7 @@ import '../../../widgets/glass_card.dart';
 import '../../profile/presentation/user_profile_sheet.dart';
 import '../../../shared/widgets/ss_refresh.dart';
 import '../../../shared/widgets/media_gallery.dart';
+import '../../../shared/widgets/role_badge.dart';
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 String _resolveUrl(String url) =>
@@ -709,14 +710,8 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
                     children: [
                       Row(children: [
                         Flexible(child: Text(u.name, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14, letterSpacing: -0.2), overflow: TextOverflow.ellipsis)),
-                        if (u.isVerified) ...[
-                          const SizedBox(width: 5),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                            decoration: BoxDecoration(color: const Color(0xFF22C55E).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
-                            child: Text('VERIFIED', style: GoogleFonts.inter(fontSize: 8, fontWeight: FontWeight.w800, color: const Color(0xFF22C55E))),
-                          ),
-                        ],
+                        const SizedBox(width: 6),
+                        PostBadge(role: u.role, isVerified: u.isVerified),
                       ]),
                       Text('${u.handle.startsWith('@') ? u.handle : '@${u.handle}'} · $time', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground)),
                     ],
