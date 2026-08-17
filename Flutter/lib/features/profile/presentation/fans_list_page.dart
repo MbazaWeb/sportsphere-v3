@@ -6,8 +6,16 @@ import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
 import '../../social/data/follows_api.dart';
 import 'user_profile_sheet.dart';
+import '../../../core/constants/api_config.dart';
 
 /// Shows a list of fans / followers / following for a profile.
+
+String _resolveUrl(String url) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  final base = ApiConfig.baseUrl;
+  return url.startsWith('/') ? '$base$url' : '$base/$url';
+}
+
 class FansListPage extends ConsumerStatefulWidget {
   const FansListPage({
     super.key,
@@ -208,7 +216,7 @@ class _FanTile extends StatelessWidget {
             radius: 22,
             backgroundColor: AppColors.surfaceElevated,
             backgroundImage:
-                avatar != null && avatar.isNotEmpty ? NetworkImage(avatar) : null,
+                avatar != null && avatar.isNotEmpty ? NetworkImage(_resolveUrl(avatar)) : null,
             child: avatar == null || avatar.isEmpty
                 ? Text(
                     name.isNotEmpty ? name[0].toUpperCase() : '?',

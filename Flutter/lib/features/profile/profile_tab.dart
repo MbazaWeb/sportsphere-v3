@@ -6,6 +6,7 @@ import '../../core/security/biometric_lock.dart';
 import '../../shared/models/user_profile.dart';
 import '../../shared/models/post.dart';
 import '../../theme/app_colors.dart';
+import '../../core/constants/api_config.dart';
 import '../../widgets/glass_card.dart';
 import '../../shared/widgets/role_badge.dart';
 import '../home/widgets/sportlights_tab.dart' show LiveFeedCard, FeedErrorView;
@@ -25,6 +26,13 @@ import 'presentation/performance_card.dart';
 // --surface: rgba(255,255,255,0.05)
 // --surface-elevated: rgba(255,255,255,0.07)
 // --muted-foreground: rgba(255,255,255,0.5)
+
+
+String _resolveProfileUrl(String url) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  final base = ApiConfig.baseUrl;
+  return url.startsWith('/') ? '$base$url' : '$base/$url';
+}
 
 class ProfileTab extends ConsumerStatefulWidget {
   const ProfileTab({
@@ -225,7 +233,7 @@ class _ProfileHeader extends StatelessWidget {
             ),
             image: user.coverUrl != null && user.coverUrl!.isNotEmpty
                 ? DecorationImage(
-                    image: NetworkImage(user.coverUrl!), fit: BoxFit.cover)
+                    image: NetworkImage(_resolveProfileUrl(user.coverUrl!)), fit: BoxFit.cover)
                 : null,
           ),
         ),
@@ -254,7 +262,7 @@ class _ProfileHeader extends StatelessWidget {
                         backgroundColor: AppColors.surfaceElevated,
                         backgroundImage:
                             user.avatarUrl != null && user.avatarUrl!.isNotEmpty
-                                ? NetworkImage(user.avatarUrl!)
+                                ? NetworkImage(_resolveProfileUrl(user.avatarUrl!))
                                 : null,
                         child: user.avatarUrl == null || user.avatarUrl!.isEmpty
                             ? Text(

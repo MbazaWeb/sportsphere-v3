@@ -11,10 +11,11 @@ import 'presentation/team_detail_sheet.dart';
 import '../../../core/constants/api_config.dart';
 
 
-String _resolveUrl(String url) =>
-    (url.startsWith('http://') || url.startsWith('https://'))
-        ? url
-        : '\${ApiConfig.baseUrl}\$url';
+String _resolveUrl(String url) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  final base = ApiConfig.baseUrl;
+  return url.startsWith('/') ? '\$base\$url' : '\$base/\$url';
+}
 
 
 /// Scores tab — live matches + standings from API
@@ -545,9 +546,7 @@ class _TeamLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (url != null && url!.isNotEmpty) {
-      final resolved = (url!.startsWith('http://') || url!.startsWith('https://'))
-          ? url!
-          : '\${ApiConfig.baseUrl}\$url!';
+      final resolved = _resolveUrl(url!);
       return ClipRRect(
         borderRadius: BorderRadius.circular(6),
         child: Image.network(

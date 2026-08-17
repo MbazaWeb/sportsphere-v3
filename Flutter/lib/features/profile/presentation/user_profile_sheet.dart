@@ -3,6 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../theme/app_colors.dart';
+import '../../../core/constants/api_config.dart';
+
+String _resolveUrl(String url) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  final base = ApiConfig.baseUrl;
+  return url.startsWith('/') ? '\$base\$url' : '\$base/\$url';
+}
+
 import '../../../shared/widgets/role_badge.dart';
 import '../../../widgets/glass_card.dart';
 import '../domain/profile_role_registry.dart';
@@ -400,7 +408,7 @@ class _ProfileContent extends ConsumerWidget {
                           radius: 40,
                           backgroundColor: AppColors.backgroundSecondary,
                           backgroundImage: avatar != null && avatar.isNotEmpty
-                              ? NetworkImage(avatar)
+                              ? NetworkImage(_resolveUrl(avatar))
                               : null,
                           child: avatar == null || avatar.isEmpty
                               ? Text(
@@ -1366,7 +1374,7 @@ class _FanPreviewTile extends StatelessWidget {
             radius: 18,
             backgroundColor: AppColors.surfaceElevated,
             backgroundImage:
-                avatar != null && avatar.isNotEmpty ? NetworkImage(avatar) : null,
+                avatar != null && avatar.isNotEmpty ? NetworkImage(_resolveUrl(avatar)) : null,
             child: avatar == null || avatar.isEmpty
                 ? Text(
                     name.isNotEmpty ? name[0].toUpperCase() : '?',

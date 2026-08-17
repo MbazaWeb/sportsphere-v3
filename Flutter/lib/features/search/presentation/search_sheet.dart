@@ -7,6 +7,14 @@ import '../../../shared/models/post.dart';
 import '../../../theme/app_colors.dart';
 import '../../profile/presentation/user_profile_sheet.dart';
 import '../../home/widgets/sportlights_tab.dart' show LiveFeedCard;
+import '../../../core/constants/api_config.dart';
+
+
+String _resolveUrl(String url) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  final base = ApiConfig.baseUrl;
+  return url.startsWith('/') ? '$base$url' : '$base/$url';
+}
 
 class SearchSheet extends ConsumerStatefulWidget {
   const SearchSheet({super.key});
@@ -171,7 +179,7 @@ class _SearchSheetState extends ConsumerState<SearchSheet> {
                               return ListTile(
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                 leading: CircleAvatar(
-                                  backgroundImage: avatar != null && avatar.isNotEmpty ? NetworkImage(avatar) : null,
+                                  backgroundImage: avatar != null && avatar.isNotEmpty ? NetworkImage(_resolveUrl(avatar)) : null,
                                   child: avatar == null || avatar.isEmpty ? Text(name.isNotEmpty ? name[0] : '?') : null,
                                 ),
                                 title: Row(

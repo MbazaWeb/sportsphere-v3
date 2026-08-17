@@ -3,9 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../theme/app_colors.dart';
+import '../../../core/constants/api_config.dart';
 
 /// 1:1 chat thread — loads history + sends via POST /api/messages.
 /// Enhanced with timestamps, delivery status, better layout.
+
+String _resolveUrl(String url) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  final base = ApiConfig.baseUrl;
+  return url.startsWith('/') ? '$base$url' : '$base/$url';
+}
+
 class ChatThreadSheet extends ConsumerStatefulWidget {
   const ChatThreadSheet({
     super.key,
@@ -272,7 +280,7 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
                 children: [
                   CircleAvatar(
                     radius: 16,
-                    backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                    backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty ? NetworkImage(_resolveUrl(avatarUrl)) : null,
                     backgroundColor: AppColors.surfaceElevated,
                     child: avatarUrl == null || avatarUrl.isEmpty
                         ? Text(myInitial, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 11, color: AppColors.primary))
