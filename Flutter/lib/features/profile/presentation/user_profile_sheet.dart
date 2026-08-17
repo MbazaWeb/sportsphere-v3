@@ -367,7 +367,7 @@ class _ProfileContent extends ConsumerWidget {
         // ── Cover gradient ──
         SliverToBoxAdapter(
           child: Container(
-            height: 110,
+            height: 140,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: gradient,
@@ -381,9 +381,9 @@ class _ProfileContent extends ConsumerWidget {
         // ── Avatar overlapping cover + Info ──
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
             child: Transform.translate(
-              offset: const Offset(0, -36),
+              offset: const Offset(0, -50),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

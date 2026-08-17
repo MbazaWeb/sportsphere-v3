@@ -219,7 +219,7 @@ class _ProfileHeader extends StatelessWidget {
       children: [
         // Cover — dark navy gradient matching web --background-secondary
         Container(
-          height: 130,
+          height: 150,
           width: double.infinity,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
@@ -238,7 +238,7 @@ class _ProfileHeader extends StatelessWidget {
           ),
         ),
         Transform.translate(
-          offset: const Offset(0, -36),
+          offset: const Offset(0, -44),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
