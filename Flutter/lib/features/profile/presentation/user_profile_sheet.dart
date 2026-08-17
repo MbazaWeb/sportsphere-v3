@@ -18,6 +18,8 @@ const _sportsRoles = <String>{
 };
 
 /// Roles that show "Follow" only (institutions, orgs, media).
+const _joinRoles = <String>{'community'};
+
 const _followOnlyRoles = <String>{
   'academy', 'competition', 'league', 'organization', 'referee',
   'commentator', 'journalist', 'analyst', 'creator', 'scout',
@@ -191,7 +193,7 @@ class _UserProfileSheetState extends ConsumerState<UserProfileSheet> {
                   : _ProfileContent(
                       user: _user!,
                       roleCfg: ProfileRoleRegistry.forRole(
-                        _user!['role']?.toString(),
+                        _user!['role']?.toString() ?? 'fan',
                       ),
                       isSportsRole: _isSportsRole,
                       following: _following,
@@ -465,21 +467,21 @@ class _ProfileContent extends ConsumerWidget {
                         label: 'Fans',
                         icon: Icons.favorite,
                         color: AppColors.primary,
-                        onTap: userId.isNotEmpty ? () => _openList(context, userId, 'fans', 'Fans') : null,
+                        onTap: id.isNotEmpty ? () => _openList(context, id, 'fans', 'Fans') : null,
                       ),
                       _StatCard(
                         value: '$followerCount',
                         label: 'Followers',
                         icon: Icons.people,
                         color: AppColors.primary,
-                        onTap: userId.isNotEmpty ? () => _openList(context, userId, 'followers', 'Followers') : null,
+                        onTap: id.isNotEmpty ? () => _openList(context, id, 'followers', 'Followers') : null,
                       ),
                       _StatCard(
                         value: '$followingCount',
                         label: 'Following',
                         icon: Icons.person_add,
                         color: AppColors.primary,
-                        onTap: userId.isNotEmpty ? () => _openList(context, userId, 'following', 'Following') : null,
+                        onTap: id.isNotEmpty ? () => _openList(context, id, 'following', 'Following') : null,
                       ),
                       _StatCard(value: '$postCount', label: 'Posts', icon: Icons.article, color: AppColors.primary),
                     ],
@@ -1265,7 +1267,8 @@ class _FansPreviewState extends ConsumerState<_FansPreview> {
   String _formatJoinDate(String dateStr) {
     try {
       final dt = DateTime.parse(dateStr);
-      return DateFormat('MMM yyyy').format(dt);
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return '\${months[dt.month - 1]} \${dt.year}';
     } catch (_) {
       return 'N/A';
     }

@@ -19,6 +19,7 @@ class PostUser {
         handle: j['handle']?.toString() ?? '',
         avatarUrl: j['avatarUrl']?.toString() ?? j['avatar']?.toString(),
         isVerified: j['isVerified'] == true,
+        role: j['role']?.toString() ?? 'fan',
       );
 }
 
