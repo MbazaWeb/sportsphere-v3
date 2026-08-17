@@ -18,14 +18,15 @@ class ScoresLiveClient {
   void connect({
     ScoresLiveCallback? onUpdate,
     String? userId,
-    String baseUrl = 'https://sportssphere.fun',
+    String? baseUrl,
   }) {
     _onUpdate = onUpdate;
     _statusCtrl.add('connecting');
     try {
       _socket?.dispose();
+      final uri = baseUrl ?? 'https://sportssphere.fun';
       _socket = io.io(
-        baseUrl,
+        uri,
         io.OptionBuilder()
             .setPath('/socket.io')
             .setTransports(['websocket', 'polling'])

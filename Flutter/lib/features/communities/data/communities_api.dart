@@ -57,4 +57,10 @@ class CommunitiesApi {
   Future<void> leave(String communityId) async {
     await _client.postJson('/communities/$communityId/leave', body: {});
   }
+
+  /// GET /api/communities/:id/posts
+  Future<List<dynamic>> getFeed(String communityId) async {
+    final data = await _client.getJson('/communities/$communityId/posts');
+    return data is List ? data : [];
+  }
 }

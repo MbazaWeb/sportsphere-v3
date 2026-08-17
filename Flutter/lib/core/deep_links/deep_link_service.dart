@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:uni_links/uni_links.dart';
+import 'package:app_links/app_links.dart';
 
 /// Supported deep link route types.
 enum DeepLinkType {
@@ -35,6 +35,7 @@ class DeepLinkService {
   factory DeepLinkService() => _instance;
   DeepLinkService._();
 
+  final _appLinks = AppLinks();
   StreamSubscription? _sub;
   bool _initialized = false;
 
@@ -44,14 +45,13 @@ class DeepLinkService {
   /// Initialize — listen for incoming deep links.
   ///
   /// Call once from `main.dart` after `WidgetsFlutterBinding.ensureInitialized()`.
-  /// On web this is a no-op because `uni_links` targets native platforms only.
   Future<void> init() async {
     // Only on native platforms, and only once
     if (kIsWeb || _initialized) return;
     _initialized = true;
     try {
       // Listen for incoming links while the app is running
-      _sub = uriLinkStream.listen((Uri? uri) {
+      _sub = _appLinks.uriLinkStream.listen((Uri? uri) {
         if (uri != null) {
           final route = _parse(uri);
           if (route != null) onRoute?.call(route);
@@ -61,7 +61,7 @@ class DeepLinkService {
       });
 
       // Check for initial link (cold start)
-      final initialUri = await getInitialUri();
+      final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
         final route = _parse(initialUri);
         if (route != null) onRoute?.call(route);

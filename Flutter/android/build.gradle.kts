@@ -5,16 +5,41 @@ allprojects {
     }
 }
 
-val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../build").get()
-rootProject.layout.buildDirectory.value(newBuildDir)
+rootProject.layout.buildDirectory.value(rootProject.layout.projectDirectory.dir("../build"))
 
 subprojects {
-    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
+    val newSubprojectBuildDir = rootProject.layout.buildDirectory.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
 
 subprojects {
-    project.evaluationDependsOn("\${project.path}:flutter-gradle-plugin:configuration")
+    project.evaluationDependsOn(":app")
+}
+
+subprojects {
+    val fixNamespace = {
+        if (project.hasProperty("android")) {
+            val android = project.extensions.getByName("android")
+            try {
+                val namespaceMethod = android.javaClass.getMethod("setNamespace", String::class.java)
+                val getNamespaceMethod = android.javaClass.getMethod("getNamespace")
+                if (getNamespaceMethod.invoke(android) == null) {
+                    val name = project.name
+                    val packageName = when (name) {
+                        "uni_links" -> "name.avioli.unilinks"
+                        else -> "com.sportsphere.${name.replace("-", "_")}"
+                    }
+                    namespaceMethod.invoke(android, packageName)
+                }
+            } catch (e: Exception) {
+            }
+        }
+    }
+    if (project.state.executed) {
+        fixNamespace()
+    } else {
+        project.afterEvaluate { fixNamespace() }
+    }
 }
 
 tasks.register<Delete>("clean") {

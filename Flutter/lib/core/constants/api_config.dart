@@ -29,6 +29,12 @@ class ApiConfig {
     defaultValue: '/sportsphere',
   );
 
+  /// Google Web Client ID (required for idToken on Android).
+  static const String googleClientId = String.fromEnvironment(
+    'GOOGLE_CLIENT_ID',
+    defaultValue: '',
+  );
+
   /// Full API prefix, e.g. https://sportssphere.fun/sportsphere/api
   static String get apiRoot => '$baseUrl$basePath/api';
 
@@ -37,6 +43,42 @@ class ApiConfig {
   static String path(String endpoint) {
     final e = endpoint.startsWith('/') ? endpoint : '/$endpoint';
     return '$apiRoot$e';
+  }
+
+  /// Resolves a potentially relative URL to an absolute one.
+  /// Also handles remapping old production URLs to the current environment
+  /// and ensuring the basePath is present for absolute URLs pointing to this server.
+  static String resolveUrl(String url) {
+    if (url.isEmpty) return '';
+
+    String resolved = url;
+
+    // 1. Handle absolute URLs
+    if (resolved.startsWith('http://') || resolved.startsWith('https://')) {
+      const oldDomain = 'https://sportssphere.fun';
+
+      // Remap old production domain to current baseUrl + basePath
+      if (resolved.startsWith(oldDomain) && !baseUrl.contains('sportssphere.fun')) {
+        resolved = resolved.replaceFirst(oldDomain, '$baseUrl$basePath');
+      }
+
+      // Fix missing basePath for the current baseUrl (if it's an old IP-based URL)
+      if (basePath.isNotEmpty && resolved.startsWith(baseUrl) && !resolved.contains(basePath)) {
+        resolved = resolved.replaceFirst(baseUrl, '$baseUrl$basePath');
+      }
+
+      return resolved;
+    }
+
+    // 2. Handle relative URLs (e.g. /uploads/...)
+    // Ensure we don't double-prefix if the path already starts with basePath
+    String path = resolved;
+    if (basePath.isNotEmpty && path.startsWith(basePath)) {
+      path = path.replaceFirst(basePath, '');
+    }
+
+    final normalized = path.startsWith('/') ? path : '/$path';
+    return '$baseUrl$basePath$normalized';
   }
 
   /// Health check URL (used for connectivity diagnostics).

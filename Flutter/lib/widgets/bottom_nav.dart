@@ -19,11 +19,10 @@ class BottomNav extends StatelessWidget {
   final VoidCallback? onLoginTap;
   final bool visible;
 
-  // Tabs shown when NOT authenticated (Guest Mode): Home, Scores, Create
+  // Tabs shown when NOT authenticated (Guest Mode): Home, Scores
   static const _guestTabs = [
     _TabItem(AppTab.home, 'Home', Icons.home_rounded),
     _TabItem(AppTab.scores, 'Scores', Icons.emoji_events_rounded),
-    _TabItem(AppTab.create, 'Create', Icons.add_circle_rounded, isCreate: true),
   ];
 
   // Tabs shown when authenticated: Home, Scores, Create, Activity, Profile
@@ -87,51 +86,37 @@ class BottomNav extends StatelessWidget {
                         _NavItem(
                           item: tab,
                           isActive: currentTab == tab.id,
-                          onTap: () {
-                            // For guests, Activity/Profile tabs trigger login
-                            if (!isAuthenticated && 
-                                (tab.id == AppTab.activity || tab.id == AppTab.profile)) {
-                              onLoginTap?.call();
-                              return;
-                            }
-                            onTabSelected(tab.id);
-                          },
+                          onTap: () => onTabSelected(tab.id),
                         ),
-                      // Show Login button only when NOT authenticated
+                      // Show Login button as a tab-like item when NOT authenticated
                       if (!isAuthenticated)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: GestureDetector(
-                            onTap: onLoginTap,
-                            child: Container(
-                              height: 32,
-                              padding: const EdgeInsets.symmetric(horizontal: 14),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.25),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
+                        GestureDetector(
+                          onTap: onLoginTap,
+                          behavior: HitTestBehavior.opaque,
+                          child: SizedBox(
+                            width: 64,
+                            height: 60,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                                  child: const Icon(
+                                    Icons.login_rounded,
+                                    size: 20,
+                                    color: AppColors.mutedForeground,
                                   ),
-                                ],
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.login_rounded, size: 14, color: AppColors.primaryForeground),
-                                  SizedBox(width: 6),
-                                  Text(
-                                    'Login',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppColors.primaryForeground,
-                                    ),
+                                ),
+                                const SizedBox(height: 2),
+                                const Text(
+                                  'Login',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.mutedForeground,
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         ),

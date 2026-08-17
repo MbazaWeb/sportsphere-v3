@@ -5,8 +5,16 @@ import '../../core/network/api_client.dart';
 import '../../core/providers/app_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
+import '../../../core/constants/api_config.dart';
 
 /// Full rankings sheet — GET /api/leaderboard
+
+String _resolveUrl(String url) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  final base = ApiConfig.baseUrl;
+  return url.startsWith('/') ? '$base$url' : '$base/$url';
+}
+
 class LeaderboardSheet extends ConsumerStatefulWidget {
   const LeaderboardSheet({super.key});
 
@@ -209,7 +217,7 @@ class _LeaderboardSheetState extends ConsumerState<LeaderboardSheet> {
                                     CircleAvatar(
                                       radius: 18,
                                       backgroundColor: AppColors.surfaceElevated,
-                                      backgroundImage: avatar != null && avatar.isNotEmpty ? NetworkImage(avatar) : null,
+                                      backgroundImage: avatar != null && avatar.isNotEmpty ? NetworkImage(_resolveUrl(avatar)) : null,
                                       child: avatar == null || avatar.isEmpty
                                           ? Text(name.isNotEmpty ? name[0].toUpperCase() : '?', style: GoogleFonts.inter(fontWeight: FontWeight.w700))
                                           : null,

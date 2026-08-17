@@ -96,6 +96,18 @@ class AuthApi {
     await _client.postJson('/auth/verify-email/confirm', body: {'code': code});
   }
 
+  /// POST /api/auth/social
+  Future<AuthResult> socialLogin({
+    required String provider,
+    required String idToken,
+  }) async {
+    final data = await _client.postJson('/auth/social', body: {
+      'provider': provider,
+      'idToken': idToken,
+    }) as Map<String, dynamic>;
+    return _parseAuth(data);
+  }
+
   AuthResult _parseAuth(Map<String, dynamic> data) {
     final userMap = data['user'] as Map<String, dynamic>? ?? data;
     final token = data['token']?.toString() ?? '';

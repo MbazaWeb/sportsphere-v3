@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class PostUser {
   const PostUser({
     required this.id,
@@ -5,6 +7,7 @@ class PostUser {
     required this.handle,
     this.avatarUrl,
     this.isVerified = false,
+    this.role = 'fan',
   });
 
   final String id;
@@ -12,6 +15,7 @@ class PostUser {
   final String handle;
   final String? avatarUrl;
   final bool isVerified;
+  final String role;
 
   factory PostUser.fromJson(Map<String, dynamic> j) => PostUser(
         id: j['id']?.toString() ?? '',
@@ -19,6 +23,7 @@ class PostUser {
         handle: j['handle']?.toString() ?? '',
         avatarUrl: j['avatarUrl']?.toString() ?? j['avatar']?.toString(),
         isVerified: j['isVerified'] == true,
+        role: j['role']?.toString() ?? 'fan',
       );
 }
 
@@ -31,6 +36,7 @@ class PollData {
     this.optionCounts,
     this.userVotedOption,
     this.endsAt,
+    this.optionImages,
   });
 
   final String id;
@@ -40,6 +46,7 @@ class PollData {
   final List<int>? optionCounts;
   final int? userVotedOption;
   final String? endsAt;
+  final List<String>? optionImages;
 
   factory PollData.fromJson(Map<String, dynamic> j) => PollData(
         id: j['id']?.toString() ?? '',
@@ -49,6 +56,7 @@ class PollData {
         optionCounts: (j['optionCounts'] as List?)?.map((e) => (e as num).toInt()).toList(),
         userVotedOption: (j['userVotedOption'] as num?)?.toInt(),
         endsAt: j['endsAt']?.toString(),
+        optionImages: (j['optionImages'] as List?)?.map((e) => e.toString()).toList(),
       );
 }
 
@@ -62,6 +70,8 @@ class PredictionData {
     this.confidence,
     this.result,
     this.isCorrect,
+    this.homeBadge,
+    this.awayBadge,
   });
 
   final String id;
@@ -72,6 +82,8 @@ class PredictionData {
   final String? confidence;
   final String? result;
   final bool? isCorrect;
+  final String? homeBadge;
+  final String? awayBadge;
 
   factory PredictionData.fromJson(Map<String, dynamic> j) => PredictionData(
         id: j['id']?.toString() ?? '',
@@ -82,6 +94,8 @@ class PredictionData {
         confidence: j['confidence']?.toString(),
         result: j['result']?.toString(),
         isCorrect: j['isCorrect'] as bool?,
+        homeBadge: j['homeBadge']?.toString() ?? j['homeLogo']?.toString(),
+        awayBadge: j['awayBadge']?.toString() ?? j['awayLogo']?.toString(),
       );
 }
 
@@ -105,6 +119,7 @@ class Post {
     this.poll,
     this.prediction,
     this.likedByMe = false,
+    this.repostData,
   });
 
   final String id;
@@ -124,14 +139,24 @@ class Post {
   final PredictionData? prediction;
   final PostUser user;
   final bool likedByMe;
+  final Map<String, dynamic>? repostData;
 
   factory Post.fromJson(Map<String, dynamic> j) {
     final userJson = j['user'] as Map<String, dynamic>? ?? {};
+    final type = j['postType']?.toString() ?? 'post';
+    Map<String, dynamic>? rData;
+    if (type == 'repost') {
+      try {
+        final contentStr = j['content']?.toString() ?? '';
+        rData = jsonDecode(contentStr);
+      } catch (_) {}
+    }
+
     return Post(
       id: j['id']?.toString() ?? '',
       userId: j['userId']?.toString() ?? '',
       content: j['content']?.toString() ?? '',
-      postType: j['postType']?.toString() ?? 'post',
+      postType: type,
       mediaUrls: (j['mediaUrls'] as List?)?.map((e) => e.toString()).toList() ?? const [],
       teamTag: j['teamTag']?.toString(),
       playerTag: j['playerTag']?.toString(),
@@ -147,6 +172,7 @@ class Post {
           : null,
       user: PostUser.fromJson(userJson),
       likedByMe: j['likedByMe'] == true,
+      repostData: rData,
     );
   }
 }

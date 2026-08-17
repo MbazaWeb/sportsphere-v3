@@ -12,6 +12,10 @@ class MatchItem {
     this.awayBadge,
     this.kickoff,
     this.events = const [],
+    this.venue,
+    this.continent,
+    this.country,
+    this.metadata = const {},
   });
 
   final String id;
@@ -26,6 +30,10 @@ class MatchItem {
   final String? awayBadge;
   final String? kickoff;
   final List<MatchEvent> events;
+  final String? venue;
+  final String? continent;
+  final String? country;
+  final Map<String, dynamic> metadata;
 
   factory MatchItem.fromJson(Map<String, dynamic> j) {
     final rawEvents = j['events'];
@@ -35,6 +43,9 @@ class MatchItem {
         if (e is Map) events.add(MatchEvent.fromJson(Map<String, dynamic>.from(e)));
       }
     }
+
+    final meta = j['metadata'] is Map ? Map<String, dynamic>.from(j['metadata'] as Map) : <String, dynamic>{};
+
     return MatchItem(
       id: j['id']?.toString() ?? '',
       homeTeam: j['homeTeam']?.toString() ?? j['Team_MatchProfile_homeTeamIdToTeam']?['name']?.toString() ?? '',
@@ -46,10 +57,14 @@ class MatchItem {
           j['competition']?.toString() ??
           j['League']?['name']?.toString(),
       minute: (j['minute'] as num?)?.toInt(),
-      homeBadge: j['homeBadge']?.toString() ?? j['Team_MatchProfile_homeTeamIdToTeam']?['logoUrl']?.toString(),
-      awayBadge: j['awayBadge']?.toString() ?? j['Team_MatchProfile_awayTeamIdToTeam']?['logoUrl']?.toString(),
-      kickoff: j['kickoff']?.toString() ?? j['startTime']?.toString() ?? j['kickoffAt']?.toString(),
+      homeBadge: j['homeBadge']?.toString() ?? j['Team_MatchProfile_homeTeamIdToTeam']?['logoUrl']?.toString() ?? meta['homeLogo']?.toString(),
+      awayBadge: j['awayBadge']?.toString() ?? j['Team_MatchProfile_awayTeamIdToTeam']?['logoUrl']?.toString() ?? meta['awayLogo']?.toString(),
+      kickoff: j['kickoffAt']?.toString() ?? j['kickoff']?.toString() ?? j['startTime']?.toString() ?? j['kickoffAt']?.toString(),
       events: events,
+      venue: j['venue']?.toString(),
+      continent: j['continent']?.toString(),
+      country: j['country']?.toString(),
+      metadata: meta,
     );
   }
 

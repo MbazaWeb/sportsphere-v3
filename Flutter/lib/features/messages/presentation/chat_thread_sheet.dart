@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../theme/app_colors.dart';
+import '../../../core/constants/api_config.dart';
 
 /// 1:1 chat thread — loads history + sends via POST /api/messages.
 /// Enhanced with timestamps, delivery status, better layout.
+
+String _resolveUrl(String url) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  final base = ApiConfig.baseUrl;
+  return url.startsWith('/') ? '$base$url' : '$base/$url';
+}
+
 class ChatThreadSheet extends ConsumerStatefulWidget {
   const ChatThreadSheet({
     super.key,
@@ -25,11 +34,12 @@ class ChatThreadSheet extends ConsumerStatefulWidget {
 }
 
 class _ChatBubble {
-  _ChatBubble({required this.text, required this.mine, required this.at, this.senderName = ''});
+  _ChatBubble({required this.text, required this.mine, required this.at, this.senderName = '', this.mediaUrl});
   final String text;
   final bool mine;
   final DateTime at;
   final String senderName;
+  final String? mediaUrl;
 }
 
 class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
@@ -39,6 +49,7 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
   bool _sending = false;
   bool _loadingHistory = true;
   String? _currentUserId;
+  final _picker = ImagePicker();
 
   @override
   void initState() {
@@ -60,6 +71,7 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
           final senderId = m['senderId']?.toString() ?? '';
           final isMine = m['mine'] == true || senderId == _currentUserId;
           final text = m['content']?.toString() ?? '';
+          final mediaUrl = m['mediaUrl']?.toString();
           final senderName = isMine
               ? (auth.user?.name ?? 'You')
               : widget.partnerName;
@@ -72,8 +84,8 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
           } else {
             at = DateTime.now();
           }
-          if (text.isNotEmpty) {
-            _bubbles.add(_ChatBubble(text: text, mine: isMine, at: at, senderName: senderName));
+          if (text.isNotEmpty || (mediaUrl != null && mediaUrl.isNotEmpty)) {
+            _bubbles.add(_ChatBubble(text: text, mine: isMine, at: at, senderName: senderName, mediaUrl: mediaUrl));
           }
         }
         _loadingHistory = false;
@@ -92,12 +104,14 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
     super.dispose();
   }
 
-  Future<void> _send() async {
+  Future<void> _send({String? mediaUrl}) async {
     final text = _ctrl.text.trim();
-    if (text.isEmpty || _sending) return;
+    if (text.isEmpty && mediaUrl == null) return;
+    if (_sending) return;
+
     setState(() {
       _sending = true;
-      _bubbles.add(_ChatBubble(text: text, mine: true, at: DateTime.now(), senderName: 'You'));
+      _bubbles.add(_ChatBubble(text: text, mine: true, at: DateTime.now(), senderName: 'You', mediaUrl: mediaUrl));
       _ctrl.clear();
     });
     _scrollToEnd();
@@ -105,6 +119,7 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
       await ref.read(messagesApiProvider).send(
             recipientId: widget.partnerId,
             content: text,
+            mediaUrl: mediaUrl,
           );
     } catch (e) {
       if (!mounted) return;
@@ -116,11 +131,33 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
     }
   }
 
+  Future<void> _pickImage() async {
+    try {
+      final file = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+      if (file == null) return;
+
+      setState(() => _sending = true);
+      final bytes = await file.readAsBytes();
+      final url = await ref.read(uploadApiProvider).uploadBytes(
+        bytes: bytes,
+        filename: file.name,
+        contentType: 'image/jpeg',
+      );
+
+      await _send(mediaUrl: url);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _sending = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+      }
+    }
+  }
+
   void _scrollToEnd() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) {
         _scroll.animateTo(
-          _scroll.position.maxScrollExtent + 80,
+          _scroll.position.maxScrollExtent + 120,
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
         );
@@ -263,22 +300,17 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
             ),
             // Message input
             Container(
-              padding: const EdgeInsets.fromLTRB(12, 8, 8, 16),
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
               decoration: const BoxDecoration(
                 border: Border(top: BorderSide(color: AppColors.border)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-                    backgroundColor: AppColors.surfaceElevated,
-                    child: avatarUrl == null || avatarUrl.isEmpty
-                        ? Text(myInitial, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 11, color: AppColors.primary))
-                        : null,
+                  IconButton(
+                    onPressed: _sending ? null : _pickImage,
+                    icon: const Icon(Icons.add_photo_alternate_outlined, color: AppColors.primary),
                   ),
-                  const SizedBox(width: 10),
                   Expanded(
                     child: TextField(
                       controller: _ctrl,
@@ -287,7 +319,7 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
                       maxLines: 4,
                       minLines: 1,
                       decoration: InputDecoration(
-                        hintText: 'Message…',
+                        hintText: 'Message\u2026',
                         isDense: true,
                         filled: true,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(22)),
@@ -301,7 +333,7 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      onPressed: _sending ? null : _send,
+                      onPressed: _sending ? null : () => _send(),
                       icon: _sending
                           ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryForeground))
                           : const Icon(Icons.send_rounded, color: AppColors.primaryForeground, size: 18),
@@ -337,14 +369,27 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
         child: Column(
           crossAxisAlignment: b.mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            Text(
-              b.text,
-              style: GoogleFonts.inter(
-                fontSize: 14.5,
-                height: 1.35,
-                color: b.mine ? AppColors.primaryForeground : AppColors.foreground,
+            if (b.mediaUrl != null && b.mediaUrl!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    _resolveUrl(b.mediaUrl!),
+                    fit: BoxFit.cover,
+                    loadingBuilder: (_, child, progress) => progress == null ? child : const Center(child: CircularProgressIndicator()),
+                  ),
+                ),
               ),
-            ),
+            if (b.text.isNotEmpty)
+              Text(
+                b.text,
+                style: GoogleFonts.inter(
+                  fontSize: 14.5,
+                  height: 1.35,
+                  color: b.mine ? AppColors.primaryForeground : AppColors.foreground,
+                ),
+              ),
             const SizedBox(height: 4),
             Row(
               mainAxisSize: MainAxisSize.min,

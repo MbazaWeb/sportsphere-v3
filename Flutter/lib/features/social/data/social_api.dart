@@ -80,6 +80,15 @@ class SocialApi {
     await _client.postJson('/notifications/read', body: {'id': notificationId});
   }
 
+  /// POST /api/repost
+  Future<Map<String, dynamic>> repost(String postId, {String? content}) async {
+    final data = await _client.postJson('/repost', body: {
+      'postId': postId,
+      if (content != null) 'content': content,
+    });
+    return data is Map<String, dynamic> ? data : Map<String, dynamic>.from(data as Map);
+  }
+
   /// GET /api/users?q=
   Future<List<Map<String, dynamic>>> searchUsers(String q) async {
     final data = await _client.getJson('/users?q=${Uri.encodeComponent(q)}&limit=20');
@@ -95,7 +104,7 @@ class SocialApi {
 
   /// GET /api/posts?search=  or /api/feed?search=
   Future<List<Map<String, dynamic>>> searchPosts(String q) async {
-    final data = await _client.getJson('/feed?search=${Uri.encodeComponent(q)}&limit=20');
+    final data = await _client.getJson('/feed?q=${Uri.encodeComponent(q)}&limit=20');
     final list = data is List ? data : (data is Map && data['data'] is List ? data['data'] as List : []);
     return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }

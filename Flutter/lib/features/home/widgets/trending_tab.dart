@@ -190,13 +190,13 @@ class TrendingTab extends ConsumerWidget {
                               }
                               try {
                                 await ref.read(communitiesApiProvider).join(c.id);
-                                if (!mounted) return;
+                                if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text('Joined ${c.name}!')),
                                 );
                                 ref.invalidate(communitiesProvider);
                               } catch (e) {
-                                if (!mounted) return;
+                                if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text(e.toString().replaceFirst(RegExp(r'^ApiException\(\d+\):\s*'), ''))),
                                 );

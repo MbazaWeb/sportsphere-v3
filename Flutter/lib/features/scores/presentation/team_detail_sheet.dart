@@ -5,6 +5,15 @@ import '../../../core/providers/app_providers.dart';
 import '../../../shared/models/match.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
+import '../../../core/constants/api_config.dart';
+
+
+String _resolveUrl(String url) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  final base = ApiConfig.baseUrl;
+  return url.startsWith('/') ? '\$base\$url' : '\$base/\$url';
+}
+
 
 class TeamDetailSheet extends ConsumerStatefulWidget {
   const TeamDetailSheet({
@@ -138,7 +147,7 @@ class _TeamDetailSheetState extends ConsumerState<TeamDetailSheet>
         const SizedBox(width: 14),
         CircleAvatar(radius: 22, backgroundColor: AppColors.surface,
           backgroundImage: (widget.teamBadge != null && widget.teamBadge!.isNotEmpty)
-              ? NetworkImage(widget.teamBadge!) : null,
+              ? NetworkImage(_resolveUrl(widget.teamBadge!)) : null,
           child: (widget.teamBadge == null || widget.teamBadge!.isEmpty)
               ? Text(widget.teamName.isNotEmpty ? widget.teamName[0].toUpperCase() : '?',
                   style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 20, color: AppColors.primary))
@@ -252,7 +261,7 @@ class _TeamDetailSheetState extends ConsumerState<TeamDetailSheet>
       child: Row(children: [
         if (oppBadge != null && oppBadge.isNotEmpty)
           ClipRRect(borderRadius: BorderRadius.circular(6),
-            child: Image.network(oppBadge, width: 28, height: 28,
+            child: Image.network(_resolveUrl(oppBadge), width: 28, height: 28,
               errorBuilder: (_, __, ___) => const SizedBox(width: 28, height: 28)))
         else
           Container(width: 28, height: 28, alignment: Alignment.center,
@@ -337,7 +346,7 @@ class _TeamDetailSheetState extends ConsumerState<TeamDetailSheet>
         Expanded(child: Row(children: [
           if (r.badge != null && r.badge!.isNotEmpty)
             Padding(padding: const EdgeInsets.only(right: 8),
-              child: Image.network(r.badge!, width: 20, height: 20,
+              child: Image.network(_resolveUrl(r.badge!), width: 20, height: 20,
                 errorBuilder: (_, __, ___) => const SizedBox(width: 20))),
           Flexible(child: Text(r.team, overflow: TextOverflow.ellipsis, style: st)),
         ])),

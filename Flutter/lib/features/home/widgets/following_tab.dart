@@ -110,7 +110,7 @@ class _FollowingTabState extends ConsumerState<FollowingTab> {
     }
 
     if (_error != null) {
-      return _ErrorView(message: _error!, onRetry: _loadFirst);
+      return FeedErrorView(message: _error!, onRetry: _loadFirst);
     }
 
     if (_posts.isEmpty) {
@@ -135,7 +135,7 @@ class _FollowingTabState extends ConsumerState<FollowingTab> {
 
     return SsRefresh(
       onRefresh: _refresh,
-      child: ListView.builder(
+      child: ListView.separated(
         controller: _scroll,
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),

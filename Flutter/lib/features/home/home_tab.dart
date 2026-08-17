@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers/app_providers.dart';
 import '../../theme/app_colors.dart';
 import '../search/presentation/search_sheet.dart';
 import '../notifications/presentation/notifications_sheet.dart';
@@ -11,16 +13,16 @@ import 'widgets/polls_tab.dart';
 import 'widgets/following_tab.dart';
 
 /// Home matching web HomeTab + screenshots (Sportlights / Trending / Predictions / Polls).
-class HomeTab extends StatefulWidget {
+class HomeTab extends ConsumerStatefulWidget {
   const HomeTab({super.key, this.onNeedLogin});
 
   final VoidCallback? onNeedLogin;
 
   @override
-  State<HomeTab> createState() => _HomeTabState();
+  ConsumerState<HomeTab> createState() => _HomeTabState();
 }
 
-class _HomeTabState extends State<HomeTab> {
+class _HomeTabState extends ConsumerState<HomeTab> {
   String _subTab = 'for-you';
 
   void _openSearch() {
@@ -43,11 +45,15 @@ class _HomeTabState extends State<HomeTab> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = ref.watch(authProvider);
+    final isAuthed = auth.isAuthenticated;
+
     return Column(
       children: [
         HomeHeader(
           activeSubTab: _subTab,
           onSubTabChanged: (id) => setState(() => _subTab = id),
+          isAuthenticated: isAuthed,
           onSearch: _openSearch,
           onNotifications: _openNotifications,
           onLeaderboard: () {
@@ -67,17 +73,94 @@ class _HomeTabState extends State<HomeTab> {
               child: KeyedSubtree(
                 key: ValueKey(_subTab),
                 child: switch (_subTab) {
-                  'following' => const FollowingTab(),
-                  'trending' => const TrendingTab(),
-                  'predictions' => const PredictionsTab(),
-                  'polls' => const PollsTab(),
-                  _ => const SportlightsTab(),
+                  'following' when isAuthed => const FollowingTab(),
+                  'trending' when isAuthed => const TrendingTab(),
+                  'arena' when isAuthed => const _ArenaTab(),
+                  _ => SportlightsTab(onNeedLogin: widget.onNeedLogin),
                 },
               ),
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Arena tab — merges Predictions + Polls into one scrollable feed.
+class _ArenaTab extends StatefulWidget {
+  const _ArenaTab();
+  @override
+  State<_ArenaTab> createState() => _ArenaTabState();
+}
+
+class _ArenaTabState extends State<_ArenaTab> {
+  String _sub = 'predictions';
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            child: Row(
+              children: [
+                _ArenaSub('predictions', 'Predictions', _sub, (v) => setState(() => _sub = v)),
+                _ArenaSub('polls', 'Polls', _sub, (v) => setState(() => _sub = v)),
+              ],
+            ),
+          ),
+        ),
+        Expanded(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 150),
+            child: KeyedSubtree(
+              key: ValueKey(_sub),
+              child: _sub == 'polls' ? const PollsTab() : const PredictionsTab(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ArenaSub extends StatelessWidget {
+  const _ArenaSub(this.id, this.label, this.active, this.onTap);
+  final String id, label, active;
+  final ValueChanged<String> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = id == active;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onTap(id),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: isActive ? AppColors.primaryForeground : AppColors.mutedForeground,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

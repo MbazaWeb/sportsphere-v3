@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../core/providers/app_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
+import '../../core/constants/api_config.dart';
 import 'auth_logo.dart';
 
 /// Login sheet — real POST /api/auth (email OR handle + password).
@@ -79,6 +81,55 @@ class _LoginSheetState extends ConsumerState<LoginSheet> {
       _notFound = lower.contains('invalid') || lower.contains('not found') || lower.contains('401');
       _error = err.replaceFirst(RegExp(r'^ApiException\(\d+\):\s*'), '');
     });
+  }
+
+  Future<void> _loginWithGoogle() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final googleSignIn = GoogleSignIn(
+        serverClientId: ApiConfig.googleClientId.isNotEmpty ? ApiConfig.googleClientId : null,
+      );
+      final account = await googleSignIn.signIn();
+      if (account == null) {
+        setState(() => _loading = false);
+        return;
+      }
+
+      final auth = await account.authentication;
+      final idToken = auth.idToken;
+
+      if (idToken == null) {
+        throw Exception('Could not get Google ID token');
+      }
+
+      final ok = await ref.read(authProvider.notifier).socialLogin(
+        provider: 'google',
+        idToken: idToken,
+      );
+
+      if (!mounted) return;
+
+      if (ok) {
+        setState(() => _loading = false);
+        widget.onSuccess();
+      } else {
+        final err = ref.read(authProvider).error ?? 'Google Sign-In failed';
+        setState(() {
+          _loading = false;
+          _error = err;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'Google login failed: $e';
+      });
+    }
   }
 
   @override
@@ -225,6 +276,36 @@ class _LoginSheetState extends ConsumerState<LoginSheet> {
                         )
                       : const Text('Sign In'),
                 ),
+                const SizedBox(height: 16),
+
+                Row(
+                  children: [
+                    const Expanded(child: Divider(color: AppColors.border)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text('OR', style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedForeground, fontWeight: FontWeight.w700)),
+                    ),
+                    const Expanded(child: Divider(color: AppColors.border)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                OutlinedButton(
+                  onPressed: _loading ? null : _loginWithGoogle,
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    side: const BorderSide(color: AppColors.border),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.g_mobiledata_rounded, size: 28),
+                      const SizedBox(width: 8),
+                      Text('Continue with Google', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

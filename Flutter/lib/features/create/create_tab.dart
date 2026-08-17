@@ -7,6 +7,9 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/providers/app_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
+import '../media/presentation/photo_editor_sheet.dart';
+import '../media/presentation/video_trimmer_sheet.dart';
+import 'post_analysis_sheet.dart';
 
 /// Create Post composer — text + attach + poll + prediction + sport tag + hashtags + location + breaking.
 class CreateTab extends ConsumerStatefulWidget {
@@ -18,7 +21,7 @@ class CreateTab extends ConsumerStatefulWidget {
   ConsumerState<CreateTab> createState() => _CreateTabState();
 }
 
-enum _Mode { post, poll, prediction }
+enum _Mode { post, poll, prediction, analysis }
 
 /// Common sports for tagging
 const _sports = [
@@ -165,9 +168,16 @@ class _CreateTabState extends ConsumerState<CreateTab> {
       if (file == null) return;
       final bytes = await file.readAsBytes();
       if (!mounted) return;
+
+      Uint8List? finalBytes = bytes;
+      if (choice == 'gallery' || choice == 'camera') {
+        final edited = await PhotoEditorSheet.open(context, bytes);
+        if (edited != null) finalBytes = edited;
+      }
+
       setState(() {
         _files.add(file!);
-        _previews.add(bytes);
+        _previews.add(finalBytes!);
         if (_mode != _Mode.post) _mode = _Mode.post;
       });
     } catch (e) {
@@ -271,7 +281,12 @@ class _CreateTabState extends ConsumerState<CreateTab> {
         mediaUrls.add(url);
       }
       if (mediaUrls.isNotEmpty && postType == 'post') {
-        postType = 'photo';
+        // Check if any file is a video
+        final hasVideo = _files.any((f) {
+          final n = f.name.toLowerCase();
+          return n.endsWith('.mp4') || n.endsWith('.mov') || n.endsWith('.avi') || n.endsWith('.mkv');
+        });
+        postType = hasVideo ? 'video' : 'photo';
       }
       await ref.read(socialApiProvider).createPost(
             content: content.isEmpty ? ' ' : content,
@@ -428,16 +443,26 @@ class _CreateTabState extends ConsumerState<CreateTab> {
                           itemCount: _previews.length,
                           separatorBuilder: (_, __) => const SizedBox(width: 8),
                           itemBuilder: (context, i) {
+                            final isVid = () {
+                                final n = _files[i].name.toLowerCase();
+                                return n.endsWith('.mp4') || n.endsWith('.mov') || n.endsWith('.avi');
+                              }();
                             return Stack(
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: Image.memory(
-                                    _previews[i],
-                                    width: 96,
-                                    height: 96,
-                                    fit: BoxFit.cover,
-                                  ),
+                                  child: isVid
+                                      ? Container(
+                                          width: 96, height: 96,
+                                          color: AppColors.surfaceElevated,
+                                          child: const Center(child: Icon(Icons.videocam_rounded, size: 32, color: AppColors.primary)),
+                                        )
+                                      : Image.memory(
+                                          _previews[i],
+                                          width: 96,
+                                          height: 96,
+                                          fit: BoxFit.cover,
+                                        ),
                                 ),
                                 Positioned(
                                   top: 4,
@@ -808,6 +833,28 @@ class _CreateTabState extends ConsumerState<CreateTab> {
                           onTap: () => setState(() {
                             _mode = _mode == _Mode.prediction ? _Mode.post : _Mode.prediction;
                           }),
+                        ),
+                        const SizedBox(width: 4),
+                        _Tool(
+                          icon: Icons.auto_graph_rounded,
+                          label: 'Analysis',
+                          active: _mode == _Mode.analysis,
+                          onTap: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) => PostAnalysisSheet(
+                                onPost: (summary, stats) {
+                                  Navigator.pop(context);
+                                  setState(() {
+                                    _text.text = summary;
+                                    _mode = _Mode.post;
+                                  });
+                                },
+                              ),
+                            );
+                          },
                         ),
                         const SizedBox(width: 4),
                         _Tool(

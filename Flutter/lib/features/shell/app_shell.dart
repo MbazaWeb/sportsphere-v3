@@ -72,7 +72,7 @@ class _AppShellState extends ConsumerState<AppShell> {
   void _handleTabSelection(AppTab tab) {
     // If not authenticated and trying to access restricted tabs
     if (!ref.read(authProvider).isAuthenticated) {
-      if (tab == AppTab.activity || tab == AppTab.profile) {
+      if (tab == AppTab.activity || tab == AppTab.profile || tab == AppTab.create) {
         _openLogin();
         return;
       }

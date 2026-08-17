@@ -6,6 +6,8 @@ import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
 import '../data/communities_api.dart';
 
+import 'community_feed_page.dart';
+
 /// Full communities browser — list, search, join/leave (parity with web discovery).
 class CommunitiesSheet extends ConsumerStatefulWidget {
   const CommunitiesSheet({super.key, this.onNeedLogin});
@@ -230,7 +232,7 @@ class _CommunitiesSheetState extends ConsumerState<CommunitiesSheet> {
                                 return GlassCard(
                                   borderRadius: 16,
                                   padding: const EdgeInsets.all(14),
-                                  onTap: () => _showDetail(c),
+                                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CommunityFeedPage(community: c))),
                                   child: Row(
                                     children: [
                                       CircleAvatar(

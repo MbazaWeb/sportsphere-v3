@@ -10,6 +10,7 @@ class HomeHeader extends StatelessWidget {
     super.key,
     required this.activeSubTab,
     required this.onSubTabChanged,
+    this.isAuthenticated = false,
     this.onSearch,
     this.onNotifications,
     this.onLeaderboard,
@@ -17,20 +18,24 @@ class HomeHeader extends StatelessWidget {
 
   final String activeSubTab;
   final ValueChanged<String> onSubTabChanged;
+  final bool isAuthenticated;
   final VoidCallback? onSearch;
   final VoidCallback? onNotifications;
   final VoidCallback? onLeaderboard;
 
-  static const subTabs = [
+  static const _allSubTabs = [
     ('for-you', 'Sportlights'),
     ('following', 'Following'),
     ('trending', 'Trending'),
-    ('predictions', 'Predictions'),
-    ('polls', 'Polls'),
+    ('arena', 'Arena'),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final tabs = isAuthenticated
+        ? _allSubTabs
+        : _allSubTabs.where((t) => t.$1 == 'for-you').toList();
+
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
@@ -74,56 +79,58 @@ class HomeHeader extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(
-                  height: 46,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                    itemCount: subTabs.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 6),
-                    itemBuilder: (context, i) {
-                      final (id, label) = subTabs[i];
-                      final active = activeSubTab == id;
-                      return GestureDetector(
-                        onTap: () => onSubTabChanged(id),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeOutCubic,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: active ? AppColors.primary : Colors.white.withValues(alpha: 0.04),
-                            borderRadius: BorderRadius.circular(22),
-                            border: Border.all(
-                              color: active
-                                  ? AppColors.primary
-                                  : Colors.white.withValues(alpha: 0.06),
+                if (tabs.length > 1)
+                  SizedBox(
+                    height: 46,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                      itemCount: tabs.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 6),
+                      itemBuilder: (context, i) {
+                        final (id, label) = tabs[i];
+                        final active = activeSubTab == id;
+                        return GestureDetector(
+                          onTap: () => onSubTabChanged(id),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 220),
+                            curve: Curves.easeOutCubic,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: active ? AppColors.primary : Colors.white.withValues(alpha: 0.04),
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(
+                                color: active
+                                    ? AppColors.primary
+                                    : Colors.white.withValues(alpha: 0.06),
+                              ),
+                              boxShadow: active
+                                  ? [
+                                      BoxShadow(
+                                        color: AppColors.primary.withValues(alpha: 0.25),
+                                        blurRadius: 16,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ]
+                                  : null,
                             ),
-                            boxShadow: active
-                                ? [
-                                    BoxShadow(
-                                      color: AppColors.primary.withValues(alpha: 0.25),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: Text(
-                            label,
-                            style: GoogleFonts.inter(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: -0.2,
-                              color: active
-                                  ? AppColors.primaryForeground
-                                  : AppColors.mutedForeground,
+                            child: Text(
+                              label,
+                              style: GoogleFonts.inter(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.2,
+                                color: active
+                                    ? AppColors.primaryForeground
+                                    : AppColors.mutedForeground,
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
-                ),
+                if (tabs.length <= 1) const SizedBox(height: 8),
               ],
             ),
           ),

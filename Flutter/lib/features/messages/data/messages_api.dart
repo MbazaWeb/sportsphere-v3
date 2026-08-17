@@ -18,14 +18,16 @@ class MessagesApi {
     return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
-  /// POST /api/messages — { recipientId, content }
+  /// POST /api/messages — { recipientId, content, mediaUrl }
   Future<Map<String, dynamic>> send({
     required String recipientId,
     required String content,
+    String? mediaUrl,
   }) async {
     final data = await _client.postJson('/messages', body: {
       'recipientId': recipientId,
       'content': content,
+      if (mediaUrl != null) 'mediaUrl': mediaUrl,
     });
     return data is Map<String, dynamic> ? data : Map<String, dynamic>.from(data as Map);
   }

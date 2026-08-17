@@ -127,16 +127,37 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<bool> socialLogin({required String provider, required String idToken}) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final result = await _authApi.socialLogin(provider: provider, idToken: idToken);
+      await _storage.saveToken(result.token, expiresAt: result.expiresAt);
+      state = AuthState(user: result.user, hydrated: true);
+      await PushService().onLogin();
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: _friendly(e));
+      return false;
+    }
+  }
+
   Future<bool> register({
     required String name,
     required String email,
     required String handle,
     required String password,
+    String? roleId,
+    String? roleTypeId,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final result = await _authApi.register(
-        name: name, email: email, handle: handle, password: password,
+        name: name,
+        email: email,
+        handle: handle,
+        password: password,
+        roleId: roleId,
+        roleTypeId: roleTypeId,
       );
       await _storage.saveToken(result.token, expiresAt: result.expiresAt);
       state = AuthState(user: result.user, hydrated: true);

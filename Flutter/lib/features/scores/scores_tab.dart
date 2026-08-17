@@ -8,9 +8,11 @@ import '../../widgets/glass_card.dart';
 import '../../shared/widgets/ss_refresh.dart';
 import '../../core/realtime/scores_live.dart';
 import 'presentation/team_detail_sheet.dart';
+import '../../../core/constants/api_config.dart';
+
+String _resolveUrl(String url) => ApiConfig.resolveUrl(url);
 
 /// Scores tab — live matches + standings from API
-
 class ScoresTab extends ConsumerStatefulWidget {
   const ScoresTab({super.key});
 
@@ -36,7 +38,6 @@ class _ScoresTabState extends ConsumerState<ScoresTab> {
   MatchesKey get _currentKey {
     final status = _mapStatus(_sub);
     final dateStr = _selectedDate?.toIso8601String().split('T').first;
-    // Don't send date for 'live' — live matches are always now
     return MatchesKey(
       status: status,
       date: (status == 'live') ? null : dateStr,
@@ -46,14 +47,17 @@ class _ScoresTabState extends ConsumerState<ScoresTab> {
   @override
   void initState() {
     super.initState();
-    _live.connect(onUpdate: (payload) {
-      // Soft refresh match lists on any live event
-      ref.invalidate(matchesProvider(const MatchesKey(status: 'live')));
-      ref.invalidate(matchesProvider(const MatchesKey(status: 'today')));
-      if (payload['type'] == 'match_update') {
-        ref.invalidate(matchesProvider(const MatchesKey()));
-      }
-    });
+    _live.connect(
+      baseUrl: ApiConfig.baseUrl,
+      userId: ref.read(authProvider).user?.id,
+      onUpdate: (payload) {
+        ref.invalidate(matchesProvider(const MatchesKey(status: 'live')));
+        ref.invalidate(matchesProvider(const MatchesKey(status: 'today')));
+        if (payload['type'] == 'match_update') {
+          ref.invalidate(matchesProvider(const MatchesKey()));
+        }
+      },
+    );
     _live.status$.listen((s) {
       if (mounted) setState(() => _liveStatus = s);
     });
@@ -76,7 +80,7 @@ class _ScoresTabState extends ConsumerState<ScoresTab> {
           onChanged: (s) {
             setState(() {
               _sub = s;
-              _selectedDate = null; // reset date filter on tab change
+              _selectedDate = null;
             });
           },
           onFilterTap: _showLeagueFilter,
@@ -93,21 +97,15 @@ class _ScoresTabState extends ConsumerState<ScoresTab> {
 
   String? _mapStatus(String sub) {
     switch (sub) {
-      case 'live':
-        return 'live';
-      case 'today':
-        return 'today';
-      case 'upcoming':
-        return 'upcoming';
-      case 'results':
-        return 'finished';
-      default:
-        return null;
+      case 'live': return 'live';
+      case 'today': return 'today';
+      case 'upcoming': return 'upcoming';
+      case 'results': return 'results';
+      default: return null;
     }
   }
 
   void _showLeagueFilter() {
-    // Extract unique leagues from currently loaded matches
     final matchesAsync = ref.read(matchesProvider(_currentKey));
     final leagues = <String>{};
     matchesAsync.whenData((matches) {
@@ -116,27 +114,20 @@ class _ScoresTabState extends ConsumerState<ScoresTab> {
       }
     });
     if (leagues.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No leagues available to filter')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No leagues available to filter')));
       return;
     }
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.backgroundSecondary,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 10),
             Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(4))),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Text('Filter by league', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18)),
-            ),
+            Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 4), child: Text('Filter by league', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18))),
             ListTile(
               leading: const Icon(Icons.clear_all_rounded, size: 20),
               title: Text('All leagues', style: GoogleFonts.inter(fontWeight: _selectedLeague == null ? FontWeight.w700 : FontWeight.w500)),
@@ -193,18 +184,12 @@ class _Header extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: liveStatus == 'connected'
-                                ? const Color(0xFF22C55E).withValues(alpha: 0.15)
-                                : Colors.white.withValues(alpha: 0.06),
+                            color: liveStatus == 'connected' ? const Color(0xFF22C55E).withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.06),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             liveStatus == 'connected' ? 'LIVE' : liveStatus.toUpperCase(),
-                            style: GoogleFonts.inter(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              color: liveStatus == 'connected' ? const Color(0xFF22C55E) : AppColors.mutedForeground,
-                            ),
+                            style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: liveStatus == 'connected' ? const Color(0xFF22C55E) : AppColors.mutedForeground),
                           ),
                         ),
                       ],
@@ -215,28 +200,19 @@ class _Header extends StatelessWidget {
                         onTap: () => onDateSelected?.call(null),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.close_rounded, size: 12, color: AppColors.primary),
                               const SizedBox(width: 4),
-                              Text(
-                                '${selectedDate!.day}/${selectedDate!.month}',
-                                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary),
-                              ),
+                              Text('${selectedDate!.day}/${selectedDate!.month}', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary)),
                             ],
                           ),
                         ),
                       ),
                     const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: onFilterTap,
-                      child: Icon(Icons.tune_rounded, color: AppColors.mutedForeground, size: 22),
-                    ),
+                    GestureDetector(onTap: onFilterTap, child: Icon(Icons.tune_rounded, color: AppColors.mutedForeground, size: 22)),
                   ],
                 ),
               ),
@@ -260,19 +236,9 @@ class _Header extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: active ? AppColors.primary : Colors.white.withValues(alpha: 0.04),
                         borderRadius: BorderRadius.circular(22),
-                        boxShadow: active
-                            ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.25), blurRadius: 12, offset: const Offset(0, 3))]
-                            : null,
+                        boxShadow: active ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.25), blurRadius: 12, offset: const Offset(0, 3))] : null,
                       ),
-                      child: Text(
-                        label,
-                        style: GoogleFonts.inter(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.15,
-                          color: active ? AppColors.primaryForeground : AppColors.mutedForeground,
-                        ),
-                      ),
+                      child: Text(label, style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w600, letterSpacing: -0.15, color: active ? AppColors.primaryForeground : AppColors.mutedForeground)),
                     ),
                   );
                 },
@@ -289,10 +255,7 @@ class _Header extends StatelessWidget {
                   itemBuilder: (context, i) {
                     final d = dates[i];
                     final isToday = d.year == now.year && d.month == now.month && d.day == now.day;
-                    final isSelected = selectedDate != null &&
-                        d.year == selectedDate!.year &&
-                        d.month == selectedDate!.month &&
-                        d.day == selectedDate!.day;
+                    final isSelected = selectedDate != null && d.year == selectedDate!.year && d.month == selectedDate!.month && d.day == selectedDate!.day;
                     final wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d.weekday - 1];
                     final isTapped = isSelected || (selectedDate == null && isToday);
                     return GestureDetector(
@@ -302,20 +265,9 @@ class _Header extends StatelessWidget {
                         curve: Curves.easeOutCubic,
                         width: 52,
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.primary.withValues(alpha: 0.25)
-                              : isTapped
-                                  ? AppColors.primary.withValues(alpha: 0.15)
-                                  : Colors.white.withValues(alpha: 0.03),
+                          color: isSelected ? AppColors.primary.withValues(alpha: 0.25) : isTapped ? AppColors.primary.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.03),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: isSelected
-                                ? AppColors.primary
-                                : isTapped
-                                    ? AppColors.primary.withValues(alpha: 0.45)
-                                    : Colors.white.withValues(alpha: 0.06),
-                            width: isSelected ? 1.5 : 1,
-                          ),
+                          border: Border.all(color: isSelected ? AppColors.primary : isTapped ? AppColors.primary.withValues(alpha: 0.45) : Colors.white.withValues(alpha: 0.06), width: isSelected ? 1.5 : 1),
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -348,61 +300,18 @@ class _MatchesView extends ConsumerWidget {
 
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
-      error: (e, _) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Could not load matches', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-            TextButton(onPressed: () => ref.invalidate(matchesProvider(matchesKey)), child: const Text('Retry')),
-          ],
-        ),
-      ),
+      error: (e, _) => Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Text('Could not load matches', style: GoogleFonts.inter(fontWeight: FontWeight.w600)), TextButton(onPressed: () => ref.invalidate(matchesProvider(matchesKey)), child: const Text('Retry'))])),
       data: (matches) {
-        final filtered = selectedLeague != null
-            ? matches.where((m) => m.league == selectedLeague).toList()
-            : matches;
+        final filtered = selectedLeague != null ? matches.where((m) => m.league == selectedLeague).toList() : matches;
         if (filtered.isEmpty) {
           return SsRefreshScroll(
-            onRefresh: () async {
-              ref.invalidate(matchesProvider(matchesKey));
-              await ref.read(matchesProvider(matchesKey).future);
-            },
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.sports_soccer, size: 48, color: AppColors.mutedForeground.withValues(alpha: 0.5)),
-                    const SizedBox(height: 12),
-                    Text(
-                      selectedLeague != null
-                          ? 'No $selectedLeague matches right now'
-                          : (matchesKey.status == 'live' ? 'No live matches right now' : 'No matches found'),
-                      style: GoogleFonts.inter(color: AppColors.mutedForeground),
-                    ),
-                    const SizedBox(height: 8),
-                    Text('Pull to refresh', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground)),
-                  ],
-                ),
-              ),
-            ),
+            onRefresh: () async { ref.invalidate(matchesProvider(matchesKey)); await ref.read(matchesProvider(matchesKey).future); },
+            child: Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.sports_soccer, size: 48, color: AppColors.mutedForeground.withValues(alpha: 0.5)), const SizedBox(height: 12), Text(selectedLeague != null ? 'No $selectedLeague matches right now' : (matchesKey.status == 'live' ? 'No live matches right now' : 'No matches found'), style: GoogleFonts.inter(color: AppColors.mutedForeground)), const SizedBox(height: 8), Text('Pull to refresh', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground))]))),
           );
         }
         return SsRefresh(
-          onRefresh: () async {
-            ref.invalidate(matchesProvider(matchesKey));
-            await ref.read(matchesProvider(matchesKey).future);
-          },
-          child: ListView.separated(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-            itemCount: filtered.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, i) => _MatchCard(m: filtered[i]),
-          ),
+          onRefresh: () async { ref.invalidate(matchesProvider(matchesKey)); await ref.read(matchesProvider(matchesKey).future); },
+          child: ListView.separated(physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()), padding: const EdgeInsets.fromLTRB(16, 12, 16, 100), itemCount: filtered.length, separatorBuilder: (_, __) => const SizedBox(height: 10), itemBuilder: (context, i) => _MatchCard(m: filtered[i])),
         );
       },
     );
@@ -416,38 +325,16 @@ class _MatchCard extends StatelessWidget {
   void _openDetail(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppColors.backgroundSecondary,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (ctx) => _MatchDetailSheet(m: m),
-    );
-  }
-
-  void _openTeamDetail(BuildContext context, String teamName, String? badge, String? league) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => TeamDetailSheet(
-        teamName: teamName,
-        teamBadge: badge,
-        league: league,
-      ),
+      isScrollControlled: true,
+      builder: (ctx) => _MatchDetailSheet(m: m)
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final score = m.isFinished || m.isLive
-        ? '${m.homeScore ?? 0}  -  ${m.awayScore ?? 0}'
-        : 'vs';
-    final statusLabel = m.isLive
-        ? (m.minute != null ? "${m.minute}'" : 'LIVE')
-        : m.isFinished
-            ? 'FT'
-            : (m.kickoff ?? m.status).toUpperCase();
+    final score = m.isFinished || m.isLive ? '${m.homeScore ?? 0}  -  ${m.awayScore ?? 0}' : 'vs';
+    final statusLabel = m.isLive ? (m.minute != null ? "${m.minute}'" : 'LIVE') : m.isFinished ? 'FT' : (m.kickoff ?? m.status).toUpperCase();
 
     return GlassCard(
       borderRadius: 14,
@@ -457,51 +344,17 @@ class _MatchCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              if (m.league != null)
-                Text(m.league!, style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground, fontWeight: FontWeight.w600)),
+              if (m.league != null) Text(m.league!, style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground, fontWeight: FontWeight.w600)),
               const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: m.isLive
-                      ? AppColors.primary.withValues(alpha: 0.15)
-                      : AppColors.surface,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  statusLabel,
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: m.isLive ? AppColors.primary : AppColors.mutedForeground,
-                  ),
-                ),
-              ),
+              Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: m.isLive ? AppColors.primary.withValues(alpha: 0.15) : AppColors.surface, borderRadius: BorderRadius.circular(8)), child: Text(statusLabel, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w800, color: m.isLive ? AppColors.primary : AppColors.mutedForeground))),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _openTeamDetail(context, m.homeTeam, m.homeBadge, m.league),
-                  child: Text(m.homeTeam, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
-                ),
-              ),
-              Text(
-                score,
-                style: GoogleFonts.outfit(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: m.isLive ? AppColors.primary : AppColors.foreground,
-                ),
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _openTeamDetail(context, m.awayTeam, m.awayBadge, m.league),
-                  child: Text(m.awayTeam, textAlign: TextAlign.right, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
-                ),
-              ),
+              Expanded(child: Row(children: [_TeamLogo(url: m.homeBadge), const SizedBox(width: 8), Flexible(child: Text(m.homeTeam, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13), overflow: TextOverflow.ellipsis))])),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 10), child: Text(score, style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: m.isLive ? AppColors.primary : AppColors.foreground))),
+              Expanded(child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [Flexible(child: Text(m.awayTeam, textAlign: TextAlign.right, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13), overflow: TextOverflow.ellipsis)), const SizedBox(width: 8), _TeamLogo(url: m.awayBadge)])),
             ],
           ),
         ],
@@ -510,44 +363,38 @@ class _MatchCard extends StatelessWidget {
   }
 }
 
+class _TeamLogo extends StatelessWidget {
+  const _TeamLogo({this.url, this.size = 28});
+  final String? url;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    if (url != null && url!.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Image.network(ApiConfig.resolveUrl(url!), width: size, height: size, fit: BoxFit.contain, errorBuilder: (_, __, ___) => _fallback()),
+      );
+    }
+    return _fallback();
+  }
+
+  Widget _fallback() => Container(width: size, height: size, decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(6)), child: Icon(Icons.shield_outlined, size: size * 0.6, color: AppColors.mutedForeground));
+}
+
 class _StandingsView extends ConsumerWidget {
   const _StandingsView();
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(standingsProvider);
-
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
       error: (e, _) => Center(child: TextButton(onPressed: () => ref.invalidate(standingsProvider), child: const Text('Retry'))),
       data: (data) {
         final rows = data.rows;
         return SsRefresh(
-          onRefresh: () async {
-            ref.invalidate(standingsProvider);
-            await ref.read(standingsProvider.future);
-          },
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-            children: [
-              Text(data.league, style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 12),
-              GlassCard(
-                borderRadius: 14,
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                child: Column(
-                  children: [
-                    _StandingsHeader(),
-                    const Divider(height: 16, color: AppColors.border),
-                    ...rows.map((r) => _StandingRowWidget(r: r, context: context)),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          onRefresh: () async { ref.invalidate(standingsProvider); await ref.read(standingsProvider.future); },
+          child: ListView(physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()), padding: const EdgeInsets.fromLTRB(16, 12, 16, 100), children: [Text(data.league, style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800)), const SizedBox(height: 12), GlassCard(borderRadius: 14, padding: const EdgeInsets.fromLTRB(12, 10, 12, 10), child: Column(children: [_StandingsHeader(), const Divider(height: 16, color: AppColors.border), ...rows.map((r) => _StandingRowWidget(r: r, context: context))]))]),
         );
       },
     );
@@ -558,17 +405,7 @@ class _StandingsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.mutedForeground);
-    return Row(
-      children: [
-        SizedBox(width: 28, child: Text('#', style: style)),
-        const Expanded(child: Text('Team', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.mutedForeground))),
-        SizedBox(width: 28, child: Text('P', textAlign: TextAlign.center, style: style)),
-        SizedBox(width: 28, child: Text('W', textAlign: TextAlign.center, style: style)),
-        SizedBox(width: 28, child: Text('D', textAlign: TextAlign.center, style: style)),
-        SizedBox(width: 28, child: Text('L', textAlign: TextAlign.center, style: style)),
-        SizedBox(width: 36, child: Text('Pts', textAlign: TextAlign.center, style: style)),
-      ],
-    );
+    return Row(children: [SizedBox(width: 28, child: Text('#', style: style)), const Expanded(child: Text('Team', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.mutedForeground))), SizedBox(width: 28, child: Text('P', textAlign: TextAlign.center, style: style)), SizedBox(width: 28, child: Text('W', textAlign: TextAlign.center, style: style)), SizedBox(width: 28, child: Text('D', textAlign: TextAlign.center, style: style)), SizedBox(width: 28, child: Text('L', textAlign: TextAlign.center, style: style)), SizedBox(width: 36, child: Text('Pts', textAlign: TextAlign.center, style: style))]);
   }
 }
 
@@ -576,7 +413,6 @@ class _StandingRowWidget extends StatelessWidget {
   const _StandingRowWidget({required this.r, required this.context});
   final StandingRow r;
   final BuildContext context;
-
   @override
   Widget build(BuildContext context) {
     final style = GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600);
@@ -584,180 +420,217 @@ class _StandingRowWidget extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          SizedBox(
-            width: 28,
-            child: Text(
-              '${r.pos}',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w800,
-                color: r.pos <= 3 ? AppColors.primary : AppColors.mutedForeground,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Row(
-              children: [
-                if (r.badge != null && r.badge!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Image.network(r.badge!, width: 20, height: 20, errorBuilder: (_, __, ___) => const SizedBox(width: 20)),
-                  ),
-                Flexible(
-                  child: GestureDetector(
-                    onTap: () {
-                      showModalBottomSheet<void>(
-                        context: this.context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (_) => TeamDetailSheet(teamName: r.team, teamBadge: r.badge),
-                      );
-                    },
-                    child: Text(r.team, overflow: TextOverflow.ellipsis, style: style),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          SizedBox(width: 28, child: Text('${r.pos}', style: GoogleFonts.inter(fontWeight: FontWeight.w800, color: r.pos <= 3 ? AppColors.primary : AppColors.mutedForeground))),
+          Expanded(child: Row(children: [if (r.badge != null && r.badge!.isNotEmpty) Padding(padding: const EdgeInsets.only(right: 8), child: Image.network(ApiConfig.resolveUrl(r.badge!), width: 20, height: 20, errorBuilder: (_, __, ___) => const SizedBox(width: 20))), Flexible(child: Text(r.team, overflow: TextOverflow.ellipsis, style: style))])),
           SizedBox(width: 28, child: Text('${r.played}', textAlign: TextAlign.center, style: style)),
           SizedBox(width: 28, child: Text('${r.won}', textAlign: TextAlign.center, style: style)),
           SizedBox(width: 28, child: Text('${r.drawn}', textAlign: TextAlign.center, style: style)),
           SizedBox(width: 28, child: Text('${r.lost}', textAlign: TextAlign.center, style: style)),
-          SizedBox(
-            width: 36,
-            child: Text('${r.pts}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.primary)),
-          ),
+          SizedBox(width: 36, child: Text('${r.pts}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.primary))),
         ],
       ),
     );
   }
 }
 
-class _MatchDetailSheet extends StatelessWidget {
+class _MatchDetailSheet extends StatefulWidget {
   const _MatchDetailSheet({required this.m});
   final MatchItem m;
 
   @override
+  State<_MatchDetailSheet> createState() => _MatchDetailSheetState();
+}
+
+class _MatchDetailSheetState extends State<_MatchDetailSheet> {
+  String _tab = 'events'; // events | squads | stats
+
+  @override
   Widget build(BuildContext context) {
-    final score = m.isFinished || m.isLive
-        ? '${m.homeScore ?? 0}  -  ${m.awayScore ?? 0}'
-        : 'vs';
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (m.league != null)
-            Text(
-              m.league!,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.mutedForeground,
+    final m = widget.m;
+    final score = m.isFinished || m.isLive ? '${m.homeScore ?? 0} - ${m.awayScore ?? 0}' : 'vs';
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      maxChildSize: 0.95,
+      minChildSize: 0.5,
+      builder: (_, scrollCtrl) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.backgroundSecondary,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Column(
+                children: [
+                  Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(4))),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(child: Column(children: [_TeamLogo(url: m.homeBadge, size: 48), const SizedBox(height: 8), Text(m.homeTeam, textAlign: TextAlign.center, style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 14))])),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: [
+                            Text(score, style: GoogleFonts.outfit(fontSize: 36, fontWeight: FontWeight.w900, color: m.isLive ? AppColors.primary : AppColors.foreground)),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(color: m.isLive ? AppColors.primary.withValues(alpha: 0.15) : AppColors.surface, borderRadius: BorderRadius.circular(12)),
+                              child: Text(m.isLive ? "LIVE \u00b7 ${m.minute}'" : m.isFinished ? 'FULL TIME' : (m.kickoff ?? m.status).toUpperCase(),
+                                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: m.isLive ? AppColors.primary : AppColors.mutedForeground)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(child: Column(children: [_TeamLogo(url: m.awayBadge, size: 48), const SizedBox(height: 8), Text(m.awayTeam, textAlign: TextAlign.center, style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 14))])),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // Tabs
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(14)),
+                    child: Row(
+                      children: [
+                        _DetailTab('events', 'Events', _tab, (v) => setState(() => _tab = v)),
+                        _DetailTab('squads', 'Lineups', _tab, (v) => setState(() => _tab = v)),
+                        _DetailTab('stats', 'Stats', _tab, (v) => setState(() => _tab = v)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-          const SizedBox(height: 12),
-          Row(
+            const SizedBox(height: 12),
+            Expanded(
+              child: ListView(
+                controller: scrollCtrl,
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                children: [
+                  if (_tab == 'events') _buildEvents(m),
+                  if (_tab == 'squads') _buildSquads(m),
+                  if (_tab == 'stats') _buildStats(m),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEvents(MatchItem m) {
+    if (m.events.isEmpty) {
+      return Center(child: Padding(padding: const EdgeInsets.all(40), child: Text('No events recorded yet.', style: GoogleFonts.inter(color: AppColors.mutedForeground))));
+    }
+    return Column(
+      children: m.events.map((e) {
+        final isHome = true; // Simplified; actual logic would check e.team
+        final icon = switch (e.type?.toLowerCase()) {
+          'goal' => Icons.sports_soccer,
+          'yellow' => Icons.style,
+          'red' => Icons.square,
+          _ => Icons.circle,
+        };
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
             children: [
-              Expanded(
-                child: Text(
-                  m.homeTeam,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
-                ),
-              ),
-              Text(
-                score,
-                style: GoogleFonts.outfit(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: m.isLive ? AppColors.primary : AppColors.foreground,
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  m.awayTeam,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
-                ),
+              SizedBox(width: 36, child: Text("${e.minute ?? '—'}'", style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.primary))),
+              Icon(icon, size: 16, color: e.type?.toLowerCase() == 'yellow' ? Colors.yellow : e.type?.toLowerCase() == 'red' ? Colors.red : AppColors.mutedForeground),
+              const SizedBox(width: 12),
+              Expanded(child: Text([e.player, e.detail].where((s) => s != null && s!.isNotEmpty).join(' - '), style: GoogleFonts.inter(fontSize: 14))),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildSquads(MatchItem m) {
+    final homeSquad = m.metadata['homeSquad'] as List? ?? [];
+    final awaySquad = m.metadata['awaySquad'] as List? ?? [];
+
+    if (homeSquad.isEmpty && awaySquad.isEmpty) {
+      return Center(child: Padding(padding: const EdgeInsets.all(40), child: Text('Lineups not available yet.', style: GoogleFonts.inter(color: AppColors.mutedForeground))));
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: _SquadList(title: 'Home', players: homeSquad)),
+        const SizedBox(width: 12),
+        Expanded(child: _SquadList(title: 'Away', players: awaySquad)),
+      ],
+    );
+  }
+
+  Widget _buildStats(MatchItem m) {
+    final stats = m.metadata['stats'] as Map? ?? {};
+    if (stats.isEmpty) {
+      return Center(child: Padding(padding: const EdgeInsets.all(40), child: Text('Match statistics not available.', style: GoogleFonts.inter(color: AppColors.mutedForeground))));
+    }
+    return Column(
+      children: stats.entries.map((e) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            children: [
+              Text(e.key.toString().toUpperCase(), style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.mutedForeground)),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Text('—', style: GoogleFonts.inter(fontWeight: FontWeight.w800)),
+                  const Expanded(child: LinearProgressIndicator(value: 0.5, backgroundColor: Colors.white10, color: AppColors.primary, minHeight: 4)),
+                  Text('—', style: GoogleFonts.inter(fontWeight: FontWeight.w800)),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: m.isLive
-                  ? AppColors.primary.withValues(alpha: 0.15)
-                  : AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              m.isLive
-                  ? (m.minute != null ? "LIVE \u00b7 ${m.minute}'" : 'LIVE')
-                  : m.isFinished
-                      ? 'Full time'
-                      : (m.kickoff ?? m.status),
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: m.isLive ? AppColors.primary : AppColors.mutedForeground,
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text('Events', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 16)),
-          ),
-          const SizedBox(height: 8),
-          if (m.events.isEmpty)
-            Text(
-              'No events yet for this match.',
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground),
-            )
-          else
-            ...m.events.map((e) {
-              final icon = switch (e.type?.toLowerCase()) {
-                'goal' => Icons.sports_soccer,
-                'yellow' || 'yellow_card' => Icons.style,
-                'red' || 'red_card' => Icons.square,
-                'sub' || 'substitution' => Icons.swap_horiz,
-                _ => Icons.circle,
-              };
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 36,
-                      child: Text(
-                        e.minute != null ? "${e.minute}'" : '—',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.primary),
-                      ),
-                    ),
-                    Icon(icon, size: 16, color: AppColors.mutedForeground),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        [e.player, e.type, e.team, e.detail].where((x) => x != null && x.toString().isNotEmpty).join(' \u00b7 '),
-                        style: GoogleFonts.inter(fontSize: 13),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-          const SizedBox(height: 16),
-        ],
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _SquadList extends StatelessWidget {
+  const _SquadList({required this.title, required this.players});
+  final String title; final List players;
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title.toUpperCase(), style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.primary)),
+        const SizedBox(height: 12),
+        ...players.map((p) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(p.toString(), style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
+        )),
+      ],
+    );
+  }
+}
+
+class _DetailTab extends StatelessWidget {
+  const _DetailTab(this.id, this.label, this.active, this.onTap);
+  final String id, label, active; final ValueChanged<String> onTap;
+  @override
+  Widget build(BuildContext context) {
+    final isActive = id == active;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onTap(id),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(color: isActive ? AppColors.primary : Colors.transparent, borderRadius: BorderRadius.circular(10)),
+          alignment: Alignment.center,
+          child: Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: isActive ? AppColors.primaryForeground : AppColors.mutedForeground)),
+        ),
       ),
     );
   }
