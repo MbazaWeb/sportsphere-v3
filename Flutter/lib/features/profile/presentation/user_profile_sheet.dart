@@ -249,40 +249,6 @@ class _UserProfileSheetState extends ConsumerState<UserProfileSheet> {
       ),
     );
   }
-  Future<void> _toggleFan() async {
-    if (!ref.read(authProvider).isAuthenticated) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign in to become a fan')),
-      );
-      return;
-    }
-    setState(() => _fanBusy = true);
-    try {
-      final uid = _user?['id']?.toString() ?? widget.userId ?? '';
-      if (uid.isEmpty) return;
-      final res = await FollowsApi(ref.read(apiClientProvider)).becomeFan(uid);
-      if (!mounted) return;
-      final nowFan = res['isFan'] == true || res['following'] == true;
-      setState(() {
-        _fanBusy = false;
-        _isFan = nowFan;
-        if (nowFan) _following = true;
-      });
-      if (res['fanCount'] != null) {
-        _user = Map<String, dynamic>.from(_user!)
-          ..['fanCount'] = res['fanCount']
-          ..['followerCount'] = res['followerCount'];
-      }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(nowFan ? '❤️ You are now a fan!' : 'Removed from fans')),
-        );
-      }
-    } catch (e) {
-      if (mounted) setState(() => _fanBusy = false);
-    }
-  }
-
 }
 
 class _ErrorView extends StatelessWidget {
