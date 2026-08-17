@@ -104,6 +104,34 @@ function streamFileToDisk(file: File, filePath: string): Promise<number> {
   });
 }
 
+async function uploadToR2(fileName: string, buffer: Buffer, contentType: string) {
+  const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const bucket = process.env.R2_BUCKET_NAME;
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+  const customDomain = process.env.NEXT_PUBLIC_R2_DOMAIN; // e.g. https://media.sportsphere.app
+
+  if (!accountId || !bucket || !accessKeyId || !secretAccessKey) {
+    throw new Error('Cloudflare R2 not fully configured');
+  }
+
+  const client = new S3Client({
+    region: 'auto',
+    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+    credentials: { accessKeyId, secretAccessKey },
+  });
+
+  await client.send(new PutObjectCommand({
+    Bucket: bucket,
+    Key: fileName,
+    Body: buffer,
+    ContentType: contentType
+  }));
+
+  return customDomain ? `${customDomain}/${fileName}` : `https://${bucket}.${accountId}.r2.cloudflarestorage.com/${fileName}`;
+}
+
 export async function POST(request: NextRequest) {
   const userId = await getUserIdFromRequest(request);
   if (!userId) {
@@ -115,49 +143,39 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File | null;
     if (!file) return NextResponse.json({ error: 'No file provided.' }, { status: 400 });
 
-    // Validate MIME type (allow empty MIME if extension is valid — common on iOS)
     const rawType = file.type || '';
     const contentType = normalizeMime(rawType);
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
-    const typeOk = !contentType || ALLOWED_TYPES.has(contentType) || contentType.startsWith('video/') || contentType.startsWith('image/');
-    const extOk = !ext || ALLOWED_EXT.has(ext);
 
-    if (contentType && !typeOk && !extOk) {
-      return NextResponse.json({
-        error: `File type "${rawType || ext}" not allowed. Use common video (MP4, WebM, MOV, M4V, AVI, MKV) or image (JPEG, PNG, WebP, GIF) formats.`
-      }, { status: 400 });
-    }
-
-    if (!contentType && !extOk) {
-      return NextResponse.json({ error: 'Cannot determine file type. Please use MP4, WebM, MOV, or a common image format.' }, { status: 400 });
-    }
-
-    // Check size from File metadata (quick reject)
-    if (file.size > MAX_BYTES) {
-      return NextResponse.json({ error: `File is ${(file.size / 1024 / 1024).toFixed(1)} MB. Max is ${MAX_BYTES / 1024 / 1024} MB.` }, { status: 400 });
-    }
-
-    // Determine extension from MIME type, falling back to filename
     const extMap: Record<string, string> = {
       'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png', 'image/gif': 'gif',
       'image/webp': 'webp', 'image/avif': 'avif', 'image/heic': 'heic', 'image/heif': 'heif',
       'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov',
-      'video/3gpp': '3gp', 'video/3gpp2': '3g2', 'video/x-m4v': 'm4v', 'video/m4v': 'm4v',
-      'video/avi': 'avi', 'video/x-msvideo': 'avi', 'video/mpeg': 'mpeg',
-      'video/ogg': 'ogv', 'video/x-matroska': 'mkv',
     };
     const finalExt = extMap[contentType] || (ALLOWED_EXT.has(ext) ? ext : (contentType.startsWith('image/') ? 'jpg' : 'mp4'));
     const fileName = `${userId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${finalExt}`;
     const finalContentType = contentType || `video/${finalExt === 'mov' ? 'quicktime' : finalExt}`;
 
-    // Try cloud providers first
-    if (process.env.AWS_S3_BUCKET && process.env.AWS_REGION) {
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // 1. Try Cloudflare R2
+    if (process.env.CLOUDFLARE_ACCOUNT_ID) {
       try {
-        const arrayBuffer = await file.arrayBuffer();
-        const url = await uploadToS3(fileName, Buffer.from(arrayBuffer), finalContentType);
+        const url = await uploadToR2(fileName, buffer, finalContentType);
         return NextResponse.json({ url });
       } catch (err) {
-        console.error('S3 upload failed, falling back to local', err);
+        console.error('R2 upload failed, falling back', err);
+      }
+    }
+
+    // 2. Fallback to S3
+    if (process.env.AWS_S3_BUCKET && process.env.AWS_REGION) {
+      try {
+        const url = await uploadToS3(fileName, buffer, finalContentType);
+        return NextResponse.json({ url });
+      } catch (err) {
+        console.error('S3 upload failed, falling back', err);
       }
     }
 
