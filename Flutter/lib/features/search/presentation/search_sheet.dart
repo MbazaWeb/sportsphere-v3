@@ -31,6 +31,11 @@ class _SearchSheetState extends ConsumerState<SearchSheet> {
   bool _loading = false;
   String? _error;
   String _tab = 'users'; // 'users' or 'posts'
+  String? _roleFilter;
+  String? _sportFilter;
+
+  static const _roles = ['player','team','coach','journalist','creator','media','analyst','scout','referee','league','academy','community'];
+  static const _sports = ['Football','Basketball','Tennis','Rugby','Athletics','Cricket','F1','Boxing','Cycling','Swimming'];
 
   @override
   void dispose() {
@@ -53,7 +58,7 @@ class _SearchSheetState extends ConsumerState<SearchSheet> {
     });
     try {
       final results = await Future.wait([
-        ref.read(socialApiProvider).searchUsers(q.trim()),
+        ref.read(socialApiProvider).searchUsers(q.trim(), role: _roleFilter, sport: _sportFilter),
         ref.read(socialApiProvider).searchPosts(q.trim()).then((list) => list.map((e) => Post.fromJson(Map<String, dynamic>.from(e as Map))).toList()),
       ]);
       if (!mounted) return;
@@ -259,5 +264,46 @@ class _SearchTab extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+
+class _FilterPicker extends StatelessWidget {
+  const _FilterPicker({required this.title, required this.options, this.selected});
+  final String title;
+  final List<String> options;
+  final String? selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Padding(padding: const EdgeInsets.fromLTRB(16,14,16,8), child: Row(children: [
+        Text(title, style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800)),
+        const Spacer(),
+        GestureDetector(onTap: () => Navigator.pop(context, selected), child: Text('Clear', style: GoogleFonts.inter(fontSize: 13, color: AppColors.primary))),
+      ])),
+      Flexible(child: ListView(shrinkWrap: true, padding: const EdgeInsets.fromLTRB(16,0,16,24),
+        children: options.map((o) {
+          final sel = o.toLowerCase() == selected;
+          return GestureDetector(
+            onTap: () => Navigator.pop(context, o.toLowerCase()),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 140),
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: sel ? AppColors.primary.withValues(alpha: 0.12) : AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: sel ? AppColors.primary.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.07)),
+              ),
+              child: Row(children: [
+                Expanded(child: Text(o, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: sel ? AppColors.primary : Colors.white))),
+                if (sel) const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 18),
+              ]),
+            ),
+          );
+        }).toList(),
+      )),
+    ]);
   }
 }

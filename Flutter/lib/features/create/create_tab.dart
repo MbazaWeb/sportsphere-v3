@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,6 +9,7 @@ import '../../core/providers/app_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
 import '../media/presentation/photo_editor_sheet.dart';
+import '../communities/data/communities_api.dart';
 import '../media/presentation/video_trimmer_sheet.dart';
 import 'post_analysis_sheet.dart';
 
@@ -78,6 +80,36 @@ class _CreateTabState extends ConsumerState<CreateTab> {
   void initState() {
     super.initState();
     _text.addListener(_onTextChanged);
+    _restoreDraft();
+  }
+
+  Future<void> _restoreDraft() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final draft = prefs.getString('create_draft');
+      if (draft != null && draft.isNotEmpty && mounted) {
+        _text.text = draft;
+        _text.selection = TextSelection.fromPosition(TextPosition(offset: draft.length));
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveDraft(String text) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (text.trim().isEmpty) {
+        await prefs.remove('create_draft');
+      } else {
+        await prefs.setString('create_draft', text);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _clearDraft() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('create_draft');
+    } catch (_) {}
   }
 
   void _onTextChanged() {
@@ -858,6 +890,20 @@ class _CreateTabState extends ConsumerState<CreateTab> {
                         ),
                         const SizedBox(width: 4),
                         _Tool(
+                          icon: Icons.groups_outlined,
+                          label: _communityName ?? 'Community',
+                          active: _communityId != null,
+                          onTap: () async {
+                            final result = await showModalBottomSheet<Map<String,String>?>(
+                              context: context, backgroundColor: AppColors.backgroundSecondary, isScrollControlled: true,
+                              builder: (_) => const _CommunityPickerSheet(),
+                            );
+                            if (result != null) setState(() { _communityId = result['id']; _communityName = result['name']; });
+                            else if (result == null && _communityId != null) setState(() { _communityId = null; _communityName = null; });
+                          },
+                        ),
+                        const SizedBox(width: 4),
+                        _Tool(
                           icon: Icons.sports_soccer,
                           label: 'Sport',
                           active: _showSportPicker || _selectedSport != null,
@@ -970,6 +1016,95 @@ class _Tool extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─── Community Picker Sheet ───────────────────────────────────────────────────
+class _CommunityPickerSheet extends ConsumerStatefulWidget {
+  const _CommunityPickerSheet();
+  @override
+  ConsumerState<_CommunityPickerSheet> createState() => _CommunityPickerSheetState();
+}
+
+class _CommunityPickerSheetState extends ConsumerState<_CommunityPickerSheet> {
+  List<dynamic> _communities = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final list = await ref.read(communitiesApiProvider).list();
+      if (mounted) setState(() { _communities = list.where((c) => c.isMember).toList(); _loading = false; });
+    } catch (_) { if (mounted) setState(() => _loading = false); }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Text('Post to community', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800)),
+            const Spacer(),
+            GestureDetector(onTap: () => Navigator.pop(context), child: const Icon(Icons.close, size: 20, color: AppColors.mutedForeground)),
+          ]),
+          const SizedBox(height: 12),
+          // No community option
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withValues(alpha: 0.08))),
+              child: Row(children: [
+                Container(width: 36, height: 36, decoration: BoxDecoration(color: AppColors.surfaceElevated, borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.public_outlined, size: 18, color: AppColors.mutedForeground)),
+                const SizedBox(width: 10),
+                Text('No community (public post)', style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground)),
+              ]),
+            ),
+          ),
+          _loading
+              ? const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)))
+              : _communities.isEmpty
+                  ? Center(child: Padding(padding: const EdgeInsets.all(16), child: Text('Join communities first', style: GoogleFonts.inter(color: AppColors.mutedForeground))))
+                  : Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: _communities.length,
+                        itemBuilder: (_, i) {
+                          final c = _communities[i];
+                          return GestureDetector(
+                            onTap: () => Navigator.pop(context, {'id': c.id, 'name': c.name}),
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(color: AppColors.surfaceElevated, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withValues(alpha: 0.07))),
+                              child: Row(children: [
+                                Container(width: 36, height: 36, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)), child: const Center(child: Text('👥', style: TextStyle(fontSize: 18)))),
+                                const SizedBox(width: 10),
+                                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  Text(c.name, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13)),
+                                  Text('${c.memberCount} members', style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedForeground)),
+                                ])),
+                                const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: AppColors.mutedForeground),
+                              ]),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+        ],
       ),
     );
   }

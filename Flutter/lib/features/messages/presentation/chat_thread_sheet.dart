@@ -193,6 +193,37 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
     return '${at.day}/${at.month}/${at.year}';
   }
 
+  Future<void> _sendMedia() async {
+    try {
+      final picked = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+      if (picked == null || !mounted) return;
+      setState(() => _sending = true);
+      final bytes = await picked.readAsBytes();
+      final api = ref.read(apiClientProvider);
+      // Upload then send as message with mediaUrl
+      final uploadRes = await api.postMultipart('/uploads',
+        bytes: bytes, filename: picked.name, field: 'file');
+      final mediaUrl = uploadRes['url']?.toString() ?? '';
+      if (mediaUrl.isEmpty) return;
+      final myId = _currentUserId ?? '';
+      await api.postJson('/messages', body: {
+        'receiverId': widget.partnerId,
+        'content': '',
+        'mediaUrl': mediaUrl,
+      });
+      if (!mounted) return;
+      setState(() {
+        _bubbles.add(_ChatBubble(text: '', mine: true, at: DateTime.now(), mediaUrl: mediaUrl));
+        _sending = false;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scroll.hasClients) _scroll.animateTo(_scroll.position.maxScrollExtent, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+      });
+    } catch (e) {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.viewInsetsOf(context).bottom;

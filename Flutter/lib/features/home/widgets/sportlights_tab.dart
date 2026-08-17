@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/app_providers.dart';
@@ -12,6 +13,7 @@ import '../../profile/presentation/user_profile_sheet.dart';
 import '../../../shared/widgets/ss_refresh.dart';
 import '../../../shared/widgets/media_gallery.dart';
 import '../../../shared/widgets/ss_video_player.dart';
+import '../../../shared/widgets/skeleton_loader.dart';
 import '../../../shared/widgets/role_badge.dart';
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
@@ -112,7 +114,7 @@ class _SportlightsTabState extends ConsumerState<SportlightsTab> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)));
+      return const FeedSkeleton(count: 4);
     }
     if (_error != null) return FeedErrorView(message: _error!, onRetry: _loadFirst);
     if (_posts.isEmpty) {
@@ -1166,12 +1168,46 @@ class _PollBlockState extends ConsumerState<_PollBlock> {
   }
 }
 
-class _PredictionBlock extends StatelessWidget {
-  const _PredictionBlock({required this.pred});
+class _PredictionBlock extends ConsumerStatefulWidget {
+  const _PredictionBlock({required this.pred, required this.postId, this.postUserId});
   final PredictionData pred;
+  final String postId;
+  final String? postUserId;
+
+  @override
+  ConsumerState<_PredictionBlock> createState() => _PredictionBlockState();
+}
+
+class _PredictionBlockState extends ConsumerState<_PredictionBlock> {
+  late PredictionData _pred;
+
+  @override
+  void initState() { super.initState(); _pred = widget.pred; }
+
+  Future<void> _editPrediction(BuildContext context) async {
+    final result = await showModalBottomSheet<Map<String,dynamic>>(
+      context: context, backgroundColor: AppColors.backgroundSecondary, isScrollControlled: true,
+      builder: (_) => _EditPredictionSheet(pred: _pred),
+    );
+    if (result != null && mounted) {
+      try {
+        final api = ref.read(apiClientProvider);
+        await api.postJson('/posts/\${widget.postId}/prediction', body: result);
+        if (mounted) setState(() => _pred = PredictionData(
+          homeTeam: result['homeTeam'] ?? _pred.homeTeam,
+          awayTeam: result['awayTeam'] ?? _pred.awayTeam,
+          predictedHomeScore: result['predictedHomeScore'] ?? _pred.predictedHomeScore,
+          predictedAwayScore: result['predictedAwayScore'] ?? _pred.predictedAwayScore,
+          confidence: result['confidence'] ?? _pred.confidence,
+        ));
+      } catch (_) {}
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final pred = _pred;
+    final isOwn = widget.postUserId != null && widget.postUserId == ref.read(authProvider).user?.id;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1529,4 +1565,113 @@ class FeedErrorView extends StatelessWidget {
       ),
     );
   }
+}
+
+// ─── Edit Prediction Sheet ────────────────────────────────────────────────────
+class _EditPredictionSheet extends StatefulWidget {
+  const _EditPredictionSheet({required this.pred});
+  final PredictionData pred;
+
+  @override
+  State<_EditPredictionSheet> createState() => _EditPredictionSheetState();
+}
+
+class _EditPredictionSheetState extends State<_EditPredictionSheet> {
+  late int _homeScore, _awayScore;
+  late double _confidence;
+
+  @override
+  void initState() {
+    super.initState();
+    _homeScore = widget.pred.predictedHomeScore ?? 0;
+    _awayScore = widget.pred.predictedAwayScore ?? 0;
+    _confidence = (widget.pred.confidence ?? 70).toDouble();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+        decoration: BoxDecoration(
+          color: AppColors.backgroundSecondary,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Text('Edit Prediction', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800)),
+              const Spacer(),
+              GestureDetector(onTap: () => Navigator.pop(context), child: const Icon(Icons.close, color: AppColors.mutedForeground)),
+            ]),
+            const SizedBox(height: 16),
+            Text('Score prediction', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground)),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _ScoreStepper(label: widget.pred.homeTeam, value: _homeScore,
+                    onChanged: (v) => setState(() => _homeScore = v)),
+                Padding(padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text('–', style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.w800))),
+                _ScoreStepper(label: widget.pred.awayTeam, value: _awayScore,
+                    onChanged: (v) => setState(() => _awayScore = v)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(children: [
+              Text('Confidence', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground)),
+              const Spacer(),
+              Text('${_confidence.round()}%', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
+            ]),
+            SliderTheme(
+              data: SliderThemeData(activeTrackColor: AppColors.primary, inactiveTrackColor: Colors.white.withValues(alpha: 0.1), thumbColor: AppColors.primary, trackHeight: 3, thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8)),
+              child: Slider(value: _confidence, min: 10, max: 100, divisions: 9, onChanged: (v) => setState(() => _confidence = v)),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context, {
+                  'predictedHomeScore': _homeScore,
+                  'predictedAwayScore': _awayScore,
+                  'confidence': _confidence.round(),
+                }),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                child: Text('Update Prediction', style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 15)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ScoreStepper extends StatelessWidget {
+  const _ScoreStepper({required this.label, required this.value, required this.onChanged});
+  final String label;
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      Text(label, style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedForeground), overflow: TextOverflow.ellipsis),
+      const SizedBox(height: 6),
+      Row(children: [
+        GestureDetector(onTap: () { if (value > 0) onChanged(value - 1); },
+            child: Container(width: 32, height: 32, decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.white.withValues(alpha: 0.1))),
+                child: const Icon(Icons.remove, size: 16))),
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Text('$value', style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.w900))),
+        GestureDetector(onTap: () => onChanged(value + 1),
+            child: Container(width: 32, height: 32, decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.add, size: 16, color: Colors.black))),
+      ]),
+    ],
+  );
 }
