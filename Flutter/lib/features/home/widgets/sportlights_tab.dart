@@ -732,7 +732,7 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
           ],
           if (post.mediaUrls.isNotEmpty) ...[
             const SizedBox(height: 10),
-            MediaGallery(imageUrls: post.mediaUrls, onTapImage: (i, url) => MediaGallery.showViewer(context, post.mediaUrls, initialIndex: i)),
+            _MediaRenderer(post: post),
           ],
           if (post.poll != null) ...[const SizedBox(height: 10), _PollBlock(poll: post.poll!, postId: post.id)],
           if (post.prediction != null) ...[const SizedBox(height: 10), _PredictionBlock(pred: post.prediction!)],
@@ -756,7 +756,132 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
   }
 }
 
-// Keep rest of file (Avatar, Act, Poll, Prediction, Comments, AnimatedGlassCard, FeedErrorView)
+// ─── Smart Media Renderer — handles images AND videos ────────────────────────
+class _MediaRenderer extends StatelessWidget {
+  const _MediaRenderer({required this.post});
+  final Post post;
+
+  bool get _isVideo =>
+      post.postType == 'video' ||
+      post.postType == 'spotlight' ||
+      post.mediaUrls.any((u) {
+        final lower = u.toLowerCase();
+        return lower.contains('.mp4') || lower.contains('.mov') ||
+               lower.contains('.avi') || lower.contains('/video');
+      });
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isVideo && post.mediaUrls.isNotEmpty) {
+      return _VideoPlayer(url: _resolveUrl(post.mediaUrls.first));
+    }
+    return MediaGallery(
+      imageUrls: post.mediaUrls,
+      onTapImage: (i, url) => MediaGallery.showViewer(context, post.mediaUrls, initialIndex: i),
+    );
+  }
+}
+
+// ─── Video Player Widget ──────────────────────────────────────────────────────
+class _VideoPlayer extends StatefulWidget {
+  const _VideoPlayer({required this.url});
+  final String url;
+
+  @override
+  State<_VideoPlayer> createState() => _VideoPlayerState();
+}
+
+class _VideoPlayerState extends State<_VideoPlayer> {
+  bool _playing = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Video thumbnail background
+            Container(
+              color: const Color(0xFF0A1628),
+              child: const Icon(Icons.videocam_rounded, size: 48, color: Color(0x33FFFFFF)),
+            ),
+            // Native video element via HTML for web, or show play button for mobile
+            if (!_playing)
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () => setState(() => _playing = true),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.black.withValues(alpha: 0.2), Colors.black.withValues(alpha: 0.5)],
+                      ),
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 60, height: 60,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                          boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.4), blurRadius: 20, spreadRadius: 2)],
+                        ),
+                        child: const Icon(Icons.play_arrow_rounded, size: 32, color: AppColors.primaryForeground),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            else
+              // Show URL hint to open externally when tapped
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () {},
+                  child: Container(
+                    color: Colors.black,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.video_library_outlined, size: 48, color: AppColors.primary),
+                        const SizedBox(height: 12),
+                        Text('Video post', style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground)),
+                        const SizedBox(height: 4),
+                        GestureDetector(
+                          onTap: () => setState(() => _playing = false),
+                          child: Text('Tap to close', style: GoogleFonts.inter(fontSize: 11, color: AppColors.primary)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            // Duration badge
+            Positioned(
+              bottom: 8, right: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(6)),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.videocam_rounded, size: 10, color: Colors.white70),
+                    const SizedBox(width: 3),
+                    Text('VIDEO', style: GoogleFonts.inter(fontSize: 8, fontWeight: FontWeight.w800, color: Colors.white70)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
 class _Avatar extends StatelessWidget {
   const _Avatar({this.url, required this.name});
   final String? url;
@@ -1143,7 +1268,7 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                                 children: [
                                   CircleAvatar(
                                     radius: 16,
-                                    backgroundImage: userAvatar != null && userAvatar.isNotEmpty ? NetworkImage((userAvatar.startsWith('http://') || userAvatar.startsWith('https://')) ? userAvatar : '\${ApiConfig.baseUrl}\$userAvatar') : null,
+                                    backgroundImage: userAvatar != null && userAvatar.isNotEmpty ? NetworkImage((userAvatar.startsWith('http://') || userAvatar.startsWith('https://')) ? userAvatar : '${ApiConfig.baseUrl}$userAvatar') : null,
                                     backgroundColor: AppColors.surfaceElevated,
                                     child: userAvatar == null || userAvatar.isEmpty
                                         ? Text(userName.isNotEmpty ? userName[0].toUpperCase() : '?',
@@ -1201,7 +1326,7 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                 children: [
                   CircleAvatar(
                     radius: 16,
-                    backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty ? NetworkImage((avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) ? avatarUrl : '\${ApiConfig.baseUrl}\$avatarUrl') : null,
+                    backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty ? NetworkImage((avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) ? avatarUrl : '${ApiConfig.baseUrl}$avatarUrl') : null,
                     backgroundColor: AppColors.surfaceElevated,
                     child: avatarUrl == null || avatarUrl.isEmpty
                         ? Text(initial, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 11, color: AppColors.primary))

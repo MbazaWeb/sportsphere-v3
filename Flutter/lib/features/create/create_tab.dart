@@ -272,7 +272,12 @@ class _CreateTabState extends ConsumerState<CreateTab> {
         mediaUrls.add(url);
       }
       if (mediaUrls.isNotEmpty && postType == 'post') {
-        postType = 'photo';
+        // Check if any file is a video
+        final hasVideo = _files.any((f) {
+          final n = f.name.toLowerCase();
+          return n.endsWith('.mp4') || n.endsWith('.mov') || n.endsWith('.avi') || n.endsWith('.mkv');
+        });
+        postType = hasVideo ? 'video' : 'photo';
       }
       await ref.read(socialApiProvider).createPost(
             content: content.isEmpty ? ' ' : content,
@@ -429,16 +434,26 @@ class _CreateTabState extends ConsumerState<CreateTab> {
                           itemCount: _previews.length,
                           separatorBuilder: (_, __) => const SizedBox(width: 8),
                           itemBuilder: (context, i) {
+                            final isVid = () {
+                                final n = _files[i].name.toLowerCase();
+                                return n.endsWith('.mp4') || n.endsWith('.mov') || n.endsWith('.avi');
+                              }();
                             return Stack(
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: Image.memory(
-                                    _previews[i],
-                                    width: 96,
-                                    height: 96,
-                                    fit: BoxFit.cover,
-                                  ),
+                                  child: isVid
+                                      ? Container(
+                                          width: 96, height: 96,
+                                          color: AppColors.surfaceElevated,
+                                          child: const Center(child: Icon(Icons.videocam_rounded, size: 32, color: AppColors.primary)),
+                                        )
+                                      : Image.memory(
+                                          _previews[i],
+                                          width: 96,
+                                          height: 96,
+                                          fit: BoxFit.cover,
+                                        ),
                                 ),
                                 Positioned(
                                   top: 4,

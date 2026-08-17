@@ -114,7 +114,7 @@ class MediaGallery extends StatelessWidget {
     // Resolve relative URLs using the configured base URL
     final url = (raw.startsWith('http://') || raw.startsWith('https://'))
         ? raw
-        : '\${ApiConfig.baseUrl}\$raw';
+        : '${ApiConfig.baseUrl}$raw';
     return GestureDetector(
       onTap: () {
         onTapImage?.call(index, url);
@@ -186,7 +186,7 @@ class _FullScreenViewerState extends State<_FullScreenViewer> {
             child: Image.network(
                   (widget.urls[index].startsWith('http://') || widget.urls[index].startsWith('https://'))
                       ? widget.urls[index]
-                      : '\${ApiConfig.baseUrl}\${widget.urls[index]}',
+                      : '${ApiConfig.baseUrl}${widget.urls[index]}',
                   fit: BoxFit.contain,
                 loadingBuilder: (_, child, progress) => progress == null
                     ? child
