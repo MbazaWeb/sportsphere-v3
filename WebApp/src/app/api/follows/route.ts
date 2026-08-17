@@ -16,7 +16,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }
 
-    const { targetUserId } = await request.json();
+    const body = await request.json();
+    const { targetUserId, action: explicitAction } = body;
     if (!targetUserId) {
       return NextResponse.json({ error: 'targetUserId is required.' }, { status: 400 });
     }
@@ -41,8 +42,11 @@ export async function POST(request: NextRequest) {
       await db.follow.delete({ where: { followerId_followingId: { followerId: userId, followingId: String(targetUserId) } } });
     } else {
       // Follow
-      const sportsRoles = new Set(["player", "team", "coach", "club", "league", "scout", "agent", "referee", "commentator"]);
-      const kind = sportsRoles.has(String(target.role || "").toLowerCase()) ? "fan" : "follow";
+      const sportsRoles = new Set(["player", "team", "coach", "club", "league", "scout", "agent", "referee", "commentator", "academy", "competition", "organization", "national_team"]);
+      // Use explicit action from client if provided, else auto-detect from role
+      const kind = explicitAction === 'fan' ? 'fan'
+        : explicitAction === 'follow' ? 'follow'
+        : sportsRoles.has(String(target.role || "").toLowerCase()) ? 'fan' : 'follow';
       await db.follow.create({ data: { followerId: userId, followingId: String(targetUserId), kind } });
     }
 
@@ -53,7 +57,10 @@ export async function POST(request: NextRequest) {
     ]);
     await Promise.all([
       db.user.update({ where: { id: userId }, data: { followingCount: myFollowing } }),
-      db.user.update({ where: { id: String(targetUserId) }, data: { followerCount: theirFollowers, fanCount: theirFollowers } }),
+      db.user.update({ where: { id: String(targetUserId) }, data: {
+        followerCount: theirFollowers,
+        fanCount: await db.follow.count({ where: { followingId: String(targetUserId), kind: 'fan' } }),
+      }}),
     ]);
 
     try {

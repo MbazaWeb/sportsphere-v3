@@ -63,7 +63,9 @@ class _UserProfileSheetState extends ConsumerState<UserProfileSheet> {
   bool _loading = true;
   String? _error;
   bool _followBusy = false;
+  bool _fanBusy = false;
   bool? _following;
+  bool? _isFan;
   String _activeTab = 'overview';
 
   bool get _isSportsRole {
@@ -119,6 +121,7 @@ class _UserProfileSheetState extends ConsumerState<UserProfileSheet> {
         _user = data;
         _loading = false;
         _following = data['isFollowing'] == true;
+        _isFan = data['isFan'] == true;
       });
     } catch (e) {
       if (!mounted) return;
@@ -186,7 +189,9 @@ class _UserProfileSheetState extends ConsumerState<UserProfileSheet> {
                       ),
                       isSportsRole: _isSportsRole,
                       following: _following,
+                      isFanOverride: _isFan,
                       followBusy: _followBusy,
+                      fanBusy: _fanBusy,
                       fanCount: _fanCount,
                       followerCount: _followerCount,
                       followingCount: _followingCount,
@@ -194,6 +199,7 @@ class _UserProfileSheetState extends ConsumerState<UserProfileSheet> {
                       activeTab: _activeTab,
                       onTabChanged: (id) => setState(() => _activeTab = id),
                       onToggleFollow: _toggleFollow,
+                      onToggleFan: _toggleFan,
                     ),
     );
   }
@@ -233,7 +239,9 @@ class _ProfileContent extends ConsumerWidget {
     required this.roleCfg,
     required this.isSportsRole,
     required this.following,
+    this.isFanOverride,
     required this.followBusy,
+    required this.fanBusy,
     required this.fanCount,
     required this.followerCount,
     required this.followingCount,
@@ -241,13 +249,16 @@ class _ProfileContent extends ConsumerWidget {
     required this.activeTab,
     required this.onTabChanged,
     required this.onToggleFollow,
+    required this.onToggleFan,
   });
 
   final Map<String, dynamic> user;
   final RoleProfileConfig roleCfg;
   final bool isSportsRole;
   final bool? following;
+  final bool? isFanOverride;
   final bool followBusy;
+  final bool fanBusy;
   final int fanCount;
   final int followerCount;
   final int followingCount;
@@ -255,6 +266,7 @@ class _ProfileContent extends ConsumerWidget {
   final String activeTab;
   final ValueChanged<String> onTabChanged;
   final VoidCallback onToggleFollow;
+  final VoidCallback onToggleFan;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -269,7 +281,7 @@ class _ProfileContent extends ConsumerWidget {
     final id = user['id']?.toString() ?? '';
 
     final gradient = _coverGradients[role.toLowerCase()] ?? _coverGradients['fan']!;
-    final isFan = following == true && isSportsRole;
+    final isFan = isFanOverride ?? (following == true && isSportsRole);
 
     return CustomScrollView(
       slivers: [
@@ -455,6 +467,8 @@ class _ProfileContent extends ConsumerWidget {
                   _ActionButtons(
                     isSportsRole: isSportsRole,
                     isFan: isFan,
+                      fanBusy: fanBusy,
+                      onToggleFan: onToggleFan,
                     following: following,
                     busy: followBusy,
                     userId: id,
@@ -640,22 +654,26 @@ class _ActionButtons extends StatelessWidget {
     required this.isFan,
     required this.following,
     required this.busy,
+    required this.fanBusy,
     required this.userId,
     required this.userName,
     required this.userHandle,
     required this.role,
     required this.onToggleFollow,
+    required this.onToggleFan,
   });
 
   final bool isSportsRole;
   final bool isFan;
   final bool? following;
   final bool busy;
+  final bool fanBusy;
   final String userId;
   final String userName;
   final String userHandle;
   final String role;
   final VoidCallback onToggleFollow;
+  final VoidCallback onToggleFan;
 
   @override
   Widget build(BuildContext context) {
@@ -679,19 +697,23 @@ class _ActionButtons extends StatelessWidget {
           Expanded(
             flex: 3,
             child: _FollowButton(
-              label: isFan ? "You're a Fan" : 'Become a Fan',
+              label: isFan ? "You're a Fan ❤️" : 'Become a Fan',
               icon: isFan ? Icons.favorite : Icons.favorite_border,
               isPrimary: true,
-              busy: busy,
-              onPressed: onToggleFollow,
+              busy: fanBusy,
+              onPressed: onToggleFan,
             ),
           ),
         ] else
-          // For non-sports roles: single Follow button
+          // For non-sports roles: Follow or Join depending on role
           Expanded(
             child: _FollowButton(
-              label: following == true ? 'Following' : 'Follow',
-              icon: following == true ? Icons.person_remove : Icons.person_add,
+              label: _joinRoles.contains(role.toLowerCase())
+                  ? (following == true ? 'Joined ✓' : 'Join')
+                  : (following == true ? 'Following' : 'Follow'),
+              icon: _joinRoles.contains(role.toLowerCase())
+                  ? (following == true ? Icons.group : Icons.group_add)
+                  : (following == true ? Icons.person_remove : Icons.person_add),
               isPrimary: following != true,
               busy: busy,
               onPressed: onToggleFollow,
