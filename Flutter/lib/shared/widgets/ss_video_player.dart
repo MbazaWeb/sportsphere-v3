@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import '../../theme/app_colors.dart';
+import '../../core/constants/api_config.dart';
 
 // ─── SportSphere Video Player ─────────────────────────────────────────────────
 // Gold-themed, full-featured video player using video_player + chewie.
@@ -64,7 +65,8 @@ class _SsVideoPlayerState extends State<SsVideoPlayer>
 
   Future<void> _init() async {
     try {
-      final uri = Uri.parse(widget.url);
+      final resolvedUrl = ApiConfig.resolveUrl(widget.url);
+      final uri = Uri.parse(resolvedUrl);
       _controller = VideoPlayerController.networkUrl(uri);
       await _controller!.initialize();
       if (!mounted) return;

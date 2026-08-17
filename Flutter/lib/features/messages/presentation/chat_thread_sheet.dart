@@ -338,19 +338,9 @@ class _ChatThreadSheetState extends ConsumerState<ChatThreadSheet> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-<<<<<<< HEAD
                   IconButton(
                     onPressed: _sending ? null : _pickImage,
                     icon: const Icon(Icons.add_photo_alternate_outlined, color: AppColors.primary),
-=======
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty ? NetworkImage(_resolveUrl(avatarUrl)) : null,
-                    backgroundColor: AppColors.surfaceElevated,
-                    child: avatarUrl == null || avatarUrl.isEmpty
-                        ? Text(myInitial, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 11, color: AppColors.primary))
-                        : null,
->>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
                   ),
                   Expanded(
                     child: TextField(

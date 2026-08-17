@@ -24,12 +24,8 @@ String _resolveUrl(String url) =>
 
 // ─── SportlightsTab ───────────────────────────────────────────────────────────
 class SportlightsTab extends ConsumerStatefulWidget {
-<<<<<<< HEAD
   const SportlightsTab({super.key, this.onNeedLogin});
   final VoidCallback? onNeedLogin;
-=======
-  const SportlightsTab({super.key});
->>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
   @override
   ConsumerState<SportlightsTab> createState() => _SportlightsTabState();
 }
@@ -342,11 +338,7 @@ class _SuggestedAccountsCardState extends ConsumerState<_SuggestedAccountsCard> 
                       const SizedBox(width: 10),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(name, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14)),
-<<<<<<< HEAD
                         Text('${handle.startsWith('@') ? handle : '@$handle'} · ${_roleLabel(role)}',
-=======
-                        Text('\${handle.startsWith('@') ? handle : '@\$handle'} · \${_roleLabel(role)}',
->>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
                           style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground)),
                       ])),
                     ]),
@@ -565,7 +557,6 @@ class _TopAccountsCardState extends ConsumerState<_TopAccountsCard> {
               ],
             ),
           ),
-<<<<<<< HEAD
           ..._accounts.asMap().entries.map((e) {
             final id = e.value['id']?.toString() ?? e.key.toString();
             final followed = _followed.contains(id);
@@ -600,38 +591,6 @@ class _TopAccountsCardState extends ConsumerState<_TopAccountsCard> {
               ),
             );
           }),
-=======
-          ..._accounts.asMap().entries.map((e) => Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Row(
-              children: [
-                Container(
-                  width: 40, height: 40,
-                  decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.primary.withValues(alpha: 0.2))),
-                  child: Center(child: Text(e.value.emoji, style: const TextStyle(fontSize: 18))),
-                ),
-                const SizedBox(width: 10),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(e.value.name, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13)),
-                  Text('${e.value.handle} · ${e.value.badge}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedForeground)),
-                ])),
-                GestureDetector(
-                  onTap: () => setState(() { if (_followed.contains(e.key)) _followed.remove(e.key); else _followed.add(e.key); }),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: _followed.contains(e.key) ? Colors.white.withValues(alpha: 0.06) : AppColors.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: _followed.contains(e.key) ? Colors.white.withValues(alpha: 0.1) : AppColors.primary.withValues(alpha: 0.4)),
-                    ),
-                    child: Text(_followed.contains(e.key) ? 'Following' : 'Follow', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: _followed.contains(e.key) ? AppColors.mutedForeground : AppColors.primary)),
-                  ),
-                ),
-              ],
-            ),
-          )),
->>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
           const SizedBox(height: 8),
           Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
         ],
@@ -867,7 +826,6 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
                       Text('${u.handle.startsWith('@') ? u.handle : '@${u.handle}'} · $time', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedForeground)),
                     ],
                   ),
-<<<<<<< HEAD
                 ),
                 Icon(Icons.more_horiz, size: 18, color: AppColors.mutedForeground.withValues(alpha: 0.6)),
               ],
@@ -946,20 +904,6 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
               postType: post.postType,
               onTapImage: (i, url) => MediaGallery.showViewer(context, post.mediaUrls, initialIndex: i),
             ),
-=======
-                ),
-                Icon(Icons.more_horiz, size: 18, color: AppColors.mutedForeground.withValues(alpha: 0.6)),
-              ],
-            ),
-          ),
-          if (post.content.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(post.content, style: GoogleFonts.inter(fontSize: 15, height: 1.45, letterSpacing: -0.1)),
-          ],
-          if (post.mediaUrls.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            _MediaRenderer(post: post),
->>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
           ],
           if (post.poll != null) ...[const SizedBox(height: 10), _PollBlock(poll: post.poll!, postId: post.id)],
           if (post.prediction != null) ...[const SizedBox(height: 10), _PredictionBlock(pred: post.prediction!)],

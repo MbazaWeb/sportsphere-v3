@@ -92,7 +92,6 @@ class ProfileRoleRegistry {
     label: 'Team',
     emoji: '👥',
     tabs: [
-<<<<<<< HEAD
       ProfileTabDef('spotlights', 'Spotlights'),
       ProfileTabDef('squad',      'Squad'),
       ProfileTabDef('fixtures',   'Fixtures'),
@@ -100,13 +99,6 @@ class ProfileRoleRegistry {
       ProfileTabDef('overview',   'Overview'),
     ],
     statLabels: ['Trophies', 'Fans', 'Followers', 'Posts'],
-=======
-      ProfileTabDef('overview',   'Overview'),    // About + Stats + History + Achievements + Community
-      ProfileTabDef('spotlights', 'Spotlights'),  // Posts + Media + Videos
-      ProfileTabDef('squad',      'Squad'),        // Squad + Fixtures + Standings
-    ],
-    statLabels: ['Fans', 'Followers', 'Trophies', 'Posts'],
->>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
   );
 
   // ─── MEDIA ──────────────────────────────────────────────────────────────────

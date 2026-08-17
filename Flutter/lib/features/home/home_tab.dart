@@ -73,17 +73,10 @@ class _HomeTabState extends ConsumerState<HomeTab> {
               child: KeyedSubtree(
                 key: ValueKey(_subTab),
                 child: switch (_subTab) {
-<<<<<<< HEAD
                   'following' when isAuthed => const FollowingTab(),
                   'trending' when isAuthed => const TrendingTab(),
                   'arena' when isAuthed => const _ArenaTab(),
                   _ => SportlightsTab(onNeedLogin: widget.onNeedLogin),
-=======
-                  'following' => const FollowingTab(),
-                  'trending' => const TrendingTab(),
-                  'arena' => const _ArenaTab(),
-                  _ => const SportlightsTab(),
->>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
                 },
               ),
             ),

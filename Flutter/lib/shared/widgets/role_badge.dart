@@ -234,13 +234,9 @@ class PostBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
     // If not verified and fan role, don't show anything (too noisy)
     if (!isVerified && role.toLowerCase() == 'fan') return const SizedBox.shrink();
 
-=======
-    if (!isVerified && role.toLowerCase() == 'fan') return const SizedBox.shrink();
->>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -248,13 +244,8 @@ class PostBadge extends StatelessWidget {
           RoleBadge(type: BadgeType.verified, size: BadgeSize.small),
           const SizedBox(width: 3),
         ],
-<<<<<<< HEAD
         // Show role badge (including FAN for verified fans)
         RoleBadge(type: BadgeType.role, label: role, size: BadgeSize.small),
-=======
-        if (role.toLowerCase() != 'fan')
-          RoleBadge(type: BadgeType.role, label: role, size: BadgeSize.small),
->>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
       ],
     );
   }
