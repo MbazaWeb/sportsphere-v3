@@ -19,6 +19,7 @@ import 'performance_card.dart';
 import 'role_tab_content.dart';
 import '../../social/data/follows_api.dart';
 import 'fans_list_page.dart';
+import '../../home/widgets/sportlights_tab.dart' show LiveFeedCard;
 
 /// Roles that show "Become a Fan" (personal sports identity — player, coach, team, national team).
 const _sportsRoles = <String>{
@@ -1187,6 +1188,19 @@ class _TabContent extends StatelessWidget {
       );
     }
 
+    // ── Team-specific merged tabs ────────────────────────────────────────────
+    if (role == 'team' || role == 'club' || role == 'national_team') {
+      if (tabId == 'squad') {
+        return _TeamSquadTab(user: user, profileKey: user['handle']?.toString() ?? userId);
+      }
+      if (tabId == 'overview') {
+        return _TeamOverviewTab(user: user, userId: userId, roleCfg: roleCfg);
+      }
+      if (tabId == 'spotlights') {
+        return _TeamSpotlightsTab(userId: userId, user: user);
+      }
+    }
+
     if (liveTabs.contains(tabId) && role != 'fan') {
       return RoleTabContent(
         tabId: tabId,
@@ -1622,6 +1636,418 @@ class _PlaceholderTab extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TEAM PROFILE TABS
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ─── Team Overview Tab ────────────────────────────────────────────────────────
+// About + Stats + History + Achievements + Community fans
+class _TeamOverviewTab extends ConsumerStatefulWidget {
+  const _TeamOverviewTab({required this.user, required this.userId, required this.roleCfg});
+  final Map<String, dynamic> user;
+  final String userId;
+  final RoleProfileConfig roleCfg;
+
+  @override
+  ConsumerState<_TeamOverviewTab> createState() => _TeamOverviewTabState();
+}
+
+class _TeamOverviewTabState extends ConsumerState<_TeamOverviewTab> {
+  Map<String, dynamic>? _data;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final key = widget.user['handle']?.toString() ?? widget.userId;
+      final data = await ref.read(profileDataApiProvider).fetch(type: 'team', key: key);
+      if (!mounted) return;
+      setState(() { _data = data; _loading = false; });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final u = widget.user;
+    final name = u['name']?.toString() ?? '';
+    final bio = u['bio']?.toString() ?? '';
+    final location = u['location']?.toString();
+    final fanCount = u['fanCount'] ?? 0;
+    final followerCount = u['followerCount'] ?? 0;
+    final postCount = u['postCount'] ?? 0;
+    final d = _data ?? {};
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      children: [
+
+        // ── About ────────────────────────────────────────────────────────────
+        GlassCard(
+          borderRadius: 16,
+          goldAccent: true,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _SectionHeader('About', Icons.info_outline),
+              const SizedBox(height: 10),
+              if (bio.isNotEmpty) ...[
+                Text(bio, style: GoogleFonts.inter(fontSize: 14, height: 1.5, color: AppColors.foreground.withValues(alpha: 0.9))),
+                const SizedBox(height: 10),
+              ],
+              if (location != null) _InfoRow(Icons.location_on_outlined, location),
+              if (d['founded'] != null) _InfoRow(Icons.calendar_today_outlined, 'Founded ${d['founded']}'),
+              if (d['stadium'] != null) _InfoRow(Icons.stadium_outlined, d['stadium'].toString()),
+              if (d['league'] != null) _InfoRow(Icons.emoji_events_outlined, d['league'].toString()),
+              if (d['country'] != null) _InfoRow(Icons.flag_outlined, d['country'].toString()),
+              if (d['manager'] != null) _InfoRow(Icons.person_outlined, 'Manager: ${d['manager']}'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // ── Quick Stats ───────────────────────────────────────────────────────
+        GlassCard(
+          borderRadius: 16,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _SectionHeader('Stats', Icons.bar_chart_rounded),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _StatBox('$fanCount', 'Fans', AppColors.primary),
+                  _StatBox('$followerCount', 'Followers', const Color(0xFF3B82F6)),
+                  _StatBox('$postCount', 'Posts', const Color(0xFF10B981)),
+                  if (d['trophies'] != null)
+                    _StatBox('${d['trophies']}', 'Trophies', const Color(0xFFEAB308)),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // ── History ───────────────────────────────────────────────────────────
+        if (d['history'] != null || d['description'] != null) ...[
+          GlassCard(
+            borderRadius: 16,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SectionHeader('History', Icons.history_rounded),
+                const SizedBox(height: 10),
+                Text(
+                  d['history']?.toString() ?? d['description']?.toString() ?? '',
+                  style: GoogleFonts.inter(fontSize: 13, height: 1.55, color: AppColors.foreground.withValues(alpha: 0.85)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // ── Achievements / Honours ────────────────────────────────────────────
+        if (_loading)
+          const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)))
+        else if (d['honours'] is List && (d['honours'] as List).isNotEmpty) ...[
+          GlassCard(
+            borderRadius: 16,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SectionHeader('Achievements', Icons.emoji_events_rounded),
+                const SizedBox(height: 10),
+                ...(d['honours'] as List).take(6).map((h) {
+                  final honour = h is Map ? Map<String, dynamic>.from(h) : {};
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 32, height: 32,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.emoji_events, size: 16, color: AppColors.primary),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(honour['title']?.toString() ?? h.toString(),
+                                style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                              if (honour['year'] != null)
+                                Text(honour['year'].toString(),
+                                  style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedForeground)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // ── Community (Fans) ──────────────────────────────────────────────────
+        GlassCard(
+          borderRadius: 16,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _SectionHeader('Community', Icons.favorite_rounded),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.favorite, size: 20, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text('$fanCount fans supporting $name',
+                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground)),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Icon(Icons.people_outline, size: 20, color: Color(0xFF3B82F6)),
+                  const SizedBox(width: 8),
+                  Text('$followerCount followers',
+                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.people_alt_outlined, size: 16),
+                  label: const Text('View all fans'),
+                  onPressed: () => _openList(context, widget.userId, 'fans', 'Fans'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Team Spotlights Tab ──────────────────────────────────────────────────────
+class _TeamSpotlightsTab extends ConsumerStatefulWidget {
+  const _TeamSpotlightsTab({required this.userId, required this.user});
+  final String userId;
+  final Map<String, dynamic> user;
+
+  @override
+  ConsumerState<_TeamSpotlightsTab> createState() => _TeamSpotlightsTabState();
+}
+
+class _TeamSpotlightsTabState extends ConsumerState<_TeamSpotlightsTab> {
+  String _sub = 'posts';
+  List<dynamic> _posts = [];
+  bool _loading = true;
+
+  @override
+  void initState() { super.initState(); _load(); }
+
+  Future<void> _load() async {
+    try {
+      final all = await ref.read(feedApiProvider).getFeed(limit: 50, offset: 0);
+      if (!mounted) return;
+      setState(() {
+        _posts = all.where((p) => p.userId == widget.userId).toList();
+        _loading = false;
+      });
+    } catch (_) { if (mounted) setState(() => _loading = false); }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _sub == 'media'
+        ? _posts.where((p) => (p.mediaUrls as List).isNotEmpty).toList()
+        : _sub == 'videos'
+            ? _posts.where((p) => p.postType == 'video' || p.postType == 'spotlight').toList()
+            : _posts;
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+          child: Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            child: Row(children: [
+              _SubPill('posts', 'Posts', _sub, (v) => setState(() => _sub = v)),
+              _SubPill('media', 'Photos', _sub, (v) => setState(() => _sub = v)),
+              _SubPill('videos', 'Videos', _sub, (v) => setState(() => _sub = v)),
+            ]),
+          ),
+        ),
+        Expanded(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2))
+              : filtered.isEmpty
+                  ? Center(child: Text('No ${_sub} yet', style: GoogleFonts.inter(color: AppColors.mutedForeground)))
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 80),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white10),
+                      itemBuilder: (ctx, i) => LiveFeedCard(post: filtered[i], index: i),
+                    ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Team Squad Tab ───────────────────────────────────────────────────────────
+// Squad list + Fixtures + Standings in sub-tabs
+class _TeamSquadTab extends ConsumerStatefulWidget {
+  const _TeamSquadTab({required this.user, required this.profileKey});
+  final Map<String, dynamic> user;
+  final String profileKey;
+
+  @override
+  ConsumerState<_TeamSquadTab> createState() => _TeamSquadTabState();
+}
+
+class _TeamSquadTabState extends ConsumerState<_TeamSquadTab> {
+  String _sub = 'squad';
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+          child: Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            child: Row(children: [
+              _SubPill('squad', 'Squad', _sub, (v) => setState(() => _sub = v)),
+              _SubPill('fixtures', 'Fixtures', _sub, (v) => setState(() => _sub = v)),
+              _SubPill('standings', 'Standings', _sub, (v) => setState(() => _sub = v)),
+            ]),
+          ),
+        ),
+        Expanded(
+          child: RoleTabContent(
+            tabId: _sub,
+            role: 'team',
+            profileKey: widget.profileKey,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Shared helpers ───────────────────────────────────────────────────────────
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader(this.title, this.icon);
+  final String title;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Icon(icon, size: 14, color: AppColors.primary),
+      const SizedBox(width: 6),
+      Text(title.toUpperCase(),
+        style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w800,
+          color: AppColors.primary, letterSpacing: 1)),
+    ],
+  );
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow(this.icon, this.text);
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Row(children: [
+      Icon(icon, size: 14, color: AppColors.mutedForeground),
+      const SizedBox(width: 8),
+      Expanded(child: Text(text, style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground))),
+    ]),
+  );
+}
+
+class _StatBox extends StatelessWidget {
+  const _StatBox(this.value, this.label, this.color);
+  final String value;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: Column(children: [
+      Text(value, style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w800, color: color)),
+      Text(label, style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground)),
+    ]),
+  );
+}
+
+class _SubPill extends StatelessWidget {
+  const _SubPill(this.id, this.label, this.active, this.onTap);
+  final String id, label, active;
+  final ValueChanged<String> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = id == active;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onTap(id),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(vertical: 7),
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+          ),
+          alignment: Alignment.center,
+          child: Text(label,
+            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700,
+              color: isActive ? AppColors.primaryForeground : AppColors.mutedForeground)),
+        ),
       ),
     );
   }
