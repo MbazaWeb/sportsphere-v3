@@ -1051,33 +1051,6 @@ class _PredictionBlock extends StatelessWidget {
   }
 }
 
-class _Act extends StatelessWidget {
-  const _Act(this.icon, this.label, {this.color});
-  final IconData icon;
-  final String label;
-  final Color? color;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = color ?? AppColors.mutedForeground.withValues(alpha: 0.9);
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: c),
-        const SizedBox(width: 5),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            letterSpacing: -0.1,
-            color: color ?? AppColors.mutedForeground,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _CommentsSheet extends ConsumerStatefulWidget {
   const _CommentsSheet({required this.postId, required this.onCount});
   final String postId;
