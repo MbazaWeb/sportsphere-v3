@@ -1140,8 +1140,8 @@ class _PredictionBlockState extends ConsumerState<_PredictionBlock> {
         if (mounted) setState(() => _pred = PredictionData(
           homeTeam: result['homeTeam'] ?? _pred.homeTeam,
           awayTeam: result['awayTeam'] ?? _pred.awayTeam,
-          predictedHome: result['predictedHomeScore'] ?? _pred.predictedHome,
-          predictedAway: result['predictedAwayScore'] ?? _pred.predictedAway,
+          predictedHome: result['predictedHome'] ?? _pred.predictedHome,
+          predictedAway: result['predictedAway'] ?? _pred.predictedAway,
           confidence: result['confidence']?.toString() ?? _pred.confidence,
         ));
       } catch (_) {}
@@ -1580,8 +1580,8 @@ class _EditPredictionSheetState extends State<_EditPredictionSheet> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context, {
-                  'predictedHomeScore': _homeScore,
-                  'predictedAwayScore': _awayScore,
+                  'predictedHome': _homeScore,
+                  'predictedAway': _awayScore,
                   'confidence': _confidence.round(),
                 }),
                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
