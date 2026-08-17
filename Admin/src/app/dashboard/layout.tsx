@@ -66,6 +66,13 @@ const NAV = [
   { href: '/dashboard/rumors', label: '💬 Rumors' },
   { href: '/dashboard/claims', label: '🏷️ Claims' },
   { href: '/dashboard/ai-agent', label: '🤖 AI Agent' },
+  { href: '/dashboard/ai-workforce', label: '🧠 AI Command Center', exact: true },
+  { href: '/dashboard/ai-workforce/agents', label: '🤖 Agent Directory' },
+  { href: '/dashboard/ai-workforce/chat', label: '💬 AI Chat' },
+  { href: '/dashboard/ai-workforce/tasks', label: '📋 Tasks' },
+  { href: '/dashboard/ai-workforce/approvals', label: '✅ Approvals' },
+  { href: '/dashboard/ai-workforce/costs', label: '💰 AI Costs' },
+  { href: '/dashboard/ai-workforce/settings', label: '⚙️ AI Settings' },
   { href: '/dashboard/backups', label: '💾 Backups' },
   { href: '/dashboard/audit', label: '📜 Audit Log' },
 ];

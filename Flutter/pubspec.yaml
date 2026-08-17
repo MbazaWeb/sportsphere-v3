@@ -27,10 +27,16 @@ dependencies:
   firebase_core: ^3.12.1
   firebase_auth: ^5.5.1
   firebase_messaging: ^15.1.4
+<<<<<<< HEAD
   google_sign_in: ^6.2.2
   video_player: ^2.9.2
   chewie: ^1.8.5
   image_editor_plus: ^1.0.8
+=======
+  video_player: ^2.9.2
+  chewie: ^1.8.5
+  image_editor_plus: ^3.0.0
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
 
 dev_dependencies:
   flutter_test:

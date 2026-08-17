@@ -36,6 +36,7 @@ class MediaGallery extends StatelessWidget {
 
   // ── Layout builders ────────────────────────────────────────────────
 
+<<<<<<< HEAD
   Widget _buildSingle(BuildContext context) {
     final url = ApiConfig.resolveUrl(imageUrls[0]);
     if (_isVideo(url)) {
@@ -45,6 +46,11 @@ class MediaGallery extends StatelessWidget {
         muted: true,
         showControls: false,
         borderRadius: 14,
+=======
+  Widget _buildSingle(BuildContext context) => ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: AspectRatio(aspectRatio: 16 / 10, child: _imageTile(0, context)),
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
       );
     }
     return ClipRRect(
@@ -132,11 +138,19 @@ class MediaGallery extends StatelessWidget {
 
   Widget _imageTile(int index, BuildContext context) {
     if (index >= imageUrls.length) return Container(color: AppColors.surface);
+<<<<<<< HEAD
     final url = ApiConfig.resolveUrl(imageUrls[index]);
 
     // For grid tiles, we show a play icon if it's a video but not the player itself
     final isVid = _isVideo(url);
 
+=======
+    final raw = imageUrls[index];
+    // Resolve relative URLs using the configured base URL
+    final url = (raw.startsWith('http://') || raw.startsWith('https://'))
+        ? raw
+        : '${ApiConfig.baseUrl}$raw';
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
     return GestureDetector(
       onTap: () {
         if (isVid) {
@@ -230,6 +244,7 @@ class _FullScreenViewerState extends State<_FullScreenViewer> {
           controller: _pageController,
           onPageChanged: (i) => setState(() => _currentIndex = i),
           itemCount: widget.urls.length,
+<<<<<<< HEAD
           itemBuilder: (_, index) {
             final url = ApiConfig.resolveUrl(widget.urls[index]);
             if (_isVideo(url)) {
@@ -253,6 +268,20 @@ class _FullScreenViewerState extends State<_FullScreenViewer> {
                       color: AppColors.mutedForeground, size: 48)),
             );
           },
+=======
+          itemBuilder: (_, index) => Center(
+            child: Image.network(
+                  (widget.urls[index].startsWith('http://') || widget.urls[index].startsWith('https://'))
+                      ? widget.urls[index]
+                      : '${ApiConfig.baseUrl}${widget.urls[index]}',
+                  fit: BoxFit.contain,
+                loadingBuilder: (_, child, progress) => progress == null
+                    ? child
+                    : const CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
+                errorBuilder: (_, __, ___) => Icon(Icons.broken_image_rounded,
+                    color: AppColors.mutedForeground, size: 48)),
+          ),
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
         ),
         // Close button
         Positioned(

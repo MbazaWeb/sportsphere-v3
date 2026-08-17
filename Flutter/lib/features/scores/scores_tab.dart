@@ -8,9 +8,22 @@ import '../../widgets/glass_card.dart';
 import '../../shared/widgets/ss_refresh.dart';
 import '../../core/realtime/scores_live.dart';
 import 'presentation/team_detail_sheet.dart';
+<<<<<<< HEAD
 import '../../../core/constants/api_config.dart';
 
 String _resolveUrl(String url) => ApiConfig.resolveUrl(url);
+=======
+import 'presentation/match_detail_sheet.dart';
+import '../../../core/constants/api_config.dart';
+
+
+String _resolveUrl(String url) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  final base = ApiConfig.baseUrl;
+  return url.startsWith('/') ? '\$base\$url' : '\$base/\$url';
+}
+
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
 
 /// Scores tab — live matches + standings from API
 class ScoresTab extends ConsumerStatefulWidget {
@@ -97,11 +110,24 @@ class _ScoresTabState extends ConsumerState<ScoresTab> {
 
   String? _mapStatus(String sub) {
     switch (sub) {
+<<<<<<< HEAD
       case 'live': return 'live';
       case 'today': return 'today';
       case 'upcoming': return 'upcoming';
       case 'results': return 'results';
       default: return null;
+=======
+      case 'live':
+        return 'live';
+      case 'today':
+        return 'today';
+      case 'upcoming':
+        return 'upcoming';
+      case 'results':
+        return 'results';
+      default:
+        return null;
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
     }
   }
 
@@ -352,9 +378,50 @@ class _MatchCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
+<<<<<<< HEAD
               Expanded(child: Row(children: [_TeamLogo(url: m.homeBadge), const SizedBox(width: 8), Flexible(child: Text(m.homeTeam, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13), overflow: TextOverflow.ellipsis))])),
               Padding(padding: const EdgeInsets.symmetric(horizontal: 10), child: Text(score, style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: m.isLive ? AppColors.primary : AppColors.foreground))),
               Expanded(child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [Flexible(child: Text(m.awayTeam, textAlign: TextAlign.right, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13), overflow: TextOverflow.ellipsis)), const SizedBox(width: 8), _TeamLogo(url: m.awayBadge)])),
+=======
+              // Home team
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _openTeamDetail(context, m.homeTeam, m.homeBadge, m.league),
+                  child: Row(
+                    children: [
+                      _TeamLogo(url: m.homeBadge),
+                      const SizedBox(width: 8),
+                      Flexible(child: Text(m.homeTeam, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13), overflow: TextOverflow.ellipsis)),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  score,
+                  style: GoogleFonts.outfit(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: m.isLive ? AppColors.primary : AppColors.foreground,
+                  ),
+                ),
+              ),
+              // Away team
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _openTeamDetail(context, m.awayTeam, m.awayBadge, m.league),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Flexible(child: Text(m.awayTeam, textAlign: TextAlign.right, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13), overflow: TextOverflow.ellipsis)),
+                      const SizedBox(width: 8),
+                      _TeamLogo(url: m.awayBadge),
+                    ],
+                  ),
+                ),
+              ),
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
             ],
           ),
         ],
@@ -363,6 +430,10 @@ class _MatchCard extends StatelessWidget {
   }
 }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
 class _TeamLogo extends StatelessWidget {
   const _TeamLogo({this.url, this.size = 28});
   final String? url;
@@ -371,15 +442,40 @@ class _TeamLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (url != null && url!.isNotEmpty) {
+<<<<<<< HEAD
       return ClipRRect(
         borderRadius: BorderRadius.circular(6),
         child: Image.network(ApiConfig.resolveUrl(url!), width: size, height: size, fit: BoxFit.contain, errorBuilder: (_, __, ___) => _fallback()),
+=======
+      final resolved = _resolveUrl(url!);
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Image.network(
+          resolved,
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => _fallback(),
+        ),
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
       );
     }
     return _fallback();
   }
 
+<<<<<<< HEAD
   Widget _fallback() => Container(width: size, height: size, decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(6)), child: Icon(Icons.shield_outlined, size: size * 0.6, color: AppColors.mutedForeground));
+=======
+  Widget _fallback() => Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(6),
+    ),
+    child: Icon(Icons.shield_outlined, size: size * 0.6, color: AppColors.mutedForeground),
+  );
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
 }
 
 class _StandingsView extends ConsumerWidget {
@@ -420,8 +516,45 @@ class _StandingRowWidget extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
+<<<<<<< HEAD
           SizedBox(width: 28, child: Text('${r.pos}', style: GoogleFonts.inter(fontWeight: FontWeight.w800, color: r.pos <= 3 ? AppColors.primary : AppColors.mutedForeground))),
           Expanded(child: Row(children: [if (r.badge != null && r.badge!.isNotEmpty) Padding(padding: const EdgeInsets.only(right: 8), child: Image.network(ApiConfig.resolveUrl(r.badge!), width: 20, height: 20, errorBuilder: (_, __, ___) => const SizedBox(width: 20))), Flexible(child: Text(r.team, overflow: TextOverflow.ellipsis, style: style))])),
+=======
+          SizedBox(
+            width: 28,
+            child: Text(
+              '${r.pos}',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w800,
+                color: r.pos <= 3 ? AppColors.primary : AppColors.mutedForeground,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Row(
+              children: [
+                if (r.badge != null && r.badge!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Image.network(_resolveUrl(r.badge!), width: 20, height: 20, errorBuilder: (_, __, ___) => const SizedBox(width: 20)),
+                  ),
+                Flexible(
+                  child: GestureDetector(
+                    onTap: () {
+                      showModalBottomSheet<void>(
+                        context: this.context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => TeamDetailSheet(teamName: r.team, teamBadge: r.badge),
+                      );
+                    },
+                    child: Text(r.team, overflow: TextOverflow.ellipsis, style: style),
+                  ),
+                ),
+              ],
+            ),
+          ),
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
           SizedBox(width: 28, child: Text('${r.played}', textAlign: TextAlign.center, style: style)),
           SizedBox(width: 28, child: Text('${r.won}', textAlign: TextAlign.center, style: style)),
           SizedBox(width: 28, child: Text('${r.drawn}', textAlign: TextAlign.center, style: style)),

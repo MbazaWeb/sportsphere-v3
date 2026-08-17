@@ -34,6 +34,7 @@ String _resolveProfileUrl(String url) {
   return url.startsWith('/') ? '$base$url' : '$base/$url';
 }
 
+<<<<<<< HEAD
 // ─── Role-based default cover gradients ──────────────────────────────────────
 const Map<String, List<Color>> _roleCoverColors = {
   'player':        [Color(0xFF1D4ED8), Color(0xFF1E3A8A)],
@@ -63,6 +64,8 @@ List<Color> _coverColors(String role) {
   return _roleCoverColors[role.toLowerCase()] ?? [const Color(0xFF0F1D3A), const Color(0xFF0A1628)];
 }
 
+=======
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
 class ProfileTab extends ConsumerStatefulWidget {
   const ProfileTab({
     super.key,

@@ -4,6 +4,16 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../theme/app_colors.dart';
 import '../../../core/constants/api_config.dart';
+<<<<<<< HEAD
+=======
+
+String _resolveUrl(String url) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  final base = ApiConfig.baseUrl;
+  return url.startsWith('/') ? '\$base\$url' : '\$base/\$url';
+}
+
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
 import '../../../shared/widgets/role_badge.dart';
 import '../../../widgets/glass_card.dart';
 import '../domain/profile_role_registry.dart';
@@ -12,7 +22,9 @@ import 'performance_card.dart';
 import 'role_tab_content.dart';
 import '../../social/data/follows_api.dart';
 import 'fans_list_page.dart';
+import '../../home/widgets/sportlights_tab.dart' show LiveFeedCard;
 
+<<<<<<< HEAD
 String _resolveUrl(String url) {
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   final base = ApiConfig.baseUrl;
@@ -22,6 +34,20 @@ String _resolveUrl(String url) {
 /// Roles that show "Become a Fan" (personal sports identity — player, coach, team, national team).
 const _sportsRoles = <String>{
   'player', 'team', 'coach', 'national_team', 'club',
+=======
+/// Roles that show "Become a Fan" (personal sports identity — player, coach, team, national team).
+const _sportsRoles = <String>{
+  'player', 'team', 'coach', 'national_team', 'club',
+};
+
+/// Roles that show "Follow" only (institutions, orgs, media).
+const _joinRoles = <String>{'community'};
+
+const _followOnlyRoles = <String>{
+  'academy', 'competition', 'league', 'organization', 'referee',
+  'commentator', 'journalist', 'analyst', 'creator', 'scout',
+  'agent', 'stadium', 'venue', 'business', 'commercial-partner', 'fan',
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
 };
 
 /// Roles that show "Follow" only (institutions, orgs, media).
@@ -44,6 +70,30 @@ const Map<String, List<Color>> _tailwindGradientMap = {
   'from-slate-600 to-slate-900':     [Color(0xFF475569), Color(0xFF0F172A)],
 };
 
+<<<<<<< HEAD
+=======
+/// Full-screen profile page for viewing another user's profile.
+/// Matches the web EntityProfileSheet / UserProfileViewer with
+/// role-aware "Become a Fan" button, fan stats, and tabbed content.
+// ─── Tailwind gradient → Flutter Color mapping ───────────────────────────────
+const Map<String, List<Color>> _tailwindGradientMap = {
+  'from-emerald-600 to-emerald-900': [Color(0xFF059669), Color(0xFF064E3B)],
+  'from-blue-600 to-blue-900':       [Color(0xFF2563EB), Color(0xFF1E3A8A)],
+  'from-orange-600 to-orange-900':   [Color(0xFFEA580C), Color(0xFF7C2D12)],
+  'from-purple-600 to-purple-900':   [Color(0xFF9333EA), Color(0xFF581C87)],
+  'from-cyan-600 to-cyan-900':       [Color(0xFF0891B2), Color(0xFF164E63)],
+  'from-pink-600 to-pink-900':       [Color(0xFFDB2777), Color(0xFF831843)],
+  'from-yellow-600 to-yellow-900':   [Color(0xFFCA8A04), Color(0xFF713F12)],
+  'from-red-600 to-red-900':         [Color(0xFFDC2626), Color(0xFF7F1D1D)],
+  'from-green-600 to-green-900':     [Color(0xFF16A34A), Color(0xFF14532D)],
+  'from-indigo-600 to-indigo-900':   [Color(0xFF4F46E5), Color(0xFF312E81)],
+  'from-teal-600 to-teal-900':       [Color(0xFF0D9488), Color(0xFF134E4A)],
+  'from-rose-600 to-rose-900':       [Color(0xFFE11D48), Color(0xFF881337)],
+  'from-slate-600 to-slate-900':     [Color(0xFF475569), Color(0xFF0F172A)],
+  'from-[#0F1D3A] via-[#1A2A4A] to-[#0A1628]': [Color(0xFF0F1D3A), Color(0xFF0A1628)],
+};
+
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
 // ─── Role-based default cover gradients ──────────────────────────────────────
 const Map<String, List<Color>> _roleCoverGradient = {
   'player':        [Color(0xFF1D4ED8), Color(0xFF1E3A8A)],
@@ -145,6 +195,7 @@ class _UserProfileSheetState extends ConsumerState<UserProfileSheet> {
       }
 
       if (!mounted) return;
+<<<<<<< HEAD
       if (data != null) {
         final d = data;
         setState(() {
@@ -156,6 +207,31 @@ class _UserProfileSheetState extends ConsumerState<UserProfileSheet> {
       } else if (_user == null) {
         setState(() { _loading = false; _error = 'User not found'; });
       }
+=======
+      // Load follow/fan status
+      bool isFollowing = data['isFollowing'] == true;
+      bool isFan = data['isFan'] == true;
+      
+      // If not returned by user endpoint, fetch from follows/status
+      if (!isFollowing && !isFan) {
+        try {
+          final userId = data['id']?.toString() ?? '';
+          if (userId.isNotEmpty) {
+            final status = await FollowsApi(ref.read(apiClientProvider)).getStatus(userId);
+            isFollowing = status['following'] == true;
+            isFan = status['isFan'] == true;
+          }
+        } catch (_) {}
+      }
+      
+      if (!mounted) return;
+      setState(() {
+        _user = data;
+        _loading = false;
+        _following = isFollowing;
+        _isFan = isFan;
+      });
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -237,6 +313,7 @@ class _UserProfileSheetState extends ConsumerState<UserProfileSheet> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+<<<<<<< HEAD
       body: _ProfileContent(
         user: u,
         roleCfg: roleCfg,
@@ -250,8 +327,74 @@ class _UserProfileSheetState extends ConsumerState<UserProfileSheet> {
         onToggleFollow: _toggleFollow,
         onToggleFan: _toggleFan,
       ),
+=======
+      body: _loading
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primary,
+                strokeWidth: 2,
+              ),
+            )
+          : _error != null
+              ? _ErrorView(error: _error!, onRetry: _load)
+              : _user == null || _user!.isEmpty
+                  ? const Center(child: Text('User not found'))
+                  : _ProfileContent(
+                      user: _user!,
+                      roleCfg: ProfileRoleRegistry.forRole(
+                        _user!['role']?.toString() ?? 'fan',
+                      ),
+                      isSportsRole: _isSportsRole,
+                      following: _following,
+                      isFanOverride: _isFan,
+                      followBusy: _followBusy,
+                      fanBusy: _fanBusy,
+                      fanCount: _fanCount,
+                      followerCount: _followerCount,
+                      followingCount: _followingCount,
+                      postCount: _postCount,
+                      activeTab: _activeTab,
+                      onTabChanged: (id) => setState(() => _activeTab = id),
+                      onToggleFollow: _toggleFollow,
+                      onToggleFan: _toggleFan,
+                    ),
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
     );
   }
+  Future<void> _toggleFan() async {
+    if (!ref.read(authProvider).isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to become a fan')),
+      );
+      return;
+    }
+    setState(() => _fanBusy = true);
+    try {
+      final uid = _user?['id']?.toString() ?? widget.userId ?? '';
+      if (uid.isEmpty) return;
+      final res = await FollowsApi(ref.read(apiClientProvider)).becomeFan(uid);
+      if (!mounted) return;
+      final nowFan = res['isFan'] == true || res['following'] == true;
+      setState(() {
+        _fanBusy = false;
+        _isFan = nowFan;
+        if (nowFan) _following = true;
+      });
+      if (res['fanCount'] != null) {
+        _user = Map<String, dynamic>.from(_user!)
+          ..['fanCount'] = res['fanCount']
+          ..['followerCount'] = res['followerCount'];
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(nowFan ? '❤️ You are now a fan!' : 'Removed from fans')),
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() => _fanBusy = false);
+    }
+  }
+
 }
 
 class _ErrorView extends StatelessWidget {
@@ -284,9 +427,19 @@ class _ProfileContent extends ConsumerWidget {
     required this.roleCfg,
     required this.isSportsRole,
     required this.following,
+<<<<<<< HEAD
     required this.isFan,
     required this.followBusy,
     required this.fanBusy,
+=======
+    this.isFanOverride,
+    required this.followBusy,
+    required this.fanBusy,
+    required this.fanCount,
+    required this.followerCount,
+    required this.followingCount,
+    required this.postCount,
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
     required this.activeTab,
     required this.onTabChanged,
     required this.onToggleFollow,
@@ -297,9 +450,19 @@ class _ProfileContent extends ConsumerWidget {
   final RoleProfileConfig roleCfg;
   final bool isSportsRole;
   final bool? following;
+<<<<<<< HEAD
   final bool isFan;
   final bool followBusy;
   final bool fanBusy;
+=======
+  final bool? isFanOverride;
+  final bool followBusy;
+  final bool fanBusy;
+  final int fanCount;
+  final int followerCount;
+  final int followingCount;
+  final int postCount;
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
   final String activeTab;
   final ValueChanged<String> onTabChanged;
   final VoidCallback onToggleFollow;
@@ -319,6 +482,7 @@ class _ProfileContent extends ConsumerWidget {
     final registeredAt = user['registeredAt']?.toString() ?? user['createdAt']?.toString() ?? '';
     final id = user['id']?.toString() ?? '';
 
+<<<<<<< HEAD
     final fanCount = (user['fanCount'] as num?)?.toInt() ?? 0;
     final followerCount = (user['followerCount'] as num?)?.toInt() ?? 0;
     final followingCount = (user['followingCount'] as num?)?.toInt() ?? 0;
@@ -326,6 +490,11 @@ class _ProfileContent extends ConsumerWidget {
 
     final coverGradient = user['coverGradient']?.toString();
     final gradient = _gradientForProfile(coverGradient, role);
+=======
+    final coverGradient = _user?['coverGradient']?.toString();
+    final gradient = _gradientForProfile(coverGradient, role);
+    final isFan = isFanOverride ?? (following == true && isSportsRole);
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
 
     return CustomScrollView(
       slivers: [
@@ -343,7 +512,11 @@ class _ProfileContent extends ConsumerWidget {
         ),
         SliverToBoxAdapter(
           child: Container(
+<<<<<<< HEAD
             height: 120,
+=======
+            height: 140,
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
             decoration: BoxDecoration(
               gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
             ),
@@ -351,9 +524,13 @@ class _ProfileContent extends ConsumerWidget {
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
             child: Transform.translate(
+<<<<<<< HEAD
               offset: const Offset(0, -40),
+=======
+              offset: const Offset(0, -50),
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -370,6 +547,7 @@ class _ProfileContent extends ConsumerWidget {
                         child: CircleAvatar(
                           radius: 44,
                           backgroundColor: AppColors.backgroundSecondary,
+<<<<<<< HEAD
                           backgroundImage: avatar != null && avatar.isNotEmpty ? NetworkImage(_resolveUrl(avatar)) : null,
                           child: avatar == null || avatar.isEmpty ? Text(name.isNotEmpty ? name[0].toUpperCase() : '?', style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.w800)) : null,
                         ),
@@ -378,6 +556,30 @@ class _ProfileContent extends ConsumerWidget {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: BadgeStack(role: role, isVerified: verified, isPro: isPro, typeName: typeName),
+=======
+                          backgroundImage: avatar != null && avatar.isNotEmpty
+                              ? NetworkImage(_resolveUrl(avatar))
+                              : null,
+                          child: avatar == null || avatar.isEmpty
+                              ? Text(
+                                  name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                )
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Badges — unified BadgeStack
+                      BadgeStack(
+                        role: role,
+                        isVerified: verified,
+                        isPro: isPro,
+                        typeName: typeName,
+                        size: BadgeSize.normal,
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
                       ),
                     ],
                   ),
@@ -399,6 +601,7 @@ class _ProfileContent extends ConsumerWidget {
                   const SizedBox(height: 20),
                   Row(
                     children: [
+<<<<<<< HEAD
                       _StatCard(value: '$fanCount', label: isSportsRole ? 'Supporters' : 'Fans', color: AppColors.primary, onTap: id.isNotEmpty ? () => _openList(context, id, 'fans', isSportsRole ? 'Supporters' : 'Fans') : null),
                       _StatCard(value: '$followingCount', label: 'Following', color: AppColors.primary, onTap: id.isNotEmpty ? () => _openList(context, id, 'following', 'Following') : null),
                       _StatCard(value: '$postCount', label: 'Posts', color: AppColors.primary),
@@ -407,6 +610,53 @@ class _ProfileContent extends ConsumerWidget {
                   const SizedBox(height: 20),
                   _ActionButtons(isSportsRole: isSportsRole, isFan: isFan, following: following, busy: followBusy, fanBusy: fanBusy, userId: id, userName: name, userHandle: handle, role: role, onToggleFollow: onToggleFollow, onToggleFan: onToggleFan),
                   const SizedBox(height: 24),
+=======
+                      _StatCard(
+                        value: '$fanCount',
+                        label: 'Fans',
+                        icon: Icons.favorite,
+                        color: AppColors.primary,
+                        onTap: id.isNotEmpty ? () => _openList(context, id, 'fans', 'Fans') : null,
+                      ),
+                      _StatCard(
+                        value: '$followerCount',
+                        label: 'Followers',
+                        icon: Icons.people,
+                        color: AppColors.primary,
+                        onTap: id.isNotEmpty ? () => _openList(context, id, 'followers', 'Followers') : null,
+                      ),
+                      _StatCard(
+                        value: '$followingCount',
+                        label: 'Following',
+                        icon: Icons.person_add,
+                        color: AppColors.primary,
+                        onTap: id.isNotEmpty ? () => _openList(context, id, 'following', 'Following') : null,
+                      ),
+                      _StatCard(value: '$postCount', label: 'Posts', icon: Icons.article, color: AppColors.primary),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // ── Action buttons ──
+                  _ActionButtons(
+                    isSportsRole: isSportsRole,
+                    isFan: isFan,
+                      fanBusy: fanBusy,
+                      onToggleFan: onToggleFan,
+                    following: following,
+                    busy: followBusy,
+                    userId: id,
+                    userName: name,
+                    userHandle: handle,
+                    role: role,
+                    onToggleFollow: onToggleFollow,
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  // ── Tab bar ──
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
                   SizedBox(
                     height: 40,
                     child: ListView.separated(
@@ -448,6 +698,7 @@ class _ProfileContent extends ConsumerWidget {
     } catch (_) { return ''; }
   }
 
+<<<<<<< HEAD
   void _openList(BuildContext context, String userId, String listType, String title) {
     showModalBottomSheet(
       context: context,
@@ -467,10 +718,137 @@ class _ProfileContent extends ConsumerWidget {
               Expanded(child: FansListPage(userId: userId, title: title, listType: listType, embedded: true)),
             ],
           ),
+=======
+// ── Stat card (rounded rectangle with icon) ──
+
+class _StatCard extends StatelessWidget {
+  const _StatCard({
+    required this.value,
+    required this.label,
+    required this.icon,
+    required this.color,
+    this.onTap,
+  });
+
+  final String value;
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: onTap != null
+                  ? AppColors.primary.withValues(alpha: 0.18)
+                  : AppColors.border.withValues(alpha: 0.5),
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                  color: color,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    label.toUpperCase(),
+                    style: GoogleFonts.inter(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.mutedForeground,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  if (onTap != null) ...[
+                    const SizedBox(width: 2),
+                    Icon(Icons.chevron_right, size: 10, color: AppColors.primary.withValues(alpha: 0.6)),
+                  ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+
+void _openList(BuildContext context, String userId, String listType, String title) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      maxChildSize: 0.95,
+      minChildSize: 0.5,
+      builder: (_, scrollCtrl) => Container(
+        decoration: BoxDecoration(
+          color: AppColors.backgroundSecondary,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              child: Column(
+                children: [
+                  Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(4)))),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 36, height: 36,
+                          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withValues(alpha: 0.08))),
+                          child: const Icon(Icons.close, size: 16, color: Colors.white),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(title, style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w800)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: FansListPage(
+                userId: userId,
+                title: title,
+                listType: listType,
+                embedded: true,
+              ),
+            ),
+          ],
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
+        ),
+      ),
+    ),
+  );
 }
 
 class _StatCard extends StatelessWidget {
@@ -502,22 +880,92 @@ class _StatCard extends StatelessWidget {
 }
 
 class _ActionButtons extends StatelessWidget {
+<<<<<<< HEAD
   const _ActionButtons({required this.isSportsRole, required this.isFan, required this.following, required this.busy, required this.fanBusy, required this.userId, required this.userName, required this.userHandle, required this.role, required this.onToggleFollow, required this.onToggleFan});
   final bool isSportsRole, isFan, busy, fanBusy;
   final bool? following;
   final String userId, userName, userHandle, role;
   final VoidCallback onToggleFollow, onToggleFan;
+=======
+  const _ActionButtons({
+    required this.isSportsRole,
+    required this.isFan,
+    required this.following,
+    required this.busy,
+    required this.fanBusy,
+    required this.userId,
+    required this.userName,
+    required this.userHandle,
+    required this.role,
+    required this.onToggleFollow,
+    required this.onToggleFan,
+  });
+
+  final bool isSportsRole;
+  final bool isFan;
+  final bool? following;
+  final bool busy;
+  final bool fanBusy;
+  final String userId;
+  final String userName;
+  final String userHandle;
+  final String role;
+  final VoidCallback onToggleFollow;
+  final VoidCallback onToggleFan;
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         if (isSportsRole) ...[
+<<<<<<< HEAD
           Expanded(flex: 3, child: _Btn(label: isFan ? "You're a Fan" : 'Become a Fan', icon: isFan ? Icons.favorite : Icons.favorite_border, primary: true, busy: fanBusy, onPressed: onToggleFan)),
           const SizedBox(width: 8),
           Expanded(flex: 2, child: _Btn(label: following == true ? 'Following' : 'Follow', icon: following == true ? Icons.person_remove : Icons.person_add, primary: false, busy: busy, onPressed: onToggleFollow)),
         ] else
           Expanded(child: _Btn(label: _joinRoles.contains(role) ? (following == true ? 'Joined' : 'Join') : (following == true ? 'Following' : 'Follow'), icon: following == true ? Icons.check : Icons.person_add, primary: following != true, busy: busy, onPressed: onToggleFollow)),
+=======
+          // Follow button (glass/secondary)
+          Expanded(
+            flex: 2,
+            child: _FollowButton(
+              label: following == true ? 'Following' : 'Follow',
+              icon: following == true ? Icons.person_remove : Icons.person_add,
+              isPrimary: false,
+              busy: busy,
+              onPressed: onToggleFollow,
+            ),
+          ),
+          const SizedBox(width: 10),
+          // Become a Fan button (gold/primary)
+          Expanded(
+            flex: 3,
+            child: _FollowButton(
+              label: isFan ? "You're a Fan ❤️" : 'Become a Fan',
+              icon: isFan ? Icons.favorite : Icons.favorite_border,
+              isPrimary: true,
+              busy: fanBusy,
+              onPressed: onToggleFan,
+            ),
+          ),
+        ] else
+          // For non-sports roles: Follow or Join depending on role
+          Expanded(
+            child: _FollowButton(
+              label: _joinRoles.contains(role.toLowerCase())
+                  ? (following == true ? 'Joined ✓' : 'Join')
+                  : (following == true ? 'Following' : 'Follow'),
+              icon: _joinRoles.contains(role.toLowerCase())
+                  ? (following == true ? Icons.group : Icons.group_add)
+                  : (following == true ? Icons.person_remove : Icons.person_add),
+              isPrimary: following != true,
+              busy: busy,
+              onPressed: onToggleFollow,
+            ),
+          ),
+
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
         const SizedBox(width: 10),
         _CircleBtn(icon: Icons.chat_bubble_outline, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ChatThreadSheet(partnerId: userId, partnerName: userName, partnerHandle: userHandle)))),
         const SizedBox(width: 8),
@@ -553,9 +1001,77 @@ class _TabContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final role = (user['role'] ?? roleCfg.role).toString().toLowerCase();
+<<<<<<< HEAD
     if (tabId == 'fans') return _FansPreview(userId: userId, user: user);
     if (tabId == 'overview') return Column(children: [if (userId.isNotEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: PerformanceCard(userId: userId)), _OverviewTab(user: user)]);
     return SizedBox(height: 400, child: RoleTabContent(tabId: tabId, role: role, profileKey: user['handle']?.toString()));
+=======
+    final liveTabs = {
+      'career', 'statistics', 'achievements', 'matches', 'overview',
+      'performance', 'rankings', 'squad', 'fixtures', 'standings', 'about',
+      'feed', 'media', 'shop', 'tickets',
+    };
+
+    if (tabId == 'fans') {
+      return _FansPreview(userId: userId, user: user);
+    }
+
+    if (tabId == 'overview') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (userId.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: PerformanceCard(userId: userId),
+            ),
+          _OverviewTab(user: user, roleCfg: roleCfg),
+        ],
+      );
+    }
+
+    if (tabId == 'performance' || tabId == 'rankings') {
+      return Column(
+        children: [
+          if (userId.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: PerformanceCard(userId: userId),
+            ),
+          Expanded(child: RoleTabContent(tabId: tabId, role: role, profileKey: user['handle']?.toString())),
+        ],
+      );
+    }
+
+    // ── Team-specific merged tabs ────────────────────────────────────────────
+    if (role == 'team' || role == 'club' || role == 'national_team') {
+      if (tabId == 'squad') {
+        return _TeamSquadTab(user: user, profileKey: user['handle']?.toString() ?? userId);
+      }
+      if (tabId == 'overview') {
+        return _TeamOverviewTab(user: user, userId: userId, roleCfg: roleCfg);
+      }
+      if (tabId == 'spotlights') {
+        return _TeamSpotlightsTab(userId: userId, user: user);
+      }
+    }
+
+    if (liveTabs.contains(tabId) && role != 'fan') {
+      return RoleTabContent(
+        tabId: tabId,
+        role: role,
+        profileKey: user['handle']?.toString(),
+      );
+    }
+
+    return _PlaceholderTab(
+      title: roleCfg.tabs
+          .firstWhere((t) => t.id == tabId,
+              orElse: () => ProfileTabDef(tabId, tabId))
+          .label,
+      subtitle: '${roleCfg.emoji} ${roleCfg.label} section',
+    );
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
   }
 }
 
@@ -573,12 +1089,159 @@ class _FansPreviewState extends ConsumerState<_FansPreview> {
       if (mounted) setState(() { _fans = fans; _loading = false; });
     } catch (_) { if (mounted) setState(() => _loading = false); }
   }
+<<<<<<< HEAD
   @override Widget build(BuildContext context) {
     return Column(children: [
       GlassCard(borderRadius: 16, padding: const EdgeInsets.all(16), child: Row(children: [_QuickStat(value: '${widget.user['fanCount'] ?? 0}', label: 'Fans'), _QuickStat(value: '${widget.user['followingCount'] ?? 0}', label: 'Following'), _QuickStat(value: '${widget.user['postCount'] ?? 0}', label: 'Posts')])),
       const SizedBox(height: 12),
       GlassCard(borderRadius: 16, padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [const Icon(Icons.star, size: 16, color: AppColors.primary), const SizedBox(width: 8), Text('FANS', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.mutedForeground, letterSpacing: 1.2))]), const SizedBox(height: 12), if (_loading) const Center(child: CircularProgressIndicator()) else if (_fans.isEmpty) const Text('No fans yet.', style: TextStyle(color: Colors.white54)) else ..._fans.take(5).map((f) => _FanTile(f: f))])),
     ]);
+=======
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Quick stats
+        GlassCard(
+          borderRadius: 16,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.bar_chart, size: 16, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'QUICK STATS',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.mutedForeground,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  _QuickStat(
+                    value: '${widget.user['fanCount'] ?? _fans.length}',
+                    label: 'Fans',
+                  ),
+                  _QuickStat(
+                    value: '${widget.user['followingCount'] ?? 0}',
+                    label: 'Following',
+                  ),
+                  _QuickStat(
+                    value: '${widget.user['postCount'] ?? 0}',
+                    label: 'Posts',
+                  ),
+                  _QuickStat(
+                    value: _formatJoinDate(
+                      widget.user['registeredAt']?.toString() ??
+                          widget.user['createdAt']?.toString() ??
+                          '',
+                    ),
+                    label: 'Joined',
+                    isDate: true,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Favorites / Top fans
+        GlassCard(
+          borderRadius: 16,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.star, size: 16, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'FANS',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.mutedForeground,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (_fans.length > 3)
+                    GestureDetector(
+                      onTap: () => _openFansList(context, 'See all'),
+                      child: Text(
+                        'See all',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (_loading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20),
+                    child: CircularProgressIndicator(
+                      color: AppColors.primary,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                )
+              else if (_fans.isEmpty)
+                Text(
+                  'No fans yet.',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: AppColors.mutedForeground,
+                  ),
+                )
+              else
+                ..._fans.take(5).map(
+                  (fan) => _FanPreviewTile(fan: fan),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _openFansList(BuildContext context, String title) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FansListPage(
+          userId: widget.userId,
+          title: title,
+          listType: 'fans',
+        ),
+      ),
+    );
+  }
+
+  String _formatJoinDate(String dateStr) {
+    try {
+      final dt = DateTime.parse(dateStr);
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return '\${months[dt.month - 1]} \${dt.year}';
+    } catch (_) {
+      return 'N/A';
+    }
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
   }
 }
 
@@ -587,11 +1250,77 @@ class _QuickStat extends StatelessWidget {
   @override Widget build(BuildContext context) { return Expanded(child: Column(children: [Text(value, style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18)), Text(label, style: const TextStyle(fontSize: 10, color: Colors.white54))])); }
 }
 
+<<<<<<< HEAD
 class _FanTile extends StatelessWidget {
   const _FanTile({required this.f}); final Map<String, dynamic> f;
   @override Widget build(BuildContext context) {
     final name = f['name']?.toString() ?? 'User';
     return Padding(padding: const EdgeInsets.only(bottom: 10), child: Row(children: [CircleAvatar(radius: 18, backgroundImage: f['avatarUrl'] != null ? NetworkImage(_resolveUrl(f['avatarUrl'])) : null, child: f['avatarUrl'] == null ? Text(name[0]) : null), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)), Text('@${f['handle']}', style: const TextStyle(fontSize: 11, color: Colors.white54))]))]));
+=======
+class _FanPreviewTile extends StatelessWidget {
+  const _FanPreviewTile({required this.fan});
+  final Map<String, dynamic> fan;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = fan['name']?.toString() ?? 'User';
+    final handle = fan['handle']?.toString() ?? '';
+    final avatar = fan['avatarUrl']?.toString();
+    final verified = fan['isVerified'] == true;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: AppColors.surfaceElevated,
+            backgroundImage:
+                avatar != null && avatar.isNotEmpty ? NetworkImage(_resolveUrl(avatar)) : null,
+            child: avatar == null || avatar.isEmpty
+                ? Text(
+                    name.isNotEmpty ? name[0].toUpperCase() : '?',
+                    style: GoogleFonts.outfit(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  )
+                : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      name,
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                    if (verified) ...[
+                      const SizedBox(width: 4),
+                      Icon(Icons.verified, size: 12, color: AppColors.primary),
+                    ],
+                  ],
+                ),
+                Text(
+                  handle.startsWith('@') ? handle : '@$handle',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: AppColors.mutedForeground,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+>>>>>>> cba2ec76e37806f1068d50f04ca754de752921ec
   }
 }
 
@@ -610,4 +1339,416 @@ class _OverviewTab extends StatelessWidget {
 class _PlaceholderTab extends StatelessWidget {
   const _PlaceholderTab({required this.title, required this.subtitle}); final String title, subtitle;
   @override Widget build(BuildContext context) { return GlassCard(borderRadius: 16, padding: const EdgeInsets.all(24), child: Column(children: [Text(title, style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18)), const SizedBox(height: 8), Text(subtitle, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white54, fontSize: 13))])); }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TEAM PROFILE TABS
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ─── Team Overview Tab ────────────────────────────────────────────────────────
+// About + Stats + History + Achievements + Community fans
+class _TeamOverviewTab extends ConsumerStatefulWidget {
+  const _TeamOverviewTab({required this.user, required this.userId, required this.roleCfg});
+  final Map<String, dynamic> user;
+  final String userId;
+  final RoleProfileConfig roleCfg;
+
+  @override
+  ConsumerState<_TeamOverviewTab> createState() => _TeamOverviewTabState();
+}
+
+class _TeamOverviewTabState extends ConsumerState<_TeamOverviewTab> {
+  Map<String, dynamic>? _data;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final key = widget.user['handle']?.toString() ?? widget.userId;
+      final data = await ref.read(profileDataApiProvider).fetch(type: 'team', key: key);
+      if (!mounted) return;
+      setState(() { _data = data; _loading = false; });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final u = widget.user;
+    final name = u['name']?.toString() ?? '';
+    final bio = u['bio']?.toString() ?? '';
+    final location = u['location']?.toString();
+    final fanCount = u['fanCount'] ?? 0;
+    final followerCount = u['followerCount'] ?? 0;
+    final postCount = u['postCount'] ?? 0;
+    final d = _data ?? {};
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      children: [
+
+        // ── About ────────────────────────────────────────────────────────────
+        GlassCard(
+          borderRadius: 16,
+          goldAccent: true,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _SectionHeader('About', Icons.info_outline),
+              const SizedBox(height: 10),
+              if (bio.isNotEmpty) ...[
+                Text(bio, style: GoogleFonts.inter(fontSize: 14, height: 1.5, color: AppColors.foreground.withValues(alpha: 0.9))),
+                const SizedBox(height: 10),
+              ],
+              if (location != null) _InfoRow(Icons.location_on_outlined, location),
+              if (d['founded'] != null) _InfoRow(Icons.calendar_today_outlined, 'Founded ${d['founded']}'),
+              if (d['stadium'] != null) _InfoRow(Icons.stadium_outlined, d['stadium'].toString()),
+              if (d['league'] != null) _InfoRow(Icons.emoji_events_outlined, d['league'].toString()),
+              if (d['country'] != null) _InfoRow(Icons.flag_outlined, d['country'].toString()),
+              if (d['manager'] != null) _InfoRow(Icons.person_outlined, 'Manager: ${d['manager']}'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // ── Quick Stats ───────────────────────────────────────────────────────
+        GlassCard(
+          borderRadius: 16,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _SectionHeader('Stats', Icons.bar_chart_rounded),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _StatBox('$fanCount', 'Fans', AppColors.primary),
+                  _StatBox('$followerCount', 'Followers', const Color(0xFF3B82F6)),
+                  _StatBox('$postCount', 'Posts', const Color(0xFF10B981)),
+                  if (d['trophies'] != null)
+                    _StatBox('${d['trophies']}', 'Trophies', const Color(0xFFEAB308)),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // ── History ───────────────────────────────────────────────────────────
+        if (d['history'] != null || d['description'] != null) ...[
+          GlassCard(
+            borderRadius: 16,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SectionHeader('History', Icons.history_rounded),
+                const SizedBox(height: 10),
+                Text(
+                  d['history']?.toString() ?? d['description']?.toString() ?? '',
+                  style: GoogleFonts.inter(fontSize: 13, height: 1.55, color: AppColors.foreground.withValues(alpha: 0.85)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // ── Achievements / Honours ────────────────────────────────────────────
+        if (_loading)
+          const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)))
+        else if (d['honours'] is List && (d['honours'] as List).isNotEmpty) ...[
+          GlassCard(
+            borderRadius: 16,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SectionHeader('Achievements', Icons.emoji_events_rounded),
+                const SizedBox(height: 10),
+                ...(d['honours'] as List).take(6).map((h) {
+                  final honour = h is Map ? Map<String, dynamic>.from(h) : {};
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 32, height: 32,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.emoji_events, size: 16, color: AppColors.primary),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(honour['title']?.toString() ?? h.toString(),
+                                style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                              if (honour['year'] != null)
+                                Text(honour['year'].toString(),
+                                  style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedForeground)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // ── Community (Fans) ──────────────────────────────────────────────────
+        GlassCard(
+          borderRadius: 16,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _SectionHeader('Community', Icons.favorite_rounded),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.favorite, size: 20, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text('$fanCount fans supporting $name',
+                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground)),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Icon(Icons.people_outline, size: 20, color: Color(0xFF3B82F6)),
+                  const SizedBox(width: 8),
+                  Text('$followerCount followers',
+                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.people_alt_outlined, size: 16),
+                  label: const Text('View all fans'),
+                  onPressed: () => _openList(context, widget.userId, 'fans', 'Fans'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Team Spotlights Tab ──────────────────────────────────────────────────────
+class _TeamSpotlightsTab extends ConsumerStatefulWidget {
+  const _TeamSpotlightsTab({required this.userId, required this.user});
+  final String userId;
+  final Map<String, dynamic> user;
+
+  @override
+  ConsumerState<_TeamSpotlightsTab> createState() => _TeamSpotlightsTabState();
+}
+
+class _TeamSpotlightsTabState extends ConsumerState<_TeamSpotlightsTab> {
+  String _sub = 'posts';
+  List<dynamic> _posts = [];
+  bool _loading = true;
+
+  @override
+  void initState() { super.initState(); _load(); }
+
+  Future<void> _load() async {
+    try {
+      final all = await ref.read(feedApiProvider).getFeed(limit: 50, offset: 0);
+      if (!mounted) return;
+      setState(() {
+        _posts = all.where((p) => p.userId == widget.userId).toList();
+        _loading = false;
+      });
+    } catch (_) { if (mounted) setState(() => _loading = false); }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _sub == 'media'
+        ? _posts.where((p) => (p.mediaUrls as List).isNotEmpty).toList()
+        : _sub == 'videos'
+            ? _posts.where((p) => p.postType == 'video' || p.postType == 'spotlight').toList()
+            : _posts;
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+          child: Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            child: Row(children: [
+              _SubPill('posts', 'Posts', _sub, (v) => setState(() => _sub = v)),
+              _SubPill('media', 'Photos', _sub, (v) => setState(() => _sub = v)),
+              _SubPill('videos', 'Videos', _sub, (v) => setState(() => _sub = v)),
+            ]),
+          ),
+        ),
+        Expanded(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2))
+              : filtered.isEmpty
+                  ? Center(child: Text('No ${_sub} yet', style: GoogleFonts.inter(color: AppColors.mutedForeground)))
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 80),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white10),
+                      itemBuilder: (ctx, i) => LiveFeedCard(post: filtered[i], index: i),
+                    ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Team Squad Tab ───────────────────────────────────────────────────────────
+// Squad list + Fixtures + Standings in sub-tabs
+class _TeamSquadTab extends ConsumerStatefulWidget {
+  const _TeamSquadTab({required this.user, required this.profileKey});
+  final Map<String, dynamic> user;
+  final String profileKey;
+
+  @override
+  ConsumerState<_TeamSquadTab> createState() => _TeamSquadTabState();
+}
+
+class _TeamSquadTabState extends ConsumerState<_TeamSquadTab> {
+  String _sub = 'squad';
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+          child: Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            child: Row(children: [
+              _SubPill('squad', 'Squad', _sub, (v) => setState(() => _sub = v)),
+              _SubPill('fixtures', 'Fixtures', _sub, (v) => setState(() => _sub = v)),
+              _SubPill('standings', 'Standings', _sub, (v) => setState(() => _sub = v)),
+            ]),
+          ),
+        ),
+        Expanded(
+          child: RoleTabContent(
+            tabId: _sub,
+            role: 'team',
+            profileKey: widget.profileKey,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Shared helpers ───────────────────────────────────────────────────────────
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader(this.title, this.icon);
+  final String title;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Icon(icon, size: 14, color: AppColors.primary),
+      const SizedBox(width: 6),
+      Text(title.toUpperCase(),
+        style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w800,
+          color: AppColors.primary, letterSpacing: 1)),
+    ],
+  );
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow(this.icon, this.text);
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Row(children: [
+      Icon(icon, size: 14, color: AppColors.mutedForeground),
+      const SizedBox(width: 8),
+      Expanded(child: Text(text, style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedForeground))),
+    ]),
+  );
+}
+
+class _StatBox extends StatelessWidget {
+  const _StatBox(this.value, this.label, this.color);
+  final String value;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: Column(children: [
+      Text(value, style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w800, color: color)),
+      Text(label, style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground)),
+    ]),
+  );
+}
+
+class _SubPill extends StatelessWidget {
+  const _SubPill(this.id, this.label, this.active, this.onTap);
+  final String id, label, active;
+  final ValueChanged<String> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = id == active;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onTap(id),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(vertical: 7),
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+          ),
+          alignment: Alignment.center,
+          child: Text(label,
+            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700,
+              color: isActive ? AppColors.primaryForeground : AppColors.mutedForeground)),
+        ),
+      ),
+    );
+  }
 }

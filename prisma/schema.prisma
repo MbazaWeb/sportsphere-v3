@@ -1815,3 +1815,319 @@ model PartnerMetricSnapshot {
   @@index([date])
 }
 
+// ═══════════════════════════════════════════════════════════════
+// AI WORKFORCE — Agent Platform Models
+// ═══════════════════════════════════════════════════════════════
+
+model AIAgent {
+  id            String    @id @default(uuid())
+  name          String
+  department    String
+  role          String
+  description   String
+  systemPrompt  String    @db.Text
+  model         String    @default("gpt-4o-mini")
+  status        String    @default("ACTIVE")   // ACTIVE | PAUSED | DISABLED
+  autonomyLevel Int       @default(1)           // 0-4
+  supervisorId  String?
+  humanOwnerId  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  supervisor   AIAgent?            @relation("AgentSupervisor", fields: [supervisorId], references: [id])
+  subordinates AIAgent[]           @relation("AgentSupervisor")
+  tools        AIAgentTool[]
+  permissions  AIAgentPermission[]
+  tasks        AIAgentTask[]
+  executions   AIAgentExecution[]
+  approvals    AIAgentApproval[]
+  auditLogs    AIAgentAuditLog[]
+  budget       AIAgentBudget?
+  kpis         AIAgentKPI[]
+
+  @@index([department])
+  @@index([status])
+}
+
+model AIAgentTool {
+  id          String   @id @default(uuid())
+  agentId     String
+  toolName    String
+  description String
+  config      Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  agent AIAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+}
+
+model AIAgentPermission {
+  id         String   @id @default(uuid())
+  agentId    String
+  permission String   // e.g. 'sports.player.read'
+  createdAt  DateTime @default(now())
+
+  agent AIAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, permission])
+  @@index([agentId])
+}
+
+model AIAgentTask {
+  id               String    @id @default(uuid())
+  agentId          String
+  type             String
+  priority         String    @default("MEDIUM")      // LOW | MEDIUM | HIGH | CRITICAL
+  status           String    @default("QUEUED")      // QUEUED | RUNNING | WAITING_APPROVAL | BLOCKED | COMPLETED | FAILED | CANCELLED
+  input            Json      @default("{}")
+  result           Json?
+  errorMessage     String?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  costEstimate     Float?
+  tokensUsed       Int?
+  requiresApproval Boolean   @default(false)
+  approvedById     String?
+  approvedAt       DateTime?
+  createdById      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  agent      AIAgent            @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  executions AIAgentExecution[]
+  messages   AIAgentMessage[]
+  approvals  AIAgentApproval[]
+
+  @@index([agentId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AIAgentExecution {
+  id           String   @id @default(uuid())
+  taskId       String
+  agentId      String
+  model        String
+  inputTokens  Int
+  outputTokens Int
+  totalTokens  Int
+  costUsd      Float
+  latencyMs    Int
+  status       String                               // SUCCESS | FAILED | TIMEOUT
+  errorMessage String?
+  toolCalls    Json     @default("[]")
+  createdAt    DateTime @default(now())
+
+  task  AIAgentTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  agent AIAgent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([agentId])
+  @@index([createdAt])
+}
+
+model AIAgentMessage {
+  id         String   @id @default(uuid())
+  taskId     String
+  role       String                               // SYSTEM | USER | ASSISTANT | TOOL
+  content    String   @db.Text
+  toolName   String?
+  toolCallId String?
+  tokensUsed Int?
+  createdAt  DateTime @default(now())
+
+  task AIAgentTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([createdAt])
+}
+
+model AIAgentApproval {
+  id            String    @id @default(uuid())
+  taskId        String
+  agentId       String
+  action        String
+  description   String
+  riskLevel     String    @default("MEDIUM")        // LOW | MEDIUM | HIGH | CRITICAL
+  status        String    @default("PENDING")        // PENDING | APPROVED | REJECTED | EXPIRED | ESCALATED
+  requestedById String?
+  reviewedById  String?
+  reviewedAt    DateTime?
+  expiresAt     DateTime?
+  response      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  task  AIAgentTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  agent AIAgent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([status])
+  @@index([agentId])
+}
+
+model AIAgentAuditLog {
+  id             String   @id @default(uuid())
+  agentId        String
+  taskId         String?
+  action         String
+  tool           String?
+  inputSnapshot  Json?
+  outputSnapshot Json?
+  beforeState    Json?
+  afterState     Json?
+  riskLevel      String?
+  approvedById   String?
+  costUsd        Float?
+  tokensUsed     Int?
+  userId         String?
+  createdAt      DateTime @default(now())
+
+  agent AIAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+  @@index([createdAt])
+  @@index([action])
+}
+
+model AIAgentBudget {
+  id                String    @id @default(uuid())
+  agentId           String    @unique
+  monthlyLimitUsd   Float     @default(50)
+  spentThisMonthUsd Float     @default(0)
+  alertThreshold    Float     @default(0.8)
+  period            String    @default("monthly")
+  resetAt           DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  agent AIAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}
+
+model AIAgentKPI {
+  id         String   @id @default(uuid())
+  agentId    String
+  name       String
+  value      Float
+  target     Float
+  unit       String
+  period     String
+  measuredAt DateTime
+  createdAt  DateTime @default(now())
+
+  agent AIAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, name, period, measuredAt])
+  @@index([agentId])
+}
+
+model AIKnowledgeSource {
+  id          String   @id @default(uuid())
+  title       String
+  type        String                                        // POLICY | SOP | MANUAL | CONTRACT | FAQ | STRATEGY
+  content     String   @db.Text
+  sourceUrl   String?
+  department  String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AIProvider {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  displayName String
+  apiKey    String
+  baseUrl   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  models AIModel[]
+  usage  AIUsage[]
+}
+
+model AIModel {
+  id              String  @id @default(uuid())
+  providerId      String
+  modelId         String  @unique
+  displayName     String
+  inputCostPer1k  Float
+  outputCostPer1k Float
+  maxTokens       Int
+  isActive        Boolean @default(true)
+  createdAt       DateTime @default(now())
+
+  provider AIProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+}
+
+model AIUsage {
+  id           String   @id @default(uuid())
+  providerId   String
+  modelId      String
+  agentId      String?
+  taskId       String?
+  inputTokens  Int
+  outputTokens Int
+  costUsd      Float
+  latencyMs    Int
+  userId       String?
+  department   String?
+  createdAt    DateTime @default(now())
+
+  provider AIProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([agentId])
+  @@index([createdAt])
+}
+
+model AIAlert {
+  id           String    @id @default(uuid())
+  type         String                                        // BUDGET_EXCEEDED | AGENT_FAILURE | SECURITY_EVENT | HIGH_COST | ESCALATION
+  severity     String                                        // INFO | WARNING | CRITICAL
+  agentId      String?
+  message      String   @db.Text
+  isRead       Boolean   @default(false)
+  isResolved   Boolean   @default(false)
+  resolvedById String?
+  resolvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model AIAgentEvent {
+  id              String    @id @default(uuid())
+  eventType       String                                        // e.g. 'match.completed', 'invoice.overdue'
+  payload         Json
+  sourceAgentId   String?
+  status          String    @default("PENDING")                   // PENDING | PROCESSING | COMPLETED | FAILED
+  processedAt     DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([eventType])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AIAgentWorkflow {
+  id            String    @id @default(uuid())
+  name          String
+  description   String
+  steps         Json      @default("[]")
+  status        String    @default("DRAFT")                   // DRAFT | ACTIVE | PAUSED
+  triggerType   String                                        // MANUAL | SCHEDULED | EVENT
+  triggerConfig Json      @default("{}")
+  lastRunAt     DateTime?
+  createdById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
