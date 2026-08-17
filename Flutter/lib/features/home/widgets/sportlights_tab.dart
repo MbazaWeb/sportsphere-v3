@@ -1140,9 +1140,9 @@ class _PredictionBlockState extends ConsumerState<_PredictionBlock> {
         if (mounted) setState(() => _pred = PredictionData(
           homeTeam: result['homeTeam'] ?? _pred.homeTeam,
           awayTeam: result['awayTeam'] ?? _pred.awayTeam,
-          predictedHomeScore: result['predictedHomeScore'] ?? _pred.predictedHomeScore,
-          predictedAwayScore: result['predictedAwayScore'] ?? _pred.predictedAwayScore,
-          confidence: result['confidence'] ?? _pred.confidence,
+          predictedHome: result['predictedHomeScore'] ?? _pred.predictedHome,
+          predictedAway: result['predictedAwayScore'] ?? _pred.predictedAway,
+          confidence: result['confidence']?.toString() ?? _pred.confidence,
         ));
       } catch (_) {}
     }
@@ -1527,9 +1527,9 @@ class _EditPredictionSheetState extends State<_EditPredictionSheet> {
   @override
   void initState() {
     super.initState();
-    _homeScore = widget.pred.predictedHomeScore ?? 0;
-    _awayScore = widget.pred.predictedAwayScore ?? 0;
-    _confidence = (widget.pred.confidence ?? 70).toDouble();
+    _homeScore = widget.pred.predictedHome ?? 0;
+    _awayScore = widget.pred.predictedAway ?? 0;
+    _confidence = double.tryParse(widget.pred.confidence ?? "70") ?? 70.0;
   }
 
   @override

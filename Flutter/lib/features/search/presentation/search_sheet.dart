@@ -58,7 +58,7 @@ class _SearchSheetState extends ConsumerState<SearchSheet> {
     });
     try {
       final results = await Future.wait([
-        ref.read(socialApiProvider).searchUsers(q.trim(), role: _roleFilter, sport: _sportFilter),
+        ref.read(socialApiProvider).searchUsers(q.trim(), roleFilter: _roleFilter, sportFilter: _sportFilter),
         ref.read(socialApiProvider).searchPosts(q.trim()).then((list) => list.map((e) => Post.fromJson(Map<String, dynamic>.from(e as Map))).toList()),
       ]);
       if (!mounted) return;
