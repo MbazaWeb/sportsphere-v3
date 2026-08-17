@@ -47,9 +47,9 @@ class ProfileRoleRegistry {
     label: 'Fan',
     emoji: '👤',
     tabs: [
-      ProfileTabDef('overview',   'Overview'),
       ProfileTabDef('spotlights', 'Spotlights'),
       ProfileTabDef('community',  'Community'),
+      ProfileTabDef('overview',   'Overview'),
     ],
     statLabels: ['Posts', 'Fans', 'Following', 'Predictions'],
   );

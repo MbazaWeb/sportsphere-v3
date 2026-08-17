@@ -69,8 +69,7 @@ class _HomeTabState extends State<HomeTab> {
                 child: switch (_subTab) {
                   'following' => const FollowingTab(),
                   'trending' => const TrendingTab(),
-                  'predictions' => const PredictionsTab(),
-                  'polls' => const PollsTab(),
+                  'arena' => const _ArenaTab(),
                   _ => const SportlightsTab(),
                 },
               ),
@@ -78,6 +77,84 @@ class _HomeTabState extends State<HomeTab> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Arena tab — merges Predictions + Polls into one scrollable feed.
+class _ArenaTab extends StatefulWidget {
+  const _ArenaTab();
+  @override
+  State<_ArenaTab> createState() => _ArenaTabState();
+}
+
+class _ArenaTabState extends State<_ArenaTab> {
+  String _sub = 'predictions';
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            child: Row(
+              children: [
+                _ArenaSub('predictions', 'Predictions', _sub, (v) => setState(() => _sub = v)),
+                _ArenaSub('polls', 'Polls', _sub, (v) => setState(() => _sub = v)),
+              ],
+            ),
+          ),
+        ),
+        Expanded(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 150),
+            child: KeyedSubtree(
+              key: ValueKey(_sub),
+              child: _sub == 'polls' ? const PollsTab() : const PredictionsTab(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ArenaSub extends StatelessWidget {
+  const _ArenaSub(this.id, this.label, this.active, this.onTap);
+  final String id, label, active;
+  final ValueChanged<String> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = id == active;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onTap(id),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: isActive ? AppColors.primaryForeground : AppColors.mutedForeground,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

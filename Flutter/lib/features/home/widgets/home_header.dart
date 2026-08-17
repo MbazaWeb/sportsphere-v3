@@ -25,8 +25,7 @@ class HomeHeader extends StatelessWidget {
     ('for-you', 'Sportlights'),
     ('following', 'Following'),
     ('trending', 'Trending'),
-    ('predictions', 'Predictions'),
-    ('polls', 'Polls'),
+    ('arena', 'Arena'),
   ];
 
   @override
