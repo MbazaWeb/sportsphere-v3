@@ -5,6 +5,7 @@ import '../../../core/providers/app_providers.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
 import '../data/communities_api.dart';
+import 'community_feed_sheet.dart';
 
 import 'community_feed_page.dart';
 
