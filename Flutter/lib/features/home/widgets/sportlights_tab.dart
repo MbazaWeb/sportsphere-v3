@@ -906,7 +906,7 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
             ),
           ],
           if (post.poll != null) ...[const SizedBox(height: 10), _PollBlock(poll: post.poll!, postId: post.id)],
-          if (post.prediction != null) ...[const SizedBox(height: 10), _PredictionBlock(pred: post.prediction!)],
+          if (post.prediction != null) ...[const SizedBox(height: 10), _PredictionBlock(pred: post.prediction!, postId: post.id)],
           const SizedBox(height: 12),
           Row(
             children: [
@@ -1138,6 +1138,7 @@ class _PredictionBlockState extends ConsumerState<_PredictionBlock> {
         final api = ref.read(apiClientProvider);
         await api.postJson('/posts/\${widget.postId}/prediction', body: result);
         if (mounted) setState(() => _pred = PredictionData(
+          id: _pred.id,
           homeTeam: result['homeTeam'] ?? _pred.homeTeam,
           awayTeam: result['awayTeam'] ?? _pred.awayTeam,
           predictedHome: result['predictedHome'] ?? _pred.predictedHome,

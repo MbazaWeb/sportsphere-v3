@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import '../constants/api_config.dart';
 import '../errors/api_exception.dart';
@@ -97,6 +98,29 @@ class ApiClient {
         ? data['error'].toString()
         : 'Request failed (${res.statusCode})';
     throw ApiException(msg, statusCode: res.statusCode, body: data);
+  }
+
+  Future<dynamic> postMultipart(
+    String endpoint, {
+    required Uint8List bytes,
+    required String filename,
+    String field = 'file',
+  }) async {
+    final uri = Uri.parse(ApiConfig.path(endpoint));
+    final token = tokenProvider != null ? await tokenProvider!() : null;
+    final req = http.MultipartRequest('POST', uri)
+      ..fields[field] = ''
+      ..files.add(http.MultipartFile.fromBytes(
+        field,
+        bytes,
+        filename: filename,
+      ));
+    if (token != null && token.isNotEmpty) {
+      req.headers['Authorization'] = 'Bearer $token';
+    }
+    final streamRes = await req.send();
+    final res = await http.Response.fromStream(streamRes);
+    return _decode(res);
   }
 
   /// Lightweight connectivity check against GET /api/health

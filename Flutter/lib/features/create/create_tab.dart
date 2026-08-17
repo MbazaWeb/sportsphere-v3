@@ -75,6 +75,8 @@ class _CreateTabState extends ConsumerState<CreateTab> {
   bool _showTagInput = false;
   bool _showLocation = false;
   List<String> _detectedHashtags = [];
+  String? _communityId;
+  String? _communityName;
 
   @override
   void initState() {
@@ -867,27 +869,6 @@ class _CreateTabState extends ConsumerState<CreateTab> {
                           }),
                         ),
                         const SizedBox(width: 4),
-                        _Tool(
-                          icon: Icons.auto_graph_rounded,
-                          label: 'Analysis',
-                          active: _mode == _Mode.analysis,
-                          onTap: () {
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (_) => PostAnalysisSheet(
-                                onPost: (summary, stats) {
-                                  Navigator.pop(context);
-                                  setState(() {
-                                    _text.text = summary;
-                                    _mode = _Mode.post;
-                                  });
-                                },
-                              ),
-                            );
-                          },
-                        ),
                         const SizedBox(width: 4),
                         _Tool(
                           icon: Icons.groups_outlined,

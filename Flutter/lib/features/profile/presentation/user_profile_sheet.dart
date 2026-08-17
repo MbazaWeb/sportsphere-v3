@@ -648,6 +648,12 @@ class _TeamOverviewTabState extends ConsumerState<_TeamOverviewTab> {
     }
   }
 
+  void _openList(BuildContext ctx, String userId, String type, String title) {
+    Navigator.push(ctx, MaterialPageRoute(
+      builder: (_) => FansListPage(userId: userId, listType: type, title: title),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final u = widget.user;
