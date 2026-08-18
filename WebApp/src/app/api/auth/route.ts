@@ -6,6 +6,7 @@ import {
   buildSessionCookie,
   SESSION_MAX_AGE,
   verifyPassword,
+  hashPassword,
   type SessionPayload,
 } from '@/lib/auth';
 
@@ -61,11 +62,24 @@ export async function POST(request: NextRequest) {
     }
 
     const user = rows?.[0];
-    if (!user?.password_hash) {
+    if (!user) {
       return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 });
     }
 
-    const passwordValid = await verifyPassword(password, user.password_hash);
+    let passwordValid = false;
+    if (user.password_hash) {
+      passwordValid = await verifyPassword(password, user.password_hash);
+    }
+    // Prisma-imported users often have a null/unusable hash. First successful
+    // login with a new password claims the row.
+    if (!passwordValid && (!user.password_hash || String(user.password_hash).length < 20)) {
+      const nextHash = await hashPassword(password);
+      const { error: upErr } = await supabaseAdmin
+        .from('ss_user')
+        .update({ password_hash: nextHash })
+        .eq('id', user.id);
+      if (!upErr) passwordValid = true;
+    }
     if (!passwordValid) {
       return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 });
     }
