@@ -4,6 +4,2130 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-// ... remaining models from previous read ...
+model Role {
+  id           String     @id @default(uuid())
+  name         String     @unique
+  slug         String     @unique
+  description  String
+  icon         String     @default("👤")
+  category     String     @default("individual")
+  displayOrder Int        @default(0)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  types        RoleType[]
+  users        User[]     @relation("UserRole")
+}
+
+model RoleType {
+  id           String   @id @default(uuid())
+  roleId       String
+  name         String
+  slug         String
+  description  String?
+  requirements Json     @default("[]")
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  role         Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  users        User[]   @relation("UserRoleType")
+
+  @@unique([roleId, slug])
+  @@index([roleId])
+}
+
+model Sport {
+  id            String         @id @default(uuid())
+  name          String         @unique
+  slug          String         @unique
+  icon          String?
+  category      String?
+  sportType     String?
+  format        String?
+  contactType   String?
+  olympicStatus String?
+  description   String?
+  tags          Json           @default("[]")
+  isActive      Boolean        @default(true)
+  displayOrder  Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  Coach         Coach[]
+  League        League[]
+  MatchProfile  MatchProfile[]
+  NewsItem      NewsItem[]
+  Player        Player[]
+  Rumor         Rumor[]
+  Team          Team[]
+  userSports    UserSport[]
+  Business      Business[]
+}
+
+model UserSport {
+  id        String   @id @default(uuid())
+  userId    String
+  sportId   String
+  createdAt DateTime @default(now())
+  sport     Sport    @relation(fields: [sportId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sportId])
+  @@index([userId])
+  @@index([sportId])
+}
+
+model User {
+  id                       String                        @id @default(uuid())
+  name                     String
+  email                    String                        @unique
+  handle                   String                        @unique
+  passwordHash             String?
+  resetToken               String?
+  resetTokenExpiry         DateTime?
+  avatarUrl                String?
+  avatarInitials           String?
+  role                     String                        @default("fan")
+  verificationStatus       String                        @default("none")
+  isVerified               Boolean                       @default(false)
+  bio                      String?
+  location                 String?
+  coverGradient            String                        @default("from-emerald-600 to-emerald-900")
+  followerCount            Int                           @default(0)
+  fanCount                 Int                           @default(0)
+  followingCount           Int                           @default(0)
+  postCount                Int                           @default(0)
+  registeredAt             DateTime                      @default(now())
+  updatedAt                DateTime                      @updatedAt
+  lastSeenAt               DateTime                      @default(now())
+  aboutMe                  String?
+  city                     String?
+  countryOfOrigin          String?
+  coverUrl                 String?
+  currentCountry           String?
+  dateOfBirth              DateTime?
+  emailVerified            Boolean                       @default(false)
+  emailVerifyExpiry        DateTime?
+  emailVerifyToken         String?
+  fontSize                 String?                       @default("medium")
+  gender                   String?
+  highContrast             Boolean                       @default(false)
+  interests                Json                          @default("[]")
+  isPro                    Boolean                       @default(false)
+  nationality              String?
+  notifPrefs               Json                          @default("{}")
+  phone                    String?
+  preferences              Json                          @default("{}")
+  preferredLanguage        String?                       @default("en")
+  privacySettings          Json                          @default("{}")
+  proSince                 DateTime?
+  proTier                  String?
+  pronouns                 String?
+  reducedMotion            Boolean                       @default(false)
+  region                   String?
+  roleId                   String                        @default("fan-default-role")
+  roleProfile              Json                          @default("{}")
+  roleTypeId               String                        @default("fan-casual-type")
+  socialFacebook           String?
+  socialInstagram          String?
+  socialLinkedIn           String?
+  socialThreads            String?
+  socialTikTok             String?
+  socialX                  String?
+  socialYouTube            String?
+  theme                    String?                       @default("dark")
+  timezone                 String?
+  website                  String?
+  whatsapp                 String?
+  roleData                 Json                          @default("{}")
+  sportsFollowing          Json                          @default("[]")
+  isBanned                 Boolean                       @default(false)
+  bannedAt                 DateTime?
+  bannedReason             String?
+  academyProfile           AcademyProfile?
+  agentProfile             AgentProfile?
+  analystProfile           AnalystProfile?
+  businessProfile          BusinessProfile?
+  claimedTeams             Team[]                        @relation("TeamClaimedBy")
+  claimedPlayers           Player[]                      @relation("PlayerClaimedBy")
+  claimedCoaches           Coach[]                       @relation("CoachClaimedBy")
+  coachProfile             CoachProfile?
+  comments                 Comment[]
+  commentLikes             CommentLike[]
+  commentatorProfile       CommentatorProfile?
+  commercialPartnerProfile CommercialPartnerProfile?
+  createdCommunities       Community[]
+  communityMemberships     CommunityMember[]
+  communityProfile         CommunityProfile?
+  competitionProfile       CompetitionProfile?
+  creatorProfile           CreatorProfile?
+  sentFollows              Follow[]                      @relation("Follower")
+  receivedFollows          Follow[]                      @relation("Following")
+  journalistProfile        JournalistProfile?
+  leaderboardEntries       LeaderboardEntry[]
+  leagueProfile            LeagueProfile?
+  receivedMessages         Message[]                     @relation("MsgReceiver")
+  sentMessages             Message[]                     @relation("MsgSender")
+  actorNotifications       Notification[]                @relation("NotifActor")
+  notifications            Notification[]                @relation("NotifUser")
+  organizationProfile      OrganizationProfile?
+  performanceEvents        PerformanceEvent[]
+  pointTransactions        PerformancePointTransaction[]
+  performanceProfile       PerformanceProfile?
+  performanceSnapshots     PerformanceSnapshot[]
+  performanceVerifications PerformanceVerification[]
+  playerProfile            PlayerProfile?
+  posts                    Post[]
+  likes                    PostLike[]
+  predictions              Prediction[]
+  rankingHistory           RankingHistory[]
+  scoutProfile             ScoutProfile?
+  teamProfile              TeamProfile?
+  userRole                 Role                          @relation("UserRole", fields: [roleId], references: [id])
+  userRoleType             RoleType                      @relation("UserRoleType", fields: [roleTypeId], references: [id])
+  UserAdminRole            UserAdminRole[]
+  pushTokens               PushToken[]
+  favorites                UserFavorite[]                @relation("UserFavorites")
+  userSports               UserSport[]
+  venueProfile             VenueProfile?
+  verificationReqs         VerificationRequest[]
+
+  @@index([handle])
+  @@index([email])
+  @@index([role])
+  @@index([roleId])
+  @@index([resetToken])
+  @@index([emailVerifyToken])
+  @@index([isBanned])
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  /// fan = human supports team/player/coach; follow = peer social (user↔user or org↔org)
+  kind        String   @default("fan")
+  createdAt   DateTime @default(now())
+  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@index([kind])
+}
+
+model Post {
+  id           String      @id @default(uuid())
+  userId       String
+  content      String
+  postType     String      @default("post")
+  teamTag      String?
+  playerTag    String?
+  isBreaking   Boolean     @default(false)
+  likeCount    Int         @default(0)
+  commentCount Int         @default(0)
+  shareCount   Int         @default(0)
+  viewCount    Int         @default(0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  hashtags     Json        @default("[]")
+  location     String?
+  mediaUrls    Json        @default("[]")
+  comments     Comment[]
+  poll         Poll?
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes        PostLike[]
+  prediction   Prediction? @relation("PostPrediction")
+
+  @@index([userId])
+  @@index([createdAt(sort: Desc)])
+  @@index([postType])
+}
+
+model PostLike {
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([postId, userId])
+}
+
+model Comment {
+  id               String        @id @default(uuid())
+  postId           String
+  userId           String
+  content          String
+  likeCount        Int           @default(0)
+  createdAt        DateTime      @default(now())
+  parentId         String?
+  mentionedUserIds Json          @default("[]")
+  parent           Comment?      @relation("CommentReply", fields: [parentId], references: [id], onDelete: Cascade)
+  replies          Comment[]     @relation("CommentReply")
+  post             Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes            CommentLike[]
+
+  @@index([postId])
+  @@index([parentId])
+  @@index([userId])
+}
+
+model CommentLike {
+  commentId String
+  userId    String
+  createdAt DateTime @default(now())
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([commentId, userId])
+  @@index([userId])
+}
+
+model Poll {
+  id         String     @id @default(uuid())
+  postId     String     @unique
+  question   String
+  totalVotes Int        @default(0)
+  endsAt     DateTime?
+  createdAt  DateTime   @default(now())
+  options    Json       @default("[]")
+  post       Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  votes      PollVote[]
+}
+
+model PollVote {
+  id        String   @id @default(uuid())
+  pollId    String
+  userId    String
+  optionIdx Int
+  createdAt DateTime @default(now())
+  poll      Poll     @relation(fields: [pollId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, userId])
+}
+
+model Match {
+  id          String       @id @default(uuid())
+  league      String
+  homeTeam    String
+  awayTeam    String
+  homeScore   Int?
+  awayScore   Int?
+  status      String       @default("upcoming")
+  minute      Int?
+  venue       String?
+  kickoffAt   DateTime
+  continent   String       @default("Europe")
+  country     String       @default("England")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  events      Json         @default("[]")
+  predictions Prediction[]
+
+  @@index([status])
+  @@index([kickoffAt])
+  @@index([league])
+}
+
+model Prediction {
+  id            String   @id @default(uuid())
+  userId        String
+  matchId       String?
+  homeTeam      String
+  awayTeam      String
+  predictedHome Int?
+  predictedAway Int?
+  result        String?
+  isCorrect     Boolean?
+  pointsEarned  Int      @default(0)
+  createdAt     DateTime @default(now())
+  confidence    String?
+  postId        String?  @unique
+  match         Match?   @relation(fields: [matchId], references: [id])
+  post          Post?    @relation("PostPrediction", fields: [postId], references: [id])
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Community {
+  id          String            @id @default(uuid())
+  name        String
+  description String?
+  topic       String?
+  memberCount Int               @default(0)
+  createdById String?
+  createdAt   DateTime          @default(now())
+  createdBy   User?             @relation(fields: [createdById], references: [id])
+  members     CommunityMember[]
+}
+
+model CommunityMember {
+  communityId String
+  userId      String
+  role        String    @default("member")
+  joinedAt    DateTime  @default(now())
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([communityId, userId])
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  type        String
+  title       String
+  body        String?
+  isRead      Boolean  @default(false)
+  actorId     String?
+  referenceId String?
+  createdAt   DateTime @default(now())
+  actor       User?    @relation("NotifActor", fields: [actorId], references: [id])
+  user        User     @relation("NotifUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt(sort: Desc)])
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  senderId   String
+  receiverId String
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  receiver   User     @relation("MsgReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User     @relation("MsgSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+}
+
+model VerificationRequest {
+  id          String    @id @default(uuid())
+  userId      String
+  role        String
+  status      String    @default("pending")
+  adminNotes  String?
+  reviewedBy  String?
+  submittedAt DateTime  @default(now())
+  reviewedAt  DateTime?
+  roleId      String?
+  roleTypeId  String?
+  roleData    Json      @default("{}")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([roleId])
+}
+
+model LeaderboardEntry {
+  id                 String   @id @default(uuid())
+  userId             String
+  period             String   @default("monthly")
+  correctPredictions Int      @default(0)
+  totalPredictions   Int      @default(0)
+  points             Int      @default(0)
+  rank               Int      @default(0)
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, period])
+}
+
+model UserFavorite {
+  id           String             @id @default(uuid())
+  userId       String
+  targetType   FavoriteTargetType
+  targetId     String
+  targetName   String
+  targetHandle String?
+  createdAt    DateTime           @default(now())
+  user         User               @relation("UserFavorites", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetType, targetId])
+  @@index([userId])
+  @@index([targetType])
+  @@index([targetId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String
+  action     String
+  module     String
+  targetId   String?
+  targetType String?
+  oldValue   Json?    @default("{}")
+  newValue   Json?    @default("{}")
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([module])
+  @@index([action])
+  @@index([createdAt(sort: Desc)])
+}
+
+model PlayerProfile {
+  userId             String    @id
+  position           String?
+  secondaryPosition  String?
+  preferredFoot      String?
+  jerseyNumber       String?
+  height             Float?
+  weight             Float?
+  dateOfBirth        DateTime?
+  nationality        String?
+  playerType         String?
+  careerStatus       String?
+  appearances        Float?
+  starts             Float?
+  minutes            Float?
+  goals              Float?
+  assists            Float?
+  yellowCards        Float?
+  redCards           Float?
+  rating             Float?
+  motm               Float?
+  passAccuracy       Float?
+  chancesCreated     Float?
+  shots              Float?
+  shotsOnTarget      Float?
+  tackles            Float?
+  interceptions      Float?
+  duelsWon           Float?
+  aerialDuels        Float?
+  cleanSheets        Float?
+  saves              Float?
+  savePct            Float?
+  goalsConceded      Float?
+  penaltiesSaved     Float?
+  currentClub        String?
+  contractUntil      String?
+  contractStatus     String?
+  academy            String?
+  debutYear          String?
+  nationalTeam       String?
+  internationalCaps  Float?
+  internationalGoals Float?
+  transferHistory    String?
+  marketValue        String?
+  playingStyle       String?
+  strengths          String[]
+  weaknesses         String[]
+  injuryHistory      String?
+  form               String?
+  ranking            String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CoachProfile {
+  userId              String    @id
+  coachingRole        String?
+  currentTeam         String?
+  license             String?
+  licenseFederation   String?
+  nationality         String?
+  dateOfBirth         DateTime?
+  yearsCoaching       Float?
+  matchesManaged      Float?
+  wins                Float?
+  draws               Float?
+  losses              Float?
+  goalsFor            Float?
+  goalsAgainst        Float?
+  cleanSheets         Float?
+  pointsPerGame       Float?
+  trophiesWon         Float?
+  preferredFormation  String?
+  alternateFormations String[]
+  playingPhilosophy   String?
+  pressingStyle       String?
+  possessionStyle     String?
+  defensiveApproach   String?
+  buildUpStyle        String?
+  previousClubs       String?
+  nationalTeams       String?
+  academyExperience   String?
+  playingCareer       String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TeamProfile {
+  userId          String   @id
+  nickname        String?
+  foundedYear     String?
+  country         String?
+  city            String?
+  stadium         String?
+  capacity        Float?
+  league          String?
+  division        String?
+  coach           String?
+  owner           String?
+  colors          String?
+  matchesPlayed   Float?
+  wins            Float?
+  draws           Float?
+  losses          Float?
+  goalsFor        Float?
+  goalsAgainst    Float?
+  points          Float?
+  position        String?
+  form            String?
+  squad           String?
+  achievements    String?
+  historicPlayers String?
+  historicCoaches String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ScoutProfile {
+  userId                String   @id
+  scoutType             String?
+  organization          String?
+  geographicCoverage    String?
+  sportsCovered         String[]
+  yearsExperience       Float?
+  specialization        String?
+  playersDiscovered     Float?
+  playersRecommended    Float?
+  successfulSignings    Float?
+  countriesCovered      Float?
+  competitionsMonitored Float?
+  scoutingBoard         String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model JournalistProfile {
+  userId           String   @id
+  publication      String?
+  beat             String?
+  location         String?
+  yearsActive      Float?
+  languages        String[]
+  coverage         String[]
+  articleCount     Float?
+  exclusives       Float?
+  interviews       Float?
+  breakingNews     Float?
+  totalViews       String?
+  pressCredentials String?
+  articles         String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CreatorProfile {
+  userId           String   @id
+  creatorType      String?
+  platforms        String[]
+  niche            String?
+  audienceLocation String?
+  audienceAgeRange String?
+  audienceGender   String?
+  languages        String[]
+  followers        String?
+  engagementRate   Float?
+  avgViews         String?
+  reach            String?
+  postsPerWeek     Float?
+  topContent       String?
+  brandCollabs     String?
+  bookingEmail     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AnalystProfile {
+  userId           String   @id
+  analystType      String?
+  organization     String?
+  expertise        String[]
+  reportsPublished Float?
+  modelsCreated    Float?
+  teamsAnalyzed    Float?
+  playersAnalyzed  Float?
+  topModels        String?
+  predictions      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CommentatorProfile {
+  userId          String   @id
+  commentatorType String?
+  broadcaster     String?
+  languages       String[]
+  sports          String[]
+  yearsActive     Float?
+  matchesCovered  Float?
+  competitions    Float?
+  countries       Float?
+  majorEvents     String?
+  matchLog        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AgentProfile {
+  userId             String   @id
+  agentType          String?
+  agency             String?
+  license            String?
+  federation         String?
+  countries          String[]
+  playersRepresented Float?
+  coachesRepresented Float?
+  transfersCompleted Float?
+  totalTransferValue String?
+  activeNegotiations Float?
+  contractsManaged   Float?
+  clientRoster       String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model OrganizationProfile {
+  userId       String   @id
+  orgType      String?
+  country      String?
+  headquarters String?
+  foundedYear  String?
+  leadership   String?
+  departments  String?
+  affiliates   String?
+  competitions String?
+  programs     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CompetitionProfile {
+  userId          String   @id
+  competitionName String?
+  season          String?
+  organizer       String?
+  country         String?
+  level           String?
+  format          String?
+  participants    Float?
+  topScorer       String?
+  topAssists      String?
+  standings       String?
+  fixtures        String?
+  previousWinners String?
+  records         String?
+  bracket         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LeagueProfile {
+  userId                String   @id
+  leagueName            String?
+  country               String?
+  division              String?
+  organizer             String?
+  foundedYear           String?
+  currentSeason         String?
+  teams                 Float?
+  matchdays             Float?
+  topScorer             String?
+  topAssists            String?
+  avgGoals              Float?
+  avgAttendance         Float?
+  allTimeTopScorer      String?
+  allTimeTopAppearances String?
+  standings             String?
+  fixtures              String?
+  champions             String?
+  previousChampions     String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AcademyProfile {
+  userId           String   @id
+  academyName      String?
+  parentOrg        String?
+  location         String?
+  foundedYear      String?
+  director         String?
+  programs         String[]
+  curriculum       String?
+  playersDeveloped Float?
+  playersPromoted  Float?
+  proGraduates     Float?
+  scholarships     Float?
+  graduates        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VenueProfile {
+  userId         String   @id
+  venueName      String?
+  venueType      String?
+  location       String?
+  capacity       Float?
+  surface        String?
+  opened         String?
+  owner          String?
+  operator       String?
+  facilities     String[]
+  tenants        String?
+  upcomingEvents String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BusinessProfile {
+  userId          String    @id
+  companyName     String?
+  industry        String?
+  foundedYear     String?
+  headquarters    String?
+  website         String?
+  employees       Float?
+  products        String?
+  partnerTeams    String?
+  partnerAthletes String?
+  sponsorships    String?
+  campaigns       String?
+  businessId      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Business        Business? @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
+}
+
+model CommercialPartnerProfile {
+  userId                String   @id
+  partnerType           String?
+  brand                 String?
+  sportsCategory        String?
+  partnershipStatus     String?
+  foundedYear           String?
+  headquarters          String?
+  website               String?
+  sponsoredTeams        String?
+  sponsoredPlayers      String?
+  sponsoredCompetitions String?
+  sponsoredEvents       String?
+  activeCampaigns       String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CommunityProfile {
+  userId        String   @id
+  communityName String?
+  communityType String?
+  foundedYear   String?
+  location      String?
+  supportedTeam String?
+  description   String?
+  memberCount   Float?
+  activeMembers Float?
+  eventCount    Float?
+  postCount     Float?
+  events        String?
+  rules         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PerformanceProfile {
+  id                       String    @id @default(uuid())
+  userId                   String    @unique
+  performanceScore         Float     @default(0)
+  totalPoints              Int       @default(0)
+  tier                     String    @default("D")
+  formScore                Float     @default(0)
+  consistencyScore         Float     @default(0)
+  trendDirection           String    @default("stable")
+  trendDelta               Float     @default(0)
+  improvementScore         Float     @default(0)
+  rankGlobal               Int       @default(0)
+  rankCountry              Int       @default(0)
+  rankRegion               Int       @default(0)
+  rankCategory             Int       @default(0)
+  rankPosition             Int       @default(0)
+  rankCompetition          Int       @default(0)
+  rankForm                 Int       @default(0)
+  rankSeason               Int       @default(0)
+  rankCareer               Int       @default(0)
+  rankImprovement          Int       @default(0)
+  rankConsistency          Int       @default(0)
+  rankMovement             Int       @default(0)
+  categoryBucket           String    @default("")
+  position                 String?
+  playerType               String?
+  competitionTier          String?
+  ageGroup                 String?
+  nextMilestonePoints      Int       @default(0)
+  nextMilestoneRank        Int       @default(0)
+  pointsAheadOfNext        Int       @default(0)
+  pointsBehindNext         Int       @default(0)
+  dataConfidence           Float     @default(0)
+  decayStatus              String    @default("active")
+  decayPauseReason         String?
+  decayPausedUntil         DateTime?
+  lastEventAt              DateTime?
+  lastCalculatedAt         DateTime?
+  lastRankComputedAt       DateTime?
+  improvementOpportunities Json      @default("[]")
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  user                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tier])
+  @@index([totalPoints])
+  @@index([performanceScore])
+  @@index([categoryBucket])
+  @@index([position, playerType])
+}
+
+model KPIConfiguration {
+  id                       String             @id @default(uuid())
+  kpiKey                   String             @unique
+  label                    String
+  category                 String             @default("attacking")
+  appliesToRoles           String[]           @default([])
+  appliesToPositions       String[]           @default([])
+  positivePointsPerUnit    Float              @default(0)
+  negativePointsPerUnit    Float              @default(0)
+  maxContributionPerMatch  Float              @default(0)
+  maxContributionPerSeason Float              @default(0)
+  minValue                 Float              @default(0)
+  maxValue                 Float              @default(0)
+  isActive                 Boolean            @default(true)
+  description              String?
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
+  weights                  KPIWeight[]
+  events                   PerformanceEvent[]
+
+  @@index([category])
+  @@index([appliesToRoles])
+}
+
+model KPIWeight {
+  id                   String           @id @default(uuid())
+  kpiConfigId          String
+  scope                String           @default("position")
+  scopeValue           String
+  weightMultiplier     Float            @default(1.0)
+  difficultyMultiplier Float            @default(1.0)
+  isActive             Boolean          @default(true)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  kpiConfig            KPIConfiguration @relation(fields: [kpiConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([kpiConfigId, scope, scopeValue])
+  @@index([scope, scopeValue])
+}
+
+model PerformanceEvent {
+  id                 String                        @id @default(uuid())
+  userId             String
+  kpiConfigId        String?
+  eventType          String
+  value              Float                         @default(1)
+  matchId            String?
+  matchExternalRef   String?
+  competition        String?
+  competitionTier    String?
+  season             String?
+  opponentName       String?
+  opponentStrength   Float?
+  teamStrength       Float?
+  matchDate          DateTime
+  source             String                        @default("manual")
+  sourceUserId       String?
+  verificationStatus String                        @default("pending")
+  verifiedBy         String?
+  verifiedAt         DateTime?
+  rejectionReason    String?
+  pointsCalculated   Float                         @default(0)
+  notes              String?
+  createdAt          DateTime                      @default(now())
+  kpiConfig          KPIConfiguration?             @relation(fields: [kpiConfigId], references: [id])
+  user               User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pointTransactions  PerformancePointTransaction[]
+  verification       PerformanceVerification?
+
+  @@index([userId, matchDate])
+  @@index([verificationStatus])
+  @@index([eventType])
+  @@index([competition, season])
+}
+
+model PerformancePointTransaction {
+  id              String            @id @default(uuid())
+  userId          String
+  eventId         String?
+  transactionType String
+  amount          Float
+  balanceBefore   Int
+  balanceAfter    Int
+  reason          String
+  reasonCode      String
+  verified        Boolean           @default(false)
+  createdAt       DateTime          @default(now())
+  event           PerformanceEvent? @relation(fields: [eventId], references: [id])
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([transactionType])
+  @@index([reasonCode])
+}
+
+model PerformanceSnapshot {
+  id               String   @id @default(uuid())
+  userId           String
+  capturedAt       DateTime @default(now())
+  period           String   @default("daily")
+  performanceScore Float
+  totalPoints      Int
+  formScore        Float
+  consistencyScore Float
+  rankGlobal       Int      @default(0)
+  rankCategory     Int      @default(0)
+  tier             String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, capturedAt])
+  @@index([period])
+}
+
+model RankingCategory {
+  id               String           @id @default(uuid())
+  slug             String           @unique
+  label            String
+  dimension        String           @default("overall")
+  role             String           @default("player")
+  filters          Json             @default("{}")
+  isActive         Boolean          @default(true)
+  participantCount Int              @default(0)
+  lastComputedAt   DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  history          RankingHistory[]
+
+  @@index([dimension])
+  @@index([role])
+}
+
+model RankingHistory {
+  id                String          @id @default(uuid())
+  userId            String
+  categoryId        String
+  period            String
+  rank              Int
+  totalParticipants Int
+  points            Int
+  performanceScore  Float
+  capturedAt        DateTime        @default(now())
+  category          RankingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId, period])
+  @@index([categoryId, rank])
+  @@index([userId, capturedAt])
+}
+
+model PerformanceVerification {
+  id                 String           @id @default(uuid())
+  eventId            String           @unique
+  userId             String
+  verifierRole       String
+  verifierUserId     String?
+  verifierExternalId String?
+  status             String           @default("pending")
+  verificationMethod String           @default("manual")
+  evidence           Json             @default("{}")
+  notes              String?
+  reviewedAt         DateTime?
+  createdAt          DateTime         @default(now())
+  event              PerformanceEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([verifierRole])
+}
+
+model Location {
+  id           String     @id @default(uuid())
+  name         String
+  nameLower    String
+  type         String     @default("city")
+  parentId     String?
+  countryCode  String?
+  latitude     Float?
+  longitude    Float?
+  displayLabel String
+  searchTokens String[]   @default([])
+  population   Int?
+  isPopular    Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  parent       Location?  @relation("LocationTree", fields: [parentId], references: [id])
+  children     Location[] @relation("LocationTree")
+
+  @@unique([nameLower, parentId])
+  @@index([type])
+  @@index([parentId])
+  @@index([countryCode])
+  @@index([nameLower])
+  @@index([searchTokens], map: "Location_search_prefix", type: Gin)
+}
+
+model PerformanceAnomaly {
+  id              String    @id @default(uuid())
+  userId          String?
+  eventType       String?
+  matchId         String?
+  anomalyType     String
+  severity        String    @default("medium")
+  description     String
+  evidence        Json      @default("{}")
+  status          String    @default("open")
+  resolvedBy      String?
+  resolvedAt      DateTime?
+  resolutionNotes String?
+  createdAt       DateTime  @default(now())
+
+  @@index([status])
+  @@index([anomalyType])
+  @@index([userId])
+}
+
+model AIJobLog {
+  id             String    @id
+  jobType        String
+  status         String    @default("running")
+  triggeredBy    String    @default("manual")
+  itemsProcessed Int       @default(0)
+  itemsCreated   Int       @default(0)
+  itemsUpdated   Int       @default(0)
+  itemsFailed    Int       @default(0)
+  logMessage     String?
+  errorDetails   Json      @default("{}")
+  startedAt      DateTime  @default(now())
+  completedAt    DateTime?
+
+  @@index([jobType])
+  @@index([startedAt])
+  @@index([status])
+}
+
+model AdminRole {
+  id            String          @id
+  slug          String          @unique
+  name          String
+  tier          Int
+  module        String
+  description   String?
+  permissions   Json            @default("[]")
+  scopeLevel    String          @default("global")
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  UserAdminRole UserAdminRole[]
+
+  @@index([module])
+  @@index([tier])
+}
+
+model ClaimRequest {
+  id            String    @id
+  userId        String
+  profileType   String
+  profileId     String
+  profileName   String
+  leagueId      String?
+  teamId        String?
+  playerId      String?
+  coachId       String?
+  claimEmail    String?
+  claimPhone    String?
+  evidenceNotes String?
+  evidenceUrls  Json      @default("[]")
+  status        String    @default("pending")
+  reviewerId    String?
+  reviewNotes   String?
+  submittedAt   DateTime  @default(now())
+  reviewedAt    DateTime?
+  Coach         Coach?    @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  League        League?   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  Player        Player?   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  Team          Team?     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([profileType, profileId])
+  @@index([status])
+  @@index([submittedAt])
+  @@index([userId])
+}
+
+model Coach {
+  id           String         @id
+  teamId       String?
+  leagueId     String?
+  sportId      String?
+  name         String
+  slug         String         @unique
+  firstName    String?
+  lastName     String?
+  nationality  String?
+  countryCode  String?
+  photoUrl     String?
+  dateOfBirth  DateTime?
+  role         String         @default("head_coach")
+  externalId   String?
+  source       String?
+  verified     Boolean        @default(false)
+  createdByAI  Boolean        @default(false)
+  claimedById  String?
+  claimedAt    DateTime?
+  description  String?
+  metadata     Json           @default("{}")
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  ClaimRequest ClaimRequest[]
+  League       League?        @relation(fields: [leagueId], references: [id])
+  Sport        Sport?         @relation(fields: [sportId], references: [id])
+  Team          Team?           @relation(fields: [teamId], references: [id])
+  NewsItem      NewsItem[]
+  Rumor         Rumor[]
+  BusinessCoach BusinessCoach[]
+  claimedBy     User?           @relation("CoachClaimedBy", fields: [claimedById], references: [id])
+
+  @@index([createdByAI])
+  @@index([leagueId])
+  @@index([source, externalId])
+  @@index([sportId])
+  @@index([teamId])
+  @@index([verified])
+}
+
+model DelegationLog {
+  id            String   @id
+  actorId       String
+  targetUserId  String
+  action        String
+  adminRoleSlug String
+  reason        String?
+  regionCode    String?
+  languageCode  String?
+  createdAt     DateTime @default(now())
+
+  @@index([actorId])
+  @@index([createdAt(sort: Desc)])
+  @@index([targetUserId])
+}
+
+model League {
+  id           String         @id
+  sportId      String?
+  name         String
+  slug         String         @unique
+  country      String?
+  countryCode  String?
+  logoUrl      String?
+  type         String         @default("league")
+  season       String?
+  externalId   String?
+  source       String?
+  verified     Boolean        @default(false)
+  createdByAI  Boolean        @default(false)
+  claimedById  String?
+  claimedAt    DateTime?
+  description  String?
+  metadata     Json           @default("{}")
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  ClaimRequest ClaimRequest[]
+  Coach        Coach[]
+  Sport        Sport?         @relation(fields: [sportId], references: [id])
+  MatchProfile MatchProfile[]
+  NewsItem     NewsItem[]
+  Player       Player[]
+  Rumor        Rumor[]
+  Team         Team[]
+
+  @@index([country])
+  @@index([source, externalId])
+  @@index([sportId])
+}
+
+model MatchProfile {
+  id                                 String   @id
+  leagueId                           String?
+  sportId                            String?
+  homeTeamId                         String?
+  awayTeamId                         String?
+  homeTeamName                       String
+  awayTeamName                       String
+  homeScore                          Int?
+  awayScore                          Int?
+  status                             String   @default("upcoming")
+  minute                             Int?
+  period                             String?
+  venue                              String?
+  kickoffAt                          DateTime
+  events                             Json     @default("[]")
+  externalId                         String?
+  source                             String?
+  createdByAI                        Boolean  @default(false)
+  metadata                           Json     @default("{}")
+  createdAt                          DateTime @default(now())
+  updatedAt                          DateTime
+  Team_MatchProfile_awayTeamIdToTeam Team?    @relation("MatchProfile_awayTeamIdToTeam", fields: [awayTeamId], references: [id])
+  Team_MatchProfile_homeTeamIdToTeam Team?    @relation("MatchProfile_homeTeamIdToTeam", fields: [homeTeamId], references: [id])
+  League                             League?  @relation(fields: [leagueId], references: [id])
+  Sport                              Sport?   @relation(fields: [sportId], references: [id])
+
+  @@index([kickoffAt])
+  @@index([leagueId])
+  @@index([source, externalId])
+  @@index([sportId])
+  @@index([status])
+}
+
+model NewsItem {
+  id             String    @id
+  title          String
+  slug           String    @unique
+  body           String
+  summary        String?
+  imageUrl       String?
+  imageOwnerName String?
+  imageOwnerUrl  String?
+  category       String    @default("general")
+  tags           Json      @default("[]")
+  sportId        String?
+  leagueId       String?
+  teamId         String?
+  playerId       String?
+  coachId        String?
+  source         String    @default("manual")
+  externalUrl    String?
+  createdByAI    Boolean   @default(false)
+  aiJobId        String?
+  status         String    @default("draft")
+  publishedAt    DateTime?
+  authorId       String?
+  viewCount      Int       @default(0)
+  metadata       Json      @default("{}")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+  Coach          Coach?    @relation(fields: [coachId], references: [id])
+  League         League?   @relation(fields: [leagueId], references: [id])
+  Player         Player?   @relation(fields: [playerId], references: [id])
+  Sport          Sport?    @relation(fields: [sportId], references: [id])
+  Team           Team?     @relation(fields: [teamId], references: [id])
+
+  @@index([createdAt])
+  @@index([createdByAI])
+  @@index([leagueId])
+  @@index([playerId])
+  @@index([sportId])
+  @@index([status])
+  @@index([teamId])
+}
+
+model Player {
+  id           String         @id
+  teamId       String?
+  leagueId     String?
+  sportId      String?
+  name         String
+  slug         String         @unique
+  firstName    String?
+  lastName     String?
+  position     String?
+  nationality  String?
+  countryCode  String?
+  photoUrl     String?
+  dateOfBirth  DateTime?
+  heightCm     Int?
+  weightKg     Int?
+  shirtNumber  Int?
+  externalId   String?
+  source       String?
+  verified     Boolean        @default(false)
+  createdByAI  Boolean        @default(false)
+  claimedById  String?
+  claimedAt    DateTime?
+  description  String?
+  metadata     Json           @default("{}")
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  ClaimRequest ClaimRequest[]
+  NewsItem     NewsItem[]
+  League       League?        @relation(fields: [leagueId], references: [id])
+  Sport        Sport?         @relation(fields: [sportId], references: [id])
+  Team           Team?            @relation(fields: [teamId], references: [id])
+  Rumor          Rumor[]
+  BusinessPlayer BusinessPlayer[]
+  claimedBy      User?            @relation("PlayerClaimedBy", fields: [claimedById], references: [id])
+  PlayerTransfer PlayerTransfer[]
+
+  @@index([createdByAI])
+  @@index([leagueId])
+  @@index([name])
+  @@index([nationality])
+  @@index([source, externalId])
+  @@index([sportId])
+  @@index([teamId])
+  @@index([verified])
+}
+
+model Rumor {
+  id          String    @id
+  title       String
+  slug        String    @unique
+  body        String
+  source      String    @default("ai")
+  externalUrl String?
+  credibility Int       @default(50)
+  tags        Json      @default("[]")
+  sportId     String?
+  leagueId    String?
+  teamId      String?
+  playerId    String?
+  coachId     String?
+  createdByAI Boolean   @default(false)
+  aiJobId     String?
+  status      String    @default("draft")
+  publishedAt DateTime?
+  authorId    String?
+  metadata    Json      @default("{}")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  Coach       Coach?    @relation(fields: [coachId], references: [id])
+  League      League?   @relation(fields: [leagueId], references: [id])
+  Player      Player?   @relation(fields: [playerId], references: [id])
+  Sport       Sport?    @relation(fields: [sportId], references: [id])
+  Team        Team?     @relation(fields: [teamId], references: [id])
+
+  @@index([createdAt])
+  @@index([createdByAI])
+  @@index([playerId])
+  @@index([sportId])
+  @@index([status])
+  @@index([teamId])
+}
+
+model Team {
+  id                                         String         @id
+  leagueId                                   String?
+  sportId                                    String?
+  name                                       String
+  slug                                       String         @unique
+  shortName                                  String?
+  city                                       String?
+  country                                    String?
+  countryCode                                String?
+  logoUrl                                    String?
+  venue                                      String?
+  foundedYear                                Int?
+  externalId                                 String?
+  source                                     String?
+  verified                                   Boolean        @default(false)
+  createdByAI                                Boolean        @default(false)
+  claimedById                                String?
+  claimedAt                                  DateTime?
+  description                                String?
+  metadata                                   Json           @default("{}")
+  isActive                                   Boolean        @default(true)
+  createdAt                                  DateTime       @default(now())
+  updatedAt                                  DateTime
+  ClaimRequest                               ClaimRequest[]
+  Coach                                      Coach[]
+  MatchProfile_MatchProfile_awayTeamIdToTeam MatchProfile[] @relation("MatchProfile_awayTeamIdToTeam")
+  MatchProfile_MatchProfile_homeTeamIdToTeam MatchProfile[] @relation("MatchProfile_homeTeamIdToTeam")
+  NewsItem                                   NewsItem[]
+  Player                                     Player[]
+  Rumor                                      Rumor[]
+  League                                     League?        @relation(fields: [leagueId], references: [id])
+  Sport                                      Sport?         @relation(fields: [sportId], references: [id])
+  BusinessTeam                               BusinessTeam[]
+  claimedBy                                  User?          @relation("TeamClaimedBy", fields: [claimedById], references: [id])
+  transfersOut                               PlayerTransfer[] @relation("TransferFromTeam")
+  transfersIn                                PlayerTransfer[] @relation("TransferToTeam")
+
+  @@index([country])
+  @@index([createdByAI])
+  @@index([leagueId])
+  @@index([source, externalId])
+  @@index([sportId])
+  @@index([verified])
+}
+
+
+model PlayerTransfer {
+  id            String    @id @default(cuid())
+  playerId      String
+  fromTeamId    String?
+  toTeamId      String?
+  transferType  String    @default("permanent") // permanent | loan | free | loan_return
+  fee           String?
+  currency      String?   @default("EUR")
+  announcedAt   DateTime  @default(now())
+  effectiveAt   DateTime  @default(now())
+  window        String?   // summer | winter | mid-season | other
+  season        String?
+  contractUntil DateTime?
+  loanUntil     DateTime?
+  status        String    @default("completed") // pending | completed | cancelled | active_loan
+  notes         String?
+  createdById   String?
+  metadata      Json      @default("{}")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  Player        Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  FromTeam      Team?     @relation("TransferFromTeam", fields: [fromTeamId], references: [id])
+  ToTeam        Team?     @relation("TransferToTeam", fields: [toTeamId], references: [id])
+
+  @@index([playerId])
+  @@index([fromTeamId])
+  @@index([toTeamId])
+  @@index([status])
+  @@index([announcedAt])
+  @@index([transferType])
+}
+
+model UserAdminRole {
+  id            String    @id
+  userId        String
+  adminRoleSlug String
+  assignedById  String?
+  assignedAt    DateTime  @default(now())
+  revokedAt     DateTime?
+  isActive      Boolean   @default(true)
+  regionCode    String?
+  languageCode  String?
+  notes         String?
+  AdminRole     AdminRole @relation(fields: [adminRoleSlug], references: [slug], onDelete: Cascade)
+  User          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, adminRoleSlug])
+  @@index([adminRoleSlug])
+  @@index([isActive])
+  @@index([userId])
+}
+
+enum FavoriteTargetType {
+  TEAM
+  PLAYER
+  COACH
+  COMPETITION
+  LEAGUE
+  NATIONAL_TEAM
+  STADIUM
+  SPORT
+  POST
+}
+
+
+model PushToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  platform  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Business {
+  id          String   @id
+  name        String
+  slug        String   @unique
+  type        String   @default("brand")
+  website     String?
+  logoUrl     String?
+  country     String?
+  description String?
+  source      String?  @default("admin")
+  verified    Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  metadata    Json     @default("{}")
+  sportId     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  Sport       Sport?   @relation(fields: [sportId], references: [id])
+  teams       BusinessTeam[]
+  players     BusinessPlayer[]
+  coaches     BusinessCoach[]
+  profiles    BusinessProfile[]
+
+  @@index([type])
+  @@index([isActive])
+  @@index([name])
+  @@index([sportId])
+}
+
+
+model BusinessTeam {
+  id         String   @id
+  businessId String
+  teamId     String
+  role       String   @default("sponsor")
+  notes      String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  Business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  Team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, teamId, role])
+  @@index([teamId])
+  @@index([businessId])
+}
+
+model BusinessPlayer {
+  id         String   @id
+  businessId String
+  playerId   String
+  role       String   @default("endorsement")
+  notes      String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  Business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  Player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, playerId, role])
+  @@index([playerId])
+  @@index([businessId])
+}
+
+model BusinessCoach {
+  id         String   @id
+  businessId String
+  coachId    String
+  role       String   @default("partner")
+  notes      String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  Business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  Coach      Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, coachId, role])
+  @@index([coachId])
+  @@index([businessId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COMMERCIAL PARTNER SYSTEM — First-class sponsorship & brand partnership entity
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model CommercialPartner {
+  id            String   @id
+  name          String
+  slug          String   @unique
+  partnerType   String   @default("brand")          // title_sponsor | kit_sponsor | sleeve_sponsor | stadium_naming | broadcast_partner | digital_partner | community_partner | brand
+  industry      String?                               // Fintech | Telecom | Beverage | Automotive | Apparel | Betting | etc.
+  website       String?
+  logoUrl       String?
+  coverUrl      String?
+  country       String?
+  city          String?
+  description   String?                              // Rich text / markdown
+  contactName   String?                              // Primary contact person
+  contactEmail  String?
+  contactPhone  String?
+  contractStart DateTime?                           // Sponsorship period start
+  contractEnd   DateTime?                           // Sponsorship period end
+  contractValue Float?                              // Annual contract value (USD)
+  currency      String   @default("USD")
+  status        String   @default("pending")         // pending | active | expired | terminated | paused
+  tier          String   @default("bronze")          // platinum | gold | silver | bronze | community
+  isActive      Boolean  @default(true)
+  metadata      Json     @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  campaigns     SponsorCampaign[]
+  sponsorships  PartnerSponsorship[]
+  assets        BrandAsset[]
+  metricSnapshots PartnerMetricSnapshot[]
+
+  @@index([status])
+  @@index([partnerType])
+  @@index([tier])
+  @@index([isActive])
+  @@index([name])
+}
+
+model SponsorCampaign {
+  id             String   @id
+  partnerId      String
+  name           String
+  campaignType   String   @default("brand_awareness") // brand_awareness | product_launch | seasonal | event_specific | content_series
+  status         String   @default("draft")          // draft | active | paused | completed | cancelled
+  startDate      DateTime?
+  endDate        DateTime?
+  budget         Float?                              // Campaign budget
+  currency       String   @default("USD")
+  description    String?
+  objectives     String?                              // What the campaign aims to achieve
+  targetAudience String?                              // e.g. "18-35 football fans in East Africa"
+  creatives      Json     @default("[]")             // [{url, type, alt, width, height}]
+  totalImpressions  Int @default(0)
+  totalClicks      Int @default(0)
+  totalConversions Int @default(0)
+  totalEngagement   Int @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  Partner        CommercialPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  dailyMetrics   CampaignDailyMetric[]
+
+  @@index([partnerId])
+  @@index([status])
+  @@index([startDate])
+}
+
+model CampaignDailyMetric {
+  id          String   @id
+  campaignId  String
+  date        DateTime @db.Date
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  conversions Int      @default(0)
+  engagement  Int      @default(0)
+  spend       Float?   // Daily ad spend
+  createdAt   DateTime @default(now())
+
+  Campaign    SponsorCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, date])
+  @@index([campaignId])
+  @@index([date])
+}
+
+model PartnerSponsorship {
+  id               String   @id
+  partnerId        String
+  entityType       String                           // team | competition | athlete | event
+  entityId         String                           // FK to Team, Competition, Player, or MatchProfile
+  sponsorshipType  String   @default("sponsor")     // title | kit | sleeve | stadium | broadcast | digital | official_partner | supplier
+  startDate        DateTime?
+  endDate          DateTime?
+  value            Float?                           // Sponsorship deal value
+  currency         String   @default("USD")
+  isVisible        Boolean  @default(true)           // Show to fans
+  displayLabel     String?                           // e.g. "Official Title Sponsor" shown to fans
+  notes            String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  Partner          CommercialPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@unique([partnerId, entityType, entityId, sponsorshipType])
+  @@index([partnerId])
+  @@index([entityType, entityId])
+  @@index([isActive])
+  @@index([isVisible])
+}
+
+model BrandAsset {
+  id          String   @id
+  partnerId   String
+  assetType   String                           // logo | banner | brand_guidelines | sponsorship_mark | video | social_template | press_kit
+  url         String
+  mimeType    String?
+  fileSize    Int?                             // bytes
+  alt         String?
+  description String?
+  isPrimary   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  Partner     CommercialPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@index([partnerId])
+  @@index([assetType])
+  @@index([isPrimary])
+}
+
+model PartnerMetricSnapshot {
+  id          String   @id
+  partnerId   String
+  period      String                           // daily | weekly | monthly | quarterly | yearly
+  date        DateTime @db.Date
+  impressions BigInt   @default(0)
+  clicks      BigInt   @default(0)
+  conversions BigInt   @default(0)
+  engagement  BigInt   @default(0)
+  ctr         Float?                            // click-through rate %
+  spend       Float?
+  revenue     Float?
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  Partner     CommercialPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@unique([partnerId, period, date])
+  @@index([partnerId])
+  @@index([period])
+  @@index([date])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AI WORKFORCE — Agent Platform Models
+// ═══════════════════════════════════════════════════════════════
+
+model AIAgent {
+  id            String    @id @default(uuid())
+  name          String
+  department    String
+  role          String
+  description   String
+  systemPrompt  String    @db.Text
+  model         String    @default("gpt-4o-mini")
+  status        String    @default("ACTIVE")   // ACTIVE | PAUSED | DISABLED
+  autonomyLevel Int       @default(1)           // 0-4
+  supervisorId  String?
+  humanOwnerId  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  supervisor   AIAgent?            @relation("AgentSupervisor", fields: [supervisorId], references: [id])
+  subordinates AIAgent[]           @relation("AgentSupervisor")
+  tools        AIAgentTool[]
+  permissions  AIAgentPermission[]
+  tasks        AIAgentTask[]
+  executions   AIAgentExecution[]
+  approvals    AIAgentApproval[]
+  auditLogs    AIAgentAuditLog[]
+  budget       AIAgentBudget?
+  kpis         AIAgentKPI[]
+
+  @@index([department])
+  @@index([status])
+}
+
+model AIAgentTool {
+  id          String   @id @default(uuid())
+  agentId     String
+  toolName    String
+  description String
+  config      Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  agent AIAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+}
+
+model AIAgentPermission {
+  id         String   @id @default(uuid())
+  agentId    String
+  permission String   // e.g. 'sports.player.read'
+  createdAt  DateTime @default(now())
+
+  agent AIAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, permission])
+  @@index([agentId])
+}
+
+model AIAgentTask {
+  id               String    @id @default(uuid())
+  agentId          String
+  type             String
+  priority         String    @default("MEDIUM")      // LOW | MEDIUM | HIGH | CRITICAL
+  status           String    @default("QUEUED")      // QUEUED | RUNNING | WAITING_APPROVAL | BLOCKED | COMPLETED | FAILED | CANCELLED
+  input            Json      @default("{}")
+  result           Json?
+  errorMessage     String?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  costEstimate     Float?
+  tokensUsed       Int?
+  requiresApproval Boolean   @default(false)
+  approvedById     String?
+  approvedAt       DateTime?
+  createdById      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  agent      AIAgent            @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  executions AIAgentExecution[]
+  messages   AIAgentMessage[]
+  approvals  AIAgentApproval[]
+
+  @@index([agentId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AIAgentExecution {
+  id           String   @id @default(uuid())
+  taskId       String
+  agentId      String
+  model        String
+  inputTokens  Int
+  outputTokens Int
+  totalTokens  Int
+  costUsd      Float
+  latencyMs    Int
+  status       String                               // SUCCESS | FAILED | TIMEOUT
+  errorMessage String?
+  toolCalls    Json     @default("[]")
+  createdAt    DateTime @default(now())
+
+  task  AIAgentTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  agent AIAgent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([agentId])
+  @@index([createdAt])
+}
+
+model AIAgentMessage {
+  id         String   @id @default(uuid())
+  taskId     String
+  role       String                               // SYSTEM | USER | ASSISTANT | TOOL
+  content    String   @db.Text
+  toolName   String?
+  toolCallId String?
+  tokensUsed Int?
+  createdAt  DateTime @default(now())
+
+  task AIAgentTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([createdAt])
+}
+
+model AIAgentApproval {
+  id            String    @id @default(uuid())
+  taskId        String
+  agentId       String
+  action        String
+  description   String
+  riskLevel     String    @default("MEDIUM")        // LOW | MEDIUM | HIGH | CRITICAL
+  status        String    @default("PENDING")        // PENDING | APPROVED | REJECTED | EXPIRED | ESCALATED
+  requestedById String?
+  reviewedById  String?
+  reviewedAt    DateTime?
+  expiresAt     DateTime?
+  response      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  task  AIAgentTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  agent AIAgent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([status])
+  @@index([agentId])
+}
+
+model AIAgentAuditLog {
+  id             String   @id @default(uuid())
+  agentId        String
+  taskId         String?
+  action         String
+  tool           String?
+  inputSnapshot  Json?
+  outputSnapshot Json?
+  beforeState    Json?
+  afterState     Json?
+  riskLevel      String?
+  approvedById   String?
+  costUsd        Float?
+  tokensUsed     Int?
+  userId         String?
+  createdAt      DateTime @default(now())
+
+  agent AIAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+  @@index([createdAt])
+  @@index([action])
+}
+
+model AIAgentBudget {
+  id                String    @id @default(uuid())
+  agentId           String    @unique
+  monthlyLimitUsd   Float     @default(50)
+  spentThisMonthUsd Float     @default(0)
+  alertThreshold    Float     @default(0.8)
+  period            String    @default("monthly")
+  resetAt           DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  agent AIAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}
+
+model AIAgentKPI {
+  id         String   @id @default(uuid())
+  agentId    String
+  name       String
+  value      Float
+  target     Float
+  unit       String
+  period     String
+  measuredAt DateTime
+  createdAt  DateTime @default(now())
+
+  agent AIAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, name, period, measuredAt])
+  @@index([agentId])
+}
+
+model AIKnowledgeSource {
+  id          String   @id @default(uuid())
+  title       String
+  type        String                                        // POLICY | SOP | MANUAL | CONTRACT | FAQ | STRATEGY
+  content     String   @db.Text
+  sourceUrl   String?
+  department  String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AIProvider {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  displayName String
+  apiKey    String
+  baseUrl   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  models AIModel[]
+  usage  AIUsage[]
+}
+
+model AIModel {
+  id              String  @id @default(uuid())
+  providerId      String
+  modelId         String  @unique
+  displayName     String
+  inputCostPer1k  Float
+  outputCostPer1k Float
+  maxTokens       Int
+  isActive        Boolean @default(true)
+  createdAt       DateTime @default(now())
+
+  provider AIProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+}
+
+model AIUsage {
+  id           String   @id @default(uuid())
+  providerId   String
+  modelId      String
+  agentId      String?
+  taskId       String?
+  inputTokens  Int
+  outputTokens Int
+  costUsd      Float
+  latencyMs    Int
+  userId       String?
+  department   String?
+  createdAt    DateTime @default(now())
+
+  provider AIProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([agentId])
+  @@index([createdAt])
+}
+
+model AIAlert {
+  id           String    @id @default(uuid())
+  type         String                                        // BUDGET_EXCEEDED | AGENT_FAILURE | SECURITY_EVENT | HIGH_COST | ESCALATION
+  severity     String                                        // INFO | WARNING | CRITICAL
+  agentId      String?
+  message      String   @db.Text
+  isRead       Boolean   @default(false)
+  isResolved   Boolean   @default(false)
+  resolvedById String?
+  resolvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model AIAgentEvent {
+  id              String    @id @default(uuid())
+  eventType       String                                        // e.g. 'match.completed', 'invoice.overdue'
+  payload         Json
+  sourceAgentId   String?
+  status          String    @default("PENDING")                   // PENDING | PROCESSING | COMPLETED | FAILED
+  processedAt     DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([eventType])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AIAgentWorkflow {
+  id            String    @id @default(uuid())
+  name          String
+  description   String
+  steps         Json      @default("[]")
+  status        String    @default("DRAFT")                   // DRAFT | ACTIVE | PAUSED
+  triggerType   String                                        // MANUAL | SCHEDULED | EVENT
+  triggerConfig Json      @default("{}")
+  lastRunAt     DateTime?
+  createdById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
