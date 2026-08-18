@@ -8,12 +8,17 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const q = request.nextUrl.searchParams.get('q')?.trim();
+    const handle = request.nextUrl.searchParams.get('handle')?.trim();
     const role = request.nextUrl.searchParams.get('role');
     let query = supabaseAdmin
       .from('ss_user')
       .select('id,name,handle,role,avatar_url,avatar_initials,is_verified,bio')
       .limit(40);
     if (role) query = query.ilike('role', role);
+    if (handle) {
+      const h = handle.startsWith('@') ? handle : `@${handle}`;
+      query = query.or(`handle.eq."${h}",handle.ilike."${h}"`);
+    }
     if (q) query = query.or(`name.ilike."%${q}%",handle.ilike."%${q}%"`);
     const { data, error } = await query;
     if (error && !isMissingTable(error)) console.error('users', error);
