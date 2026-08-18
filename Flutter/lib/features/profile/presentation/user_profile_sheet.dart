@@ -123,21 +123,34 @@ class _UserProfileSheetState extends ConsumerState<UserProfileSheet> {
       final client = ref.read(apiClientProvider);
       Map<String, dynamic>? data;
 
-      if (widget.handle != null && widget.handle!.isNotEmpty) {
-        final h = widget.handle!.replaceFirst('@', '');
-        final raw = await client.getJson('/users?handle=${Uri.encodeComponent(h.startsWith('@') ? h : '@$h')}');
-        if (raw is Map && raw['error'] != null) {
-          final raw2 = await client.getJson('/users?handle=${Uri.encodeComponent(h)}');
-          data = raw2 is Map ? Map<String, dynamic>.from(raw2) : null;
-        } else if (raw is Map) {
-          data = Map<String, dynamic>.from(raw);
+      Map<String, dynamic>? pick(dynamic raw, {String? id, String? handle}) {
+        if (raw is Map && raw['error'] == null && raw['id'] != null) {
+          return Map<String, dynamic>.from(raw);
         }
-      } else if (widget.userId != null) {
-        final raw = await client.getJson('/users?q=${Uri.encodeComponent(widget.initialName ?? widget.userId!)}');
-        if (raw is List && raw.isNotEmpty) {
-          data = Map<String, dynamic>.from(raw.first as Map);
-        } else if (raw is Map) {
-          data = Map<String, dynamic>.from(raw);
+        if (raw is List) {
+          final h = (handle ?? '').replaceFirst('@', '').toLowerCase();
+          for (final e in raw.whereType<Map>()) {
+            final m = Map<String, dynamic>.from(e);
+            if (id != null && m['id']?.toString() == id) return m;
+            final mh = m['handle']?.toString().replaceFirst('@', '').toLowerCase() ?? '';
+            if (h.isNotEmpty && mh == h) return m;
+          }
+          if (raw.isNotEmpty && raw.first is Map) return Map<String, dynamic>.from(raw.first as Map);
+        }
+        return null;
+      }
+
+      if (widget.userId != null && widget.userId!.isNotEmpty) {
+        final raw = await client.getJson('/profile?id=${Uri.encodeComponent(widget.userId!)}');
+        data = pick(raw, id: widget.userId);
+      }
+      if (data == null && widget.handle != null && widget.handle!.isNotEmpty) {
+        final h = widget.handle!.replaceFirst('@', '');
+        final raw = await client.getJson('/profile?handle=${Uri.encodeComponent(h)}');
+        data = pick(raw, handle: h);
+        if (data == null) {
+          final raw2 = await client.getJson('/users?handle=${Uri.encodeComponent('@$h')}');
+          data = pick(raw2, handle: h);
         }
       }
 

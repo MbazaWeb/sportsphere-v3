@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
 
   const entities = [
     ...((teamsRes.data || []) as any[]).map((t) => ({
-      id: t.id, name: t.name, type: 'TEAM', logoUrl: t.logo_url, extra: [t.city, t.country].filter(Boolean).join(', '),
+      id: t.id, name: t.name, type: 'TEAM', handle: '@' + String(t.slug || t.name).toLowerCase().replace(/\s+/g, ''), logoUrl: t.logo_url, extra: [t.city, t.country].filter(Boolean).join(', '),
     })),
     ...((playersRes.data || []) as any[]).map((p) => ({
       id: p.id, name: p.name, type: 'PLAYER', logoUrl: p.photo_url, extra: p.position || '',
