@@ -67,6 +67,61 @@ function resolveMediaUrl(url: string): string {
   return url;
 }
 
+function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isAuthenticated: boolean; onRequireAuth: () => void }) {
+  const role = String(item.user?.role || '').toLowerCase();
+  const type = String(item.postType || '').toLowerCase();
+  async function act(action: string) {
+    if (!isAuthenticated) { onRequireAuth(); return; }
+    if (action === 'fan' || action === 'follow') {
+      await apiFetch('/api/follows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId: item.userId, action }),
+      });
+      return;
+    }
+  }
+  if (type === 'shop' || role === 'business') {
+    return (
+      <div className="mb-3 flex gap-2">
+        <button onClick={() => act('buy')} className="flex-1 rounded-xl bg-gold py-2.5 text-sm font-bold text-black">Buy Now</button>
+      </div>
+    );
+  }
+  if (type === 'media' || role === 'media') {
+    return (
+      <div className="mb-3 flex gap-2">
+        <button onClick={() => act('watch')} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white">Watch online</button>
+        <button onClick={() => act('buy')} className="flex-1 rounded-xl bg-gold py-2.5 text-sm font-bold text-black">Buy Now</button>
+      </div>
+    );
+  }
+  if (type === 'official' || role === 'official') {
+    return (
+      <div className="mb-3 flex gap-2">
+        <button onClick={() => act('fan')} className="flex-1 rounded-xl border border-surface-border py-2.5 text-sm font-bold text-white">Become Fan</button>
+        <button onClick={() => act('follow')} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white">Follow</button>
+      </div>
+    );
+  }
+  if (role === 'team' || role === 'player' || role === 'coach') {
+    return (
+      <div className="mb-3 flex gap-2">
+        <button onClick={() => act('fan')} className="flex-1 rounded-xl border border-surface-border py-2.5 text-sm font-bold text-white">Become Fan</button>
+        <button onClick={() => act('follow')} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white">Follow</button>
+      </div>
+    );
+  }
+  if (role === 'analyst' || type === 'prediction') {
+    return (
+      <div className="mb-3">
+        <button onClick={() => act('follow')} className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-bold text-white">Follow</button>
+      </div>
+    );
+  }
+  return null;
+}
+
 export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps) {
   const setViewingUser = useUIStore((s) => s.setViewingUser);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -349,7 +404,7 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
         })()}
 
         {/* Photo */}
-        {item.postType === 'photo' && (
+        {(['photo','shop','media','official','prediction'].includes(item.postType) || (item.mediaUrls && item.mediaUrls.length > 0 && item.postType !== 'video')) && (
           <div className="mb-3 overflow-hidden rounded-xl bg-surface-elevated">
             {item.mediaUrls && item.mediaUrls.length > 0 ? (
               <div className="relative">
@@ -432,6 +487,9 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
             onDeleted={() => setHidden(true)}
           />
         )}
+
+
+        <PostCtas item={item} isAuthenticated={isAuthenticated} onRequireAuth={() => setLoginModalOpen(true)} />
 
         {/* Action bar */}
         <div className="flex items-center justify-between pt-3 mt-1 border-t border-surface-border/60">

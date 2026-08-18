@@ -16,13 +16,13 @@ const ACCOUNTS = [
 ];
 
 const POSTS = [
-  { id: 'seed-ss-simba', user_id: 'ss-official-sportsphere', content: 'Nguvu Moja. We are Simba.', post_type: 'photo', media: [`${BASE}/ss-official-simba.jpg`] },
-  { id: 'seed-supersport-live', user_id: 'media-supersport', content: 'Every game. Every moment. LIVE — only on SuperSport.', post_type: 'photo', media: [`${BASE}/supersport-live.jpg`] },
-  { id: 'seed-azamsport-live', user_id: 'media-azamsport', content: 'Live the game. Love the passion.', post_type: 'photo', media: [`${BASE}/azamsport-live.jpg`] },
-  { id: 'seed-simba-jersey', user_id: 'ftz-simba', content: 'New Simba jersey 2026/27.', post_type: 'photo', media: [`${BASE}/simba-jersey.jpg`] },
-  { id: 'seed-tff-match', user_id: 'org-tff', content: 'Tanzania vs Kenya — Benjamin Mkapa Stadium.', post_type: 'photo', media: [`${BASE}/tff-match.jpg`] },
-  { id: 'seed-justfit', user_id: 'biz-justfit', content: 'Shouted for sport.', post_type: 'photo', media: [`${BASE}/justfit-shoe.jpg`] },
-  { id: 'seed-ali-derby', user_id: 'an-ali-kingu', content: 'Simba vs Young Africans. Prediction 1-1.', post_type: 'photo', media: [`${BASE}/ali-kingu-derby.jpg`] },
+  { id: 'seed-ss-simba', user_id: 'ss-official-sportsphere', content: 'Nguvu Moja. We are Simba.', post_type: 'official', media: [`${BASE}/ss-official-simba.jpg`] },
+  { id: 'seed-supersport-live', user_id: 'media-supersport', content: 'Every game. Every moment. LIVE — only on SuperSport.', post_type: 'media', media: [`${BASE}/supersport-live.jpg`] },
+  { id: 'seed-azamsport-live', user_id: 'media-azamsport', content: 'Live the game. Love the passion.', post_type: 'media', media: [`${BASE}/azamsport-live.jpg`] },
+  { id: 'seed-simba-jersey', user_id: 'ftz-simba', content: 'New Simba jersey 2026/27.', post_type: 'shop', media: [`${BASE}/simba-jersey.jpg`] },
+  { id: 'seed-tff-match', user_id: 'org-tff', content: 'Tanzania vs Kenya — Benjamin Mkapa Stadium.', post_type: 'official', media: [`${BASE}/tff-match.jpg`] },
+  { id: 'seed-justfit', user_id: 'biz-justfit', content: 'Shouted for sport.', post_type: 'shop', media: [`${BASE}/justfit-shoe.jpg`] },
+  { id: 'seed-ali-derby', user_id: 'an-ali-kingu', content: 'Simba vs Young Africans. Prediction 1-1.', post_type: 'prediction', media: [`${BASE}/ali-kingu-derby.jpg`] },
 ];
 
 async function upsertUser(a: typeof ACCOUNTS[0]) {
