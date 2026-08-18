@@ -66,14 +66,14 @@ async function main() {
   await migrate('posts', () => prisma.post.findMany({
     select: {
       id:true, userId:true, content:true, postType:true, mediaUrls:true,
-      communityId:true, likeCount:true, commentCount:true, shareCount:true,
+      likeCount:true, commentCount:true, shareCount:true,
       isBreaking:true, sportTag:true, teamTag:true, playerTag:true,
       createdAt:true, updatedAt:true,
     }
   }), 'ss_post', (p) => ({
     id: p.id, user_id: p.userId, content: p.content || '',
     post_type: p.postType, media_urls: JSON.stringify(p.mediaUrls || []),
-    community_id: p.communityId, like_count: p.likeCount,
+    like_count: p.likeCount,
     comment_count: p.commentCount, share_count: p.shareCount,
     is_breaking: p.isBreaking, sport_tag: p.sportTag,
     team_tag: p.teamTag, player_tag: p.playerTag,
@@ -81,7 +81,8 @@ async function main() {
   }));
 
   await migrate('post_likes', () => prisma.postLike.findMany(), 'ss_post_like', (l) => ({
-    id: l.id, post_id: l.postId, user_id: l.userId, created_at: dt(l.createdAt),
+    id: `${l.postId}-${l.userId}`,
+    post_id: l.postId, user_id: l.userId, created_at: dt(l.createdAt),
   }));
 
   await migrate('comments', () => prisma.comment.findMany(), 'ss_comment', (c) => ({
@@ -154,11 +155,11 @@ async function main() {
     created_at: dt(p.createdAt), updated_at: dt(p.updatedAt),
   }));
 
-  await migrate('matches', () => prisma.match.findMany(), 'ss_match', (m) => ({
-    id: m.id, league: m.league, home_team: m.homeTeam || '',
-    away_team: m.awayTeam || '', home_score: m.homeScore,
+  await migrate('matches', () => prisma.matchProfile.findMany(), 'ss_match', (m) => ({
+    id: m.id, league: m.leagueId, home_team: m.homeTeamName || '',
+    away_team: m.awayTeamName || '', home_score: m.homeScore,
     away_score: m.awayScore, status: m.status || 'upcoming',
-    minute: m.minute, kickoff_at: dt(m.kickoffAt),
+    minute: m.minute, venue: m.venue,
     events: JSON.stringify(m.events || []),
     created_at: dt(m.createdAt), updated_at: dt(m.updatedAt),
   }));
