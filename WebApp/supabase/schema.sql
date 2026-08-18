@@ -646,9 +646,9 @@ INSERT INTO storage.buckets (id, name, public) VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies
-CREATE POLICY IF NOT EXISTS "avatars_public_read" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
-CREATE POLICY IF NOT EXISTS "avatars_auth_upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.uid() IS NOT NULL);
-CREATE POLICY IF NOT EXISTS "posts_public_read"   ON storage.objects FOR SELECT USING (bucket_id = 'posts');
-CREATE POLICY IF NOT EXISTS "posts_auth_upload"   ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'posts' AND auth.uid() IS NOT NULL);
-CREATE POLICY IF NOT EXISTS "covers_public_read"  ON storage.objects FOR SELECT USING (bucket_id = 'covers');
-CREATE POLICY IF NOT EXISTS "covers_auth_upload"  ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'covers' AND auth.uid() IS NOT NULL);
+CREATE POLICY "avatars_public_read" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
+CREATE POLICY "avatars_auth_upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.uid() IS NOT NULL);
+CREATE POLICY "posts_public_read"   ON storage.objects FOR SELECT USING (bucket_id = 'posts');
+CREATE POLICY "posts_auth_upload"   ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'posts' AND auth.uid() IS NOT NULL);
+CREATE POLICY "covers_public_read"  ON storage.objects FOR SELECT USING (bucket_id = 'covers');
+CREATE POLICY "covers_auth_upload"  ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'covers' AND auth.uid() IS NOT NULL);
