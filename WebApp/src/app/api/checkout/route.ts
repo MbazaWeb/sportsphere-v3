@@ -18,12 +18,18 @@ export async function POST(request: NextRequest) {
     user_id: userId,
     items: JSON.stringify(items),
     total,
-    status: method === 'cod' ? 'pending_cod' : 'pending_payment',
+    status: method === 'cod' ? 'pending_cod' : 'paid_mock',
     currency: 'TZS',
     payment_method: method,
     phone,
   };
   const { data, error } = await supabaseAdmin.from('ss_order').insert(row).select('id,status,total').maybeSingle();
   if (error) return NextResponse.json({ id: row.id, status: row.status, total, warning: error.message });
-  return NextResponse.json({ id: data?.id || row.id, status: data?.status || row.status, total }, { status: 201 });
+  return NextResponse.json({
+    id: data?.id || row.id,
+    status: row.status,
+    total,
+    mock: true,
+    message: method === 'cod' ? 'Pay when the item arrives.' : 'Mock payment approved.',
+  }, { status: 201 });
 }

@@ -90,7 +90,7 @@ export function CartDrawer() {
                     });
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error || 'Checkout failed');
-                    setDone(method === 'cod' ? 'Order placed. Pay on delivery.' : 'Order placed. Complete payment on your phone.');
+                    setDone(data.message || (method === 'cod' ? 'Order placed. Pay on delivery.' : 'Mock payment approved.'));
                     clear();
                   } catch (e: any) {
                     alert(e.message);
