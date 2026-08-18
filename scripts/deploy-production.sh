@@ -20,7 +20,11 @@ DB_PASS="SS_Secure_2024!"
 VPS_IP="104.152.50.173"
 DOMAIN="sportssphere.fun"
 
-# ─── Pre-flight: persistent SESSION_SECRET ───────────────────────
+# ─── Pre-flight: persistent secrets ───────────────────────────────
+# SESSION_SECRET  → signs JWT session cookies (fan app)
+# WS_AUTH_SECRET  → shared secret for Socket.IO register_user auth
+# Both must persist across restarts so existing sessions / registrations
+# don't get invalidated on every deploy.
 SECRET_FILE="$APP_DIR/.session-secret"
 if [ ! -f "$SECRET_FILE" ]; then
   echo "[pre] Generating persistent SESSION_SECRET..."
@@ -30,6 +34,45 @@ if [ ! -f "$SECRET_FILE" ]; then
   sudo chown $USER:$USER "$SECRET_FILE"
 fi
 SESSION_SECRET=$(sudo cat "$SECRET_FILE")
+
+WS_SECRET_FILE="$APP_DIR/.ws-auth-secret"
+if [ ! -f "$WS_SECRET_FILE" ]; then
+  echo "[pre] Generating persistent WS_AUTH_SECRET..."
+  openssl rand -hex 32 > /tmp/ws-secret-tmp
+  sudo mv /tmp/ws-secret-tmp "$WS_SECRET_FILE"
+  sudo chmod 600 "$WS_SECRET_FILE"
+  sudo chown $USER:$USER "$WS_SECRET_FILE"
+fi
+WS_AUTH_SECRET=$(sudo cat "$WS_SECRET_FILE")
+
+# ─── Supabase credentials (read from existing .env if present) ──
+# Supply via env vars on first deploy; thereafter the script preserves
+# the values already on disk so you don't have to re-supply them.
+#   SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=... bash deploy-production.sh
+EXISTING_ROOT_ENV="$APP_DIR/.env"
+read_env_value() {
+  # $1 = file, $2 = key. Prints value (unquoted) or empty.
+  [ -f "$1" ] || return 0
+  sudo grep -E "^${2}=" "$1" 2>/dev/null | head -1 | sed -E "s/^${2}=//; s/^\"([^\"]*)\"$/\1/; s/^'([^']*)'$/\1/"
+}
+SUPABASE_URL="${SUPABASE_URL:-$(read_env_value "$EXISTING_ROOT_ENV" NEXT_PUBLIC_SUPABASE_URL)}"
+SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-$(read_env_value "$EXISTING_ROOT_ENV" NEXT_PUBLIC_SUPABASE_ANON_KEY)}"
+SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-$(read_env_value "$EXISTING_ROOT_ENV" SUPABASE_SERVICE_ROLE_KEY)}"
+
+if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+  echo "================================================================"
+  echo "  ⚠  Supabase credentials NOT found."
+  echo "  ⚠  The WebApp's Prisma-shaped Supabase adapter will fall back to"
+  echo "  ⚠  'https://invalid.supabase.co' and ALL DB queries will fail."
+  echo "  ⚠  Supply via env vars on first deploy:"
+  echo "  ⚠    SUPABASE_URL=https://xxxx.supabase.co \\\
+  ⚠    SUPABASE_ANON_KEY=eyJ... \\\
+  ⚠    SUPABASE_SERVICE_ROLE_KEY=eyJ... \\\
+  ⚠    bash scripts/deploy-production.sh"
+  echo "================================================================"
+else
+  echo "[pre] Supabase URL: ${SUPABASE_URL}"
+fi
 
 echo "======================================"
 echo "  SportSphere VPS Deploy — Port $PORT"
@@ -68,7 +111,18 @@ fi
 echo "[2/9] Writing environment files..."
 DATABASE_URL="postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}"
 
-# Root .env (used by Prisma / shared tools)
+# Build optional Supabase block. If creds are missing, write empty
+# strings — the WebApp's supabase.ts will fall back gracefully and
+# print a warning, instead of crashing the build.
+SUPABASE_BLOCK=""
+if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_ANON_KEY" ] && [ -n "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+  SUPABASE_BLOCK="NEXT_PUBLIC_SUPABASE_URL=\"${SUPABASE_URL}\"
+NEXT_PUBLIC_SUPABASE_ANON_KEY=\"${SUPABASE_ANON_KEY}\"
+SUPABASE_SERVICE_ROLE_KEY=\"${SUPABASE_SERVICE_ROLE_KEY}\""
+fi
+
+# Root .env (used by Prisma / shared tools / sportsphere-ws PM2 process).
+# ws-server.mjs loads this file at boot — see ws-server.mjs loadEnvFile().
 cat > "$APP_DIR/.env" << ENV
 NODE_ENV=production
 DATABASE_URL="${DATABASE_URL}"
@@ -79,6 +133,13 @@ NEXT_PUBLIC_BASE_URL=https://${DOMAIN}/sportsphere
 NEXT_PUBLIC_APP_NAME=SportSphere
 PORT=${PORT}
 CRON_SECRET="sportsphere-sync-key-2026"
+
+# Socket.IO server (sportsphere-ws PM2 process, scripts/ws-server.mjs)
+WS_AUTH_SECRET="${WS_AUTH_SECRET}"
+WS_PORT=3004
+WS_INTERNAL_PORT=3005
+WS_ALLOWED_ORIGINS="https://${DOMAIN},https://www.${DOMAIN},https://sportsphere.app,https://www.sportsphere.app,http://localhost:3000,http://localhost:3002,http://127.0.0.1:3000,http://127.0.0.1:3002"
+${SUPABASE_BLOCK}
 ENV
 
 # WebApp .env (Next.js reads this from its own directory)
@@ -93,6 +154,19 @@ NEXT_PUBLIC_APP_NAME=SportSphere
 NEXT_PUBLIC_BASE_PATH=/sportsphere
 PORT=${PORT}
 CRON_SECRET="sportsphere-sync-key-2026"
+
+# Socket.IO client (baked at BUILD time — rebuild after changing)
+NEXT_PUBLIC_SOCKET_URL="https://${DOMAIN}"
+NEXT_PUBLIC_SOCKET_ENABLED="true"
+NEXT_PUBLIC_SOCKET_RECONNECT_ATTEMPTS=5
+NEXT_PUBLIC_SOCKET_RECONNECT_DELAY=1000
+NEXT_PUBLIC_SOCKET_RECONNECT_DELAY_MAX=15000
+NEXT_PUBLIC_SOCKET_TIMEOUT=20000
+# Server-side copy of WS_AUTH_SECRET so the WebApp's server code can sign
+# internal emit requests to ws-server.mjs's internal API on 127.0.0.1:3005.
+WS_AUTH_SECRET="${WS_AUTH_SECRET}"
+WS_INTERNAL_PORT=3005
+${SUPABASE_BLOCK}
 ENV
 
 # Admin App .env
@@ -102,6 +176,7 @@ ADMIN_JWT_SECRET="${SESSION_SECRET}"
 NEXT_PUBLIC_ADMIN_URL=https://${DOMAIN}/sportsphere-admin
 NEXT_PUBLIC_MAIN_APP_URL=https://${DOMAIN}/sportsphere
 PORT=3003
+${SUPABASE_BLOCK}
 ENV
 
 export DATABASE_URL="$DATABASE_URL"
@@ -121,11 +196,22 @@ SQL
 sudo -u postgres psql -d "${DB_NAME}" -c "GRANT ALL ON SCHEMA public TO ${DB_USER};" || true
 
 # ─── 4. Install dependencies ────────────────────────────────────
-echo "[4a/9] npm install (WebApp)..."
+# 4a: repo root — REQUIRED for the 'sportsphere-ws' PM2 process. Without
+# this, `node scripts/ws-server.mjs` crashes with 'Cannot find package
+# socket.io' and the browser sees wss://.../?EIO=4&transport=websocket
+echo "[4a/9] npm install (repo root — socket.io for ws-server)..."
+cd "$APP_DIR"
+npm install --legacy-peer-deps --no-audit --no-fund
+
+# Smoke test: confirm socket.io resolves from the repo root before we
+# continue — fail fast if it doesn't (e.g. registry/lock issues).
+node --input-type=module -e 'import("socket.io").then(m => console.log("  ✓ socket.io resolves, Server =", typeof m.Server)).catch(e => { console.error("  ✗ socket.io resolve failed:", e.message); process.exit(1); })'
+
+echo "[4b/9] npm install (WebApp)..."
 cd "$WEBAPP_DIR"
 npm install --legacy-peer-deps
 
-echo "[4b/9] npm install (Admin)..."
+echo "[4c/9] npm install (Admin)..."
 cd "$ADMIN_DIR"
 npm install --legacy-peer-deps
 

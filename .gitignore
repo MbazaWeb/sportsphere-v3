@@ -66,6 +66,7 @@ skills/
 # Tool result artifacts
 tool-results/
 .session-secret
+.ws-auth-secret
 backup_*.sql
 secrets/
 
