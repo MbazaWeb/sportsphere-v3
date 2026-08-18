@@ -58,22 +58,40 @@ function buildSelect(select?: SelectClause): string {
   return cols.length ? cols.join(',') : '*';
 }
 
+function scalarFilter(val: any): { op: string; value: any; insensitive: boolean } | null {
+  if (val == null || typeof val !== 'object' || Array.isArray(val)) {
+    return { op: 'eq', value: val, insensitive: false };
+  }
+  const insensitive = val.mode === 'insensitive';
+  if ('equals' in val) return { op: 'eq', value: val.equals, insensitive };
+  if ('contains' in val) return { op: 'contains', value: val.contains, insensitive: true };
+  if ('startsWith' in val) return { op: 'startsWith', value: val.startsWith, insensitive: true };
+  if ('in' in val) return { op: 'in', value: val.in, insensitive };
+  if ('notIn' in val) return { op: 'notIn', value: val.notIn, insensitive };
+  if ('gt' in val) return { op: 'gt', value: val.gt, insensitive };
+  if ('gte' in val) return { op: 'gte', value: val.gte, insensitive };
+  if ('lt' in val) return { op: 'lt', value: val.lt, insensitive };
+  if ('lte' in val) return { op: 'lte', value: val.lte, insensitive };
+  if ('not' in val) return { op: 'neq', value: val.not, insensitive };
+  if ('mode' in val) return null;
+  return { op: 'eq', value: val, insensitive };
+}
+
 function applyWhere(query: any, where?: WhereClause): any {
   if (!where) return query;
   const w = keysToSnake(where);
 
   if (Array.isArray(w.OR)) {
-    // PostgREST or() — simple equality / ilike only
     const parts: string[] = [];
     for (const clause of w.OR) {
       for (const [key, val] of Object.entries(clause)) {
-        if (val && typeof val === 'object' && 'contains' in (val as any)) {
-          parts.push(`${key}.ilike.%${(val as any).contains}%`);
-        } else if (val && typeof val === 'object' && 'in' in (val as any)) {
-          parts.push(`${key}.in.(${(val as any).in.join(',')})`);
-        } else {
-          parts.push(`${key}.eq.${val}`);
-        }
+        const f = scalarFilter(val);
+        if (!f) continue;
+        if (f.op === 'contains') parts.push(`${key}.ilike.%${f.value}%`);
+        else if (f.op === 'startsWith') parts.push(`${key}.ilike.${f.value}%`);
+        else if (f.op === 'in') parts.push(`${key}.in.(${(f.value || []).join(',')})`);
+        else if (f.insensitive && f.op === 'eq') parts.push(`${key}.ilike.${f.value}`);
+        else parts.push(`${key}.eq.${f.value}`);
       }
     }
     if (parts.length) query = query.or(parts.join(','));
@@ -83,21 +101,21 @@ function applyWhere(query: any, where?: WhereClause): any {
     if (key === 'OR' || key === 'AND' || key === 'NOT') continue;
     if (val === null) {
       query = query.is(key, null);
-    } else if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
-      if ('in' in val) query = query.in(key, val.in);
-      else if ('notIn' in val) query = query.not(key, 'in', `(${val.notIn.join(',')})`);
-      else if ('contains' in val) query = query.ilike(key, `%${val.contains}%`);
-      else if ('startsWith' in val) query = query.ilike(key, `${val.startsWith}%`);
-      else if ('mode' in val) continue;
-      else if ('gt' in val) query = query.gt(key, val.gt);
-      else if ('gte' in val) query = query.gte(key, val.gte);
-      else if ('lt' in val) query = query.lt(key, val.lt);
-      else if ('lte' in val) query = query.lte(key, val.lte);
-      else if ('not' in val) query = query.neq(key, val.not);
-      else query = query.eq(key, val);
-    } else {
-      query = query.eq(key, val);
+      continue;
     }
+    const f = scalarFilter(val);
+    if (!f) continue;
+    if (f.op === 'in') query = query.in(key, f.value);
+    else if (f.op === 'notIn') query = query.not(key, 'in', `(${f.value.join(',')})`);
+    else if (f.op === 'contains') query = query.ilike(key, `%${f.value}%`);
+    else if (f.op === 'startsWith') query = query.ilike(key, `${f.value}%`);
+    else if (f.op === 'gt') query = query.gt(key, f.value);
+    else if (f.op === 'gte') query = query.gte(key, f.value);
+    else if (f.op === 'lt') query = query.lt(key, f.value);
+    else if (f.op === 'lte') query = query.lte(key, f.value);
+    else if (f.op === 'neq') query = query.neq(key, f.value);
+    else if (f.insensitive) query = query.ilike(key, f.value);
+    else query = query.eq(key, f.value);
   }
   return query;
 }
