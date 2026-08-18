@@ -58,8 +58,7 @@ async function uploadToGCS(fileName: string, buffer: Buffer, contentType: string
 /** Resolve the public/uploads directory */
 function resolveUploadDir(): string {
   if (process.env.UPLOAD_DIR) return process.env.UPLOAD_DIR;
-  const srcDir = path.resolve(__dirname, '..', '..', '..', '..');
-  return path.join(srcDir, 'public', 'uploads');
+  return path.join(process.cwd(), 'public', 'uploads');
 }
 
 /** Stream file to disk using Node.js write stream (avoids OOM on large videos) */
