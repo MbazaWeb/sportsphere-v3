@@ -585,6 +585,8 @@ class _RoleTabBody extends StatelessWidget {
       case 'fixtures':
       case 'standings':
       case 'performance':
+      case 'teams':
+      case 'tactics':
         return RoleTabContent(tabId: tabId, role: role);
 
       case 'fans':
