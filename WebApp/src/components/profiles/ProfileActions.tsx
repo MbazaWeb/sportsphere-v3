@@ -18,6 +18,9 @@ export function ProfileActions({ role, following, setFollowing, targetUserId }: 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const setLoginModalOpen = useUIStore((s) => s.setLoginModalOpen);
   const [busy, setBusy] = useState(false);
+  const [claimBusy, setClaimBusy] = useState(false);
+  const [claimed, setClaimed] = useState(false);
+  const claimable = ['team', 'player', 'coach', 'official'].includes(String(role || '').toLowerCase());
 
   const handleFollow = async () => {
     if (!isAuthenticated) { setLoginModalOpen(true); return; }
@@ -27,7 +30,7 @@ export function ProfileActions({ role, following, setFollowing, targetUserId }: 
       const res = await apiFetch('/api/follows', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetUserId }),
+        body: JSON.stringify({ targetUserId, action: 'fan' }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -43,6 +46,7 @@ export function ProfileActions({ role, following, setFollowing, targetUserId }: 
   };
 
   return (
+    <>
     <div className="mt-3 px-3 sm:px-4 flex gap-2">
       <button onClick={handleFollow} disabled={busy}
         className={cn('flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 sm:py-3 text-sm font-bold transition-all active:scale-[0.98]',
@@ -53,11 +57,64 @@ export function ProfileActions({ role, following, setFollowing, targetUserId }: 
       <button className="flex items-center justify-center rounded-xl glass-card px-4 hover:bg-surface-elevated transition-colors active:scale-95">
         <MessageCircle className="h-4 w-4 text-muted-foreground" />
       </button>
+      <button
+        onClick={async () => {
+          if (!isAuthenticated) { setLoginModalOpen(true); return; }
+          if (!targetUserId || busy) return;
+          setBusy(true);
+          try {
+            const res = await apiFetch('/api/follows', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ targetUserId, action: 'follow' }),
+            });
+            if (res.ok) { /* follow independent of fan */ }
+          } catch {}
+          setBusy(false);
+        }}
+        disabled={busy}
+        className="flex items-center justify-center rounded-xl glass-card px-4 text-xs font-bold text-white"
+      >
+        Follow
+      </button>
       {(role === 'team' || role === 'business' || role === 'stadium' || role === 'venue') && (
         <button className="relative flex items-center justify-center rounded-xl glass-card px-4 hover:bg-surface-elevated transition-colors active:scale-95">
           <ShoppingBag className="h-4 w-4 text-gold" />
         </button>
       )}
     </div>
+    {claimable && targetUserId && !claimed && (
+      <div className="px-3 sm:px-4 mt-2">
+        <button
+          disabled={claimBusy}
+          onClick={async () => {
+            if (!isAuthenticated) { setLoginModalOpen(true); return; }
+            setClaimBusy(true);
+            try {
+              const res = await apiFetch('/api/claims', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetId: targetUserId }),
+              });
+              const data = await res.json();
+              if (res.ok) {
+                setClaimed(true);
+                alert('Claim submitted. Admin will review it.');
+              } else {
+                alert(data.error || 'Could not submit claim');
+              }
+            } catch {
+              alert('Network error');
+            }
+            setClaimBusy(false);
+          }}
+          className="w-full rounded-xl border border-gold/40 bg-gold/10 py-2 text-xs font-bold text-gold"
+        >
+          {claimBusy ? 'Submitting…' : 'Claim this profile'}
+        </button>
+        <p className="mt-1 text-[10px] text-muted-foreground">Official team, player, or coach — request to manage this page.</p>
+      </div>
+    )}
+    </>
   );
 }
