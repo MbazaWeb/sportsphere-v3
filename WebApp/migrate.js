@@ -67,7 +67,7 @@ async function main() {
     select: {
       id:true, userId:true, content:true, postType:true, mediaUrls:true,
       likeCount:true, commentCount:true, shareCount:true,
-      isBreaking:true, sportTag:true, teamTag:true, playerTag:true,
+      isBreaking:true, teamTag:true, playerTag:true,
       createdAt:true, updatedAt:true,
     }
   }), 'ss_post', (p) => ({
@@ -75,7 +75,7 @@ async function main() {
     post_type: p.postType, media_urls: JSON.stringify(p.mediaUrls || []),
     like_count: p.likeCount,
     comment_count: p.commentCount, share_count: p.shareCount,
-    is_breaking: p.isBreaking, sport_tag: p.sportTag,
+    is_breaking: p.isBreaking,
     team_tag: p.teamTag, player_tag: p.playerTag,
     created_at: dt(p.createdAt), updated_at: dt(p.updatedAt),
   }));
