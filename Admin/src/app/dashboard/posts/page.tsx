@@ -78,6 +78,48 @@ export default function PostsPage() {
         </p>
       </div>
 
+      <form
+        className="mb-6 rounded-xl border border-slate-800 bg-[#0f141c] p-4 space-y-3"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const form = e.currentTarget;
+          const content = (form.elements.namedItem('content') as HTMLTextAreaElement).value;
+          const file = (form.elements.namedItem('file') as HTMLInputElement).files?.[0];
+          let mediaUrls: string[] = [];
+          try {
+            if (file) {
+              const fd = new FormData();
+              fd.append('file', file);
+              const up = await adminFetch('/api/admin/uploads', { method: 'POST', body: fd });
+              const uj = await up.json();
+              if (!up.ok) throw new Error(uj.error || 'Upload failed');
+              mediaUrls = [uj.url];
+            }
+            const res = await adminFetch('/api/admin/posts', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                content,
+                postType: file ? (file.type.startsWith('video/') ? 'video' : 'photo') : 'post',
+                mediaUrls,
+              }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to create post');
+            form.reset();
+            load();
+          } catch (err: any) {
+            alert(err.message || 'Failed');
+          }
+        }}
+      >
+        <div className="text-sm font-semibold text-white">Create official post</div>
+        <textarea name="content" rows={3} placeholder="Write a post…" className="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-slate-100" />
+        <input name="file" type="file" accept="image/*,video/*" className="text-xs text-slate-400" />
+        <button type="submit" className="rounded-lg bg-amber-400 px-4 py-2 text-sm font-bold text-black">Publish</button>
+        <p className="text-[11px] text-slate-500">Images/videos go to Supabase Storage bucket posts.</p>
+      </form>
+
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           ⚠ {error}
