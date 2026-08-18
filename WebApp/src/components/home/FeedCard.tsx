@@ -166,12 +166,13 @@ function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isA
   }
   if (['official','team','player','coach'].includes(role) || type === 'official') {
     return (
-      <div className="mb-3 flex gap-2">
-        <button type="button" onClick={() => act('fan')} className="flex-1 rounded-xl border border-surface-border py-2.5 text-sm font-bold text-white">{fan ? 'You are a fan' : 'Become Fan'}</button>
-        <button type="button" onClick={() => act('follow')} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white">{follow ? 'You are following' : 'Follow'}</button>
+      <div className="mb-3 space-y-2">
+        <div className="flex gap-2">
+          <button type="button" onClick={() => act('fan')} className="flex-1 rounded-xl border border-surface-border py-2.5 text-sm font-bold text-white">{fan ? 'You are a fan' : 'Become Fan'}</button>
+          <button type="button" onClick={() => act('follow')} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white">{follow ? 'You are following' : 'Follow'}</button>
+        </div>
+        <button type="button" onClick={() => act('refer')} className="w-full rounded-xl border border-gold/40 py-2 text-xs font-bold text-gold">Refer a friend</button>
       </div>
-      <button type="button" onClick={() => act('refer')} className="w-full rounded-xl border border-gold/40 py-2 text-xs font-bold text-gold">Refer a friend</button>
-    </div>
     );
   }
   if (role === 'analyst' || type === 'prediction') {
