@@ -4,6 +4,7 @@ import fsSync from 'fs';
 import { Readable } from 'stream';
 import path from 'path';
 import { getUserIdFromRequest } from '@/lib/auth';
+import { uploadPublic } from '@/lib/supabase-storage';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120; // Up to 2 min for large video uploads on serverless
@@ -158,6 +159,15 @@ export async function POST(request: NextRequest) {
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+
+    // 0. Supabase Storage (primary)
+    try {
+      const kind = (finalContentType || '').startsWith('video/') ? 'posts' : 'posts';
+      const url = await uploadPublic('posts', `${userId}/${fileName}`, buffer, finalContentType);
+      return NextResponse.json({ url });
+    } catch (err) {
+      console.error('Supabase storage upload failed, falling back', err);
+    }
 
     // 1. Try Cloudflare R2
     if (process.env.CLOUDFLARE_ACCOUNT_ID) {

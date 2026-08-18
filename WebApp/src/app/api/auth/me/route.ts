@@ -13,6 +13,7 @@ function publicUser(row: any) {
     handle: row.handle || '',
     role: row.role || 'fan',
     avatarUrl: row.avatar_url || row.avatarUrl || null,
+    coverUrl: row.cover_url || row.coverUrl || null,
     avatarInitials: row.avatar_initials || (row.name || 'U').slice(0, 2).toUpperCase(),
     isVerified: !!(row.is_verified ?? row.isVerified),
     emailVerified: !!(row.email_verified ?? row.emailVerified),
