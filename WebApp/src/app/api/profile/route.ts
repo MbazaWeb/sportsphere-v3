@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import { isMissingTable } from '@/lib/supabase-safe';
 
 export const dynamic = 'force-dynamic';
+
+const SELECT = 'id,name,email,handle,role,avatar_url,avatar_initials,bio,location';
 
 function mapUser(row: any) {
   if (!row) return null;
@@ -13,15 +14,15 @@ function mapUser(row: any) {
     email: row.email,
     handle: row.handle,
     role: row.role || 'fan',
-    avatarUrl: row.avatar_url || null,
+    avatarUrl: row.avatar_url || row.avatarUrl || null,
     avatarInitials: row.avatar_initials || (row.name || 'U').slice(0, 2).toUpperCase(),
-    coverUrl: row.cover_url || null,
+    coverUrl: row.cover_url || row.coverUrl || null,
     bio: row.bio || null,
     location: row.location || null,
     website: row.website || null,
     phone: row.phone || null,
-    isVerified: !!row.is_verified,
-    emailVerified: !!row.email_verified,
+    isVerified: !!(row.is_verified ?? row.isVerified),
+    emailVerified: !!(row.email_verified ?? row.emailVerified),
     roleName: row.role || 'Fan',
     roleSlug: String(row.role || 'fan').toLowerCase(),
     sports: [],
@@ -31,28 +32,32 @@ function mapUser(row: any) {
   };
 }
 
+async function loadUser(filter: { id?: string; handle?: string }) {
+  let q = supabaseAdmin.from('ss_user').select('*').limit(1);
+  if (filter.id) q = q.eq('id', filter.id);
+  if (filter.handle) {
+    const h = filter.handle.startsWith('@') ? filter.handle : `@${filter.handle}`;
+    q = q.eq('handle', h);
+  }
+  const { data, error } = await q;
+  if (error) {
+    console.error('profile load', error);
+    return { user: null, error };
+  }
+  return { user: mapUser(data?.[0]), error: null };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const handle = request.nextUrl.searchParams.get('handle');
     const currentUserId = await getUserIdFromRequest(request);
-
-    let q = supabaseAdmin
-      .from('ss_user')
-      .select('id,name,email,handle,role,avatar_url,avatar_initials,cover_url,bio,location,website,phone,is_verified,email_verified')
-      .limit(1);
-
     if (handle) {
-      const h = handle.startsWith('@') ? handle : `@${handle}`;
-      q = q.or(`handle.eq."${h}",handle.ilike."${h}"`);
-    } else if (currentUserId) {
-      q = q.eq('id', currentUserId);
-    } else {
-      return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+      const { user } = await loadUser({ handle });
+      if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json(user);
     }
-
-    const { data, error } = await q;
-    if (error && !isMissingTable(error)) throw new Error(error.message);
-    const user = mapUser(data?.[0]);
+    if (!currentUserId) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+    const { user } = await loadUser({ id: currentUserId });
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
     return NextResponse.json(user);
   } catch (error) {
@@ -61,59 +66,69 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function PATCH(request: NextRequest) {
-  try {
-    const userId = await getUserIdFromRequest(request);
-    if (!userId) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+async function save(request: NextRequest) {
+  const userId = await getUserIdFromRequest(request);
+  if (!userId) return NextResponse.json({ error: 'Authentication required. Please log in again.' }, { status: 401 });
 
-    const body = await request.json().catch(() => ({}));
-    const update: Record<string, unknown> = {};
-    if (body.name !== undefined) update.name = String(body.name).trim();
-    if (body.handle !== undefined) {
-      const h = String(body.handle).trim();
-      update.handle = h.startsWith('@') ? h : `@${h}`;
+  const body = await request.json().catch(() => ({}));
+
+  const candidates: Record<string, unknown> = {};
+  if (body.name !== undefined) candidates.name = String(body.name).trim();
+  if (body.handle !== undefined) {
+    const h = String(body.handle).trim();
+    candidates.handle = h.startsWith('@') ? h : `@${h}`;
+  }
+  if (body.bio !== undefined) candidates.bio = String(body.bio).trim() || null;
+  if (body.location !== undefined) candidates.location = String(body.location).trim() || null;
+  if (body.website !== undefined) candidates.website = String(body.website).trim() || null;
+  if (body.phone !== undefined) candidates.phone = String(body.phone).trim() || null;
+  if (body.avatarUrl) candidates.avatar_url = body.avatarUrl;
+  if (body.coverUrl) candidates.cover_url = body.coverUrl;
+
+  if (candidates.handle) {
+    const { data: taken } = await supabaseAdmin
+      .from('ss_user')
+      .select('id')
+      .eq('handle', candidates.handle as string)
+      .neq('id', userId)
+      .limit(1);
+    if (taken?.length) {
+      return NextResponse.json({ error: 'This handle is already taken.' }, { status: 409 });
     }
-    if (body.bio !== undefined) update.bio = String(body.bio).trim() || null;
-    if (body.location !== undefined) update.location = String(body.location).trim() || null;
-    if (body.website !== undefined) update.website = String(body.website).trim() || null;
-    if (body.phone !== undefined) update.phone = String(body.phone).trim() || null;
-    if (body.avatarUrl !== undefined) update.avatar_url = body.avatarUrl;
-    if (body.coverUrl !== undefined) update.cover_url = body.coverUrl;
-    if (body.coverGradient !== undefined) update.cover_gradient = body.coverGradient;
+  }
 
-    if (update.handle) {
-      const { data: taken } = await supabaseAdmin
-        .from('ss_user')
-        .select('id')
-        .eq('handle', update.handle as string)
-        .neq('id', userId)
-        .limit(1);
-      if (taken?.length) {
-        return NextResponse.json({ error: 'This handle is already taken.' }, { status: 409 });
-      }
-    }
+  let payload = { ...candidates };
+  let lastError: string | null = null;
 
-    if (Object.keys(update).length === 0) {
-      const { data } = await supabaseAdmin.from('ss_user').select('*').eq('id', userId).limit(1);
-      return NextResponse.json(mapUser(data?.[0]));
-    }
-
+  for (let i = 0; i < 8; i++) {
+    if (Object.keys(payload).length === 0) break;
     const { data, error } = await supabaseAdmin
       .from('ss_user')
-      .update(update)
+      .update(payload)
       .eq('id', userId)
-      .select('id,name,email,handle,role,avatar_url,avatar_initials,cover_url,bio,location,website,phone,is_verified,email_verified')
+      .select('*')
       .maybeSingle();
 
-    if (error) {
-      console.error('profile PATCH', error);
-      return NextResponse.json({ error: error.message }, { status: 400 });
+    if (!error) {
+      return NextResponse.json(mapUser(data) || { ok: true, id: userId, ...candidates });
     }
-    return NextResponse.json(mapUser(data));
-  } catch (error) {
-    console.error('profile PATCH', error);
-    return NextResponse.json({ error: 'Failed to save profile.' }, { status: 500 });
+
+    lastError = error.message;
+    // Drop unknown column (PGRST204) and retry
+    const m = error.message.match(/Could not find the '([^']+)' column/i)
+      || error.message.match(/column "([^"]+)"/i);
+    if (m && payload[m[1]] !== undefined) {
+      delete payload[m[1]];
+      continue;
+    }
+    console.error('profile save', error);
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  const { user } = await loadUser({ id: userId });
+  if (user) return NextResponse.json(user);
+  return NextResponse.json({ error: lastError || 'Failed to save profile.' }, { status: 400 });
 }
 
-export const PUT = PATCH;
+export const PUT = save;
+export const PATCH = save;
