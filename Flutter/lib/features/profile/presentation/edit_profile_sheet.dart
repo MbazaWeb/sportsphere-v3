@@ -31,6 +31,7 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
   bool _uploadingAvatar = false;
   String? _error;
   String? _avatarUrl;
+  String? _coverUrl;
   final _picker = ImagePicker();
 
   @override
@@ -44,6 +45,7 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
     _website = TextEditingController(text: u?.website ?? '');
     _aboutMe = TextEditingController(text: u?.aboutMe ?? '');
     _avatarUrl = u?.avatarUrl;
+    _coverUrl = u?.coverUrl;
   }
 
   @override
