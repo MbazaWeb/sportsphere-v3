@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { isMissingTable } from '@/lib/supabase-safe';
-import { recountUser, defaultKind } from '@/lib/follow-counts';
+import { recountUser } from '@/lib/follow-counts';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,14 +13,17 @@ export async function GET(request: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'userId required' }, { status: 400 });
 
     let q = supabaseAdmin.from('ss_follow').select('id,follower_id,following_id,kind,created_at');
-    if (list === 'following') q = q.eq('follower_id', userId);
+    if (list === 'following') q = q.eq('follower_id', userId).eq('kind', 'follow');
     else if (list === 'fans') q = q.eq('following_id', userId).eq('kind', 'fan');
-    else q = q.eq('following_id', userId); // followers (follow + fan)
+    else if (list === 'fanning') q = q.eq('follower_id', userId).eq('kind', 'fan');
+    else q = q.eq('following_id', userId).eq('kind', 'follow');
 
     const { data, error } = await q.limit(200);
     if (error && isMissingTable(error)) return NextResponse.json([]);
 
-    const ids = [...new Set((data || []).map((r) => list === 'following' ? r.following_id : r.follower_id))];
+    const ids = [...new Set((data || []).map((r) =>
+      list === 'following' || list === 'fanning' ? r.following_id : r.follower_id
+    ))];
     const users: Record<string, any> = {};
     if (ids.length) {
       const { data: u } = await supabaseAdmin
@@ -31,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json((data || []).map((r) => {
-      const uid = list === 'following' ? r.following_id : r.follower_id;
+      const uid = list === 'following' || list === 'fanning' ? r.following_id : r.follower_id;
       const u = users[uid] || {};
       return {
         id: r.id,
@@ -60,30 +63,36 @@ export async function POST(request: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     const body = await request.json();
     const targetUserId = String(body.targetUserId || '');
-    const action = String(body.action || '').toLowerCase(); // follow | fan | unfollow | unfan | toggle
+    const action = String(body.action || 'follow').toLowerCase();
     if (!targetUserId) return NextResponse.json({ error: 'targetUserId is required.' }, { status: 400 });
     if (userId === targetUserId) return NextResponse.json({ error: 'Cannot follow yourself.' }, { status: 400 });
 
-    const { data: target } = await supabaseAdmin.from('ss_user').select('id,role').eq('id', targetUserId).limit(1);
-    if (!target?.length) return NextResponse.json({ error: 'User not found.' }, { status: 404 });
+    const kind = action.includes('fan') ? 'fan' : 'follow';
+    const turningOff = action.startsWith('un');
 
     const { data: existing } = await supabaseAdmin
       .from('ss_follow')
-      .select('id,kind')
+      .select('id')
       .eq('follower_id', userId)
       .eq('following_id', targetUserId)
+      .eq('kind', kind)
       .limit(1);
 
-    const row = existing?.[0];
-    const wantOff = action === 'unfollow' || action === 'unfan';
-    let following = !!row;
-    let kind = row?.kind || defaultKind(target[0].role, action);
+    if (turningOff || existing?.length) {
+      if (existing?.length && (turningOff || !action.startsWith('un') && existing.length)) {
+        if (turningOff || existing.length) {
+          await supabaseAdmin
+            .from('ss_follow')
+            .delete()
+            .eq('follower_id', userId)
+            .eq('following_id', targetUserId)
+            .eq('kind', kind);
+        }
+      }
+    }
 
-    if (wantOff && row) {
-      await supabaseAdmin.from('ss_follow').delete().eq('follower_id', userId).eq('following_id', targetUserId);
-      following = false;
-    } else if (!row && !wantOff) {
-      kind = defaultKind(target[0].role, action === 'toggle' ? undefined : action);
+    const shouldOn = !turningOff && !existing?.length;
+    if (shouldOn) {
       const { error } = await supabaseAdmin.from('ss_follow').insert({
         follower_id: userId,
         following_id: targetUserId,
@@ -92,18 +101,26 @@ export async function POST(request: NextRequest) {
       if (error && !String(error.message).toLowerCase().includes('duplicate')) {
         if (!isMissingTable(error)) return NextResponse.json({ error: error.message }, { status: 500 });
       }
-      following = true;
-    } else if (row && (action === 'fan' || action === 'follow') && row.kind !== action) {
-      await supabaseAdmin.from('ss_follow').update({ kind: action }).eq('id', row.id);
-      kind = action;
-      following = true;
     }
 
-    const [me, them] = await Promise.all([recountUser(userId), recountUser(targetUserId)]);
+    // toggle: if action is follow/fan and row existed, we deleted it (unfollow that kind)
+    if (!turningOff && existing?.length) {
+      // already deleted above as toggle off
+    }
+
+    const { data: mine } = await supabaseAdmin
+      .from('ss_follow')
+      .select('kind')
+      .eq('follower_id', userId)
+      .eq('following_id', targetUserId);
+
+    const kinds = new Set((mine || []).map((r) => r.kind));
+    const them = await recountUser(targetUserId);
+    const me = await recountUser(userId);
+
     return NextResponse.json({
-      following,
-      isFan: following && kind === 'fan',
-      kind: following ? kind : null,
+      following: kinds.has('follow'),
+      isFan: kinds.has('fan'),
       ...them,
       myFollowingCount: me.followingCount,
     });

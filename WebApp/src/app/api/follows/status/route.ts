@@ -15,11 +15,10 @@ export async function GET(request: NextRequest) {
       .from('ss_follow')
       .select('kind')
       .eq('follower_id', userId)
-      .eq('following_id', targetUserId)
-      .limit(1);
+      .eq('following_id', targetUserId);
     if (error && isMissingTable(error)) return NextResponse.json({ following: false, isFan: false });
-    const follow = data?.[0];
-    return NextResponse.json({ following: !!follow, isFan: follow?.kind === 'fan' });
+    const kinds = new Set((data || []).map((r) => r.kind));
+    return NextResponse.json({ following: kinds.has('follow'), isFan: kinds.has('fan') });
   } catch {
     return NextResponse.json({ following: false, isFan: false });
   }
