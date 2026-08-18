@@ -850,10 +850,10 @@ class _SpotlightsBodyState extends ConsumerState<_SpotlightsBody> {
     });
     try {
       final all =
-          await ref.read(feedApiProvider).getFeed(limit: 50, offset: 0);
+          await ref.read(feedApiProvider).getFeed(userId: widget.user.id, limit: 50, offset: 0);
       if (!mounted) return;
       setState(() {
-        _posts = all.where((p) => p.userId == widget.user.id).toList();
+        _posts = all;
         _loading = false;
       });
     } catch (e) {

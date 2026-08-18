@@ -6,9 +6,10 @@ class FeedApi {
   FeedApi(this._client);
   final ApiClient _client;
 
-  Future<List<Post>> getFeed({String? type, int? limit, int? offset}) async {
+  Future<List<Post>> getFeed({String? type, String? userId, int? limit, int? offset}) async {
     final q = <String, String>{
       if (type != null) 'type': type,
+      if (userId != null && userId.isNotEmpty) 'userId': userId,
       if (limit != null) 'limit': '$limit',
       if (offset != null) 'offset': '$offset',
     };

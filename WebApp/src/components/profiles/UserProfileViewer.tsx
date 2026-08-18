@@ -65,6 +65,20 @@ export default function UserProfileViewer() {
     if (activeTab === 'overview') {
       return <OverviewTab apiUser={apiUser} user={viewingUser} role={role} />;
     }
+    if (activeTab === 'spotlight' || activeTab === 'videos' || activeTab === 'media') {
+      const media = userPosts.filter((p) => (p.mediaUrls && p.mediaUrls.length) || p.postType === 'video' || p.postType === 'spotlight');
+      return (
+        <FeedsTab
+          posts={activeTab === 'feeds' ? userPosts : media}
+          loading={postsLoading}
+          avatar={viewingUser.avatar || ''}
+          avatarUrl={apiUser?.avatarUrl || viewingUser.avatarUrl}
+          name={viewingUser.name}
+          verified={!!viewingUser.verified}
+          formatTime={(d) => d}
+        />
+      );
+    }
     if (activeTab === 'feeds') {
       return (
         <FeedsTab

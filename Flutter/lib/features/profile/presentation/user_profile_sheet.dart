@@ -865,10 +865,10 @@ class _TeamSpotlightsTabState extends ConsumerState<_TeamSpotlightsTab> {
 
   Future<void> _load() async {
     try {
-      final all = await ref.read(feedApiProvider).getFeed(limit: 50, offset: 0);
+      final all = await ref.read(feedApiProvider).getFeed(userId: widget.userId, limit: 50, offset: 0);
       if (!mounted) return;
       setState(() {
-        _posts = all.where((p) => p.userId == widget.userId).toList();
+        _posts = all;
         _loading = false;
       });
     } catch (_) { if (mounted) setState(() => _loading = false); }
