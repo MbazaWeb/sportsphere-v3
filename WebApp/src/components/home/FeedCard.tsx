@@ -69,33 +69,13 @@ function resolveMediaUrl(url: string): string {
 }
 
 function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isAuthenticated: boolean; onRequireAuth: () => void }) {
-  const setViewingUser = useUIStore((s) => s.setViewingUser);
   const role = String(item.user?.role || '').toLowerCase();
   const type = String(item.postType || '').toLowerCase();
   const [fan, setFan] = useState(false);
   const [follow, setFollow] = useState(false);
-
-  function openProfile() {
-    const u = item.user;
-    if (!u) return;
-    setViewingUser({
-      id: u.id,
-      name: u.name,
-      handle: u.handle,
-      avatar: u.avatarUrl || u.avatarInitials,
-      avatarUrl: u.avatarUrl,
-      verified: u.isVerified,
-      coverGradient: 'from-emerald-600 to-emerald-900',
-      bio: u.bio || '',
-      role: u.role,
-      location: u.location || '',
-      joined: '',
-      followers: u.followerCount || 0,
-      following: u.followingCount || 0,
-      posts: u.postCount || 0,
-      isFollowing: follow,
-    });
-  }
+  const [color, setColor] = useState('Red');
+  const [size, setSize] = useState('M');
+  const price = item.id === 'seed-simba-jersey' ? 45000 : item.id === 'seed-justfit' ? 200000 : item.id === 'seed-tff-match' ? 5000 : 0;
 
   async function act(action: string) {
     if (!isAuthenticated) { onRequireAuth(); return; }
@@ -112,55 +92,67 @@ function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isA
       }
       return;
     }
-    if (action === 'watch') {
-      openProfile();
-      return;
-    }
     if (action === 'buy') {
       useCartStore.getState().add({
-        id: item.id,
-        title: item.content || 'Item',
+        id: `${item.id}-${color}-${size}`,
+        title: `${item.content || 'Item'} (${color}/${size})`,
         image: item.mediaUrls?.[0] || null,
-        price: 45000,
+        price: price || 45000,
         sellerId: item.userId,
         sellerName: item.user?.name || 'Shop',
       });
     }
   }
 
-  const fanFollow = (
-    <div className="mb-3 flex gap-2">
-      <button onClick={() => act('fan')} className="flex-1 rounded-xl border border-surface-border py-2.5 text-sm font-bold text-white">
-        {fan ? 'Fan' : 'Become Fan'}
-      </button>
-      <button onClick={() => act('follow')} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white">
-        {follow ? 'Following' : 'Follow'}
-      </button>
-    </div>
-  );
-
   if (type === 'shop' || role === 'business') {
     return (
-      <div className="mb-3">
-        <button onClick={() => act('buy')} className="w-full rounded-xl bg-gold py-2.5 text-sm font-bold text-black">Buy Now</button>
+      <div className="mb-3 space-y-3 rounded-xl border border-surface-border p-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-muted-foreground">Buy gear</p>
+          <p className="text-sm font-black text-gold">TZS {(price || 45000).toLocaleString()}</p>
+        </div>
+        <div>
+          <p className="mb-1 text-[11px] text-muted-foreground">Color</p>
+          <div className="flex gap-2">
+            {['Red', 'White', 'Blue'].map((c) => (
+              <button key={c} type="button" onClick={() => setColor(c)}
+                className={`h-7 w-7 rounded-full border ${color === c ? 'border-gold ring-2 ring-gold' : 'border-white/20'}`}
+                style={{ background: c === 'Red' ? '#c81e1e' : c === 'White' ? '#fff' : '#1d4ed8' }} />
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="mb-1 text-[11px] text-muted-foreground">Size</p>
+          <select value={size} onChange={(e) => setSize(e.target.value)} className="rounded-lg border border-surface-border bg-surface px-2 py-1 text-sm text-white">
+            {['S','M','L','XL'].map((s) => <option key={s}>{s}</option>)}
+          </select>
+        </div>
+        <button type="button" onClick={() => act('buy')} className="w-full rounded-xl bg-red-600 py-2.5 text-sm font-bold text-white">
+          Add to cart · TZS {(price || 45000).toLocaleString()}
+        </button>
       </div>
     );
   }
   if (type === 'media' || role === 'media') {
     return (
       <div className="mb-3 flex gap-2">
-        <button onClick={() => act('watch')} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white">Watch online</button>
-        <button onClick={() => act('buy')} className="flex-1 rounded-xl bg-gold py-2.5 text-sm font-bold text-black">Buy Now</button>
+        <button type="button" onClick={() => act('follow')} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white">Watch online</button>
+        <button type="button" onClick={() => act('buy')} className="flex-1 rounded-xl bg-gold py-2.5 text-sm font-bold text-black">Subscribe</button>
       </div>
     );
   }
-  if (['official','team','player','coach'].includes(role) || type === 'official') return fanFollow;
+  if (['official','team','player','coach'].includes(role) || type === 'official') {
+    return (
+      <div className="mb-3 flex gap-2">
+        <button type="button" onClick={() => act('fan')} className="flex-1 rounded-xl border border-surface-border py-2.5 text-sm font-bold text-white">{fan ? 'Fan' : 'Become Fan'}</button>
+        <button type="button" onClick={() => act('follow')} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white">{follow ? 'Following' : 'Follow'}</button>
+      </div>
+    );
+  }
   if (role === 'analyst' || type === 'prediction') {
     return (
       <div className="mb-3">
-        <button onClick={() => act('follow')} className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-bold text-white">
-          {follow ? 'Following' : 'Follow'}
-        </button>
+        <button type="button" onClick={() => act('follow')} className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-bold text-white">{follow ? 'Following' : 'Follow'}</button>
       </div>
     );
   }
