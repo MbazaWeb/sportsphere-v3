@@ -19,7 +19,7 @@
 // a backup. Future API writes go to the typed table for custom roles.
 
 import { PrismaClient } from '@prisma/client';
-import { safeJsonParse } from '../src/lib/json';
+import { safeJsonParse } from '../WebApp/src/lib/json';
 
 const db = new PrismaClient();
 

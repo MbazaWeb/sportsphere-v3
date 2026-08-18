@@ -17,7 +17,7 @@
 // Idempotent — safe to re-run; uses upsert.
 
 import { PrismaClient } from '@prisma/client';
-import { computePerformanceFromTypedProfile, resolvePositionGroup, resolveAgeGroup, buildCategoryBucket, tierForScore } from '../src/lib/performance-engine';
+import { computePerformanceFromTypedProfile, resolvePositionGroup, resolveAgeGroup, buildCategoryBucket, tierForScore } from '../WebApp/src/lib/performance-engine';
 
 const db = new PrismaClient();
 

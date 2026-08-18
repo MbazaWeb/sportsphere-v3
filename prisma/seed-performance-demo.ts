@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { recordPerformanceEvent, recomputeRankings, runDailySnapshot } from '../src/lib/performance-engine/persistence';
+import { recordPerformanceEvent, recomputeRankings, runDailySnapshot } from '../WebApp/src/lib/performance-engine/persistence';
 
 const prisma = new PrismaClient();
 
