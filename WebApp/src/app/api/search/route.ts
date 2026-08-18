@@ -4,6 +4,27 @@ import { isMissingTable } from '@/lib/supabase-safe';
 import { isAdminRole, publicUserView } from '@/lib/official-account';
 import { safeJsonParse } from '@/lib/json';
 
+
+async function searchSportsDb(q: string) {
+  try {
+    const res = await fetch(
+      `https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(q)}`,
+      { headers: { 'User-Agent': 'SportSphere/1.0' }, next: { revalidate: 3600 } as any },
+    );
+    if (!res.ok) return [];
+    const json = await res.json();
+    return (json.teams || []).slice(0, 8).map((t: any) => ({
+      id: `tsdb-${t.idTeam}`,
+      name: t.strTeam,
+      type: 'TEAM',
+      logoUrl: t.strBadge || t.strLogo || t.strTeamBadge || null,
+      extra: [t.strStadium, t.strCountry].filter(Boolean).join(' · '),
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
@@ -58,6 +79,12 @@ export async function GET(request: NextRequest) {
       id: l.id, name: l.name, type: 'LEAGUE', extra: l.country || '',
     })),
   ];
+
+  const remote = entities.length < 8 ? await searchSportsDb(q) : [];
+  const seen = new Set(entities.map((e) => e.name.toLowerCase()));
+  for (const e of remote) {
+    if (!seen.has(String(e.name).toLowerCase())) entities.push(e);
+  }
 
   return NextResponse.json({ users, posts, entities });
 }
