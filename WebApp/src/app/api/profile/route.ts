@@ -37,6 +37,29 @@ function mapUser(row: any) {
 }
 
 
+async function enrichFromTeam(user: any) {
+  if (!user) return user;
+  const { data } = await supabaseAdmin.from('ss_team').select('*').eq('id', user.id).limit(1);
+  const team = data?.[0];
+  if (!team) return user;
+  return {
+    ...user,
+    name: user.name || team.name,
+    avatarUrl: user.avatarUrl || team.logo_url || null,
+    avatarInitials: user.avatarInitials || String(team.name || 'T').slice(0, 2).toUpperCase(),
+    location: user.location || [team.city, team.country].filter(Boolean).join(', '),
+    bio: user.bio || team.name,
+    isVerified: true,
+    role: user.role || 'team',
+    roleProfile: {
+      city: team.city,
+      country: team.country,
+      league: team.league_id,
+      slug: team.slug,
+    },
+  };
+}
+
 async function loadFromCatalog(id?: string, handle?: string) {
   const slug = handle ? handle.replace(/^@/, '') : '';
   if (id || slug) {
@@ -102,14 +125,14 @@ export async function GET(request: NextRequest) {
     const currentUserId = await getUserIdFromRequest(request);
     if (id) {
       const { user } = await loadUser({ id });
-      if (user) return NextResponse.json(user);
+      if (user) return NextResponse.json(await enrichFromTeam(user));
       const catalog = await loadFromCatalog(id);
       if (catalog) return NextResponse.json(catalog);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     if (handle) {
       const { user } = await loadUser({ handle });
-      if (user) return NextResponse.json(user);
+      if (user) return NextResponse.json(await enrichFromTeam(user));
       const catalog = await loadFromCatalog(undefined, handle);
       if (catalog) return NextResponse.json(catalog);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });

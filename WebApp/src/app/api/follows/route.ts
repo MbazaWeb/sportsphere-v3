@@ -98,6 +98,19 @@ export async function POST(request: NextRequest) {
         following_id: targetUserId,
         kind,
       });
+      if (error) {
+        await supabaseAdmin.from('ss_user').upsert({
+          id: targetUserId,
+          name: 'Team',
+          handle: '@' + targetUserId.slice(0, 12),
+          role: 'team',
+        }, { onConflict: 'id' });
+        await supabaseAdmin.from('ss_follow').insert({
+          follower_id: userId,
+          following_id: targetUserId,
+          kind,
+        });
+      }
       if (error && !String(error.message).toLowerCase().includes('duplicate')) {
         if (!isMissingTable(error)) return NextResponse.json({ error: error.message }, { status: 500 });
       }
