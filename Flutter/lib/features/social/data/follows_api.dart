@@ -23,7 +23,7 @@ const fanRoles = <String>{
 
 /// Roles that show "Join" instead of follow
 const joinRoles = <String>{
-  'community',
+  'community', 'business', 'media',
 };
 
 /// Get the primary action label for a role
@@ -74,11 +74,11 @@ class FollowsApi {
 
   /// Follow any user (generic follow, not fan).
   Future<Map<String, dynamic>> follow(String targetUserId) =>
-      toggle(targetUserId, action: 'follow');
+      toggle(targetUserId, action: 'join');
 
   /// Join a community or business.
   Future<Map<String, dynamic>> join(String targetUserId) =>
-      toggle(targetUserId, action: 'follow');
+      toggle(targetUserId, action: 'join');
 
   /// GET /api/follows?userId=xxx&type=fans — list fans of a user.
   Future<List<Map<String, dynamic>>> getFans(String userId) async {

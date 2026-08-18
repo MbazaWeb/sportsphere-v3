@@ -122,6 +122,9 @@ class Post {
     this.poll,
     this.prediction,
     this.likedByMe = false,
+    this.following = false,
+    this.isFan = false,
+    this.joined = false,
     this.repostData,
   });
 
@@ -142,6 +145,9 @@ class Post {
   final PredictionData? prediction;
   final PostUser user;
   final bool likedByMe;
+  final bool following;
+  final bool isFan;
+  final bool joined;
   final Map<String, dynamic>? repostData;
 
   factory Post.fromJson(Map<String, dynamic> j) {
@@ -175,6 +181,9 @@ class Post {
           : null,
       user: PostUser.fromJson(userJson),
       likedByMe: j['likedByMe'] == true,
+      following: j['following'] == true,
+      isFan: j['isFan'] == true,
+      joined: j['joined'] == true,
       repostData: rData,
     );
   }

@@ -149,7 +149,7 @@ class MediaGallery extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.network(url, fit: BoxFit.cover,
+          Image.network(url, fit: BoxFit.contain,
               loadingBuilder: (_, child, progress) =>
                   progress == null ? child : Container(color: AppColors.surface),
               errorBuilder: (_, __, ___) => Container(

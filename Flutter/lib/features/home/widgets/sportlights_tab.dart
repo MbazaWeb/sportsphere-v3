@@ -15,6 +15,7 @@ import '../../../shared/widgets/media_gallery.dart';
 import '../../../shared/widgets/ss_video_player.dart';
 import '../../../shared/widgets/skeleton_loader.dart';
 import '../../../shared/widgets/role_badge.dart';
+import '../../social/data/follows_api.dart';
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 String _resolveUrl(String url) => ApiConfig.resolveUrl(url);
@@ -705,6 +706,9 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
   late bool _liked;
   late int _comments;
   late bool _bookmarked;
+  late bool _fan;
+  late bool _follow;
+  late bool _joined;
   bool _hydratedSaved = false;
 
   @override
@@ -714,6 +718,9 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
     _liked = widget.post.likedByMe;
     _comments = widget.post.commentCount;
     _bookmarked = false;
+    _fan = widget.post.isFan;
+    _follow = widget.post.following;
+    _joined = widget.post.joined;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted || _hydratedSaved) return;
       try {
@@ -900,6 +907,14 @@ class _LiveFeedCardState extends ConsumerState<LiveFeedCard> {
           ],
           if (post.poll != null) ...[const SizedBox(height: 10), _PollBlock(poll: post.poll!, postId: post.id)],
           if (post.prediction != null) ...[const SizedBox(height: 10), _PredictionBlock(pred: post.prediction!, postId: post.id)],
+          const SizedBox(height: 12),
+          _RoleCtas(
+            post: post,
+            fan: _fan,
+            follow: _follow,
+            joined: _joined,
+            onChanged: (f, fo, j) => setState(() { _fan = f; _follow = fo; _joined = j; }),
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -1612,4 +1627,80 @@ class _ScoreStepper extends StatelessWidget {
       ]),
     ],
   );
+}
+
+class _RoleCtas extends ConsumerWidget {
+  const _RoleCtas({
+    required this.post,
+    required this.fan,
+    required this.follow,
+    required this.joined,
+    required this.onChanged,
+    this.onNeedLogin,
+  });
+  final Post post;
+  final bool fan, follow, joined;
+  final void Function(bool fan, bool follow, bool joined) onChanged;
+  final VoidCallback? onNeedLogin;
+
+  String get _role => post.user.role.toLowerCase();
+  String get _type => post.postType.toLowerCase();
+
+  Future<void> _act(WidgetRef ref, BuildContext context, String action) async {
+    if (!ref.read(authProvider).isAuthenticated) {
+      onNeedLogin?.call();
+      return;
+    }
+    try {
+      final data = await ref.read(followsApiProvider).toggle(post.userId, action: action);
+      onChanged(data['isFan'] == true, data['following'] == true, data['joined'] == true);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    Widget btn(String label, VoidCallback onTap, {bool gold = false, bool outline = false}) {
+      return Expanded(
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: gold ? AppColors.primary : (outline ? Colors.transparent : const Color(0xFF2563EB)),
+              borderRadius: BorderRadius.circular(12),
+              border: outline ? Border.all(color: AppColors.border) : null,
+            ),
+            alignment: Alignment.center,
+            child: Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: gold ? Colors.black : Colors.white)),
+          ),
+        ),
+      );
+    }
+
+    if (_type == 'shop') {
+      return Row(children: [btn('Add to cart', () {}, gold: true)]);
+    }
+    if (_role == 'media' || _role == 'business') {
+      return Row(children: [
+        btn(follow ? 'You are following' : 'Follow', () => _act(ref, context, 'follow')),
+        const SizedBox(width: 8),
+        btn(joined ? 'You joined' : (_role == 'media' ? 'Join Media' : 'Join Business'), () => _act(ref, context, 'join'), gold: true),
+      ]);
+    }
+    if (['official', 'team', 'player', 'coach'].contains(_role) || _type == 'official') {
+      return Row(children: [
+        btn(fan ? 'You are a fan' : 'Become Fan', () => _act(ref, context, 'fan'), outline: true),
+        const SizedBox(width: 8),
+        btn(follow ? 'You are following' : 'Follow', () => _act(ref, context, 'follow')),
+      ]);
+    }
+    if (_role == 'analyst' || _type == 'prediction') {
+      return btn(follow ? 'You are following' : 'Follow', () => _act(ref, context, 'follow'));
+    }
+    return const SizedBox.shrink();
+  }
 }
