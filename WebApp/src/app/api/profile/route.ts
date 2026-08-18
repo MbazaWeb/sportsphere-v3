@@ -25,6 +25,7 @@ function mapUser(row: any) {
     followingCount: row.following_count ?? 0,
     fanCount: row.fan_count ?? 0,
     isVerified: !!(row.is_verified ?? row.isVerified),
+    isPro: !!(row.is_pro ?? row.isPro),
     emailVerified: !!(row.email_verified ?? row.emailVerified),
     roleName: row.role || 'Fan',
     roleSlug: String(row.role || 'fan').toLowerCase(),

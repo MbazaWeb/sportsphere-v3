@@ -23,6 +23,10 @@ export async function POST(request: NextRequest) {
     payment_method: method,
     phone,
   };
+  const isMembership = items.some((it: any) => String(it.id || it.title || '').toLowerCase().includes('membership'));
+  if (isMembership) {
+    await supabaseAdmin.from('ss_user').update({ is_pro: true }).eq('id', userId);
+  }
   const { data, error } = await supabaseAdmin.from('ss_order').insert(row).select('id,status,total').maybeSingle();
   if (error) return NextResponse.json({ id: row.id, status: row.status, total, warning: error.message });
   return NextResponse.json({
@@ -30,6 +34,7 @@ export async function POST(request: NextRequest) {
     status: row.status,
     total,
     mock: true,
-    message: method === 'cod' ? 'Pay when the item arrives.' : 'Mock payment approved.',
+    message: isMembership ? 'Membership paid. Your fan badge is now Gold.' : method === 'cod' ? 'Pay when the item arrives.' : 'Mock payment approved.',
+    goldBadge: isMembership,
   }, { status: 201 });
 }

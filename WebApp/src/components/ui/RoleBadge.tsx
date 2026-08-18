@@ -118,7 +118,7 @@ export function TypeBadge({ typeName, size = 'sm', className }: {
 /**
  * VerifiedBadge — gold checkmark. Shown separately from the role badge.
  */
-export function VerifiedBadge({ size = 'sm', className }: { size?: 'xs' | 'sm' | 'md'; className?: string }) {
+export function VerifiedBadge({ size = 'sm', className, gold }: { size?: 'xs' | 'sm' | 'md'; className?: string; gold?: boolean }) {
   const iconSizes = { xs: 'h-2.5 w-2.5', sm: 'h-3 w-3', md: 'h-3.5 w-3.5' };
   const sizeClasses = {
     xs: 'px-1.5 py-0.5 text-[9px] gap-0.5',
@@ -128,7 +128,8 @@ export function VerifiedBadge({ size = 'sm', className }: { size?: 'xs' | 'sm' |
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border font-semibold bg-gold/15 text-gold border-gold/30',
+        'inline-flex items-center rounded-full border font-semibold',
+        gold ? 'bg-gradient-to-r from-gold to-amber-500 text-black border-gold shadow-[0_0_12px_rgba(245,197,24,0.45)]' : 'bg-gold/15 text-gold border-gold/30',
         sizeClasses[size],
         className
       )}
@@ -239,7 +240,7 @@ export function BadgeStack({ role, isVerified, isPro, typeName, mediaName, isOff
     <div className="flex items-center gap-1 flex-wrap">
       {isOfficial && <OfficialBadge size={size} />}
       {isPro && <ProBadge size={size} />}
-      {isVerified && !isOfficial && <VerifiedBadge size={size} />}
+      {isVerified && !isOfficial && <VerifiedBadge size={size} gold={isPro} />}
       {!isOfficial && <RoleBadge role={role} size={size} />}
       {mediaName && <MediaBadge mediaName={mediaName} size={size} />}
       {typeName && <TypeBadge typeName={typeName} size={size} />}
