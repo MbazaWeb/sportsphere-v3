@@ -1,18 +1,13 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { supabaseAdmin } from '@/lib/supabase';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  try {
-    await db.$queryRaw`SELECT 1`;
-    return NextResponse.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-    }, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({
-      status: 'unhealthy',
-      error: 'Database connection failed',
-    }, { status: 500 });
-  }
+  const { error } = await supabaseAdmin.from('ss_user').select('id').limit(1);
+  return NextResponse.json({
+    ok: !error,
+    db: error ? error.message : 'supabase',
+    time: new Date().toISOString(),
+  }, { status: error ? 503 : 200 });
 }
