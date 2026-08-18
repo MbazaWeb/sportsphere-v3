@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/admin-ss';
+
 export const dynamic = 'force-dynamic';
-export async function GET() { return NextResponse.json([]); }
+
 export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => ({}));
-  return NextResponse.json({ ok: true, ...body });
+  const auth = await requireAdmin(request);
+  if (!auth.authorized) return auth.response;
+  const { message } = await request.json().catch(() => ({}));
+  return NextResponse.json({ data: { reply: 'AI chat is not wired yet.', echo: message || '' } });
 }
-export async function PATCH(request: NextRequest) {
-  const body = await request.json().catch(() => ({}));
-  return NextResponse.json({ ok: true, ...body });
-}
-export async function DELETE() { return NextResponse.json({ ok: true }); }

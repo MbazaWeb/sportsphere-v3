@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin, ssList, jsonData } from '@/lib/admin-ss';
+
 export const dynamic = 'force-dynamic';
-export async function GET() { return NextResponse.json([]); }
-export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => ({}));
-  return NextResponse.json({ ok: true, ...body });
+
+export async function GET(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (!auth.authorized) return auth.response;
+  const rows = await ssList('ss_admin_delegation_log', (q) => q.order('created_at', { ascending: false }).limit(100));
+  return jsonData(rows);
 }
-export async function PATCH(request: NextRequest) {
-  const body = await request.json().catch(() => ({}));
-  return NextResponse.json({ ok: true, ...body });
-}
-export async function DELETE() { return NextResponse.json({ ok: true }); }

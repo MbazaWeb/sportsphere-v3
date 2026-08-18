@@ -1,32 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin, ssList, jsonData } from '@/lib/admin-ss';
 import { supabaseAdmin } from '@/lib/supabase';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
-const TABLE = 'ss_partner';
-
-export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> | { id: string } }) {
+export async function GET(request: NextRequest, ctx: { params: Promise<{ id: string }> | { id: string } }) {
+  const auth = await requireAdmin(request);
+  if (!auth.authorized) return auth.response;
   const { id } = await Promise.resolve(ctx.params as any);
-  const { data } = await supabaseAdmin.from(TABLE).select('*').eq('id', id).limit(1);
-  return NextResponse.json(data?.[0] || {});
-}
-
-export async function PATCH(request: NextRequest, ctx: { params: Promise<{ id: string }> | { id: string } }) {
-  const { id } = await Promise.resolve(ctx.params as any);
-  const body = await request.json().catch(() => ({}));
-  const { data, error } = await supabaseAdmin.from(TABLE).update(body).eq('id', id).select('*').maybeSingle();
-  if (error) return NextResponse.json({ error: error.message }, { status: 200 });
-  return NextResponse.json(data || { ok: true });
-}
-
-export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> | { id: string } }) {
-  const { id } = await Promise.resolve(ctx.params as any);
-  await supabaseAdmin.from(TABLE).delete().eq('id', id);
-  return NextResponse.json({ ok: true });
+  const rows = await ssList('ss_partner_sponsorships', (q) => q.eq('partner_id', id).limit(100));
+  return jsonData(rows);
 }
 
 export async function POST(request: NextRequest, ctx: { params: Promise<{ id: string }> | { id: string } }) {
+  const auth = await requireAdmin(request);
+  if (!auth.authorized) return auth.response;
   const { id } = await Promise.resolve(ctx.params as any);
   const body = await request.json().catch(() => ({}));
-  return NextResponse.json({ ok: true, id, ...body });
+  const { data, error } = await supabaseAdmin.from('ss_partner_sponsorships').insert({ id: crypto.randomUUID(), partner_id: id, ...body }).select('*').maybeSingle();
+  if (error) return NextResponse.json({ error: error.message, data: [] });
+  return NextResponse.json({ data });
 }

@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { requireAdmin, ssList, jsonData } from '@/lib/admin-ss';
+
 export const dynamic = 'force-dynamic';
-export async function GET() { return NextResponse.json([]); }
-export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => ({}));
-  return NextResponse.json({ ok: true, ...body });
+
+export async function GET(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (!auth.authorized) return auth.response;
+  const limit = Math.min(200, Math.max(1, Number(request.nextUrl.searchParams.get('limit') || '50')));
+  const jobs = await ssList('ss_ai_job_log', (q) => q.order('started_at', { ascending: false }).limit(limit));
+  return jsonData(jobs);
 }
-export async function PATCH(request: NextRequest) {
-  const body = await request.json().catch(() => ({}));
-  return NextResponse.json({ ok: true, ...body });
-}
-export async function DELETE() { return NextResponse.json({ ok: true }); }
