@@ -150,8 +150,7 @@ export default function AIChatPage() {
         )}
       </div>
 
-      {/* Messages Area */
-      <div className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0">
+      {/* Messages Area */}<div className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-600">
             <Bot className="w-12 h-12 mb-3 opacity-40" />
