@@ -42,10 +42,12 @@ export async function GET(request: NextRequest) {
     const me = await getUserIdFromRequest(request);
     const followSet = new Set<string>();
     const fanSet = new Set<string>();
+    const joinSet = new Set<string>();
     if (me && ids.length) {
       const { data: rel } = await supabaseAdmin.from('ss_follow').select('following_id,kind').eq('follower_id', me).in('following_id', ids);
       for (const r of rel || []) {
         if (r.kind === 'fan') fanSet.add(r.following_id);
+        else if (r.kind === 'join') joinSet.add(r.following_id);
         else followSet.add(r.following_id);
       }
       const { data: fans } = await supabaseAdmin.from('ss_fan').select('following_id').eq('follower_id', me).in('following_id', ids);
@@ -73,6 +75,7 @@ export async function GET(request: NextRequest) {
         comments: [],
         following: followSet.has(post.user_id),
         isFan: fanSet.has(post.user_id),
+        joined: joinSet.has(post.user_id),
         user: publicUserView({
           id: u.id || post.user_id,
           name: u.name || 'User',

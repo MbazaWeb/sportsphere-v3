@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     if (!targetUserId) return NextResponse.json({ error: 'targetUserId is required.' }, { status: 400 });
     if (userId === targetUserId) return NextResponse.json({ error: 'Cannot follow yourself.' }, { status: 400 });
 
-    const kind = action.includes('fan') ? 'fan' : 'follow';
+    const kind = action.includes('fan') ? 'fan' : action.includes('join') ? 'join' : 'follow';
     const turningOff = action.startsWith('un');
 
     const { data: existing } = await supabaseAdmin
@@ -151,6 +151,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       following: kinds.has('follow'),
       isFan: kinds.has('fan'),
+      joined: kinds.has('join'),
       ...them,
       myFollowingCount: me.followingCount,
     });

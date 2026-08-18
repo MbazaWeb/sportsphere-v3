@@ -75,15 +75,17 @@ function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isA
   const type = String(item.postType || '').toLowerCase();
   const [fan, setFan] = useState(!!item.isFan);
   const [follow, setFollow] = useState(!!item.following);
+  const [joined, setJoined] = useState(!!item.joined);
   const [color, setColor] = useState('Red');
   const [size, setSize] = useState('M');
   const price = item.id === 'seed-simba-jersey' ? 45000 : item.id === 'seed-justfit' ? 200000 : item.id === 'seed-tff-match' ? 5000 : 0;
 
   async function act(action: string) {
     if (!isAuthenticated) { onRequireAuth(); return; }
-    if (action === 'fan' || action === 'follow') {
+    if (action === 'fan' || action === 'follow' || action === 'join') {
       if (action === 'fan') setFan(true);
       if (action === 'follow') setFollow(true);
+      if (action === 'join') setJoined(true);
       const res = await apiFetch('/api/follows', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -93,6 +95,7 @@ function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isA
         const data = await res.json();
         if (typeof data.following === 'boolean') setFollow(data.following);
         if (typeof data.isFan === 'boolean') setFan(data.isFan);
+        if (typeof data.joined === 'boolean') setJoined(data.joined);
       }
       return;
     }
@@ -137,11 +140,16 @@ function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isA
       </div>
     );
   }
-  if (type === 'media' || role === 'media') {
+  if (type === 'media' || role === 'media' || role === 'business') {
     return (
-      <div className="mb-3 flex gap-2">
-        <button type="button" onClick={() => act('follow')} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white">Watch online</button>
-        <button type="button" onClick={() => act('buy')} className="flex-1 rounded-xl bg-gold py-2.5 text-sm font-bold text-black">Subscribe</button>
+      <div className="mb-3 space-y-2">
+        <div className="flex gap-2">
+          <button type="button" onClick={() => act('follow')} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white">{follow ? 'You are following' : 'Follow'}</button>
+          <button type="button" onClick={() => act('join')} className="flex-1 rounded-xl bg-gold py-2.5 text-sm font-bold text-black">{joined ? 'You joined' : (role === 'media' ? 'Join Media' : 'Join Business')}</button>
+        </div>
+        {type === 'media' && (
+          <button type="button" onClick={() => act('buy')} className="w-full rounded-xl border border-surface-border py-2 text-sm font-bold text-white">Watch / Subscribe</button>
+        )}
       </div>
     );
   }
