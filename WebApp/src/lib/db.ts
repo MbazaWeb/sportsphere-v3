@@ -121,6 +121,31 @@ function applyWhere(query: any, where?: WhereClause): any {
   return query;
 }
 
+
+// ─── snake_case → camelCase transformer ──────────────────────────────────────
+// Supabase returns snake_case, all routes expect Prisma camelCase.
+// This runs on every result automatically so no route files need changing.
+function toCamel(s: string): string {
+  return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+}
+
+function transformRow(row: any): any {
+  if (!row || typeof row !== 'object') return row;
+  if (Array.isArray(row)) return row.map(transformRow);
+  const out: any = {};
+  for (const [key, val] of Object.entries(row)) {
+    const camelKey = toCamel(key);
+    out[camelKey] = val && typeof val === 'object' ? transformRow(val) : val;
+  }
+  return out;
+}
+
+function transformResult(data: any): any {
+  if (Array.isArray(data)) return data.map(transformRow);
+  if (data && typeof data === 'object') return transformRow(data);
+  return transformResult(data);
+}
+
 function makeModel(table: string) {
   return {
     async findMany({ where, select, orderBy, take, skip, include }: any = {}) {
@@ -137,16 +162,16 @@ function makeModel(table: string) {
       if (skip) q = q.range(skip, skip + (take ?? 100) - 1);
       else if (take) q = q.limit(take);
       const { data, error } = await q;
-      if (error) throw new Error(`[${table}.findMany] ${error.message}`);
-      return keysToCamel(data ?? []);
+      if (error) throw new Error(error.message);
+      return transformResult(data ?? []);
     },
 
     async findUnique({ where, select, include }: any) {
       let q = supabaseAdmin.from(table).select(buildSelect(select || include));
       q = applyWhere(q, where);
       const { data, error } = await q.maybeSingle();
-      if (error) throw new Error(`[${table}.findUnique] ${error.message}`);
-      return keysToCamel(data);
+      if (error) throw new Error(error.message);
+      return transformResult(data);
     },
 
     async findFirst({ where, select, include, orderBy }: any = {}) {
@@ -162,8 +187,8 @@ function makeModel(table: string) {
       }
       q = q.limit(1);
       const { data, error } = await q;
-      if (error) throw new Error(`[${table}.findFirst] ${error.message}`);
-      return keysToCamel(data?.[0] ?? null);
+      if (error) throw new Error(error.message);
+      return transformResult(data?.[0] ?? null);
     },
 
     async create({ data, select }: any) {
@@ -172,8 +197,8 @@ function makeModel(table: string) {
         .insert(keysToSnake(data))
         .select(buildSelect(select))
         .single();
-      if (error) throw new Error(`[${table}.create] ${error.message}`);
-      return keysToCamel(result);
+      if (error) throw new Error(error.message);
+      return transformResult(result);
     },
 
     async createMany({ data, skipDuplicates }: any) {
@@ -189,9 +214,8 @@ function makeModel(table: string) {
       let q = supabaseAdmin.from(table).update(keysToSnake(data)).select(buildSelect(select));
       q = applyWhere(q, where);
       const { data: result, error } = await q;
-      if (error) throw new Error(`[${table}.update] ${error.message}`);
-      const row = Array.isArray(result) ? result[0] : result;
-      return keysToCamel(row);
+      if (error) throw new Error(error.message);
+      return transformResult(result?.[0] ?? result);
     },
 
     async updateMany({ where, data }: any) {
@@ -209,8 +233,8 @@ function makeModel(table: string) {
         .upsert(upsertData)
         .select(buildSelect(select))
         .single();
-      if (error) throw new Error(`[${table}.upsert] ${error.message}`);
-      return keysToCamel(result);
+      if (error) throw new Error(error.message);
+      return transformResult(result);
     },
 
     async delete({ where }: any) {
@@ -287,7 +311,7 @@ export const db = {
     // Health check / simple connectivity — service role select
     const { error } = await supabaseAdmin.from('ss_sport').select('id').limit(1);
     if (error) throw new Error(error.message);
-    return [{ ok: 1 }];
+    return transformResult(data);
   },
 
   $transaction: async (fns: any[]) => {
