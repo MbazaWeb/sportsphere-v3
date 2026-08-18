@@ -1,161 +1,48 @@
-import { realtime } from '@/lib/realtime';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/lib/auth';
-import { safeJsonParse } from '@/lib/json';
-import { db } from '@/lib/db';
-import { USER_SELECT } from '@/lib/db-selects';
+import { supabaseAdmin } from '@/lib/supabase';
+import { isMissingTable } from '@/lib/supabase-safe';
 
 export const dynamic = 'force-dynamic';
 
-
-// POST — toggle follow (requires auth)
 export async function POST(request: NextRequest) {
   try {
     const userId = await getUserIdFromRequest(request);
-    if (!userId) {
-      return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
-    }
+    if (!userId) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+    const { targetUserId, action: explicitAction } = await request.json();
+    if (!targetUserId) return NextResponse.json({ error: 'targetUserId is required.' }, { status: 400 });
+    if (userId === targetUserId) return NextResponse.json({ error: 'Cannot follow yourself.' }, { status: 400 });
 
-    const body = await request.json();
-    const { targetUserId, action: explicitAction } = body;
-    if (!targetUserId) {
-      return NextResponse.json({ error: 'targetUserId is required.' }, { status: 400 });
-    }
+    const { data: existing } = await supabaseAdmin
+      .from('ss_follow')
+      .select('id')
+      .eq('follower_id', userId)
+      .eq('following_id', String(targetUserId))
+      .limit(1);
 
-    if (userId === targetUserId) {
-      return NextResponse.json({ error: 'Cannot follow yourself.' }, { status: 400 });
-    }
-
-    // Check if target user exists
-    const target = await db.user.findUnique({ where: { id: String(targetUserId) } });
-    if (!target) {
-      return NextResponse.json({ error: 'User not found.' }, { status: 404 });
-    }
-
-    // Check existing follow
-    const existing = await db.follow.findUnique({
-      where: { followerId_followingId: { followerId: userId, followingId: String(targetUserId) } },
-    });
-
-    if (existing) {
-      // Unfollow
-      await db.follow.delete({ where: { followerId_followingId: { followerId: userId, followingId: String(targetUserId) } } });
+    if (existing?.length) {
+      await supabaseAdmin.from('ss_follow').delete().eq('follower_id', userId).eq('following_id', String(targetUserId));
     } else {
-      // Follow
-      const sportsRoles = new Set(["player", "team", "coach", "national_team", "club"]);
-      // Use explicit action from client if provided, else auto-detect from role
-      const kind = explicitAction === 'fan' ? 'fan'
-        : explicitAction === 'follow' ? 'follow'
-        : sportsRoles.has(String(target.role || "").toLowerCase()) ? 'fan' : 'follow';
-      await db.follow.create({ data: { followerId: userId, followingId: String(targetUserId), kind } });
+      const kind = explicitAction === 'fan' ? 'fan' : 'follow';
+      const { error } = await supabaseAdmin.from('ss_follow').insert({
+        follower_id: userId,
+        following_id: String(targetUserId),
+        kind,
+      });
+      if (error && !isMissingTable(error)) return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Always reconcile counts from source of truth (avoids negative drift)
-    const [myFollowing, theirFollowers] = await Promise.all([
-      db.follow.count({ where: { followerId: userId } }),
-      db.follow.count({ where: { followingId: String(targetUserId) } }),
-    ]);
-    await Promise.all([
-      db.user.update({ where: { id: userId }, data: { followingCount: myFollowing } }),
-      db.user.update({ where: { id: String(targetUserId) }, data: {
-        followerCount: theirFollowers,
-        fanCount: await db.follow.count({ where: { followingId: String(targetUserId), kind: 'fan' } }),
-      }}),
-    ]);
-
-    try {
-      realtime.followUpdated({
-        followerId: userId,
-        followingId: String(targetUserId),
-        following: !existing,
-      });
-    } catch {}
+    const { count: myFollowing } = await supabaseAdmin.from('ss_follow').select('*', { count: 'exact', head: true }).eq('follower_id', userId);
+    const { count: theirFollowers } = await supabaseAdmin.from('ss_follow').select('*', { count: 'exact', head: true }).eq('following_id', String(targetUserId));
     return NextResponse.json({
-      following: !existing,
-      isFan: !existing,
-      fanCount: theirFollowers,
-      followerCount: theirFollowers,
-      followingCount: myFollowing,
+      following: !existing?.length,
+      isFan: !existing?.length,
+      fanCount: theirFollowers ?? 0,
+      followerCount: theirFollowers ?? 0,
+      followingCount: myFollowing ?? 0,
     });
-  } catch (error) {
-    console.error('Follow error:', error);
-    return NextResponse.json({ error: 'Failed to toggle follow' }, { status: 500 });
-  }
-}
-
-// PATCH — recalculate follow counts (admin/maintenance)
-export async function PATCH() {
-  try {
-    // Recalculate all follower/following counts from actual Follow records
-    const allUsers = await db.user.findMany({ select: { id: true } });
-    
-    for (const user of allUsers) {
-      const followerCount = await db.follow.count({ where: { followingId: user.id } });
-      const followingCount = await db.follow.count({ where: { followerId: user.id } });
-      const postCount = await db.post.count({ where: { userId: user.id } });
-      
-      await db.user.update({
-        where: { id: user.id },
-        data: { followerCount, fanCount: followerCount, followingCount, postCount },
-      });
-    }
-    
-    return NextResponse.json({ success: true, recalculated: allUsers.length });
-  } catch (error) {
-    console.error('Follow count recalculation error:', error);
-    return NextResponse.json({ error: 'Failed to recalculate' }, { status: 500 });
-  }
-}
-
-// GET — list followers or following for a user
-// ?userId=xxx&type=followers  → people who follow userId
-// ?userId=xxx&type=following  → people userId follows
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = request.nextUrl;
-    const userId = searchParams.get('userId');
-    const type = searchParams.get('type') || 'following';
-
-    if (!userId) {
-      return NextResponse.json({ error: 'userId is required.' }, { status: 400 });
-    }
-
-    // Allow ?userId=me for the authenticated viewer
-    let resolvedUserId = userId;
-    if (userId === 'me') {
-      const me = await getUserIdFromRequest(request);
-      if (!me) {
-        return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
-      }
-      resolvedUserId = me;
-    }
-
-    let users;
-    if (type === 'followers' || type === 'fans') {
-      const follows = await db.follow.findMany({
-        where: { followingId: resolvedUserId },
-        select: { follower: { select: USER_SELECT } },
-        orderBy: { createdAt: 'desc' },
-      });
-      users = follows.map((f: typeof follows[number]) => f.follower);
-    } else {
-      const follows = await db.follow.findMany({
-        where: { followerId: resolvedUserId },
-        select: { following: { select: USER_SELECT } },
-        orderBy: { createdAt: 'desc' },
-      });
-      users = follows.map((f: typeof follows[number]) => f.following);
-    }
-
-    const parsed = users.map((u: typeof users[number]) => ({
-      ...u,
-      roleData: safeJsonParse(u.roleData, {}),
-      sportsFollowing: safeJsonParse(u.sportsFollowing, []),
-    }));
-
-    return NextResponse.json(parsed);
-  } catch (error) {
-    console.error('Follow list error:', error);
-    return NextResponse.json({ error: 'Failed to fetch follow list' }, { status: 500 });
+  } catch (e) {
+    console.error('follow', e);
+    return NextResponse.json({ error: 'Failed to follow' }, { status: 500 });
   }
 }

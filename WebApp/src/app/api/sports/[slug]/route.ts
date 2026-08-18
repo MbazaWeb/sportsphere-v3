@@ -1,30 +1,23 @@
-// GET /api/sports/[slug] — Get single sport details with metadata
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { safeJsonParse } from '@/lib/json';
+import { supabaseAdmin } from '@/lib/supabase';
+import { isMissingTable } from '@/lib/supabase-safe';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-) {
+export async function GET(_req: NextRequest, ctx: { params: Promise<{ slug: string }> | { slug: string } }) {
   try {
-    const { slug } = await params;
-    const sport = await db.sport.findUnique({
-      where: { slug },
-    });
-
-    if (!sport || !sport.isActive) {
-      return NextResponse.json({ error: 'Sport not found.' }, { status: 404 });
-    }
-
+    const params = await Promise.resolve(ctx.params as any);
+    const slug = params.slug;
+    const { data, error } = await supabaseAdmin.from('ss_sport').select('*').eq('slug', slug).limit(1);
+    if (error && isMissingTable(error)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const s = data?.[0];
+    if (!s) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({
-      ...sport,
-      tags: safeJsonParse(sport.tags, []),
+      id: s.id, name: s.name, slug: s.slug, icon: s.icon, category: s.category,
+      sportType: s.sport_type, format: s.format, description: s.description,
     });
-  } catch (error) {
-    console.error('Failed to fetch sport:', error);
-    return NextResponse.json({ error: 'Failed to fetch sport' }, { status: 500 });
+  } catch (e) {
+    console.error('sport slug', e);
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 }
