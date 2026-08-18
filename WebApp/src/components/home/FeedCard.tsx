@@ -68,23 +68,70 @@ function resolveMediaUrl(url: string): string {
 }
 
 function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isAuthenticated: boolean; onRequireAuth: () => void }) {
+  const setViewingUser = useUIStore((s) => s.setViewingUser);
   const role = String(item.user?.role || '').toLowerCase();
   const type = String(item.postType || '').toLowerCase();
+  const [fan, setFan] = useState(false);
+  const [follow, setFollow] = useState(false);
+
+  function openProfile() {
+    const u = item.user;
+    if (!u) return;
+    setViewingUser({
+      id: u.id,
+      name: u.name,
+      handle: u.handle,
+      avatar: u.avatarUrl || u.avatarInitials,
+      avatarUrl: u.avatarUrl,
+      verified: u.isVerified,
+      coverGradient: 'from-emerald-600 to-emerald-900',
+      bio: u.bio || '',
+      role: u.role,
+      location: u.location || '',
+      joined: '',
+      followers: u.followerCount || 0,
+      following: u.followingCount || 0,
+      posts: u.postCount || 0,
+      isFollowing: follow,
+    });
+  }
+
   async function act(action: string) {
     if (!isAuthenticated) { onRequireAuth(); return; }
     if (action === 'fan' || action === 'follow') {
-      await apiFetch('/api/follows', {
+      const res = await apiFetch('/api/follows', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetUserId: item.userId, action }),
       });
+      if (res.ok) {
+        const data = await res.json();
+        setFollow(!!data.following);
+        setFan(!!data.isFan);
+        openProfile();
+      }
       return;
     }
+    if (action === 'watch' || action === 'buy') {
+      openProfile();
+    }
   }
+
+  const fanFollow = (
+    <div className="mb-3 flex gap-2">
+      <button onClick={() => act('fan')} className="flex-1 rounded-xl border border-surface-border py-2.5 text-sm font-bold text-white">
+        {fan ? 'Fan' : 'Become Fan'}
+      </button>
+      <button onClick={() => act('follow')} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white">
+        {follow ? 'Following' : 'Follow'}
+      </button>
+    </div>
+  );
+
   if (type === 'shop' || role === 'business') {
     return (
-      <div className="mb-3 flex gap-2">
-        <button onClick={() => act('buy')} className="flex-1 rounded-xl bg-gold py-2.5 text-sm font-bold text-black">Buy Now</button>
+      <div className="mb-3">
+        <button onClick={() => act('buy')} className="w-full rounded-xl bg-gold py-2.5 text-sm font-bold text-black">Buy Now</button>
       </div>
     );
   }
@@ -96,26 +143,13 @@ function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isA
       </div>
     );
   }
-  if (type === 'official' || role === 'official') {
-    return (
-      <div className="mb-3 flex gap-2">
-        <button onClick={() => act('fan')} className="flex-1 rounded-xl border border-surface-border py-2.5 text-sm font-bold text-white">Become Fan</button>
-        <button onClick={() => act('follow')} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white">Follow</button>
-      </div>
-    );
-  }
-  if (role === 'team' || role === 'player' || role === 'coach') {
-    return (
-      <div className="mb-3 flex gap-2">
-        <button onClick={() => act('fan')} className="flex-1 rounded-xl border border-surface-border py-2.5 text-sm font-bold text-white">Become Fan</button>
-        <button onClick={() => act('follow')} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white">Follow</button>
-      </div>
-    );
-  }
+  if (['official','team','player','coach'].includes(role) || type === 'official') return fanFollow;
   if (role === 'analyst' || type === 'prediction') {
     return (
       <div className="mb-3">
-        <button onClick={() => act('follow')} className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-bold text-white">Follow</button>
+        <button onClick={() => act('follow')} className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-bold text-white">
+          {follow ? 'Following' : 'Follow'}
+        </button>
       </div>
     );
   }
