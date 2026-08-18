@@ -179,11 +179,11 @@ function makeModel(table: string) {
 // Add a model for every table in schema.sql
 export const db = {
   // Core social
-  user:                    makeModel('user'),
+  user:                    makeModel('"user"'),
   follow:                  makeModel('follow'),
   post:                    makeModel('post'),
   postLike:                makeModel('post_like'),
-  comment:                 makeModel('comment'),
+  comment:                 makeModel('"comment"'),
   commentLike:             makeModel('comment_like'),
   poll:                    makeModel('poll'),
   pollVote:                makeModel('poll_vote'),
@@ -198,7 +198,7 @@ export const db = {
   communityMember:         makeModel('community_member'),
 
   // Sports data
-  match:                   makeModel('match'),
+  match:                   makeModel('"match"'),
   team:                    makeModel('team'),
   league:                  makeModel('league'),
   player:                  makeModel('player'),
@@ -206,7 +206,7 @@ export const db = {
   location:                makeModel('location'),
 
   // Roles & sports
-  role:                    makeModel('role'),
+  role:                    makeModel('"role"'),
   roleType:                makeModel('role_type'),
   sport:                   makeModel('sport'),
   userSport:               makeModel('user_sport'),

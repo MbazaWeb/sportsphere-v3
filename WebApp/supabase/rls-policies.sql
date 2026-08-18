@@ -5,7 +5,7 @@
 ALTER TABLE "user" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE post ENABLE ROW LEVEL SECURITY;
 ALTER TABLE follow ENABLE ROW LEVEL SECURITY;
-ALTER TABLE comment ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "comment" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE message ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notification ENABLE ROW LEVEL SECURITY;
 ALTER TABLE community ENABLE ROW LEVEL SECURITY;
@@ -24,9 +24,9 @@ CREATE POLICY "posts_own_update" ON post FOR UPDATE USING (auth.uid()::text = "u
 CREATE POLICY "posts_own_delete" ON post FOR DELETE USING (auth.uid()::text = "userId");
 
 -- Comments: public read, auth create, own delete
-CREATE POLICY "comments_public_read" ON comment FOR SELECT USING (true);
-CREATE POLICY "comments_auth_create" ON comment FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
-CREATE POLICY "comments_own_delete" ON comment FOR DELETE USING (auth.uid()::text = "userId");
+CREATE POLICY "comments_public_read" ON "comment" FOR SELECT USING (true);
+CREATE POLICY "comments_auth_create" ON "comment" FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "comments_own_delete" ON "comment" FOR DELETE USING (auth.uid()::text = "userId");
 
 -- Messages: only sender/receiver can read
 CREATE POLICY "messages_own_read" ON message FOR SELECT 
@@ -53,4 +53,4 @@ CREATE POLICY "community_members_own_leave" ON community_member FOR DELETE USING
 CREATE POLICY "teams_public" ON team FOR SELECT USING (true);
 CREATE POLICY "leagues_public" ON league FOR SELECT USING (true);
 CREATE POLICY "players_public" ON player FOR SELECT USING (true);
-CREATE POLICY "match_public" ON match FOR SELECT USING (true);
+CREATE POLICY "match_public" ON "match" FOR SELECT USING (true);
