@@ -1,85 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { verifyAdmin } from "@/lib/adminGuard";
-import { randomUUID } from "crypto";
+import { NextRequest, NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase';
+import { isMissingTable } from '@/lib/supabase-safe';
+import crypto from 'crypto';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
-// GET /api/admin/news — List news articles
-export async function GET(request: NextRequest) {
-  const auth = await verifyAdmin(request);
-  if (!auth.authorized) return auth.response;
-  try {
-    const articles = await db.newsItem.findMany({
-      orderBy: { publishedAt: "desc" },
-      take: 200,
-    });
-
-    const formatted = articles.map((a) => ({
-      id: a.id,
-      title: a.title || "Untitled Article",
-      category: a.category || "general",
-      status: (a.status || "draft").toLowerCase(),
-      source: (a.source || "manual").toLowerCase(),
-      createdAt: a.publishedAt?.toISOString() ?? new Date().toISOString(),
-      publishedAt: a.publishedAt?.toISOString() ?? null,
-      slug: a.slug,
-      createdByAI: a.createdByAI,
-    }));
-
-    return NextResponse.json({ ok: true, articles: formatted });
-  } catch (error: unknown) {
-    console.error("News GET error:", error);
-    return NextResponse.json({ ok: true, articles: [] });
-  }
+export async function GET() {
+  const { data, error } = await supabaseAdmin.from('ss_news_item').select('*').order('created_at', { ascending: false }).limit(100);
+  if (error && isMissingTable(error)) return NextResponse.json([]);
+  return NextResponse.json(data || []);
 }
 
-// POST /api/admin/news — Create new article
 export async function POST(request: NextRequest) {
-  const auth = await verifyAdmin(request);
-  if (!auth.authorized) return auth.response;
-  try {
-    const body = await request.json();
-    const { title, content, category, isAiGenerated, status } = body;
-
-    if (!title || !content) {
-      return NextResponse.json(
-        { error: "Title and Content are required." },
-        { status: 400 }
-      );
-    }
-
-    const slugBase = String(title)
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 80);
-    const slug = `${slugBase}-${Date.now().toString(36)}`;
-
-    const created = await db.newsItem.create({
-      data: {
-        id: randomUUID(),
-        title,
-        slug,
-        body: content,
-        summary: String(content).slice(0, 240),
-        category: category || "general",
-        status: (status || "draft").toLowerCase(),
-        source: isAiGenerated ? "ai" : "manual",
-        createdByAI: Boolean(isAiGenerated),
-        publishedAt:
-          String(status || "").toLowerCase() === "published"
-            ? new Date()
-            : null,
-      },
-    });
-
-    return NextResponse.json({ ok: true, article: created });
-  } catch (error: unknown) {
-    console.error("News POST error:", error);
-    return NextResponse.json(
-      { error: "Failed to create article." },
-      { status: 500 }
-    );
-  }
+  const body = await request.json().catch(() => ({}));
+  const row = { id: crypto.randomUUID(), title: body.title, body: body.body || body.content, image_url: body.imageUrl, published: body.published ?? false };
+  const { data, error } = await supabaseAdmin.from('ss_news_item').insert(row).select('*').maybeSingle();
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json(data, { status: 201 });
 }

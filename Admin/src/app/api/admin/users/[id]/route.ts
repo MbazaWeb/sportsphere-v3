@@ -1,71 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { verifyAdmin } from '@/lib/adminGuard';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * PUT /api/admin/users/[id]
- *
- * Direct DB update. Body can contain any of:
- *   { role: string }          — change the user's role slug
- *   { verificationStatus: string }
- *   { isVerified: boolean }
- *
- * Returns the updated user (sanitized — no passwordHash).
- *
- * NOTE: the User model has no `isBanned` field, so we don't accept that
- * here. If you want ban support, add a Boolean isBanned @default(false)
- * to the User model in prisma/schema.prisma and run a migration.
- */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const auth = await verifyAdmin(request);
-  if (!auth.authorized) return auth.response;
+export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> | { id: string } }) {
+  const { id } = await Promise.resolve(ctx.params as any);
+  const { data } = await supabaseAdmin.from('ss_user').select('*').eq('id', id).limit(1);
+  return NextResponse.json(data?.[0] || {}, { status: data?.[0] ? 200 : 404 });
+}
 
-  try {
-    const { id } = await params;
-    const body = await request.json();
+export async function PATCH(request: NextRequest, ctx: { params: Promise<{ id: string }> | { id: string } }) {
+  const { id } = await Promise.resolve(ctx.params as any);
+  const body = await request.json().catch(() => ({}));
+  const update: Record<string, unknown> = {};
+  if (body.role !== undefined) update.role = body.role;
+  if (body.isVerified !== undefined) update.is_verified = body.isVerified;
+  if (body.isActive !== undefined) update.is_active = body.isActive;
+  if (body.name !== undefined) update.name = body.name;
+  const { data, error } = await supabaseAdmin.from('ss_user').update(update).eq('id', id).select('*').maybeSingle();
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json(data);
+}
 
-    const updateData: any = {};
-    if (typeof body.role === 'string') updateData.role = body.role;
-    if (typeof body.verificationStatus === 'string')
-      updateData.verificationStatus = body.verificationStatus;
-    if (typeof body.isVerified === 'boolean')
-      updateData.isVerified = body.isVerified;
-    if (typeof body.emailVerified === 'boolean')
-      updateData.emailVerified = body.emailVerified;
-
-    if (Object.keys(updateData).length === 0) {
-      return NextResponse.json(
-        { error: 'No valid fields to update.' },
-        { status: 400 }
-      );
-    }
-
-    const updatedUser = await db.user.update({
-      where: { id },
-      data: updateData,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        handle: true,
-        role: true,
-        isVerified: true,
-        verificationStatus: true,
-        emailVerified: true,
-      },
-    });
-
-    return NextResponse.json(updatedUser);
-  } catch (error) {
-    console.error('Failed to update user:', error);
-    return NextResponse.json(
-      { error: 'Failed to update user' },
-      { status: 500 }
-    );
-  }
+export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> | { id: string } }) {
+  const { id } = await Promise.resolve(ctx.params as any);
+  const { error } = await supabaseAdmin.from('ss_user').delete().eq('id', id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json({ ok: true });
 }

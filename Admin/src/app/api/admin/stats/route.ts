@@ -1,37 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { verifyAdmin } from '@/lib/adminGuard';
+import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * GET /api/admin/stats
- *
- * Direct DB count queries. Returns platform-wide KPIs for the dashboard.
- */
-export async function GET(request: NextRequest) {
-  const auth = await verifyAdmin(request);
-  if (!auth.authorized) return auth.response;
+async function count(table: string) {
+  const { count, error } = await supabaseAdmin.from(table).select('*', { count: 'exact', head: true });
+  if (error) return 0;
+  return count ?? 0;
+}
 
-  try {
-    const [usersCount, postsCount, sportsCount, pendingRoles] = await Promise.all([
-      db.user.count(),
-      db.post.count(),
-      db.sport.count({ where: { isActive: true } }),
-      db.verificationRequest.count({ where: { status: 'pending' } }),
-    ]);
-
-    return NextResponse.json({
-      users: usersCount,
-      posts: postsCount,
-      sports: sportsCount,
-      pendingRoles,
-    });
-  } catch (error) {
-    console.error('Failed to fetch admin stats:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch stats' },
-      { status: 500 }
-    );
-  }
+export async function GET() {
+  const [users, posts, teams, matches, sports] = await Promise.all([
+    count('ss_user'), count('ss_post'), count('ss_team'), count('ss_match'), count('ss_sport'),
+  ]);
+  return NextResponse.json({ users, posts, teams, matches, sports });
 }

@@ -1,151 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { verifyAdmin } from '@/lib/adminGuard';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 30;
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const auth = await verifyAdmin(request);
-  if (!auth.authorized) return auth.response;
-
-  try {
-    const { id } = await params;
-    const news = await db.newsItem.findUnique({
-      where: { id },
-      include: {
-        Sport: { select: { id: true, name: true, icon: true } },
-        League: { select: { id: true, name: true } },
-        Team: { select: { id: true, name: true } },
-        Player: { select: { id: true, name: true } },
-        Coach: { select: { id: true, name: true } },
-      },
-    });
-    if (!news) {
-      return NextResponse.json({ error: 'News item not found' }, { status: 404 });
-    }
-    return NextResponse.json(news);
-  } catch (error) {
-    console.error('Failed to fetch news:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch news', detail: String(error) },
-      { status: 500 }
-    );
-  }
+export async function PATCH(request: NextRequest, ctx: { params: Promise<{ id: string }> | { id: string } }) {
+  const { id } = await Promise.resolve(ctx.params as any);
+  const body = await request.json().catch(() => ({}));
+  const update: Record<string, unknown> = {};
+  if (body.title !== undefined) update.title = body.title;
+  if (body.body !== undefined) update.body = body.body;
+  if (body.content !== undefined) update.body = body.content;
+  if (body.published !== undefined) update.published = body.published;
+  if (body.imageUrl !== undefined) update.image_url = body.imageUrl;
+  const { data, error } = await supabaseAdmin.from('ss_news_item').update(update).eq('id', id).select('*').maybeSingle();
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json(data);
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const auth = await verifyAdmin(request);
-  if (!auth.authorized) return auth.response;
-
-  try {
-    const { id } = await params;
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-
-    const existing = await db.newsItem.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        title: true,
-        status: true,
-        publishedAt: true,
-        body: true,
-        summary: true,
-        category: true,
-        tags: true,
-        imageUrl: true,
-        imageOwnerName: true,
-      },
-    });
-    if (!existing) {
-      return NextResponse.json({ error: 'News item not found' }, { status: 404 });
-    }
-
-    const allowed = [
-      'title', 'body', 'summary', 'status', 'category', 'tags',
-      'imageUrl', 'imageOwnerName', 'imageOwnerUrl',
-      'sportId', 'leagueId', 'teamId', 'playerId', 'coachId',
-    ];
-    const data: Record<string, unknown> = {};
-    for (const key of allowed) {
-      if (key in body) data[key] = body[key];
-    }
-
-    // Auto-set publishedAt when status changes to 'published' and was null
-    if (data.status === 'published' && !existing.publishedAt) {
-      data.publishedAt = new Date();
-    }
-
-    if (Object.keys(data).length === 0) {
-      return NextResponse.json({ error: 'No valid fields to update.' }, { status: 400 });
-    }
-
-    const updated = await db.newsItem.update({ where: { id }, data });
-
-    await db.auditLog.create({
-      data: {
-        actorId: auth.user.sub,
-        action: 'news.update',
-        module: 'news',
-        targetId: id,
-        targetType: 'NewsItem',
-        oldValue: existing as any,
-        newValue: data as any,
-      },
-    });
-
-    return NextResponse.json(updated);
-  } catch (error) {
-    console.error('Failed to update news:', error);
-    return NextResponse.json(
-      { error: 'Failed to update news', detail: String(error) },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const auth = await verifyAdmin(request);
-  if (!auth.authorized) return auth.response;
-
-  try {
-    const { id } = await params;
-    const existing = await db.newsItem.findUnique({
-      where: { id },
-      select: { id: true, title: true },
-    });
-    if (!existing) {
-      return NextResponse.json({ error: 'News item not found' }, { status: 404 });
-    }
-
-    await db.newsItem.delete({ where: { id } });
-
-    await db.auditLog.create({
-      data: {
-        actorId: auth.user.sub,
-        action: 'news.delete',
-        module: 'news',
-        targetId: id,
-        targetType: 'NewsItem',
-        oldValue: existing as any,
-      },
-    });
-
-    return NextResponse.json({ ok: true, deleted: id });
-  } catch (error) {
-    console.error('Failed to delete news:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete news', detail: String(error) },
-      { status: 500 }
-    );
-  }
+export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> | { id: string } }) {
+  const { id } = await Promise.resolve(ctx.params as any);
+  await supabaseAdmin.from('ss_news_item').delete().eq('id', id);
+  return NextResponse.json({ ok: true });
 }
