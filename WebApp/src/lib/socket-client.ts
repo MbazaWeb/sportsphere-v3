@@ -19,7 +19,7 @@ function envInt(name: string, fallback: number) {
 export const SOCKET_ENABLED = process.env.NEXT_PUBLIC_SOCKET_ENABLED !== 'false';
 
 export const SOCKET_RECONNECT_OPTIONS = {
-  path: `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/socket.io` as const,
+  path: '/socket.io' as const,
   transports: ['websocket', 'polling'] as string[],
   reconnection: SOCKET_ENABLED,
   reconnectionAttempts: envInt('NEXT_PUBLIC_SOCKET_RECONNECT_ATTEMPTS', 5),

@@ -624,6 +624,19 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
 }
 
 // ─── Poll Block ───────────────────────────────────────────────
+function asStringList(v: unknown): string[] {
+  if (Array.isArray(v)) return v.map((x) => String(x));
+  if (typeof v === 'string') {
+    const s = v.trim();
+    if (!s || s === '[]') return [];
+    try {
+      const d = JSON.parse(s);
+      if (Array.isArray(d)) return d.map((x) => String(x));
+    } catch { /* ignore */ }
+  }
+  return [];
+}
+
 function PollBlock({
   poll,
   isAuthenticated,
@@ -635,7 +648,10 @@ function PollBlock({
   onRequireAuth: () => void;
 }) {
   const [votedOption, setVotedOption] = useState<number | null>(poll.userVotedOption ?? null);
-  const [optionCounts, setOptionCounts] = useState<number[]>(poll.optionCounts ?? poll.options.map(() => 0));
+  const options = asStringList((poll as any).options);
+  const [optionCounts, setOptionCounts] = useState<number[]>(
+    Array.isArray(poll.optionCounts) ? poll.optionCounts : options.map(() => 0),
+  );
   const [busy, setBusy] = useState(false);
 
   const totalVotes = optionCounts.reduce((a, b) => a + b, 0);
@@ -699,7 +715,7 @@ function PollBlock({
           <span className="rounded-full bg-surface px-2 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">Closed</span>
         )}
       </div>
-      {poll.options.map((opt: string, i: number) => {
+      {options.map((opt: string, i: number) => {
         const count = optionCounts[i] ?? 0;
         const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
         const isMyChoice = votedOption === i;
