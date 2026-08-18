@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+
+function isMissingTable(error: any) {
+  const msg = String(error?.message || '').toLowerCase();
+  const code = String(error?.code || '');
+  return code === '42P01' || code === 'PGRST205' || msg.includes('does not exist') || msg.includes('could not find the table');
+}
+
 import { verifyAdmin } from '@/lib/adminGuard';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +17,10 @@ async function count(table: string): Promise<number> {
       .from(table)
       .select('*', { count: 'exact', head: true });
     if (error) {
+      if (isMissingTable(error)) {
+        console.warn('missing table', table);
+        return 0;
+      }
       console.error('count', table, error.message);
       return 0;
     }

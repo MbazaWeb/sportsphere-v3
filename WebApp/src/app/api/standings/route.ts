@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { isMissingTable, safeSelect } from '@/lib/supabase-safe';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,37 +19,18 @@ export async function GET(request: NextRequest) {
       || request.nextUrl.searchParams.get('id')
       || '';
 
+    const leagues = await safeSelect<any>('ss_league', (q) => q.select('id,name,slug,type,country,season,is_active'));
+    const available = leagues.data.map((l) => l.name).filter(Boolean);
+
     let league: any = null;
     if (leagueParam) {
-      const { data } = await supabaseAdmin
-        .from('ss_league')
-        .select('id,name,slug,type,country,season,is_active')
-        .or(`name.ilike."${leagueParam}",slug.eq."${leagueParam}"`)
-        .limit(1);
-      league = data?.[0] || null;
-      if (!league) {
-        const { data: loose } = await supabaseAdmin
-          .from('ss_league')
-          .select('id,name,slug,type,country,season,is_active')
-          .ilike('name', `%${leagueParam}%`)
-          .limit(1);
-        league = loose?.[0] || null;
-      }
+      const lower = leagueParam.toLowerCase();
+      league = leagues.data.find((l) =>
+        String(l.name || '').toLowerCase() === lower || String(l.slug || '').toLowerCase() === lower
+      ) || leagues.data.find((l) => String(l.name || '').toLowerCase().includes(lower));
     } else {
-      const { data } = await supabaseAdmin
-        .from('ss_league')
-        .select('id,name,slug,type,country,season,is_active')
-        .eq('is_active', true)
-        .limit(1);
-      league = data?.[0] || null;
+      league = leagues.data.find((l) => l.is_active) || leagues.data[0] || null;
     }
-
-    const { data: leagueNames } = await supabaseAdmin
-      .from('ss_league')
-      .select('name')
-      .eq('is_active', true)
-      .order('name');
-    const available = (leagueNames || []).map((l) => l.name);
 
     if (!league) {
       return NextResponse.json({
@@ -59,27 +41,25 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const { data: teams } = await supabaseAdmin
-      .from('ss_team')
-      .select('id,name,slug,city,logo_url,league_id')
-      .eq('league_id', league.id)
-      .limit(200);
+    const teamsRes = await safeSelect<TeamRow>('ss_team', (q) =>
+      q.select('id,name,slug,city,logo_url,league_id').eq('league_id', league.id).limit(200)
+    );
+    const teamList: TeamRow[] = teamsRes.data;
 
-    const teamList: TeamRow[] = teams || [];
-
-    const { data: matches } = await supabaseAdmin
-      .from('ss_match')
-      .select('home_team_id,away_team_id,home_score,away_score,status')
-      .eq('league_id', league.id)
-      .in('status', ['ft', 'finished', 'FT', 'FINISHED'])
-      .limit(2000);
+    const matchesRes = await safeSelect<any>('ss_match', (q) =>
+      q.select('home_team_id,away_team_id,home_score,away_score,status')
+        .eq('league_id', league.id)
+        .in('status', ['ft', 'finished', 'FT', 'FINISHED'])
+        .limit(2000)
+    );
+    const matches = matchesRes.data;
 
     const stats = new Map<string, { played: number; won: number; drawn: number; lost: number; gf: number; ga: number; pts: number }>();
     for (const t of teamList) {
       stats.set(t.id, { played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, pts: 0 });
     }
 
-    for (const m of matches || []) {
+    for (const m of matches) {
       const home = stats.get(m.home_team_id);
       const away = stats.get(m.away_team_id);
       const hs = Number(m.home_score ?? 0);
