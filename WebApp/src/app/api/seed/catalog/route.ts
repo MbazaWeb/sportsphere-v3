@@ -1,36 +1,67 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { getOfficialUserId } from '@/lib/official-account';
+import { fetchLogoFromTheSportsDB } from '@/lib/team-logo-resolver';
+import { uploadPublic } from '@/lib/supabase-storage';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
-const LOGO_BY_SLUG: Record<string, string> = {
-  simba: 'https://www.google.com/s2/favicons?domain=simbasc.co.tz&sz=128',
-  yanga: 'https://www.google.com/s2/favicons?domain=yangasc.co.tz&sz=128',
-  'young-africans-sc': 'https://www.google.com/s2/favicons?domain=yangasc.co.tz&sz=128',
-  azam: 'https://www.google.com/s2/favicons?domain=azamfc.co.tz&sz=128',
-  'coastal-union': 'https://www.google.com/s2/favicons?domain=coastalunionfc.co.tz&sz=128',
+const SEARCH_NAME: Record<string, string> = {
+  simba: 'Simba SC',
+  yanga: 'Young Africans',
+  'young-africans-sc': 'Young Africans',
+  azam: 'Azam FC',
+  'dodoma-fc': 'Dodoma FC',
+  'mbeya-city': 'Mbeya City',
+  'singida-black-stars': 'Singida Black Stars',
+  'geita-gold': 'Geita Gold',
+  'pamba-jiji': 'Pamba',
+  'polisi-tanzania': 'Polisi Tanzania',
+  'kagera-sugar': 'Kagera Sugar',
+  'coastal-union': 'Coastal Union',
+  mashujaa: 'Mashujaa',
+  'jkt-tanzania': 'JKT Tanzania',
+  namungo: 'Namungo FC',
 };
 
-function logoFor(slug: string, name: string, existing?: string | null) {
-  if (existing) return existing;
-  const key = String(slug || name || '').toLowerCase();
-  for (const [k, url] of Object.entries(LOGO_BY_SLUG)) {
-    if (key.includes(k)) return url;
-  }
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'T')}&background=0f141c&color=f5c518&size=128&bold=true`;
+async function downloadAndStore(teamId: string, sourceUrl: string): Promise<string | null> {
+  const res = await fetch(sourceUrl, { headers: { 'User-Agent': 'SportSphere/1.0' } });
+  if (!res.ok) return null;
+  const buf = Buffer.from(await res.arrayBuffer());
+  const ct = res.headers.get('content-type') || 'image/png';
+  const ext = ct.includes('jpeg') ? 'jpg' : ct.includes('webp') ? 'webp' : 'png';
+  return uploadPublic('avatars', `teams/${teamId}.${ext}`, buf, ct);
 }
 
 export async function POST() {
   const { data: teams, error } = await supabaseAdmin.from('ss_team').select('id,name,slug,city,country,logo_url');
-  if (error) return NextResponse.json({ error: error.message, created: 0 }, { status: 400 });
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-  let created = 0;
+  const saved: { id: string; name: string; logo: string | null }[] = [];
+
   for (const t of teams || []) {
+    const slug = String(t.slug || '').toLowerCase();
+    const search = SEARCH_NAME[slug] || t.name;
+    let source = t.logo_url as string | null;
+    if (!source || source.includes('google.com/s2/favicons') || source.includes('ui-avatars.com')) {
+      source = await fetchLogoFromTheSportsDB(search);
+    }
+    let stored: string | null = null;
+    if (source) {
+      try {
+        stored = await downloadAndStore(t.id, source);
+      } catch (e) {
+        console.error('logo store', t.name, e);
+        stored = source;
+      }
+    }
+    const logo = stored || source || null;
+    if (logo) {
+      await supabaseAdmin.from('ss_team').update({ logo_url: logo }).eq('id', t.id);
+    }
     const handle = '@' + String(t.slug || t.name || t.id).toLowerCase().replace(/\s+/g, '');
-    const logo = logoFor(t.slug, t.name, t.logo_url);
-    await supabaseAdmin.from('ss_team').update({ logo_url: logo }).eq('id', t.id);
-    const { error: up } = await supabaseAdmin.from('ss_user').upsert({
+    await supabaseAdmin.from('ss_user').upsert({
       id: t.id,
       name: t.name,
       handle,
@@ -43,11 +74,11 @@ export async function POST() {
       location: [t.city, t.country || 'Tanzania'].filter(Boolean).join(', '),
       bio: t.name,
     }, { onConflict: 'id' });
-    if (!up) created += 1;
+    saved.push({ id: t.id, name: t.name, logo });
   }
 
   const officialId = await getOfficialUserId();
-  return NextResponse.json({ ok: true, teams: teams?.length || 0, profiles: created, officialId });
+  return NextResponse.json({ ok: true, officialId, teams: saved });
 }
 
 export async function GET() {
