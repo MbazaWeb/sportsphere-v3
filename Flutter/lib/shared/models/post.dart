@@ -1,5 +1,21 @@
 import 'dart:convert';
 
+
+List<String> _asStringList(dynamic v) {
+  if (v == null) return const [];
+  if (v is List) return v.map((e) => e.toString()).toList();
+  if (v is String) {
+    final s = v.trim();
+    if (s.isEmpty || s == '[]') return const [];
+    try {
+      final d = jsonDecode(s);
+      if (d is List) return d.map((e) => e.toString()).toList();
+    } catch (_) {}
+    return [s];
+  }
+  return const [];
+}
+
 class PostUser {
   const PostUser({
     required this.id,
@@ -54,12 +70,12 @@ class PollData {
   factory PollData.fromJson(Map<String, dynamic> j) => PollData(
         id: j['id']?.toString() ?? '',
         question: j['question']?.toString() ?? '',
-        options: (j['options'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+        options: _asStringList(j['options']),
         totalVotes: (j['totalVotes'] as num?)?.toInt() ?? 0,
         optionCounts: (j['optionCounts'] as List?)?.map((e) => (e as num).toInt()).toList(),
         userVotedOption: (j['userVotedOption'] as num?)?.toInt(),
         endsAt: j['endsAt']?.toString(),
-        optionImages: (j['optionImages'] as List?)?.map((e) => e.toString()).toList(),
+        optionImages: _asStringList(j['optionImages']),
       );
 }
 
@@ -166,7 +182,7 @@ class Post {
       userId: j['userId']?.toString() ?? '',
       content: j['content']?.toString() ?? '',
       postType: type,
-      mediaUrls: (j['mediaUrls'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+      mediaUrls: _asStringList(j['mediaUrls']),
       teamTag: j['teamTag']?.toString(),
       playerTag: j['playerTag']?.toString(),
       isBreaking: j['isBreaking'] == true,
