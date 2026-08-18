@@ -1,0 +1,17 @@
+{
+  "name": "sportsphere-v3-root",
+  "private": true,
+  "version": "2.0.0",
+  "description": "SportSphere v3 root workspace. Required so the PM2 'sportsphere-ws' process can resolve 'socket.io' when running scripts/ws-server.mjs. Without this file, the WebSocket server crashes on startup with 'Cannot find package socket.io' and the browser sees wss://.../?EIO=4&transport=websocket failed.",
+  "type": "module",
+  "scripts": {
+    "ws:start": "node scripts/ws-server.mjs",
+    "ws:health": "curl -s http://127.0.0.1:3004/health || echo 'ws down'"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

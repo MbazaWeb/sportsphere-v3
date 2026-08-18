@@ -27,6 +27,29 @@ export function useRealtime(handlers?: {
     let unsubStatus: (() => void) | undefined;
     let cancelled = false;
 
+    // Public client registration token. DISTINCT from the server-side
+    // WS_AUTH_SECRET (which must never be exposed to the browser). Empty
+    // value = anonymous socket (feed still works, presence disabled).
+    const REG_SECRET = process.env.NEXT_PUBLIC_WS_AUTH_SECRET || "";
+
+    const registerUser = (uid: string) => {
+      // ws-server.mjs (scripts/ws-server.mjs) was hardened to reject the
+      // legacy bare-string `register_user` form. Send the new shape:
+      //   { userId, secret, isAdmin }
+      // and use an ack callback so a rejected registration is visible.
+      socket.emit(
+        "register_user",
+        { userId: uid, secret: REG_SECRET, isAdmin: false },
+        (ack: any) => {
+          if (ack?.ok) {
+            console.log("[Socket] registered", uid);
+          } else if (ack?.error) {
+            console.warn("[Socket] register_user rejected:", ack.error);
+          }
+        },
+      );
+    };
+
     (async () => {
       try {
         socket = await getSharedSocket();
@@ -35,7 +58,7 @@ export function useRealtime(handlers?: {
         unsubStatus = onSocketStatus(() => {});
 
         const onConnect = () => {
-          if (userId) socket.emit("register_user", userId);
+          if (userId) registerUser(userId);
           socket.emit("join_feed");
         };
 

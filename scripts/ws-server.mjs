@@ -8,10 +8,56 @@
  * - register_user requires a shared secret (WS_AUTH_SECRET) + userId
  * - join_admin restricted to users that registered with isAdmin flag + secret
  * - Unauthenticated sockets cannot join privileged rooms
+ *
+ * Env loading fix (2026-08):
+ * - PM2 does NOT auto-load .env files for non-Next.js scripts. When the
+ *   'sportsphere-ws' process starts via `node scripts/ws-server.mjs`, none
+ *   of the WS_* vars defined in /var/www/sportsphere-nextjs/.env reach the
+ *   process — which means WS_AUTH_SECRET was always "" and the server ran
+ *   in insecure mode. We now explicitly load .env from process.cwd() with
+ *   a tiny no-dependency parser, so the env block in ecosystem.config.cjs
+ *   AND the .env file are both honoured (with .env taking precedence, only
+ *   filling in vars that PM2 didn't already inject).
  */
 import { Server } from "socket.io";
 import http from "http";
 import crypto from "crypto";
+import { readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
+
+// Tiny no-dep .env loader (PM2 does not auto-load .env for non-Next scripts).
+// Only sets vars that are NOT already present in process.env (so PM2's env
+// block in ecosystem.config.cjs still wins for explicit overrides).
+(function loadEnvFile() {
+  const candidates = [
+    process.env.WS_ENV_FILE, // explicit override
+    join(process.cwd(), ".env"),
+    "/var/www/sportsphere-nextjs/.env",
+  ];
+  for (const p of candidates) {
+    if (!p || !existsSync(p)) continue;
+    try {
+      const txt = readFileSync(p, "utf8");
+      for (const raw of txt.split("\n")) {
+        const line = raw.trim();
+        if (!line || line.startsWith("#")) continue;
+        const eq = line.indexOf("=");
+        if (eq < 1) continue;
+        const key = line.slice(0, eq).trim();
+        let val = line.slice(eq + 1).trim();
+        if ((val.startsWith('"') && val.endsWith('"')) ||
+            (val.startsWith("'") && val.endsWith("'"))) {
+          val = val.slice(1, -1);
+        }
+        if (!(key in process.env)) process.env[key] = val;
+      }
+      console.log(`[WS] loaded env from ${p}`);
+      break;
+    } catch (e) {
+      console.warn(`[WS] failed to load env from ${p}:`, e?.message || e);
+    }
+  }
+})();
 
 const PORT = Number(process.env.WS_PORT || 3004);
 const INTERNAL_PORT = Number(process.env.WS_INTERNAL_PORT || 3005);
