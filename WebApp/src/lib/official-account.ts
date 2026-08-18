@@ -4,7 +4,7 @@ export const OFFICIAL_HANDLE = '@sportsphere';
 export const OFFICIAL_NAME = 'SportSphere';
 export const OFFICIAL_AVATAR =
   process.env.NEXT_PUBLIC_OFFICIAL_AVATAR_URL ||
-  `${process.env.NEXT_PUBLIC_BASE_PATH || '/sportsphere'}/logo.svg`;
+  `${process.env.NEXT_PUBLIC_BASE_PATH || '/sportsphere'}/logo-wordmark.svg`;
 
 const ADMIN_ROLES = new Set(['administrator', 'admin', 'super-admin', 'super_admin']);
 

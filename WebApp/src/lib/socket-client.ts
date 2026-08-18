@@ -17,7 +17,7 @@ export const SOCKET_RECONNECT_OPTIONS = {
   /** Reconnect automatically after drop */
   reconnection: true,
   /** Start delay 1s, then exponential backoff */
-  reconnectionAttempts: Infinity,
+  reconnectionAttempts: 5,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 15000,
   randomizationFactor: 0.5,
@@ -67,12 +67,12 @@ export async function getSharedSocket(): Promise<any> {
 
   sharedSocket.on('connect', () => {
     setStatus('connected');
-    console.log('[Socket] connected', sharedSocket.id);
+    /* connected */
   });
 
   sharedSocket.on('disconnect', (reason: string) => {
     setStatus('disconnected', reason);
-    console.warn('[Socket] disconnected:', reason);
+    /* reconnect limited */
     // Manager will auto-reconnect unless client called disconnect()
     if (reason === 'io server disconnect') {
       // Server forced disconnect — manual reconnect
