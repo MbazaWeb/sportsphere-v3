@@ -41,7 +41,7 @@ async function main() {
       id:true, name:true, handle:true, email:true, passwordHash:true,
       role:true, avatarUrl:true, coverUrl:true, coverGradient:true,
       bio:true, location:true, nationality:true, isVerified:true, isPro:true,
-      isActive:true, verificationStatus:true, followerCount:true,
+      verificationStatus:true, followerCount:true,
       followingCount:true, fanCount:true, postCount:true,
       registeredAt:true, createdAt:true, updatedAt:true,
     }
