@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     let q = supabaseAdmin
       .from('ss_user')
       .select('id,name,handle,role,avatar_url,avatar_initials,is_verified')
-      .limit(limit);
+      .not('role','in','(ADMINISTRATOR,admin,administrator)').limit(limit);
 
     if (role) q = q.ilike('role', role);
 

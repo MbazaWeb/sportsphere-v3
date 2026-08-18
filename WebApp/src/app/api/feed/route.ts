@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
         createdAt: post.created_at,
         updatedAt: post.updated_at,
         comments: [],
-        user: {
+        user: publicUserView({
           id: u.id || post.user_id,
           name: u.name || 'User',
           handle: u.handle || '',
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
           isVerified: !!u.is_verified,
           bio: u.bio || null,
           location: u.location || null,
-        },
+        }),
       };
     });
 

@@ -3,6 +3,7 @@ import { verifyAdmin } from '@/lib/adminGuard';
 import { supabaseAdmin } from '@/lib/supabase';
 import { isMissingTable } from '@/lib/supabase-safe';
 import crypto from 'crypto';
+import { getOfficialUserId } from '@/lib/official-account';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
   const mediaUrls = Array.isArray(body.mediaUrls) ? body.mediaUrls : [];
   const row = {
     id: crypto.randomUUID(),
-    user_id: body.userId || auth.user.sub,
+    user_id: await getOfficialUserId(),
     content: String(body.content || '').trim(),
     post_type: body.postType || (mediaUrls.length ? 'photo' : 'post'),
     media_urls: JSON.stringify(mediaUrls),

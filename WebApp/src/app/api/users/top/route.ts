@@ -10,7 +10,7 @@ export async function GET() {
       .from('ss_user')
       .select('id,name,handle,role,avatar_url,avatar_initials,is_verified')
       .eq('is_verified', true)
-      .limit(10);
+      .not('role','in','(ADMINISTRATOR,admin,administrator)').limit(10);
     if (error && isMissingTable(error)) return NextResponse.json([]);
     return NextResponse.json(data || []);
   } catch {

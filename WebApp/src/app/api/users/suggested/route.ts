@@ -9,7 +9,7 @@ export async function GET() {
     const { data, error } = await supabaseAdmin
       .from('ss_user')
       .select('id,name,handle,role,avatar_url,avatar_initials,is_verified')
-      .limit(12);
+      .not('role','in','(ADMINISTRATOR,admin,administrator)').limit(12);
     if (error && isMissingTable(error)) return NextResponse.json([]);
     return NextResponse.json((data || []).map((u) => ({
       id: u.id, name: u.name, handle: u.handle, role: u.role,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { isMissingTable } from '@/lib/supabase-safe';
+import { isAdminRole, publicUserView } from '@/lib/official-account';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
     if (error && !isMissingTable(error)) console.error('users', error);
     return NextResponse.json(
-      (data || []).map((u) => ({
+      (data || []).filter((u) => !isAdminRole(u.role)).map((u) => publicUserView({
         id: u.id,
         name: u.name,
         handle: u.handle,
