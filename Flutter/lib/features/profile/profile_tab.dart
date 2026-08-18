@@ -563,9 +563,8 @@ class _RoleTabBody extends StatelessWidget {
       case 'achievements':
         return _OverviewBody(user: user, roleCfg: roleCfg, onEdit: onEdit, onSignOut: onSignOut);
       case 'shop':
-        return _ShopTicketsBody(user: user, kind: 'shop');
       case 'tickets':
-        return _ShopTicketsBody(user: user, kind: 'ticket');
+        return _ShopTicketsBody(user: user, kind: 'all');
       case 'matches':
         return RoleTabContent(tabId: 'fixtures', role: role);
       case 'communities':
@@ -900,9 +899,9 @@ class _SpotlightsBodyState extends ConsumerState<_SpotlightsBody> {
                 p.postType == 'spotlight')
             .toList()
         : _sub == 'predictions'
-            ? _posts
-                .where((p) => p.postType == 'prediction')
-                .toList()
+            ? _posts.where((p) => p.postType == 'prediction').toList()
+        : _sub == 'polls'
+            ? _posts.where((p) => p.postType == 'poll' || p.poll != null).toList()
             : _posts;
 
     return Column(
@@ -923,6 +922,8 @@ class _SpotlightsBodyState extends ConsumerState<_SpotlightsBody> {
                 _SubTab('media', 'Media', _sub,
                     (v) => setState(() => _sub = v)),
                 _SubTab('predictions', 'Predictions', _sub,
+                    (v) => setState(() => _sub = v)),
+                _SubTab('polls', 'Polls', _sub,
                     (v) => setState(() => _sub = v)),
               ],
             ),
@@ -1277,9 +1278,12 @@ class _ShopTicketsBodyState extends ConsumerState<_ShopTicketsBody> {
       if (!mounted) return;
       setState(() {
         _items = all.where((p) {
-          final t = p.postType.toLowerCase();
-          if (widget.kind == 'ticket') return t == 'ticket' || p.id.contains('tff');
-          return t == 'shop' || t == 'business' || p.mediaUrls.isNotEmpty;
+          final tp = p.postType.toLowerCase();
+          if (widget.kind == 'ticket') return tp == 'ticket' || p.id.contains('tff');
+          if (widget.kind == 'all') {
+            return tp == 'shop' || tp == 'ticket' || tp == 'business' || p.id.contains('tff') || p.id.contains('jersey') || p.id.contains('justfit');
+          }
+          return tp == 'shop' || tp == 'business' || p.mediaUrls.isNotEmpty;
         }).toList();
         _loading = false;
       });

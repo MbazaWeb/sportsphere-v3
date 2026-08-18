@@ -1,8 +1,10 @@
 // SportSphere Flutter — Profile Role Registry
 // Mirrors web src/components/profiles/profileConfig.ts exactly.
 //
-// Fan tab structure (per web):
-//   overview | spotlights (feed+posts+media+spotlight+predictions) | community (achievements+communities) | about (overview+about merged)
+// Tabs: Sportlights | Overview | Shop
+//   Sportlights = feed + posts + media + spotlight + predictions + polls
+//   Overview    = overview + community + about + performance
+//   Shop        = shop + tickets
 //
 // Mapping applied per user request:
 //   Feed + Post + Media + Spotlight + Prediction  →  Spotlights
@@ -47,16 +49,9 @@ class ProfileRoleRegistry {
     label: 'Fan',
     emoji: '👤',
     tabs: [
+      ProfileTabDef('spotlights', 'Sportlights'),
       ProfileTabDef('overview', 'Overview'),
-      ProfileTabDef('feed', 'Feed'),
-      ProfileTabDef('posts', 'Posts'),
-      ProfileTabDef('media', 'Media'),
-      ProfileTabDef('spotlight', 'Spotlight'),
-      ProfileTabDef('predictions', 'Predictions'),
-      ProfileTabDef('achievements', 'Achievements'),
-      ProfileTabDef('communities', 'Communities'),
       ProfileTabDef('shop', 'Shop'),
-      ProfileTabDef('about', 'About'),
     ],
     statLabels: ['Posts', 'Fans', 'Following', 'Predictions'],
   );
@@ -68,16 +63,9 @@ class ProfileRoleRegistry {
     label: 'Player',
     emoji: '⚽',
     tabs: [
+      ProfileTabDef('spotlights', 'Sportlights'),
       ProfileTabDef('overview', 'Overview'),
-      ProfileTabDef('feed', 'Feed'),
-      ProfileTabDef('career', 'Career'),
-      ProfileTabDef('statistics', 'Statistics'),
-      ProfileTabDef('matches', 'Matches'),
-      ProfileTabDef('achievements', 'Achievements'),
-      ProfileTabDef('media', 'Media'),
-      ProfileTabDef('fans', 'Fans'),
       ProfileTabDef('shop', 'Shop'),
-      ProfileTabDef('about', 'About'),
     ],
     statLabels: ['Matches', 'Goals', 'Assists', 'Fans'],
   );
@@ -88,15 +76,9 @@ class ProfileRoleRegistry {
     label: 'Coach',
     emoji: '👨‍🏫',
     tabs: [
+      ProfileTabDef('spotlights', 'Sportlights'),
       ProfileTabDef('overview', 'Overview'),
-      ProfileTabDef('feed', 'Feed'),
-      ProfileTabDef('career', 'Career'),
-      ProfileTabDef('teams', 'Teams'),
-      ProfileTabDef('statistics', 'Statistics'),
-      ProfileTabDef('tactics', 'Tactics'),
-      ProfileTabDef('media', 'Media'),
-      ProfileTabDef('fans', 'Fans'),
-      ProfileTabDef('about', 'About'),
+      ProfileTabDef('shop', 'Shop'),
     ],
     statLabels: ['Trophies', 'Win Rate', 'Teams', 'Fans'],
   );
@@ -107,19 +89,9 @@ class ProfileRoleRegistry {
     label: 'Team',
     emoji: '👥',
     tabs: [
+      ProfileTabDef('spotlights', 'Sportlights'),
       ProfileTabDef('overview', 'Overview'),
-      ProfileTabDef('feed', 'Feed'),
-      ProfileTabDef('squad', 'Squad'),
-      ProfileTabDef('fixtures', 'Fixtures'),
-      ProfileTabDef('results', 'Results'),
-      ProfileTabDef('standings', 'Standings'),
-      ProfileTabDef('statistics', 'Statistics'),
-      ProfileTabDef('transfers', 'Transfers'),
-      ProfileTabDef('media', 'Media'),
-      ProfileTabDef('fans', 'Fans'),
       ProfileTabDef('shop', 'Shop'),
-      ProfileTabDef('tickets', 'Tickets'),
-      ProfileTabDef('about', 'About'),
     ],
     statLabels: ['Trophies', 'Fans', 'Followers', 'Posts'],
   );
@@ -131,9 +103,9 @@ class ProfileRoleRegistry {
     label: 'Media',
     emoji: '📺',
     tabs: [
-      ProfileTabDef('overview',   'Overview'),
-      ProfileTabDef('spotlights', 'Spotlights'),
-      ProfileTabDef('community',  'Community'),
+      ProfileTabDef('spotlights', 'Sportlights'),
+      ProfileTabDef('overview', 'Overview'),
+      ProfileTabDef('shop', 'Shop'),
     ],
     statLabels: ['Articles', 'Followers', 'Views', 'Reach'],
   );
@@ -144,9 +116,9 @@ class ProfileRoleRegistry {
     label: 'Journalist',
     emoji: '📰',
     tabs: [
-      ProfileTabDef('overview',   'Overview'),
-      ProfileTabDef('spotlights', 'Spotlights'),
-      ProfileTabDef('community',  'Community'),
+      ProfileTabDef('spotlights', 'Sportlights'),
+      ProfileTabDef('overview', 'Overview'),
+      ProfileTabDef('shop', 'Shop'),
     ],
     statLabels: ['Articles', 'Fans', 'Breaking', 'Accuracy'],
   );
@@ -157,9 +129,9 @@ class ProfileRoleRegistry {
     label: 'Creator',
     emoji: '🎥',
     tabs: [
-      ProfileTabDef('overview',   'Overview'),
-      ProfileTabDef('spotlights', 'Spotlights'),
-      ProfileTabDef('community',  'Community'),
+      ProfileTabDef('spotlights', 'Sportlights'),
+      ProfileTabDef('overview', 'Overview'),
+      ProfileTabDef('shop', 'Shop'),
     ],
     statLabels: ['Videos', 'Subscribers', 'Views', 'Spotlight'],
   );
@@ -170,10 +142,9 @@ class ProfileRoleRegistry {
     label: 'Analyst',
     emoji: '📊',
     tabs: [
-      ProfileTabDef('overview',   'Overview'),
-      ProfileTabDef('spotlights', 'Spotlights'),
-      ProfileTabDef('statistics', 'Statistics'),
-      ProfileTabDef('community',  'Community'),
+      ProfileTabDef('spotlights', 'Sportlights'),
+      ProfileTabDef('overview', 'Overview'),
+      ProfileTabDef('shop', 'Shop'),
     ],
     statLabels: ['Reports', 'Fans', 'Data Points', 'Leagues'],
   );
@@ -184,9 +155,9 @@ class ProfileRoleRegistry {
     label: 'Scout',
     emoji: '🔍',
     tabs: [
-      ProfileTabDef('overview',   'Overview'),
-      ProfileTabDef('spotlights', 'Spotlights'),
-      ProfileTabDef('community',  'Community'),
+      ProfileTabDef('spotlights', 'Sportlights'),
+      ProfileTabDef('overview', 'Overview'),
+      ProfileTabDef('shop', 'Shop'),
     ],
     statLabels: ['Reports', 'Watchlist', 'Recommendations', 'Fans'],
   );
@@ -197,10 +168,9 @@ class ProfileRoleRegistry {
     label: 'Referee',
     emoji: '⚖️',
     tabs: [
-      ProfileTabDef('overview',    'Overview'),
-      ProfileTabDef('spotlights',  'Spotlights'),
-      ProfileTabDef('statistics',  'Statistics'),
-      ProfileTabDef('performance', 'Performance'),
+      ProfileTabDef('spotlights', 'Sportlights'),
+      ProfileTabDef('overview', 'Overview'),
+      ProfileTabDef('shop', 'Shop'),
     ],
     statLabels: ['Matches', 'Yellow', 'Red', 'Rating'],
   );
@@ -211,9 +181,9 @@ class ProfileRoleRegistry {
     label: 'Community',
     emoji: '👥',
     tabs: [
-      ProfileTabDef('overview',   'Overview'),
-      ProfileTabDef('spotlights', 'Spotlights'),
-      ProfileTabDef('community',  'Community'),
+      ProfileTabDef('spotlights', 'Sportlights'),
+      ProfileTabDef('overview', 'Overview'),
+      ProfileTabDef('shop', 'Shop'),
     ],
     statLabels: ['Members', 'Posts/Day', 'Online', 'Created'],
   );
@@ -224,9 +194,9 @@ class ProfileRoleRegistry {
     label: 'Organization',
     emoji: '🏢',
     tabs: [
-      ProfileTabDef('overview',   'Overview'),
-      ProfileTabDef('spotlights', 'Spotlights'),
-      ProfileTabDef('community',  'Community'),
+      ProfileTabDef('spotlights', 'Sportlights'),
+      ProfileTabDef('overview', 'Overview'),
+      ProfileTabDef('shop', 'Shop'),
     ],
     statLabels: ['Members', 'Tournaments', 'Fans', 'Founded'],
   );
@@ -237,9 +207,9 @@ class ProfileRoleRegistry {
     label: 'Business',
     emoji: '💼',
     tabs: [
-      ProfileTabDef('overview',   'Overview'),
-      ProfileTabDef('spotlights', 'Spotlights'),
-      ProfileTabDef('community',  'Community'),
+      ProfileTabDef('spotlights', 'Sportlights'),
+      ProfileTabDef('overview', 'Overview'),
+      ProfileTabDef('shop', 'Shop'),
     ],
     statLabels: ['Products', 'Fans', 'Rating', 'Teams'],
   );
@@ -250,11 +220,9 @@ class ProfileRoleRegistry {
     label: 'Competition',
     emoji: '🏆',
     tabs: [
-      ProfileTabDef('overview',   'Overview'),
-      ProfileTabDef('spotlights', 'Spotlights'),
-      ProfileTabDef('fixtures',   'Fixtures'),
-      ProfileTabDef('standings',  'Standings'),
-      ProfileTabDef('community',  'Community'),
+      ProfileTabDef('spotlights', 'Sportlights'),
+      ProfileTabDef('overview', 'Overview'),
+      ProfileTabDef('shop', 'Shop'),
     ],
     statLabels: ['Season', 'Teams', 'Fans', 'Matchday'],
   );
@@ -265,10 +233,9 @@ class ProfileRoleRegistry {
     label: 'Academy',
     emoji: '🧒',
     tabs: [
-      ProfileTabDef('overview',   'Overview'),
-      ProfileTabDef('spotlights', 'Spotlights'),
-      ProfileTabDef('squad',      'Players'),
-      ProfileTabDef('community',  'Community'),
+      ProfileTabDef('spotlights', 'Sportlights'),
+      ProfileTabDef('overview', 'Overview'),
+      ProfileTabDef('shop', 'Shop'),
     ],
     statLabels: ['Players', 'Graduates', 'Teams', 'Founded'],
   );
@@ -279,9 +246,9 @@ class ProfileRoleRegistry {
     label: 'Venue',
     emoji: '📍',
     tabs: [
-      ProfileTabDef('overview',   'Overview'),
-      ProfileTabDef('spotlights', 'Spotlights'),
-      ProfileTabDef('community',  'Community'),
+      ProfileTabDef('spotlights', 'Sportlights'),
+      ProfileTabDef('overview', 'Overview'),
+      ProfileTabDef('shop', 'Shop'),
     ],
     statLabels: ['Capacity', 'Events/Yr', 'Rating', 'Fans'],
   );
