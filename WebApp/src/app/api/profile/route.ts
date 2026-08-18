@@ -35,6 +35,50 @@ function mapUser(row: any) {
   };
 }
 
+
+async function loadFromCatalog(id?: string, handle?: string) {
+  const slug = handle ? handle.replace(/^@/, '') : '';
+  if (id || slug) {
+    let tq = supabaseAdmin.from('ss_team').select('*').limit(1);
+    if (id) tq = tq.eq('id', id);
+    else tq = tq.or(`slug.eq.${slug},name.ilike.${slug}`);
+    const { data: teams } = await tq;
+    const team = teams?.[0];
+    if (team) {
+      return mapUser({
+        id: team.id,
+        name: team.name,
+        handle: '@' + (team.slug || team.name || 'team').toString().toLowerCase().replace(/\s+/g, ''),
+        role: 'team',
+        avatar_url: team.logo_url,
+        avatar_initials: String(team.name || 'T').slice(0, 2).toUpperCase(),
+        is_verified: true,
+        location: [team.city, team.country].filter(Boolean).join(', '),
+        bio: team.name,
+      });
+    }
+    let pq = supabaseAdmin.from('ss_player').select('*').limit(1);
+    if (id) pq = pq.eq('id', id);
+    else pq = pq.or(`slug.eq.${slug},name.ilike.${slug}`);
+    const { data: players } = await pq;
+    const player = players?.[0];
+    if (player) {
+      return mapUser({
+        id: player.id,
+        name: player.name,
+        handle: '@' + (player.slug || player.name || 'player').toString().toLowerCase().replace(/\s+/g, ''),
+        role: 'player',
+        avatar_url: player.photo_url,
+        avatar_initials: String(player.name || 'P').slice(0, 2).toUpperCase(),
+        is_verified: true,
+        location: player.country || '',
+        bio: player.position || '',
+      });
+    }
+  }
+  return null;
+}
+
 async function loadUser(filter: { id?: string; handle?: string }) {
   let q = supabaseAdmin.from('ss_user').select('*').limit(1);
   if (filter.id) q = q.eq('id', filter.id);
@@ -57,13 +101,17 @@ export async function GET(request: NextRequest) {
     const currentUserId = await getUserIdFromRequest(request);
     if (id) {
       const { user } = await loadUser({ id });
-      if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      return NextResponse.json(user);
+      if (user) return NextResponse.json(user);
+      const catalog = await loadFromCatalog(id);
+      if (catalog) return NextResponse.json(catalog);
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     if (handle) {
       const { user } = await loadUser({ handle });
-      if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      return NextResponse.json(user);
+      if (user) return NextResponse.json(user);
+      const catalog = await loadFromCatalog(undefined, handle);
+      if (catalog) return NextResponse.json(catalog);
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     if (!currentUserId) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     const { user } = await loadUser({ id: currentUserId });
