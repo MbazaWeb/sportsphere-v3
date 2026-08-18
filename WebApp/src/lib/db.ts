@@ -122,13 +122,6 @@ function applyWhere(query: any, where?: WhereClause): any {
 }
 
 
-// ─── snake_case → camelCase transformer ──────────────────────────────────────
-// Supabase returns snake_case, all routes expect Prisma camelCase.
-// This runs on every result automatically so no route files need changing.
-function toCamel(s: string): string {
-  return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
-}
-
 function transformRow(row: any): any {
   if (!row || typeof row !== 'object') return row;
   if (Array.isArray(row)) return row.map(transformRow);
