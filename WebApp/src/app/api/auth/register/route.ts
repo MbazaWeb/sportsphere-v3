@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     const avatarInitials = name.trim().slice(0, 2).toUpperCase();
     const id = crypto.randomUUID();
 
-    const row = {
+    let row: Record<string, unknown> = {
       id,
       name: name.trim(),
       email: cleanEmail,
@@ -81,16 +81,26 @@ export async function POST(request: NextRequest) {
       is_active: true,
     };
 
-    const { data: user, error } = await supabaseAdmin
-      .from('ss_user')
-      .insert(row)
-      .select('id,name,email,handle,role,avatar_initials,is_verified')
-      .single();
-
-    if (error) {
-      console.error('register insert', error);
-      return NextResponse.json({ error: error.message || 'Registration failed.' }, { status: 500 });
+    let user: any = null;
+    let error: any = null;
+    for (let i = 0; i < 10; i++) {
+      const res = await supabaseAdmin.from('ss_user').insert(row).select('*').maybeSingle();
+      error = res.error;
+      user = res.data;
+      if (!error) break;
+      const m = String(error.message).match(/Could not find the '([^']+)' column/i);
+      if (m && row[m[1]] !== undefined) {
+        delete row[m[1]];
+        continue;
+      }
+      break;
     }
+
+    if (error || !user) {
+      console.error('register insert', error);
+      return NextResponse.json({ error: error?.message || 'Registration failed.' }, { status: 500 });
+    }
+    user = { ...user, name: user.name || name.trim(), email: user.email || cleanEmail, handle: user.handle || cleanHandle };
 
     const payload: SessionPayload = {
       sub: user.id,
