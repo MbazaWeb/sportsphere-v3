@@ -22,6 +22,7 @@ import ResetPasswordPage from '@/components/auth/ResetPasswordPage';
 import VerifyEmailModal from '@/components/auth/VerifyEmailModal';
 import ProfilePage from '@/components/profiles/ProfilePage';
 import UserProfileViewer from '@/components/profiles/UserProfileViewer';
+import { CartDrawer } from '@/components/shop/CartDrawer';
 import { PROFILE_TYPES, type ProfileTypeId } from '@/components/profiles/profileConfig';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -137,6 +138,7 @@ export default function Home() {
       <VerifyEmailModal open={verifyEmailOpen} onClose={() => setVerifyEmailOpen(false)} />
       <ProfileTypeOverlay />
       <UserProfileViewer />
+      <CartDrawer />
 
       {!viewingUser && (
       <div className={cn('flex-1 transition-[padding-bottom] duration-300', navVisible ? 'pb-16' : 'pb-0')}>

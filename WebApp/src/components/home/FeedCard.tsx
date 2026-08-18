@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { BadgeStack, OfficialBadge } from '@/components/ui/RoleBadge';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
+import { useCartStore } from '@/store/cartStore';
 import { formatCount } from '@/store/useAppStore';
 import { useState, useCallback } from 'react';
 import { EditPredictionModal } from './EditPredictionModal';
@@ -108,12 +109,22 @@ function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isA
         const data = await res.json();
         setFollow(!!data.following);
         setFan(!!data.isFan);
-        openProfile();
       }
       return;
     }
-    if (action === 'watch' || action === 'buy') {
+    if (action === 'watch') {
       openProfile();
+      return;
+    }
+    if (action === 'buy') {
+      useCartStore.getState().add({
+        id: item.id,
+        title: item.content || 'Item',
+        image: item.mediaUrls?.[0] || null,
+        price: 45000,
+        sellerId: item.userId,
+        sellerName: item.user?.name || 'Shop',
+      });
     }
   }
 
