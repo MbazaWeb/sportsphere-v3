@@ -1,723 +1,642 @@
--- SportSphere Supabase Schema
--- Generated from Prisma schema
+-- ============================================================
+-- SportSphere — Supabase Schema
+-- Clean, fully-fixed SQL — no reserved word conflicts
+-- ============================================================
 
--- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TABLE IF NOT EXISTS "role" (
+-- ─── Roles & Sports ───────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS ss_role (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL DEFAULT '',
   slug TEXT NOT NULL DEFAULT '',
-  description TEXT DEFAULT '👤',
+  description TEXT,
   category TEXT DEFAULT 'individual',
-  displayOrder INTEGER DEFAULT 0,
-  isActive BOOLEAN DEFAULT TRUE,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
+  display_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS role_type (
+CREATE TABLE IF NOT EXISTS ss_role_type (
   id TEXT PRIMARY KEY,
-  roleId TEXT NOT NULL DEFAULT '',
+  role_id TEXT NOT NULL DEFAULT '',
   slug TEXT NOT NULL DEFAULT '',
   requirements JSONB DEFAULT '[]',
-  displayOrder INTEGER DEFAULT 0,
-  isActive BOOLEAN DEFAULT TRUE,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
+  display_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS sport (
+CREATE TABLE IF NOT EXISTS ss_sport (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL DEFAULT '',
   slug TEXT NOT NULL DEFAULT '',
   icon TEXT,
-  sportType TEXT,
-  contactType TEXT,
-  description TEXT DEFAULT '[]',
-  isActive BOOLEAN DEFAULT TRUE,
-  displayOrder INTEGER DEFAULT 0,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
+  sport_type TEXT,
+  contact_type TEXT,
+  description TEXT,
+  is_active BOOLEAN DEFAULT TRUE,
+  display_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS user_sport (
-  id TEXT PRIMARY KEY,
-  userId TEXT NOT NULL DEFAULT '',
-  createdAt TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS ss_user_sport (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  user_id TEXT NOT NULL DEFAULT '',
+  sport_id TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS "user" (
-  id TEXT PRIMARY KEY,
+-- ─── Users ────────────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS ss_user (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   name TEXT NOT NULL DEFAULT '',
-  handle TEXT NOT NULL DEFAULT '',
-  passwordHash TEXT,
-  resetTokenExpiry TIMESTAMPTZ,
-  avatarInitials TEXT DEFAULT 'fan',
-  verificationStatus TEXT DEFAULT 'none',
-  isVerified BOOLEAN DEFAULT FALSE,
+  handle TEXT NOT NULL UNIQUE DEFAULT '',
+  email TEXT UNIQUE,
+  password_hash TEXT,
+  role TEXT DEFAULT 'fan',
+  role_id TEXT,
+  role_type_id TEXT,
+  avatar_url TEXT,
+  avatar_initials TEXT,
+  cover_url TEXT,
+  cover_gradient TEXT DEFAULT 'from-emerald-600 to-emerald-900',
   bio TEXT,
-  coverGradient TEXT DEFAULT 'from-emerald-600 to-emerald-900',
-  followerCount INTEGER DEFAULT 0,
-  fanCount INTEGER DEFAULT 0,
-  followingCount INTEGER DEFAULT 0,
-  postCount INTEGER DEFAULT 0,
-  registeredAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW(),
-  lastSeenAt TIMESTAMPTZ DEFAULT NOW(),
-  aboutMe TEXT,
-  countryOfOrigin TEXT,
-  currentCountry TEXT,
-  emailVerified BOOLEAN DEFAULT FALSE,
-  emailVerifyExpiry TIMESTAMPTZ,
-  fontSize TEXT DEFAULT 'medium',
-  gender TEXT DEFAULT FALSE,
+  location TEXT,
+  nationality TEXT,
+  country_of_origin TEXT,
+  current_country TEXT,
+  about_me TEXT,
+  type_name TEXT,
+  role_data JSONB DEFAULT '{}',
+  sports_following JSONB DEFAULT '[]',
   interests JSONB DEFAULT '[]',
-  isPro BOOLEAN DEFAULT FALSE,
-  nationality TEXT
+  is_verified BOOLEAN DEFAULT FALSE,
+  is_pro BOOLEAN DEFAULT FALSE,
+  is_active BOOLEAN DEFAULT TRUE,
+  email_verified BOOLEAN DEFAULT FALSE,
+  email_verify_token TEXT,
+  email_verify_expiry TIMESTAMPTZ,
+  reset_token TEXT,
+  reset_token_expiry TIMESTAMPTZ,
+  verification_status TEXT DEFAULT 'none',
+  gender TEXT,
+  font_size TEXT DEFAULT 'medium',
+  follower_count INTEGER DEFAULT 0,
+  fan_count INTEGER DEFAULT 0,
+  following_count INTEGER DEFAULT 0,
+  post_count INTEGER DEFAULT 0,
+  registered_at TIMESTAMPTZ DEFAULT NOW(),
+  last_seen_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS follow (
-  followerId TEXT NOT NULL DEFAULT '',
-  kind TEXT DEFAULT 'fan',
-  createdAt TIMESTAMPTZ DEFAULT NOW()
+-- ─── Social ───────────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS ss_follow (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  follower_id TEXT NOT NULL,
+  following_id TEXT NOT NULL,
+  kind TEXT DEFAULT 'follow',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(follower_id, following_id)
 );
 
-CREATE TABLE IF NOT EXISTS post (
-  id TEXT PRIMARY KEY,
-  userId TEXT NOT NULL DEFAULT '',
-  postType TEXT DEFAULT 'post',
-  teamTag TEXT,
-  isBreaking BOOLEAN DEFAULT FALSE,
-  likeCount INTEGER DEFAULT 0,
-  commentCount INTEGER DEFAULT 0,
-  shareCount INTEGER DEFAULT 0,
-  viewCount INTEGER DEFAULT 0,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW(),
+CREATE TABLE IF NOT EXISTS ss_post (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  user_id TEXT NOT NULL,
+  content TEXT DEFAULT '',
+  post_type TEXT DEFAULT 'post',
+  media_urls JSONB DEFAULT '[]',
+  team_tag TEXT,
+  player_tag TEXT,
+  sport_tag TEXT,
+  location_tag TEXT,
+  community_id TEXT,
   hashtags JSONB DEFAULT '[]',
-  location TEXT DEFAULT '[]'
+  is_breaking BOOLEAN DEFAULT FALSE,
+  like_count INTEGER DEFAULT 0,
+  comment_count INTEGER DEFAULT 0,
+  share_count INTEGER DEFAULT 0,
+  view_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS post_like (
-  postId TEXT NOT NULL DEFAULT '',
-  createdAt TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS ss_post_like (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  post_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(post_id, user_id)
 );
 
-CREATE TABLE IF NOT EXISTS "comment" (
-  id TEXT PRIMARY KEY,
-  postId TEXT NOT NULL DEFAULT '',
-  content TEXT DEFAULT 0,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  parentId TEXT DEFAULT '[]'
+CREATE TABLE IF NOT EXISTS ss_comment (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  post_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  content TEXT NOT NULL DEFAULT '',
+  parent_id TEXT,
+  like_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS comment_like (
-  commentId TEXT NOT NULL DEFAULT '',
-  createdAt TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS ss_comment_like (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  comment_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(comment_id, user_id)
 );
 
-CREATE TABLE IF NOT EXISTS poll (
-  id TEXT PRIMARY KEY,
-  postId TEXT NOT NULL DEFAULT '',
-  question TEXT DEFAULT 0,
-  endsAt TIMESTAMPTZ DEFAULT NOW(),
-  options JSONB DEFAULT '[]'
+CREATE TABLE IF NOT EXISTS ss_poll (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  post_id TEXT NOT NULL,
+  question TEXT NOT NULL DEFAULT '',
+  options JSONB DEFAULT '[]',
+  ends_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS poll_vote (
-  id TEXT PRIMARY KEY,
-  pollId TEXT NOT NULL DEFAULT '',
-  optionIdx INTEGER DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS ss_poll_vote (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  poll_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  option_idx INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(poll_id, user_id)
 );
 
-CREATE TABLE IF NOT EXISTS "match" (
-  id TEXT PRIMARY KEY,
-  league TEXT NOT NULL DEFAULT '',
-  awayTeam TEXT NOT NULL DEFAULT '',
-  awayScore INTEGER DEFAULT 'upcoming',
-  minute INTEGER,
-  kickoffAt TIMESTAMPTZ DEFAULT 'Europe',
-  country TEXT DEFAULT 'England',
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW(),
-  events JSONB DEFAULT '[]'
-);
-
-CREATE TABLE IF NOT EXISTS prediction (
-  id TEXT PRIMARY KEY,
-  userId TEXT NOT NULL DEFAULT '',
-  homeTeam TEXT NOT NULL DEFAULT '',
-  predictedHome INTEGER,
+CREATE TABLE IF NOT EXISTS ss_prediction (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  post_id TEXT,
+  user_id TEXT NOT NULL,
+  home_team TEXT NOT NULL DEFAULT '',
+  away_team TEXT NOT NULL DEFAULT '',
+  predicted_home INTEGER,
+  predicted_away INTEGER,
+  confidence TEXT,
   result TEXT,
-  pointsEarned INTEGER DEFAULT 0,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  confidence TEXT
+  points_earned INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS community (
-  id TEXT PRIMARY KEY,
+-- ─── Communities ──────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS ss_community (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   name TEXT NOT NULL DEFAULT '',
-  topic TEXT DEFAULT 0,
-  createdById TEXT DEFAULT NOW()
+  description TEXT,
+  topic TEXT,
+  member_count INTEGER DEFAULT 0,
+  created_by_id TEXT,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS community_member (
-  communityId TEXT NOT NULL DEFAULT '',
+CREATE TABLE IF NOT EXISTS ss_community_member (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  community_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
   role TEXT DEFAULT 'member',
-  joinedAt TIMESTAMPTZ DEFAULT NOW()
+  joined_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(community_id, user_id)
 );
 
-CREATE TABLE IF NOT EXISTS notification (
-  id TEXT PRIMARY KEY,
-  userId TEXT NOT NULL DEFAULT '',
+-- ─── Messages & Notifications ─────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS ss_message (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  sender_id TEXT NOT NULL,
+  receiver_id TEXT NOT NULL,
+  content TEXT DEFAULT '',
+  media_url TEXT,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS ss_notification (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  user_id TEXT NOT NULL,
   title TEXT NOT NULL DEFAULT '',
-  isRead BOOLEAN DEFAULT FALSE,
-  actorId TEXT,
-  createdAt TIMESTAMPTZ DEFAULT NOW()
+  body TEXT,
+  notif_type TEXT DEFAULT 'info',
+  actor_id TEXT,
+  target_id TEXT,
+  target_type TEXT,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS message (
-  id TEXT PRIMARY KEY,
-  senderId TEXT NOT NULL DEFAULT '',
-  content TEXT DEFAULT FALSE,
-  createdAt TIMESTAMPTZ DEFAULT NOW()
+-- ─── Matches & Sports Data ────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS ss_match (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  league TEXT,
+  league_id TEXT,
+  home_team TEXT NOT NULL DEFAULT '',
+  away_team TEXT NOT NULL DEFAULT '',
+  home_score INTEGER,
+  away_score INTEGER,
+  status TEXT DEFAULT 'upcoming',
+  minute INTEGER,
+  home_badge TEXT,
+  away_badge TEXT,
+  venue TEXT,
+  country TEXT,
+  season TEXT,
+  kickoff_at TIMESTAMPTZ,
+  events JSONB DEFAULT '[]',
+  lineups JSONB DEFAULT '{}',
+  stats JSONB DEFAULT '[]',
+  external_id TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS verification_request (
-  id TEXT PRIMARY KEY,
-  userId TEXT NOT NULL DEFAULT '',
-  status TEXT DEFAULT 'pending',
-  adminNotes TEXT,
-  submittedAt TIMESTAMPTZ DEFAULT NOW(),
-  reviewedAt TIMESTAMPTZ,
-  roleTypeId TEXT
+CREATE TABLE IF NOT EXISTS ss_team (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  name TEXT NOT NULL DEFAULT '',
+  short_name TEXT,
+  slug TEXT,
+  league_id TEXT,
+  country TEXT,
+  logo_url TEXT,
+  founded_year INTEGER,
+  description TEXT,
+  source TEXT DEFAULT 'admin',
+  created_by_ai BOOLEAN DEFAULT FALSE,
+  claimed_by_id TEXT,
+  verified BOOLEAN DEFAULT FALSE,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS leaderboard_entry (
-  id TEXT PRIMARY KEY,
-  userId TEXT DEFAULT 'monthly',
-  correctPredictions INTEGER DEFAULT 0,
-  totalPredictions INTEGER DEFAULT 0,
+CREATE TABLE IF NOT EXISTS ss_league (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  name TEXT NOT NULL DEFAULT '',
+  slug TEXT,
+  sport_id TEXT,
+  country TEXT,
+  logo_url TEXT,
+  division TEXT,
+  season TEXT,
+  source TEXT DEFAULT 'admin',
+  created_by_ai BOOLEAN DEFAULT FALSE,
+  claimed_by_id TEXT,
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS ss_player (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  team_id TEXT,
+  sport_id TEXT,
+  name TEXT NOT NULL DEFAULT '',
+  slug TEXT,
+  first_name TEXT,
+  last_name TEXT,
+  player_position TEXT,
+  country_code TEXT,
+  date_of_birth TIMESTAMPTZ,
+  height_cm INTEGER,
+  weight_kg INTEGER,
+  photo_url TEXT,
+  external_id TEXT,
+  verified BOOLEAN DEFAULT FALSE,
+  created_by_ai BOOLEAN DEFAULT FALSE,
+  claimed_by_id TEXT,
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS ss_coach (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  team_id TEXT,
+  sport_id TEXT,
+  name TEXT NOT NULL DEFAULT '',
+  slug TEXT,
+  first_name TEXT,
+  nationality TEXT,
+  photo_url TEXT,
+  coaching_role TEXT DEFAULT 'head_coach',
+  external_id TEXT,
+  verified BOOLEAN DEFAULT FALSE,
+  created_by_ai BOOLEAN DEFAULT FALSE,
+  claimed_by_id TEXT,
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS ss_player_transfer (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  player_id TEXT NOT NULL,
+  from_team_id TEXT,
+  to_team_id TEXT,
+  transfer_type TEXT DEFAULT 'permanent',
+  fee TEXT,
+  currency TEXT DEFAULT 'EUR',
+  transfer_window TEXT,
+  season TEXT,
+  announced_at TIMESTAMPTZ,
+  effective_at TIMESTAMPTZ,
+  loan_until TIMESTAMPTZ,
+  status TEXT DEFAULT 'completed',
+  notes TEXT,
+  metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ─── News & Content ───────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS ss_news_item (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  title TEXT NOT NULL DEFAULT '',
+  body TEXT NOT NULL DEFAULT '',
+  image_url TEXT,
+  category TEXT DEFAULT 'general',
+  tags JSONB DEFAULT '[]',
+  sport_id TEXT,
+  team_id TEXT,
+  player_id TEXT,
+  coach_id TEXT,
+  source_type TEXT DEFAULT 'manual',
+  external_url TEXT,
+  status TEXT DEFAULT 'draft',
+  published_at TIMESTAMPTZ,
+  view_count INTEGER DEFAULT 0,
+  metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS ss_rumor (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  title TEXT NOT NULL DEFAULT '',
+  body TEXT,
+  source TEXT DEFAULT 'ai',
+  credibility_score INTEGER DEFAULT 50,
+  external_url TEXT,
+  tags JSONB DEFAULT '[]',
+  sport_id TEXT,
+  team_id TEXT,
+  player_id TEXT,
+  coach_id TEXT,
+  status TEXT DEFAULT 'draft',
+  published_at TIMESTAMPTZ,
+  metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ─── Performance ──────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS ss_leaderboard_entry (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  user_id TEXT NOT NULL,
+  period TEXT DEFAULT 'monthly',
+  correct_predictions INTEGER DEFAULT 0,
+  total_predictions INTEGER DEFAULT 0,
   points INTEGER DEFAULT 0,
   rank INTEGER DEFAULT 0,
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS user_favorite (
-  id TEXT PRIMARY KEY,
-  userId TEXT NOT NULL DEFAULT '',
-  targetId TEXT NOT NULL DEFAULT '',
-  targetHandle TEXT DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS ss_performance_profile (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  user_id TEXT NOT NULL UNIQUE,
+  performance_score DOUBLE PRECISION DEFAULT 0,
+  total_points INTEGER DEFAULT 0,
+  tier TEXT DEFAULT 'D',
+  form_score DOUBLE PRECISION DEFAULT 0,
+  consistency_score DOUBLE PRECISION DEFAULT 0,
+  trend_direction TEXT DEFAULT 'stable',
+  trend_delta DOUBLE PRECISION DEFAULT 0,
+  improvement_score DOUBLE PRECISION DEFAULT 0,
+  rank_global INTEGER DEFAULT 0,
+  rank_country INTEGER DEFAULT 0,
+  rank_region INTEGER DEFAULT 0,
+  rank_category INTEGER DEFAULT 0,
+  category_bucket TEXT DEFAULT '',
+  data_confidence DOUBLE PRECISION DEFAULT 0,
+  decay_status TEXT DEFAULT 'active',
+  last_event_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS player_profile (
-  userId TEXT PRIMARY KEY,
-  "position" TEXT,
-  preferredFoot TEXT,
-  height DOUBLE PRECISION,
-  dateOfBirth TIMESTAMPTZ,
-  playerType TEXT,
-  appearances DOUBLE PRECISION,
-  minutes DOUBLE PRECISION,
-  assists DOUBLE PRECISION,
-  redCards DOUBLE PRECISION,
-  motm DOUBLE PRECISION,
-  chancesCreated DOUBLE PRECISION,
-  shotsOnTarget DOUBLE PRECISION,
-  interceptions DOUBLE PRECISION,
-  aerialDuels DOUBLE PRECISION,
-  saves DOUBLE PRECISION,
-  goalsConceded DOUBLE PRECISION,
-  currentClub TEXT,
-  contractStatus TEXT,
-  debutYear TEXT,
-  internationalCaps DOUBLE PRECISION,
-  transferHistory TEXT,
-  playingStyle TEXT,
-  weaknesses TEXT NOT NULL DEFAULT '',
-  injuryHistory TEXT,
-  ranking TEXT DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS ss_performance_event (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  user_id TEXT NOT NULL,
+  event_type TEXT NOT NULL DEFAULT '',
+  match_id TEXT,
+  competition TEXT,
+  season TEXT,
+  opponent_strength DOUBLE PRECISION,
+  points_awarded INTEGER DEFAULT 0,
+  match_date TIMESTAMPTZ,
+  source_type TEXT DEFAULT 'manual',
+  status TEXT DEFAULT 'pending',
+  verified_by TEXT,
+  rejection_reason TEXT,
+  notes TEXT,
+  metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS coach_profile (
-  userId TEXT PRIMARY KEY,
-  coachingRole TEXT,
+-- ─── Verification ─────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS ss_verification_request (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  user_id TEXT NOT NULL,
+  status TEXT DEFAULT 'pending',
+  admin_notes TEXT,
+  role_type_id TEXT,
+  submitted_at TIMESTAMPTZ DEFAULT NOW(),
+  reviewed_at TIMESTAMPTZ
+);
+
+-- ─── Favorites & Push ─────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS ss_user_favorite (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  user_id TEXT NOT NULL,
+  target_id TEXT NOT NULL,
+  target_type TEXT DEFAULT 'post',
+  target_handle TEXT,
+  preview TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, target_id, target_type)
+);
+
+CREATE TABLE IF NOT EXISTS ss_push_token (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  user_id TEXT NOT NULL,
+  token TEXT NOT NULL,
+  platform TEXT DEFAULT 'android',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ─── Profiles ─────────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS ss_player_profile (
+  user_id TEXT PRIMARY KEY,
+  player_position TEXT,
+  preferred_foot TEXT,
+  height_cm DOUBLE PRECISION,
+  weight_kg DOUBLE PRECISION,
+  date_of_birth TIMESTAMPTZ,
+  player_type TEXT,
+  appearances DOUBLE PRECISION DEFAULT 0,
+  goals DOUBLE PRECISION DEFAULT 0,
+  assists DOUBLE PRECISION DEFAULT 0,
+  minutes DOUBLE PRECISION DEFAULT 0,
+  yellow_cards DOUBLE PRECISION DEFAULT 0,
+  red_cards DOUBLE PRECISION DEFAULT 0,
+  current_club TEXT,
+  contract_status TEXT,
+  debut_year TEXT,
+  international_caps DOUBLE PRECISION DEFAULT 0,
+  playing_style TEXT,
+  injury_history TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS ss_coach_profile (
+  user_id TEXT PRIMARY KEY,
+  coaching_role TEXT,
   license TEXT,
   nationality TEXT,
-  yearsCoaching DOUBLE PRECISION,
-  wins DOUBLE PRECISION,
-  losses DOUBLE PRECISION,
-  goalsAgainst DOUBLE PRECISION,
-  pointsPerGame DOUBLE PRECISION,
-  preferredFormation TEXT,
-  playingPhilosophy TEXT,
-  possessionStyle TEXT,
-  buildUpStyle TEXT,
-  nationalTeams TEXT,
-  playingCareer TEXT DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
+  years_coaching DOUBLE PRECISION DEFAULT 0,
+  wins DOUBLE PRECISION DEFAULT 0,
+  draws DOUBLE PRECISION DEFAULT 0,
+  losses DOUBLE PRECISION DEFAULT 0,
+  win_rate DOUBLE PRECISION DEFAULT 0,
+  preferred_formation TEXT,
+  playing_philosophy TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS team_profile (
-  userId TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS ss_team_profile (
+  user_id TEXT PRIMARY KEY,
   nickname TEXT,
   country TEXT,
   stadium TEXT,
   league TEXT,
   coach TEXT,
   colors TEXT,
-  wins DOUBLE PRECISION,
-  losses DOUBLE PRECISION,
-  goalsAgainst DOUBLE PRECISION,
-  "position" TEXT,
-  squad TEXT,
-  historicPlayers TEXT,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
+  wins DOUBLE PRECISION DEFAULT 0,
+  losses DOUBLE PRECISION DEFAULT 0,
+  draws DOUBLE PRECISION DEFAULT 0,
+  league_position TEXT,
+  squad JSONB DEFAULT '[]',
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS scout_profile (
-  userId TEXT PRIMARY KEY,
-  scoutType TEXT,
-  geographicCoverage TEXT,
-  yearsExperience DOUBLE PRECISION,
-  playersDiscovered DOUBLE PRECISION,
-  successfulSignings DOUBLE PRECISION,
-  competitionsMonitored DOUBLE PRECISION,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
-);
+-- ─── Business & Commercial ────────────────────────────────────────────────────
 
-CREATE TABLE IF NOT EXISTS journalist_profile (
-  userId TEXT PRIMARY KEY,
-  publication TEXT,
-  location TEXT,
-  languages TEXT NOT NULL DEFAULT '',
-  coverage TEXT NOT NULL DEFAULT '',
-  articleCount DOUBLE PRECISION,
-  interviews DOUBLE PRECISION,
-  totalViews TEXT,
-  articles TEXT DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS creator_profile (
-  userId TEXT PRIMARY KEY,
-  creatorType TEXT,
-  niche TEXT,
-  audienceAgeRange TEXT,
-  languages TEXT NOT NULL DEFAULT '',
-  followers TEXT,
-  avgViews TEXT,
-  postsPerWeek DOUBLE PRECISION,
-  brandCollabs TEXT,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS analyst_profile (
-  userId TEXT PRIMARY KEY,
-  analystType TEXT,
-  expertise TEXT NOT NULL DEFAULT '',
-  reportsPublished DOUBLE PRECISION,
-  teamsAnalyzed DOUBLE PRECISION,
-  topModels TEXT,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS commentator_profile (
-  userId TEXT PRIMARY KEY,
-  commentatorType TEXT,
-  languages TEXT NOT NULL DEFAULT '',
-  sports TEXT NOT NULL DEFAULT '',
-  yearsActive DOUBLE PRECISION,
-  competitions DOUBLE PRECISION,
-  majorEvents TEXT,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS agent_profile (
-  userId TEXT PRIMARY KEY,
-  agentType TEXT,
-  license TEXT,
-  countries TEXT NOT NULL DEFAULT '',
-  playersRepresented DOUBLE PRECISION,
-  transfersCompleted DOUBLE PRECISION,
-  activeNegotiations DOUBLE PRECISION,
-  clientRoster TEXT DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS organization_profile (
-  userId TEXT PRIMARY KEY,
-  orgType TEXT,
-  headquarters TEXT,
-  leadership TEXT,
-  affiliates TEXT,
-  programs TEXT DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS competition_profile (
-  userId TEXT PRIMARY KEY,
-  competitionName TEXT,
-  organizer TEXT,
-  "level" TEXT,
-  participants DOUBLE PRECISION,
-  topAssists TEXT,
-  fixtures TEXT,
-  records TEXT,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS league_profile (
-  userId TEXT PRIMARY KEY,
-  leagueName TEXT,
-  division TEXT,
-  foundedYear TEXT,
-  teams DOUBLE PRECISION,
-  topScorer TEXT,
-  avgGoals DOUBLE PRECISION,
-  allTimeTopScorer TEXT,
-  standings TEXT,
-  champions TEXT,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS academy_profile (
-  userId TEXT PRIMARY KEY,
-  academyName TEXT,
-  location TEXT,
-  director TEXT,
-  curriculum TEXT,
-  playersPromoted DOUBLE PRECISION,
-  scholarships DOUBLE PRECISION,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS venue_profile (
-  userId TEXT PRIMARY KEY,
-  venueName TEXT,
-  location TEXT,
-  surface TEXT,
-  owner TEXT,
-  facilities TEXT NOT NULL DEFAULT '',
-  tenants TEXT,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS business_profile (
-  userId TEXT PRIMARY KEY,
-  companyName TEXT,
-  foundedYear TEXT,
-  website TEXT,
-  products TEXT,
-  partnerAthletes TEXT,
-  campaigns TEXT,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS commercial_partner_profile (
-  userId TEXT PRIMARY KEY,
-  partnerType TEXT,
-  sportsCategory TEXT,
-  foundedYear TEXT,
-  website TEXT,
-  sponsoredPlayers TEXT,
-  sponsoredEvents TEXT,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS community_profile (
-  userId TEXT PRIMARY KEY,
-  communityName TEXT,
-  foundedYear TEXT,
-  supportedTeam TEXT,
-  memberCount DOUBLE PRECISION,
-  eventCount DOUBLE PRECISION,
-  events TEXT,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS performance_profile (
-  id TEXT PRIMARY KEY,
-  userId TEXT NOT NULL DEFAULT '',
-  performanceScore DOUBLE PRECISION DEFAULT 0,
-  totalPoints INTEGER DEFAULT 0,
-  tier TEXT DEFAULT 'D',
-  formScore DOUBLE PRECISION DEFAULT 0,
-  consistencyScore DOUBLE PRECISION DEFAULT 0,
-  trendDirection TEXT DEFAULT 'stable',
-  trendDelta DOUBLE PRECISION DEFAULT 0,
-  improvementScore DOUBLE PRECISION DEFAULT 0,
-  rankGlobal INTEGER DEFAULT 0,
-  rankCountry INTEGER DEFAULT 0,
-  rankRegion INTEGER DEFAULT 0,
-  rankCategory INTEGER DEFAULT 0,
-  rankPosition INTEGER DEFAULT 0,
-  rankCompetition INTEGER DEFAULT 0,
-  rankForm INTEGER DEFAULT 0,
-  rankSeason INTEGER DEFAULT 0,
-  rankCareer INTEGER DEFAULT 0,
-  rankImprovement INTEGER DEFAULT 0,
-  rankConsistency INTEGER DEFAULT 0,
-  rankMovement INTEGER DEFAULT 0,
-  categoryBucket TEXT NOT NULL DEFAULT '',
-  "position" TEXT,
-  competitionTier TEXT,
-  nextMilestonePoints INTEGER DEFAULT 0,
-  nextMilestoneRank INTEGER DEFAULT 0,
-  pointsAheadOfNext INTEGER DEFAULT 0,
-  pointsBehindNext INTEGER DEFAULT 0,
-  dataConfidence DOUBLE PRECISION DEFAULT 0,
-  decayStatus TEXT DEFAULT 'active',
-  decayPauseReason TEXT,
-  lastEventAt TIMESTAMPTZ,
-  lastRankComputedAt TIMESTAMPTZ DEFAULT '[]',
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS performance_event (
-  id TEXT PRIMARY KEY,
-  userId TEXT NOT NULL DEFAULT '',
-  eventType TEXT DEFAULT 1,
-  matchId TEXT,
-  competition TEXT,
-  season TEXT,
-  opponentStrength DOUBLE PRECISION,
-  matchDate TIMESTAMPTZ DEFAULT 'manual',
-  sourceUserId TEXT DEFAULT 'pending',
-  verifiedBy TEXT,
-  rejectionReason TEXT DEFAULT 0,
-  notes TEXT DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS location (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL DEFAULT '',
-  "type" TEXT DEFAULT 'city',
-  parentId TEXT,
-  latitude DOUBLE PRECISION,
-  displayLabel TEXT NOT NULL DEFAULT '',
-  population INTEGER DEFAULT FALSE,
-  createdAt TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS coach (
-  id TEXT PRIMARY KEY,
-  teamId TEXT,
-  sportId TEXT,
-  slug TEXT NOT NULL DEFAULT '',
-  firstName TEXT,
-  nationality TEXT,
-  photoUrl TEXT,
-  role TEXT DEFAULT 'head_coach',
-  externalId TEXT,
-  verified BOOLEAN DEFAULT FALSE,
-  createdByAI BOOLEAN DEFAULT FALSE,
-  claimedById TEXT,
-  description TEXT
-);
-
-CREATE TABLE IF NOT EXISTS league (
-  id TEXT PRIMARY KEY,
-  sportId TEXT,
-  slug TEXT NOT NULL DEFAULT '',
-  country TEXT,
-  logoUrl TEXT DEFAULT 'league',
-  season TEXT,
-  source TEXT DEFAULT FALSE,
-  createdByAI BOOLEAN DEFAULT FALSE,
-  claimedById TEXT,
-  description TEXT
-);
-
-CREATE TABLE IF NOT EXISTS match_profile (
-  id TEXT PRIMARY KEY,
-  leagueId TEXT,
-  homeTeamId TEXT,
-  homeTeamName TEXT NOT NULL DEFAULT '',
-  homeScore INTEGER,
-  status TEXT DEFAULT 'upcoming',
-  minute INTEGER,
-  venue TEXT,
-  events JSONB DEFAULT '[]',
-  externalId TEXT,
-  createdByAI BOOLEAN DEFAULT FALSE,
-  metadata JSONB
-);
-
-CREATE TABLE IF NOT EXISTS news_item (
-  id TEXT PRIMARY KEY,
-  title TEXT NOT NULL DEFAULT '',
-  body TEXT NOT NULL DEFAULT '',
-  imageUrl TEXT,
-  imageOwnerUrl TEXT DEFAULT 'general',
-  tags JSONB DEFAULT '[]',
-  sportId TEXT,
-  teamId TEXT,
-  coachId TEXT DEFAULT 'manual',
-  externalUrl TEXT DEFAULT FALSE,
-  aiJobId TEXT DEFAULT 'draft',
-  publishedAt TIMESTAMPTZ,
-  viewCount INTEGER DEFAULT 0,
-  metadata JSONB
-);
-
-CREATE TABLE IF NOT EXISTS player (
-  id TEXT PRIMARY KEY,
-  teamId TEXT,
-  sportId TEXT,
-  slug TEXT NOT NULL DEFAULT '',
-  firstName TEXT,
-  "position" TEXT,
-  countryCode TEXT,
-  dateOfBirth TIMESTAMPTZ,
-  weightKg INTEGER,
-  externalId TEXT,
-  verified BOOLEAN DEFAULT FALSE,
-  createdByAI BOOLEAN DEFAULT FALSE,
-  claimedById TEXT,
-  description TEXT
-);
-
-CREATE TABLE IF NOT EXISTS rumor (
-  id TEXT PRIMARY KEY,
-  title TEXT NOT NULL DEFAULT '',
-  body TEXT DEFAULT 'ai',
-  externalUrl TEXT DEFAULT 50,
-  tags JSONB DEFAULT '[]',
-  sportId TEXT,
-  teamId TEXT,
-  coachId TEXT DEFAULT FALSE,
-  aiJobId TEXT DEFAULT 'draft',
-  publishedAt TIMESTAMPTZ,
-  metadata JSONB
-);
-
-CREATE TABLE IF NOT EXISTS team (
-  id TEXT PRIMARY KEY,
-  leagueId TEXT,
-  name TEXT NOT NULL DEFAULT '',
-  shortName TEXT,
-  country TEXT,
-  logoUrl TEXT,
-  foundedYear INTEGER,
-  source TEXT DEFAULT FALSE,
-  createdByAI BOOLEAN DEFAULT FALSE,
-  claimedById TEXT,
-  description TEXT
-);
-
-CREATE TABLE IF NOT EXISTS player_transfer (
+CREATE TABLE IF NOT EXISTS ss_business (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  playerId TEXT NOT NULL DEFAULT '',
-  toTeamId TEXT DEFAULT 'permanent',
-  fee TEXT DEFAULT 'EUR',
-  announcedAt TIMESTAMPTZ DEFAULT NOW(),
-  effectiveAt TIMESTAMPTZ DEFAULT NOW(),
-  "window" TEXT,
-  season TEXT,
-  loanUntil TIMESTAMPTZ DEFAULT 'completed',
-  notes TEXT,
-  metadata JSONB
-);
-
-CREATE TABLE IF NOT EXISTS push_token (
-  id TEXT PRIMARY KEY,
-  userId TEXT NOT NULL DEFAULT '',
-  platform TEXT DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS business (
-  id TEXT PRIMARY KEY,
   name TEXT NOT NULL DEFAULT '',
-  "type" TEXT DEFAULT 'brand',
+  business_type TEXT DEFAULT 'brand',
   website TEXT,
   country TEXT,
+  logo_url TEXT,
+  cover_url TEXT,
   source TEXT DEFAULT 'admin',
   verified BOOLEAN DEFAULT FALSE,
-  isActive BOOLEAN DEFAULT TRUE,
-  metadata JSONB
+  is_active BOOLEAN DEFAULT TRUE,
+  metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS business_team (
-  id TEXT PRIMARY KEY,
-  businessId TEXT NOT NULL DEFAULT '',
-  role TEXT DEFAULT 'sponsor',
-  notes TEXT DEFAULT TRUE,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ
-);
-
-CREATE TABLE IF NOT EXISTS business_player (
-  id TEXT PRIMARY KEY,
-  businessId TEXT NOT NULL DEFAULT '',
-  role TEXT DEFAULT 'endorsement',
-  notes TEXT DEFAULT TRUE,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ
-);
-
-CREATE TABLE IF NOT EXISTS business_coach (
-  id TEXT PRIMARY KEY,
-  businessId TEXT NOT NULL DEFAULT '',
-  role TEXT DEFAULT 'partner',
-  notes TEXT DEFAULT TRUE,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ
-);
-
-CREATE TABLE IF NOT EXISTS commercial_partner (
-  id TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS ss_commercial_partner (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   name TEXT NOT NULL DEFAULT '',
-  partnerType TEXT DEFAULT 'brand',
+  partner_type TEXT DEFAULT 'brand',
   industry TEXT,
   website TEXT,
-  coverUrl TEXT,
+  cover_url TEXT,
   city TEXT,
-  contactName TEXT,
-  contactEmail TEXT,
-  contractStart TIMESTAMPTZ,
-  contractEnd TIMESTAMPTZ,
-  contractValue DOUBLE PRECISION,
+  contact_name TEXT,
+  contact_email TEXT,
+  contract_start TIMESTAMPTZ,
+  contract_end TIMESTAMPTZ,
+  contract_value DOUBLE PRECISION,
   currency TEXT DEFAULT 'USD',
   status TEXT DEFAULT 'pending',
   tier TEXT DEFAULT 'bronze',
-  isActive BOOLEAN DEFAULT TRUE,
-  metadata JSONB
+  is_active BOOLEAN DEFAULT TRUE,
+  metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS partner_sponsorship (
-  id TEXT PRIMARY KEY,
-  partnerId TEXT NOT NULL DEFAULT '',
-  entityId TEXT NOT NULL DEFAULT '',
-  sponsorshipType TEXT DEFAULT 'sponsor',
-  startDate TIMESTAMPTZ,
-  "value" DOUBLE PRECISION,
+CREATE TABLE IF NOT EXISTS ss_partner_sponsorship (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  partner_id TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  entity_type TEXT DEFAULT 'team',
+  sponsorship_type TEXT DEFAULT 'sponsor',
+  start_date TIMESTAMPTZ,
+  end_date TIMESTAMPTZ,
+  deal_value DOUBLE PRECISION,
   currency TEXT DEFAULT 'USD',
-  isVisible BOOLEAN DEFAULT TRUE,
-  displayLabel TEXT,
-  notes TEXT DEFAULT TRUE,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
-  updatedAt TIMESTAMPTZ DEFAULT NOW()
+  is_visible BOOLEAN DEFAULT TRUE,
+  display_label TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- ─── Location ─────────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS ss_location (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  name TEXT NOT NULL DEFAULT '',
+  location_type TEXT DEFAULT 'city',
+  parent_id TEXT,
+  country TEXT,
+  latitude DOUBLE PRECISION,
+  longitude DOUBLE PRECISION,
+  display_label TEXT NOT NULL DEFAULT '',
+  population INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ─── Indexes ──────────────────────────────────────────────────────────────────
+
+CREATE INDEX IF NOT EXISTS idx_post_user ON ss_post(user_id);
+CREATE INDEX IF NOT EXISTS idx_post_created ON ss_post(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_post_community ON ss_post(community_id);
+CREATE INDEX IF NOT EXISTS idx_follow_follower ON ss_follow(follower_id);
+CREATE INDEX IF NOT EXISTS idx_follow_following ON ss_follow(following_id);
+CREATE INDEX IF NOT EXISTS idx_comment_post ON ss_comment(post_id);
+CREATE INDEX IF NOT EXISTS idx_notification_user ON ss_notification(user_id);
+CREATE INDEX IF NOT EXISTS idx_message_sender ON ss_message(sender_id);
+CREATE INDEX IF NOT EXISTS idx_message_receiver ON ss_message(receiver_id);
+CREATE INDEX IF NOT EXISTS idx_match_status ON ss_match(status);
+CREATE INDEX IF NOT EXISTS idx_match_kickoff ON ss_match(kickoff_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_handle ON ss_user(handle);
+CREATE INDEX IF NOT EXISTS idx_user_email ON ss_user(email);
+CREATE INDEX IF NOT EXISTS idx_leaderboard_points ON ss_leaderboard_entry(points DESC);
 
 -- ─── Storage Buckets ──────────────────────────────────────────────────────────
--- Run in Supabase SQL Editor or via Dashboard > Storage
 
 INSERT INTO storage.buckets (id, name, public) VALUES
   ('avatars', 'avatars', true),
@@ -726,12 +645,10 @@ INSERT INTO storage.buckets (id, name, public) VALUES
   ('media',   'media',   true)
 ON CONFLICT (id) DO NOTHING;
 
--- Storage RLS policies
-CREATE POLICY "avatars_public_read" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
-CREATE POLICY "avatars_auth_upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.uid() IS NOT NULL);
-CREATE POLICY "posts_public_read"   ON storage.objects FOR SELECT USING (bucket_id = 'posts');
-CREATE POLICY "posts_auth_upload"   ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'posts' AND auth.uid() IS NOT NULL);
-CREATE POLICY "covers_public_read"  ON storage.objects FOR SELECT USING (bucket_id = 'covers');
-CREATE POLICY "covers_auth_upload"  ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'covers' AND auth.uid() IS NOT NULL);
-CREATE POLICY "media_public_read"   ON storage.objects FOR SELECT USING (bucket_id = 'media');
-CREATE POLICY "media_auth_upload"   ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'media' AND auth.uid() IS NOT NULL);
+-- Storage policies
+CREATE POLICY IF NOT EXISTS "avatars_public_read" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
+CREATE POLICY IF NOT EXISTS "avatars_auth_upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.uid() IS NOT NULL);
+CREATE POLICY IF NOT EXISTS "posts_public_read"   ON storage.objects FOR SELECT USING (bucket_id = 'posts');
+CREATE POLICY IF NOT EXISTS "posts_auth_upload"   ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'posts' AND auth.uid() IS NOT NULL);
+CREATE POLICY IF NOT EXISTS "covers_public_read"  ON storage.objects FOR SELECT USING (bucket_id = 'covers');
+CREATE POLICY IF NOT EXISTS "covers_auth_upload"  ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'covers' AND auth.uid() IS NOT NULL);
