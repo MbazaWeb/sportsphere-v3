@@ -53,7 +53,13 @@ async function loadUser(filter: { id?: string; handle?: string }) {
 export async function GET(request: NextRequest) {
   try {
     const handle = request.nextUrl.searchParams.get('handle');
+    const id = request.nextUrl.searchParams.get('id');
     const currentUserId = await getUserIdFromRequest(request);
+    if (id) {
+      const { user } = await loadUser({ id });
+      if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json(user);
+    }
     if (handle) {
       const { user } = await loadUser({ handle });
       if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });

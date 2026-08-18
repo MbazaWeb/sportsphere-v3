@@ -28,7 +28,11 @@ export function useProfileData(viewingHandle: string | undefined) {
     setLoading(true);
     try {
       let data: any = null;
-      if (viewingHandle) {
+      if (viewingId) {
+        const res = await apiFetch(`/api/profile?id=${encodeURIComponent(viewingId)}`);
+        if (res.ok) data = pickUser(await res.json());
+      }
+      if (!data && viewingHandle) {
         const res = await apiFetch(`/api/profile?handle=${encodeURIComponent(viewingHandle)}`);
         if (res.ok) data = pickUser(await res.json());
       }

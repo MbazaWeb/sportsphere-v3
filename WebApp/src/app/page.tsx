@@ -138,9 +138,11 @@ export default function Home() {
       <ProfileTypeOverlay />
       <UserProfileViewer />
 
+      {!viewingUser && (
       <div className={cn('flex-1 transition-[padding-bottom] duration-300', navVisible ? 'pb-16' : 'pb-0')}>
         <TabContent />
       </div>
+      )}
 
       {!viewingProfile && !viewingUser && <NavRevealZone />}
       {!viewingProfile && !viewingUser && <BottomNav />}
