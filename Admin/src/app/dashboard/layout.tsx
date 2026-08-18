@@ -149,7 +149,7 @@ export default function DashboardLayout({
         <div>
           <Link href="/dashboard" className="flex items-center gap-2 mb-8">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.svg" alt="SportSphere" className="w-9 h-9 rounded-lg" />
+            <img src={`${process.env.NEXT_PUBLIC_BASE_PATH || "/sportsphere-admin"}/logo.svg`} alt="SportSphere" className="w-9 h-9 rounded-lg" />
             <div>
               <h1 className="text-lg font-bold tracking-tight text-amber-400 leading-tight">
                 SportSphere

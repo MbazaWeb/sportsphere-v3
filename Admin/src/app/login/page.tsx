@@ -106,7 +106,7 @@ function LoginInner() {
         <div className="relative z-10 p-12 flex flex-col justify-between w-full">
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.svg" alt="SportSphere" className="w-10 h-10 rounded-lg" />
+            <img src={`${process.env.NEXT_PUBLIC_BASE_PATH || "/sportsphere-admin"}/logo.svg`} alt="SportSphere" className="w-10 h-10 rounded-lg" />
             <div>
               <div className="text-xl font-extrabold tracking-tight text-amber-400">
                 SportSphere
@@ -155,7 +155,7 @@ function LoginInner() {
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-2 mb-8">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.svg" alt="SportSphere" className="w-8 h-8 rounded-lg" />
+            <img src={`${process.env.NEXT_PUBLIC_BASE_PATH || "/sportsphere-admin"}/logo.svg`} alt="SportSphere" className="w-8 h-8 rounded-lg" />
             <div>
               <div className="text-lg font-extrabold text-amber-400">
                 SportSphere Admin
