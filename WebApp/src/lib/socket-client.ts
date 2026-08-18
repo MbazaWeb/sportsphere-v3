@@ -11,18 +11,23 @@ export type SocketStatus =
   | 'reconnecting'
   | 'error';
 
+function envInt(name: string, fallback: number) {
+  const n = Number(process.env[name]);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+}
+
+export const SOCKET_ENABLED = process.env.NEXT_PUBLIC_SOCKET_ENABLED !== 'false';
+
 export const SOCKET_RECONNECT_OPTIONS = {
   path: '/socket.io' as const,
   transports: ['websocket', 'polling'] as string[],
-  /** Reconnect automatically after drop */
-  reconnection: true,
-  /** Start delay 1s, then exponential backoff */
-  reconnectionAttempts: 5,
-  reconnectionDelay: 1000,
-  reconnectionDelayMax: 15000,
+  reconnection: SOCKET_ENABLED,
+  reconnectionAttempts: envInt('NEXT_PUBLIC_SOCKET_RECONNECT_ATTEMPTS', 5),
+  reconnectionDelay: envInt('NEXT_PUBLIC_SOCKET_RECONNECT_DELAY', 1000),
+  reconnectionDelayMax: envInt('NEXT_PUBLIC_SOCKET_RECONNECT_DELAY_MAX', 15000),
   randomizationFactor: 0.5,
-  timeout: 20000,
-  autoConnect: true,
+  timeout: envInt('NEXT_PUBLIC_SOCKET_TIMEOUT', 20000),
+  autoConnect: SOCKET_ENABLED,
 };
 
 type StatusListener = (status: SocketStatus, detail?: string) => void;
@@ -59,9 +64,14 @@ export function onSocketStatus(listener: StatusListener): () => void {
  */
 export async function getSharedSocket(): Promise<any> {
   if (sharedSocket) return sharedSocket;
+  if (!SOCKET_ENABLED) {
+    setStatus('disconnected', 'disabled');
+    return null;
+  }
 
   const mod = await import('socket.io-client');
-  sharedSocket = mod.io({
+  const url = process.env.NEXT_PUBLIC_SOCKET_URL || undefined;
+  sharedSocket = mod.io(url, {
     ...SOCKET_RECONNECT_OPTIONS,
   });
 
