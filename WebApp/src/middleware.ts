@@ -133,7 +133,9 @@ export default async function middleware(request: NextRequest) {
   }
 
   // ── 3. Auth enforcement on protected API routes ─────────────
-  const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.includes(prefix));
+  const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.includes(prefix))
+    && !(pathname.includes('/api/posts') && request.method === 'GET')
+    && !(pathname.includes('/api/follows/status') && request.method === 'GET');
 
   if (isProtected) {
     let token = request.cookies.get(SESSION_COOKIE)?.value;
