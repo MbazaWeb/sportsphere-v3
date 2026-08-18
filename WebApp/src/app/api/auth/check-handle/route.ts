@@ -1,25 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * GET /api/auth/check-handle?handle=xyz
- *
- * Returns { available: boolean }
- * Lightweight check — no rate limit, read-only query.
- */
 export async function GET(request: NextRequest) {
-  const raw = request.nextUrl.searchParams.get('handle')?.trim();
-
-  if (!raw || raw.length < 3 || raw.length > 30) {
-    return NextResponse.json({ available: false, reason: 'invalid' });
-  }
-
-  const taken = await db.user.findFirst({
-    where: { handle: { equals: raw, mode: 'insensitive' } },
-    select: { id: true },
-  });
-
-  return NextResponse.json({ available: !taken });
+  const handle = (request.nextUrl.searchParams.get('handle') || '').trim();
+  if (!handle) return NextResponse.json({ available: false });
+  const h = handle.startsWith('@') ? handle : `@${handle}`;
+  const { data } = await supabaseAdmin.from('ss_user').select('id').or(`handle.eq."${h}",handle.ilike."${h}"`).limit(1);
+  return NextResponse.json({ available: !data?.length, handle: h });
 }

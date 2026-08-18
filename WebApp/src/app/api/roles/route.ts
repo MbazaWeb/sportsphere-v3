@@ -1,23 +1,18 @@
-// GET /api/roles — List all active roles with their types
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { supabaseAdmin } from '@/lib/supabase';
+import { isMissingTable } from '@/lib/supabase-safe';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  try {
-    const roles = await db.role.findMany({
-      where: { isActive: true },
-      orderBy: { displayOrder: 'asc' },
-      include: {
-        types: {
-          where: { isActive: true },
-          orderBy: { displayOrder: 'asc' },
-        },
-      },
-    });
-
-    return NextResponse.json(roles);
-  } catch (error) {
-    console.error('Failed to fetch roles:', error);
-    return NextResponse.json({ error: 'Failed to fetch roles' }, { status: 500 });
+  const { data, error } = await supabaseAdmin.from('ss_role').select('id,name,slug,icon,category,is_active').eq('is_active', true);
+  if (error && isMissingTable(error)) {
+    return NextResponse.json([
+      { id: 'fan', name: 'Fan', slug: 'fan', icon: '⭐', category: 'individual' },
+      { id: 'player', name: 'Player', slug: 'player', icon: '⚽', category: 'individual' },
+      { id: 'coach', name: 'Coach', slug: 'coach', icon: '📋', category: 'individual' },
+      { id: 'team', name: 'Team', slug: 'team', icon: '🛡️', category: 'organization' },
+    ]);
   }
+  return NextResponse.json(data || []);
 }

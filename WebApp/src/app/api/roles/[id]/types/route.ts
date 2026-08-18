@@ -1,31 +1,12 @@
-// GET /api/roles/[id]/types — List types for a specific role
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { supabaseAdmin } from '@/lib/supabase';
+import { isMissingTable } from '@/lib/supabase-safe';
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
+export const dynamic = 'force-dynamic';
 
-    const role = await db.role.findUnique({
-      where: { id },
-      include: {
-        types: {
-          where: { isActive: true },
-          orderBy: { displayOrder: 'asc' },
-        },
-      },
-    });
-
-    if (!role) {
-      return NextResponse.json({ error: 'Role not found' }, { status: 404 });
-    }
-
-    return NextResponse.json(role.types);
-  } catch (error) {
-    console.error('Failed to fetch role types:', error);
-    return NextResponse.json({ error: 'Failed to fetch role types' }, { status: 500 });
-  }
+export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> | { id: string } }) {
+  const { id } = await Promise.resolve(ctx.params as any);
+  const { data, error } = await supabaseAdmin.from('ss_role_type').select('id,name,slug,role_id').eq('role_id', id);
+  if (error && isMissingTable(error)) return NextResponse.json([]);
+  return NextResponse.json(data || []);
 }
