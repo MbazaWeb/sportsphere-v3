@@ -1,0 +1,52 @@
+-- Fix missing columns reported in logs
+
+-- ss_league missing columns
+ALTER TABLE ss_league ADD COLUMN IF NOT EXISTS "type" TEXT;
+ALTER TABLE ss_league ADD COLUMN IF NOT EXISTS division TEXT;
+ALTER TABLE ss_league ADD COLUMN IF NOT EXISTS season TEXT;
+ALTER TABLE ss_league ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'admin';
+ALTER TABLE ss_league ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+
+-- ss_team missing columns  
+ALTER TABLE ss_team ADD COLUMN IF NOT EXISTS city TEXT;
+ALTER TABLE ss_team ADD COLUMN IF NOT EXISTS founded_year INTEGER;
+ALTER TABLE ss_team ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'admin';
+ALTER TABLE ss_team ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+ALTER TABLE ss_team ADD COLUMN IF NOT EXISTS verified BOOLEAN DEFAULT FALSE;
+
+-- ss_player missing columns
+ALTER TABLE ss_player ADD COLUMN IF NOT EXISTS first_name TEXT;
+ALTER TABLE ss_player ADD COLUMN IF NOT EXISTS last_name TEXT;
+ALTER TABLE ss_player ADD COLUMN IF NOT EXISTS height_cm INTEGER;
+ALTER TABLE ss_player ADD COLUMN IF NOT EXISTS weight_kg INTEGER;
+ALTER TABLE ss_player ADD COLUMN IF NOT EXISTS date_of_birth TIMESTAMPTZ;
+
+-- ss_match missing columns
+ALTER TABLE ss_match ADD COLUMN IF NOT EXISTS home_badge TEXT;
+ALTER TABLE ss_match ADD COLUMN IF NOT EXISTS away_badge TEXT;
+ALTER TABLE ss_match ADD COLUMN IF NOT EXISTS venue TEXT;
+ALTER TABLE ss_match ADD COLUMN IF NOT EXISTS season TEXT;
+ALTER TABLE ss_match ADD COLUMN IF NOT EXISTS lineups JSONB DEFAULT '{}';
+ALTER TABLE ss_match ADD COLUMN IF NOT EXISTS stats JSONB DEFAULT '[]';
+ALTER TABLE ss_match ADD COLUMN IF NOT EXISTS external_id TEXT;
+
+-- ss_post missing columns
+ALTER TABLE ss_post ADD COLUMN IF NOT EXISTS community_id TEXT;
+ALTER TABLE ss_post ADD COLUMN IF NOT EXISTS sport_tag TEXT;
+ALTER TABLE ss_post ADD COLUMN IF NOT EXISTS hashtags JSONB DEFAULT '[]';
+ALTER TABLE ss_post ADD COLUMN IF NOT EXISTS view_count INTEGER DEFAULT 0;
+
+-- ss_notification missing columns
+ALTER TABLE ss_notification ADD COLUMN IF NOT EXISTS target_id TEXT;
+ALTER TABLE ss_notification ADD COLUMN IF NOT EXISTS target_type TEXT;
+
+-- ss_user missing columns (website, phone)
+ALTER TABLE ss_user ADD COLUMN IF NOT EXISTS website TEXT;
+ALTER TABLE ss_user ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE ss_user ADD COLUMN IF NOT EXISTS gender TEXT;
+ALTER TABLE ss_user ADD COLUMN IF NOT EXISTS nationality TEXT;
+ALTER TABLE ss_user ADD COLUMN IF NOT EXISTS country_of_origin TEXT;
+ALTER TABLE ss_user ADD COLUMN IF NOT EXISTS current_country TEXT;
+ALTER TABLE ss_user ADD COLUMN IF NOT EXISTS role_id TEXT;
+ALTER TABLE ss_user ADD COLUMN IF NOT EXISTS role_type_id TEXT;
+ALTER TABLE ss_user ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ DEFAULT NOW();
