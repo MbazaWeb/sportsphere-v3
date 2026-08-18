@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import '../constants/api_config.dart';
@@ -121,6 +122,11 @@ class ApiClient {
     final streamRes = await req.send();
     final res = await http.Response.fromStream(streamRes);
     return _decode(res);
+  }
+
+  /// Helper for UploadApi
+  Future<Uint8List> readBytesFromFile(String path) async {
+    return File(path).readAsBytes();
   }
 
   /// Lightweight connectivity check against GET /api/health

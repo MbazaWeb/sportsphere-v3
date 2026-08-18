@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/providers/app_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
@@ -84,51 +85,45 @@ class _LoginSheetState extends ConsumerState<LoginSheet> {
   }
 
   Future<void> _loginWithGoogle() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    setState(() { _loading = true; _error = null; });
 
     try {
       final googleSignIn = GoogleSignIn(
         serverClientId: ApiConfig.googleClientId.isNotEmpty ? ApiConfig.googleClientId : null,
       );
       final account = await googleSignIn.signIn();
-      if (account == null) {
-        setState(() => _loading = false);
-        return;
-      }
+      if (account == null) { setState(() => _loading = false); return; }
 
-      final auth = await account.authentication;
-      final idToken = auth.idToken;
+      final googleAuth = await account.authentication;
 
-      if (idToken == null) {
-        throw Exception('Could not get Google ID token');
-      }
+      // Sign in to Supabase with Google credentials
+      final res = await Supabase.instance.client.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: googleAuth.idToken!,
+        accessToken: googleAuth.accessToken,
+      );
 
+      final idToken = res.session?.accessToken;
+
+      if (idToken == null) throw Exception('Could not get Supabase session');
+
+      // Now sync this Supabase session with your VPS
       final ok = await ref.read(authProvider.notifier).socialLogin(
         provider: 'google',
         idToken: idToken,
       );
 
       if (!mounted) return;
-
       if (ok) {
         setState(() => _loading = false);
         widget.onSuccess();
       } else {
-        final err = ref.read(authProvider).error ?? 'Google Sign-In failed';
-        setState(() {
-          _loading = false;
-          _error = err;
-        });
+        final err = ref.read(authProvider).error ?? 'Sync with VPS failed';
+        setState(() { _loading = false; _error = err; });
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = 'Google login failed: $e';
-      });
+      setState(() { _loading = false; _error = 'Google login failed: $e'; });
     }
   }
 

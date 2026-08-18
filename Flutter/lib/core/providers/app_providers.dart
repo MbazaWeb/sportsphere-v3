@@ -49,10 +49,7 @@ final rolesApiProvider = Provider((ref) => RolesApi(ref.watch(apiClientProvider)
 final profileDataApiProvider = Provider((ref) => ProfileDataApi(ref.watch(apiClientProvider)));
 final favoritesApiProvider = Provider((ref) => FavoritesApi(ref.watch(apiClientProvider)));
 final performanceApiProvider = Provider((ref) => PerformanceApi(ref.watch(apiClientProvider)));
-final uploadApiProvider = Provider((ref) {
-  final storage = ref.watch(tokenStorageProvider);
-  return UploadApi(tokenProvider: storage.readToken);
-});
+final uploadApiProvider = Provider((ref) => UploadApi(ref.watch(apiClientProvider)));
 
 final followsApiProvider = Provider((ref) => FollowsApi(ref.watch(apiClientProvider)));
 final pushApiProvider = Provider((ref) => PushApi(ref.watch(apiClientProvider)));
