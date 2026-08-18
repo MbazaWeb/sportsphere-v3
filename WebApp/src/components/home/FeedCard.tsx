@@ -80,6 +80,8 @@ function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isA
   async function act(action: string) {
     if (!isAuthenticated) { onRequireAuth(); return; }
     if (action === 'fan' || action === 'follow') {
+      if (action === 'fan') setFan(true);
+      if (action === 'follow') setFollow(true);
       const res = await apiFetch('/api/follows', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -87,8 +89,8 @@ function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isA
       });
       if (res.ok) {
         const data = await res.json();
-        setFollow(!!data.following);
-        setFan(!!data.isFan);
+        if (typeof data.following === 'boolean') setFollow(data.following);
+        if (typeof data.isFan === 'boolean') setFan(data.isFan);
       }
       return;
     }

@@ -121,13 +121,30 @@ export async function POST(request: NextRequest) {
       // already deleted above as toggle off
     }
 
+    if (kind === 'fan' && shouldOn) {
+      await supabaseAdmin.from('ss_fan').upsert({
+        follower_id: userId,
+        following_id: targetUserId,
+      }, { onConflict: 'follower_id,following_id' });
+    }
+    if (kind === 'fan' && turningOff) {
+      await supabaseAdmin.from('ss_fan').delete().eq('follower_id', userId).eq('following_id', targetUserId);
+    }
+
     const { data: mine } = await supabaseAdmin
       .from('ss_follow')
       .select('kind')
       .eq('follower_id', userId)
       .eq('following_id', targetUserId);
+    const { data: fans } = await supabaseAdmin
+      .from('ss_fan')
+      .select('following_id')
+      .eq('follower_id', userId)
+      .eq('following_id', targetUserId)
+      .limit(1);
 
     const kinds = new Set((mine || []).map((r) => r.kind));
+    if (fans?.length) kinds.add('fan');
     const them = await recountUser(targetUserId);
     const me = await recountUser(userId);
 
