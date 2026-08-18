@@ -28,7 +28,7 @@ export async function proxy(request: NextRequest) {
   const payload = await verifyAdminSession(cookie);
 
   if (!payload?.sub) {
-    const loginUrl = new URL('/sportsphere-admin/login', request.url);
+    const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('next', pathname);
     return NextResponse.redirect(loginUrl);
   }
@@ -46,7 +46,7 @@ export async function proxy(request: NextRequest) {
   const isAdmin = ALLOWED_ADMIN_ROLES.has(role);
 
   if (!isAdmin) {
-    const loginUrl = new URL('/sportsphere-admin/login', request.url);
+    const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('next', pathname);
     loginUrl.searchParams.set('reason', 'forbidden');
     return NextResponse.redirect(loginUrl);
