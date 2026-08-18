@@ -87,11 +87,12 @@ function applyWhere(query: any, where?: WhereClause): any {
       for (const [key, val] of Object.entries(clause)) {
         const f = scalarFilter(val);
         if (!f) continue;
-        if (f.op === 'contains') parts.push(`${key}.ilike.%${f.value}%`);
-        else if (f.op === 'startsWith') parts.push(`${key}.ilike.${f.value}%`);
+        const q = String(f.value ?? '').replace(/"/g, '');
+        if (f.op === 'contains') parts.push(`${key}.ilike."%${q}%"`);
+        else if (f.op === 'startsWith') parts.push(`${key}.ilike."${q}%"`);
         else if (f.op === 'in') parts.push(`${key}.in.(${(f.value || []).join(',')})`);
-        else if (f.insensitive && f.op === 'eq') parts.push(`${key}.ilike.${f.value}`);
-        else parts.push(`${key}.eq.${f.value}`);
+        else if (f.insensitive && f.op === 'eq') parts.push(`${key}.ilike."${q}"`);
+        else parts.push(`${key}.eq."${q}"`);
       }
     }
     if (parts.length) query = query.or(parts.join(','));
