@@ -18,6 +18,8 @@ export function CartDrawer() {
   const setLoginModalOpen = useUIStore((s) => s.setLoginModalOpen);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
+  const [method, setMethod] = useState<'cod' | 'mpesa' | 'mixx' | 'card'>('cod');
+  const [phone, setPhone] = useState('');
   if (!open) return null;
 
   return (
@@ -51,6 +53,28 @@ export function CartDrawer() {
                 <span>Total</span>
                 <span className="font-bold text-gold">TZS {total().toLocaleString()}</span>
               </div>
+              <div className="mb-3 space-y-2">
+                <p className="text-xs font-semibold text-slate-400">Payment</p>
+                {[
+                  ['cod', 'Pay on delivery'],
+                  ['mixx', 'Mixx by Yas'],
+                  ['mpesa', 'M-Pesa'],
+                  ['card', 'Card'],
+                ].map(([id, label]) => (
+                  <label key={id} className="flex items-center gap-2 text-sm text-white">
+                    <input type="radio" name="pay" checked={method === id} onChange={() => setMethod(id as any)} />
+                    {label}
+                  </label>
+                ))}
+                {method !== 'cod' && method !== 'card' && (
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="2557..."
+                    className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+                  />
+                )}
+              </div>
               <button
                 type="button"
                 disabled={busy}
@@ -62,11 +86,11 @@ export function CartDrawer() {
                     const res = await apiFetch('/api/checkout', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ items, total: total() }),
+                      body: JSON.stringify({ items, total: total(), method, phone }),
                     });
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error || 'Checkout failed');
-                    setDone('Order placed. Payment pending (pay on delivery).');
+                    setDone(method === 'cod' ? 'Order placed. Pay on delivery.' : 'Order placed. Complete payment on your phone.');
                     clear();
                   } catch (e: any) {
                     alert(e.message);
