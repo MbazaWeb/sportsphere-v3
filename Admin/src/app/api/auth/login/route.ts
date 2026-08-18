@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { db } from '@/lib/db';
+import { supabaseAdmin } from '@/lib/supabase';
 import {
   signAdminSession,
   buildAdminCookie,
@@ -8,21 +8,6 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-/**
- * POST /api/auth/login
- *
- * Body: { email?, handle?, password }
- *
- * Direct database authentication:
- *   1. Look up the user in the users table by email OR handle.
- *   2. Verify the password against passwordHash using bcrypt.
- *   3. Reject if the user's role is not an admin role (403).
- *   4. Issue our own admin_session JWT and set it as a cookie.
- *
- * The fan web app is NOT involved — this is a fully independent auth path.
- * Both apps read the same users table, so an admin who changes their
- * password on the fan app is automatically updated here too.
- */
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json().catch(() => ({}))) as {
@@ -41,108 +26,79 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Allow login by email OR handle (same logic as the fan app)
-    const isHandle = !identifier.includes('@') || identifier.startsWith('@');
-    const handle = identifier.startsWith('@') ? identifier : `@${identifier}`;
+    const byEmail = identifier.includes('@') && !identifier.startsWith('@');
 
-    const user = await db.user.findFirst({
-      where: isHandle && !identifier.includes('.')
-        ? { handle: { equals: handle, mode: 'insensitive' } }
-        : {
-            OR: [
-              { email: { equals: identifier, mode: 'insensitive' } },
-              { handle: { equals: handle, mode: 'insensitive' } },
-            ],
-          },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        handle: true,
-        role: true,
-        roleId: true,
-        roleTypeId: true,
-        passwordHash: true,
-        avatarUrl: true,
-        avatarInitials: true,
-        isVerified: true,
-        emailVerified: true,
-        verificationStatus: true,
-      },
-    });
+    let q = supabaseAdmin
+      .from('ss_user')
+      .select('id,name,email,handle,role,password_hash,avatar_url,avatar_initials,is_verified,email_verified,verification_status')
+      .limit(1);
 
-    // Same error for "no user" and "bad password" — don't leak which one.
-    if (!user || !user.passwordHash) {
-      return NextResponse.json(
-        { error: 'Invalid credentials.' },
-        { status: 401 }
-      );
+    q = byEmail ? q.ilike('email', identifier) : q.ilike('handle', identifier.startsWith('@') ? identifier : `@${identifier}`);
+
+    const { data: rows, error } = await q;
+    if (error) {
+      console.error('Admin login query error:', error.message);
+      return NextResponse.json({ error: 'Login failed. Please try again.' }, { status: 500 });
     }
 
-    const valid = await bcrypt.compare(password, user.passwordHash);
+    const row = rows?.[0];
+    const hash = row?.password_hash as string | undefined;
+
+    if (!row || !hash) {
+      return NextResponse.json({ error: 'Invalid credentials.' }, { status: 401 });
+    }
+
+    const valid = await bcrypt.compare(password, hash);
     if (!valid) {
-      return NextResponse.json(
-        { error: 'Invalid credentials.' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Invalid credentials.' }, { status: 401 });
     }
 
-    // ─── Admin-only gate ──────────────────────────────────────
-    const roleUpper = (user.role || '').toUpperCase();
+    const roleUpper = String(row.role || '').toUpperCase();
     const isAdmin =
       roleUpper === 'ADMINISTRATOR' ||
       roleUpper === 'ADMIN' ||
-      roleUpper.includes('ADMIN');
+      roleUpper === 'SUPER_ADMIN' ||
+      roleUpper === 'PLATFORM_ADMIN';
 
     if (!isAdmin) {
       return NextResponse.json(
-        {
-          error:
-            'Access denied. Your account does not have administrator privileges.',
-        },
+        { error: 'Access denied. Your account does not have administrator privileges.' },
         { status: 403 }
       );
     }
 
-    // Bump lastSeenAt in the background (non-blocking)
-    db.user
-      .update({
-        where: { id: user.id },
-        data: { lastSeenAt: new Date() },
-      })
-      .catch((err) => console.error('Failed to bump lastSeenAt:', err));
+    void supabaseAdmin
+      .from('ss_user')
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq('id', row.id);
 
-    // Issue our own admin JWT
     const token = await signAdminSession({
-      sub: user.id,
-      email: user.email,
-      handle: user.handle,
-      role: user.role,
-      name: user.name,
+      sub: row.id,
+      email: row.email,
+      handle: row.handle,
+      role: row.role,
+      name: row.name,
     });
 
     const response = NextResponse.json({
       ok: true,
       user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        handle: user.handle,
-        role: user.role,
-        avatarUrl: user.avatarUrl,
-        avatarInitials: user.avatarInitials,
-        isVerified: user.isVerified,
-        emailVerified: user.emailVerified,
-        verificationStatus: user.verificationStatus,
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        handle: row.handle,
+        role: row.role,
+        avatarUrl: row.avatar_url,
+        avatarInitials: row.avatar_initials,
+        isVerified: row.is_verified,
+        emailVerified: row.email_verified,
+        verificationStatus: row.verification_status,
       },
     });
     response.headers.set('Set-Cookie', buildAdminCookie(token));
     return response;
   } catch (error) {
     console.error('Admin login error:', error);
-    return NextResponse.json(
-      { error: 'Login failed. Please try again.' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Login failed. Please try again.' }, { status: 500 });
   }
 }
