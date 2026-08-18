@@ -551,7 +551,24 @@ class _RoleTabBody extends StatelessWidget {
 
       // ── Spotlights = feed + posts + media + spotlight + predictions ───────
       case 'spotlights':
-        return _SpotlightsBody(user: user);
+      case 'feed':
+      case 'posts':
+        return _SpotlightsBody(user: user, initialSub: 'posts');
+      case 'media':
+      case 'spotlight':
+        return _SpotlightsBody(user: user, initialSub: 'media');
+      case 'predictions':
+        return _SpotlightsBody(user: user, initialSub: 'predictions');
+      case 'about':
+      case 'achievements':
+        return _OverviewBody(user: user, roleCfg: roleCfg, onEdit: onEdit, onSignOut: onSignOut);
+      case 'shop':
+      case 'tickets':
+      case 'communities':
+        return _CommunityBody(user: user, role: role);
+      case 'results':
+      case 'transfers':
+        return RoleTabContent(tabId: tabId, role: role);
 
       // ── Community = communities + shop ────────────────────────────────────
       case 'community':
@@ -822,7 +839,8 @@ class _AboutRow extends StatelessWidget {
 // Merged: feed + posts + media + spotlight + predictions
 // Sub-tabs mirror web FeedsTab (Posts / Media) + adds Predictions chip
 class _SpotlightsBody extends ConsumerStatefulWidget {
-  const _SpotlightsBody({required this.user});
+  const _SpotlightsBody({required this.user, this.initialSub = 'posts'});
+  final String initialSub;
   final UserProfile user;
 
   @override
@@ -831,7 +849,7 @@ class _SpotlightsBody extends ConsumerStatefulWidget {
 
 class _SpotlightsBodyState extends ConsumerState<_SpotlightsBody> {
   // Sub-tab mirrors web FeedsTab: posts | media | predictions
-  String _sub = 'posts';
+  late String _sub = widget.initialSub;
 
   List<Post> _posts = [];
   bool _loading = true;
