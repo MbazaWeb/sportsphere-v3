@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { supabaseAdmin } from '@/lib/supabase';
 import { v2 as cloudinary } from 'cloudinary';
 
 export const dynamic = 'force-dynamic';
@@ -102,28 +102,12 @@ export async function PUT(request: NextRequest) {
     });
 
     if (type === 'cover') {
-      await db.user.update({
-        where: { id: userId },
-        data: {
-          coverUrl: upload.secure_url
-        }
-      });
-
-      return NextResponse.json({
-        coverUrl: upload.secure_url
-      });
+      await supabaseAdmin.from('ss_user').update({ cover_url: upload.secure_url }).eq('id', userId);
+      return NextResponse.json({ coverUrl: upload.secure_url });
     }
 
-    await db.user.update({
-      where: { id: userId },
-      data: {
-        avatarUrl: upload.secure_url
-      }
-    });
-
-    return NextResponse.json({
-      avatarUrl: upload.secure_url
-    });
+    await supabaseAdmin.from('ss_user').update({ avatar_url: upload.secure_url }).eq('id', userId);
+    return NextResponse.json({ avatarUrl: upload.secure_url });
 
   } catch (e) {
     console.error(e);

@@ -1,313 +1,117 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { safeJsonParse } from '@/lib/json';
-import { USER_SELECT_FULL } from '@/lib/db-selects';
-import { isTypedProfileRole, saveTypedProfile, fetchTypedProfileRecord } from '@/lib/typed-profiles';
+import { supabaseAdmin } from '@/lib/supabase';
+import { isMissingTable } from '@/lib/supabase-safe';
 
 export const dynamic = 'force-dynamic';
 
+function mapUser(row: any) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    handle: row.handle,
+    role: row.role || 'fan',
+    avatarUrl: row.avatar_url || null,
+    avatarInitials: row.avatar_initials || (row.name || 'U').slice(0, 2).toUpperCase(),
+    coverUrl: row.cover_url || null,
+    bio: row.bio || null,
+    location: row.location || null,
+    website: row.website || null,
+    phone: row.phone || null,
+    isVerified: !!row.is_verified,
+    emailVerified: !!row.email_verified,
+    roleName: row.role || 'Fan',
+    roleSlug: String(row.role || 'fan').toLowerCase(),
+    sports: [],
+    sportsFollowing: [],
+    roleProfile: {},
+    typedProfile: {},
+  };
+}
 
-// GET /api/profile?handle=@xxx — get full profile (public fields only for other users)
-// GET /api/profile (no handle) — get own full profile (all fields)
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = request.nextUrl;
-    const handle = searchParams.get('handle');
+    const handle = request.nextUrl.searchParams.get('handle');
     const currentUserId = await getUserIdFromRequest(request);
 
-    // Common select with role/type/sport joins
-    const selectWithRelations = {
-      ...USER_SELECT_FULL,
-      favorites: true,
-      userRole: { select: { id: true, name: true, slug: true, icon: true, category: true, description: true } },
-      userRoleType: { select: { id: true, name: true, slug: true, description: true } },
-      userSports: { select: { sport: { select: { id: true, name: true, slug: true, icon: true, category: true, sportType: true, format: true } } } },
-    };
+    let q = supabaseAdmin
+      .from('ss_user')
+      .select('id,name,email,handle,role,avatar_url,avatar_initials,cover_url,bio,location,website,phone,is_verified,email_verified')
+      .limit(1);
 
     if (handle) {
-      // Viewing someone else's profile — return public fields only
-      const user = await db.user.findUnique({
-        where: { handle },
-        select: selectWithRelations,
-      });
-      if (!user) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
-
-      // Check privacy settings for sensitive fields
-      const privacy = safeJsonParse(user.privacySettings || '{}', {});
-      const isOwnProfile = currentUserId === user.id;
-
-      // Phase 4: For custom roles, fetch the typed profile row and
-      // expose it as `typedProfile` on the response. Renderers will
-      // pick it up via `getRoleProfile(apiUser, role)`.
-      const typedProfile = isTypedProfileRole(user.role)
-        ? await fetchTypedProfileRecord(user.role, user.id)
-        : null;
-
-      const publicUser: Record<string, unknown> = {
-        ...user,
-        roleName: user.userRole?.name || 'Fan',
-        roleSlug: user.userRole?.slug || 'fan',
-        roleIcon: user.userRole?.icon || '⭐',
-        roleCategory: user.userRole?.category || 'individual',
-        roleDescription: user.userRole?.description || '',
-        typeName: user.userRoleType?.name || 'Casual Fan',
-        typeSlug: user.userRoleType?.slug || 'casual',
-        typeDescription: user.userRoleType?.description || null,
-        sports: user.userSports.map((us: typeof user.userSports[number]) => us.sport),
-        sportsFollowing: safeJsonParse(user.sportsFollowing, []),
-        roleData: safeJsonParse(user.roleData, {}),
-        // For custom roles: prefer typed profile data, fall back to JSON
-        // (which may have stale data from before Phase 4 backfill).
-        // For generic roles: use the JSON column as before.
-        roleProfile: isTypedProfileRole(user.role) && typedProfile && Object.keys(typedProfile).length > 0
-          ? typedProfile
-          : safeJsonParse(user.roleProfile, {}),
-        typedProfile,  // expose typed profile separately for renderers
-        interests: safeJsonParse(user.interests, []),
-        privacySettings: safeJsonParse(user.privacySettings, {}),
-        notifPrefs: safeJsonParse(user.notifPrefs, {}),
-        dateOfBirth: user.dateOfBirth?.toISOString() || null,
-        favorites: user.favorites.map((f: typeof user.favorites[number]) => ({
-          id: f.id, targetType: f.targetType, targetName: f.targetName, targetHandle: f.targetHandle,
-        })),
-      };
-
-      // Remove raw relation objects (already extracted above)
-      delete publicUser.userRole;
-      delete publicUser.userRoleType;
-      delete publicUser.userSports;
-
-      // Apply privacy — hide phone/email unless own profile or allowed
-      if (!isOwnProfile) {
-        if (!(privacy as Record<string, unknown>).showPhone) publicUser.phone = null;
-        if (!(privacy as Record<string, unknown>).showEmail) publicUser.email = null;
-        // Don't expose notifPrefs or privacySettings to other users
-        delete publicUser.notifPrefs;
-        delete publicUser.privacySettings;
-      }
-
-      return NextResponse.json(publicUser);
-    }
-
-    // No handle — return own profile
-    if (!currentUserId) {
+      const h = handle.startsWith('@') ? handle : `@${handle}`;
+      q = q.or(`handle.eq."${h}",handle.ilike."${h}"`);
+    } else if (currentUserId) {
+      q = q.eq('id', currentUserId);
+    } else {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }
 
-    const user = await db.user.findUnique({
-      where: { id: currentUserId },
-      select: selectWithRelations,
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // Phase 4: attach typed profile for custom roles
-    const typedProfile = isTypedProfileRole(user.role)
-      ? await fetchTypedProfileRecord(user.role, user.id)
-      : null;
-
-    return NextResponse.json({
-      ...user,
-      roleName: user.userRole?.name || 'Fan',
-      roleSlug: user.userRole?.slug || 'fan',
-      roleIcon: user.userRole?.icon || '⭐',
-      roleCategory: user.userRole?.category || 'individual',
-      roleDescription: user.userRole?.description || '',
-      typeName: user.userRoleType?.name || 'Casual Fan',
-      typeSlug: user.userRoleType?.slug || 'casual',
-      typeDescription: user.userRoleType?.description || null,
-      sports: user.userSports.map((us: typeof user.userSports[number]) => us.sport),
-      sportsFollowing: safeJsonParse(user.sportsFollowing, []),
-      roleData: safeJsonParse(user.roleData, {}),
-      roleProfile: isTypedProfileRole(user.role) && typedProfile && Object.keys(typedProfile).length > 0
-        ? typedProfile
-        : safeJsonParse(user.roleProfile, {}),
-      typedProfile,
-      interests: safeJsonParse(user.interests, []),
-      privacySettings: safeJsonParse(user.privacySettings, {}),
-      notifPrefs: safeJsonParse(user.notifPrefs, {}),
-      dateOfBirth: user.dateOfBirth?.toISOString() || null,
-      favorites: user.favorites.map((f: typeof user.favorites[number]) => ({
-        id: f.id, targetType: f.targetType, targetName: f.targetName, targetHandle: f.targetHandle,
-      })),
-    });
+    const { data, error } = await q;
+    if (error && !isMissingTable(error)) throw new Error(error.message);
+    const user = mapUser(data?.[0]);
+    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    return NextResponse.json(user);
   } catch (error) {
-    console.error('Profile GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
+    console.error('profile GET', error);
+    return NextResponse.json({ error: 'Failed to load profile.' }, { status: 500 });
   }
 }
 
-// PUT /api/profile — update own profile (requires auth)
-export async function PUT(request: NextRequest) {
+export async function PATCH(request: NextRequest) {
   try {
     const userId = await getUserIdFromRequest(request);
-    if (!userId) {
-      return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
-    }
+    if (!userId) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
 
-    const body = await request.json();
-
-    // Build update object from allowed fields
+    const body = await request.json().catch(() => ({}));
     const update: Record<string, unknown> = {};
-
-    // Identity
     if (body.name !== undefined) update.name = String(body.name).trim();
     if (body.handle !== undefined) {
       const h = String(body.handle).trim();
-      if (!h.startsWith('@')) update.handle = '@' + h;
-      else update.handle = h;
+      update.handle = h.startsWith('@') ? h : `@${h}`;
     }
     if (body.bio !== undefined) update.bio = String(body.bio).trim() || null;
-    if (body.aboutMe !== undefined) update.aboutMe = String(body.aboutMe).trim() || null;
-    if (body.pronouns !== undefined) update.pronouns = String(body.pronouns).trim() || null;
     if (body.location !== undefined) update.location = String(body.location).trim() || null;
-    if (body.coverGradient !== undefined) update.coverGradient = String(body.coverGradient);
+    if (body.website !== undefined) update.website = String(body.website).trim() || null;
+    if (body.phone !== undefined) update.phone = String(body.phone).trim() || null;
+    if (body.avatarUrl !== undefined) update.avatar_url = body.avatarUrl;
+    if (body.coverUrl !== undefined) update.cover_url = body.coverUrl;
+    if (body.coverGradient !== undefined) update.cover_gradient = body.coverGradient;
 
-    // Personal
-    if (body.dateOfBirth !== undefined) {
-      update.dateOfBirth = body.dateOfBirth ? new Date(body.dateOfBirth) : null;
-    }
-    if (body.gender !== undefined) update.gender = String(body.gender) || null;
-    if (body.nationality !== undefined) update.nationality = String(body.nationality) || null;
-    if (body.countryOfOrigin !== undefined) update.countryOfOrigin = String(body.countryOfOrigin) || null;
-    if (body.currentCountry !== undefined) update.currentCountry = String(body.currentCountry) || null;
-    if (body.region !== undefined) update.region = String(body.region) || null;
-    if (body.city !== undefined) update.city = String(body.city) || null;
-    if (body.preferredLanguage !== undefined) update.preferredLanguage = String(body.preferredLanguage) || null;
-    if (body.timezone !== undefined) update.timezone = String(body.timezone) || null;
-
-    // Contact
-    if (body.phone !== undefined) update.phone = String(body.phone) || null;
-    if (body.website !== undefined) update.website = String(body.website) || null;
-    if (body.whatsapp !== undefined) update.whatsapp = String(body.whatsapp) || null;
-    if (body.socialInstagram !== undefined) update.socialInstagram = String(body.socialInstagram) || null;
-    if (body.socialX !== undefined) update.socialX = String(body.socialX) || null;
-    if (body.socialTikTok !== undefined) update.socialTikTok = String(body.socialTikTok) || null;
-    if (body.socialFacebook !== undefined) update.socialFacebook = String(body.socialFacebook) || null;
-    if (body.socialLinkedIn !== undefined) update.socialLinkedIn = String(body.socialLinkedIn) || null;
-    if (body.socialYouTube !== undefined) update.socialYouTube = String(body.socialYouTube) || null;
-    if (body.socialThreads !== undefined) update.socialThreads = String(body.socialThreads) || null;
-
-    // Appearance
-    if (body.theme !== undefined) update.theme = String(body.theme);
-    if (body.fontSize !== undefined) update.fontSize = String(body.fontSize);
-    if (body.reducedMotion !== undefined) update.reducedMotion = Boolean(body.reducedMotion);
-    if (body.highContrast !== undefined) update.highContrast = Boolean(body.highContrast);
-
-    // Settings (JSON)
-    if (body.privacySettings !== undefined) update.privacySettings = JSON.stringify(body.privacySettings);
-    if (body.notifPrefs !== undefined) update.notifPrefs = JSON.stringify(body.notifPrefs);
-    if (body.interests !== undefined) update.interests = JSON.stringify(body.interests);
-    if (body.sportsFollowing !== undefined) update.sportsFollowing = JSON.stringify(body.sportsFollowing);
-
-    // ─── Phase 4: route roleProfile to the typed table for custom roles ──
-    // For custom roles: write to the typed table (PlayerProfile, etc.)
-    //   AND keep the JSON column in sync as a backup.
-    // For generic roles: only update the JSON column.
-    const currentUser = await db.user.findUnique({
-      where: { id: userId },
-      select: { role: true },
-    });
-    const userRole = currentUser?.role || 'fan';
-    if (body.roleProfile !== undefined) {
-      const rpData = body.roleProfile as Record<string, unknown>;
-      if (isTypedProfileRole(userRole)) {
-        // Write to typed table
-        await saveTypedProfile(userRole, userId, rpData);
-        // Also mirror to JSON column as a fallback
-        update.roleProfile = JSON.stringify(rpData);
-      } else {
-        // Generic role — JSON column only
-        update.roleProfile = JSON.stringify(rpData);
-      }
-    }
-
-    // ─── Sync UserSport junction table when sportsFollowing changes ──
-    // E-1: This was a critical bug — only the JSON field was updated, not
-    // the normalized UserSport records. Now both are kept in sync.
-    if (body.sportsFollowing !== undefined) {
-      const newSports: string[] = Array.isArray(body.sportsFollowing) ? body.sportsFollowing : [];
-      // Resolve sport names/slugs to DB IDs
-      const sportRecords = await db.sport.findMany({
-        where: {
-          isActive: true,
-          OR: [
-            { slug: { in: (newSports as string[]).map((s: string) => s.toLowerCase().replace(/\s+/g, '-')) } },
-            { name: { in: newSports } },
-          ],
-        },
-        select: { id: true },
-      });
-      const newSportIds = sportRecords.map((s: typeof sportRecords[number]) => s.id);
-
-      // Get current UserSport records
-      const currentUserSports = await db.userSport.findMany({
-        where: { userId },
-        select: { sportId: true },
-      });
-      const currentSportIds = new Set(currentUserSports.map((us: typeof currentUserSports[number]) => us.sportId));
-
-      // Determine adds and removes
-      const toAdd = newSportIds.filter((id: string) => !currentSportIds.has(id));
-      const toRemove = [...currentSportIds].filter(id => !newSportIds.includes(id));
-
-      // Delete removed sports
-      if (toRemove.length > 0) {
-        await db.userSport.deleteMany({
-          where: { userId, sportId: { in: toRemove } },
-        });
-      }
-
-      // Create added sports
-      if (toAdd.length > 0) {
-        await db.userSport.createMany({
-          data: toAdd.map((sportId: string) => ({ userId, sportId })),
-          skipDuplicates: true,
-        });
-      }
-    }
-
-    // Handle uniqueness check if handle is changing
     if (update.handle) {
-      const existing = await db.user.findFirst({
-        where: { handle: update.handle as string, NOT: { id: userId } },
-      });
-      if (existing) {
+      const { data: taken } = await supabaseAdmin
+        .from('ss_user')
+        .select('id')
+        .eq('handle', update.handle as string)
+        .neq('id', userId)
+        .limit(1);
+      if (taken?.length) {
         return NextResponse.json({ error: 'This handle is already taken.' }, { status: 409 });
       }
     }
 
-    const updated = await db.user.update({
-      where: { id: userId },
-      data: update,
-      select: USER_SELECT_FULL,
-    });
+    if (Object.keys(update).length === 0) {
+      const { data } = await supabaseAdmin.from('ss_user').select('*').eq('id', userId).limit(1);
+      return NextResponse.json(mapUser(data?.[0]));
+    }
 
-    // Phase 4: fetch the typed profile (if custom role) to include in response
-    const typedProfileResp = isTypedProfileRole(updated.role)
-      ? await fetchTypedProfileRecord(updated.role, userId)
-      : null;
+    const { data, error } = await supabaseAdmin
+      .from('ss_user')
+      .update(update)
+      .eq('id', userId)
+      .select('id,name,email,handle,role,avatar_url,avatar_initials,cover_url,bio,location,website,phone,is_verified,email_verified')
+      .maybeSingle();
 
-    return NextResponse.json({
-      ...updated,
-      sportsFollowing: safeJsonParse(updated.sportsFollowing, []),
-      roleData: safeJsonParse(updated.roleData, {}),
-      roleProfile: isTypedProfileRole(updated.role) && typedProfileResp && Object.keys(typedProfileResp).length > 0
-        ? typedProfileResp
-        : safeJsonParse(updated.roleProfile, {}),
-      typedProfile: typedProfileResp,
-      interests: safeJsonParse(updated.interests, []),
-      privacySettings: safeJsonParse(updated.privacySettings, {}),
-      notifPrefs: safeJsonParse(updated.notifPrefs, {}),
-      dateOfBirth: updated.dateOfBirth?.toISOString() || null,
-    });
+    if (error) {
+      console.error('profile PATCH', error);
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    return NextResponse.json(mapUser(data));
   } catch (error) {
-    console.error('Profile PUT error:', error);
-    return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
+    console.error('profile PATCH', error);
+    return NextResponse.json({ error: 'Failed to save profile.' }, { status: 500 });
   }
 }

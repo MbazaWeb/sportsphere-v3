@@ -1,14 +1,41 @@
-import { realtime } from '@/lib/realtime';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { USER_SELECT } from '@/lib/db-selects';
+import { supabaseAdmin } from '@/lib/supabase';
+import { isMissingTable } from '@/lib/supabase-safe';
 import { safeJsonParse } from '@/lib/json';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
+export async function GET(request: NextRequest) {
+  try {
+    const userId = request.nextUrl.searchParams.get('userId');
+    let q = supabaseAdmin
+      .from('ss_post')
+      .select('id,user_id,content,post_type,media_urls,like_count,comment_count,created_at')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (userId) q = q.eq('user_id', userId);
+    const { data, error } = await q;
+    if (error && !isMissingTable(error)) throw new Error(error.message);
+    return NextResponse.json(
+      (data || []).map((p) => ({
+        id: p.id,
+        userId: p.user_id,
+        content: p.content,
+        postType: p.post_type,
+        mediaUrls: safeJsonParse(p.media_urls, []),
+        likeCount: p.like_count ?? 0,
+        commentCount: p.comment_count ?? 0,
+        createdAt: p.created_at,
+      })),
+    );
+  } catch (e) {
+    console.error('posts GET', e);
+    return NextResponse.json([]);
+  }
+}
 
-// POST — create a new post (requires auth, enforced by proxy)
 export async function POST(request: NextRequest) {
   try {
     const userId = await getUserIdFromRequest(request);
@@ -16,7 +43,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const {
       content,
       postType = 'post',
@@ -26,8 +53,6 @@ export async function POST(request: NextRequest) {
       hashtags = [],
       location,
       isBreaking = false,
-      poll,
-      prediction,
     } = body as {
       content?: string;
       postType?: string;
@@ -37,164 +62,51 @@ export async function POST(request: NextRequest) {
       hashtags?: string[];
       location?: string;
       isBreaking?: boolean;
-      poll?: { question: string; options: string[]; durationHours?: number };
-      prediction?: {
-        homeTeam: string;
-        awayTeam: string;
-        predictedHome: number;
-        predictedAway: number;
-        confidence?: 'low' | 'medium' | 'high';
-      };
     };
 
-    const validPostTypes = ['post', 'photo', 'video', 'spotlight', 'poll', 'prediction', 'highlight', 'welcome', 'match'];
-    if (!validPostTypes.includes(postType)) {
+    const valid = ['post', 'photo', 'video', 'spotlight', 'poll', 'prediction', 'highlight', 'welcome', 'match'];
+    if (!valid.includes(postType)) {
       return NextResponse.json({ error: 'Invalid post type.' }, { status: 400 });
     }
-
-    // For text-based posts, content is required
-    if (['post', 'poll', 'prediction'].includes(postType)) {
-      if (!content || !String(content).trim()) {
-        return NextResponse.json({ error: 'Content is required.' }, { status: 400 });
-      }
+    if (['photo', 'video', 'spotlight'].includes(postType) && (!Array.isArray(mediaUrls) || mediaUrls.length === 0)) {
+      return NextResponse.json({ error: 'Media is required for this post type.' }, { status: 400 });
+    }
+    if (['post', 'poll', 'prediction'].includes(postType) && !String(content || '').trim()) {
+      return NextResponse.json({ error: 'Content is required.' }, { status: 400 });
     }
 
-    // For media posts, require at least one media URL (content is optional caption)
-    if ((postType === 'photo' || postType === 'video' || postType === 'spotlight') &&
-        (!Array.isArray(mediaUrls) || mediaUrls.length === 0)) {
-      return NextResponse.json(
-        { error: `${postType === 'photo' ? 'Photo' : 'Video'} is required for this post type.` },
-        { status: 400 }
-      );
-    }
-
-    // For polls, require question + at least 2 options
-    if (postType === 'poll' && (!poll?.question?.trim() || (poll?.options?.filter(o => o.trim()).length ?? 0) < 2)) {
-      return NextResponse.json(
-        { error: 'Poll needs a question and at least 2 options.' },
-        { status: 400 }
-      );
-    }
-
-    // For predictions, require both teams + scores
-    if (postType === 'prediction' &&
-        (!prediction?.homeTeam?.trim() || !prediction?.awayTeam?.trim() ||
-         typeof prediction.predictedHome !== 'number' || typeof prediction.predictedAway !== 'number')) {
-      return NextResponse.json(
-        { error: 'Prediction needs both teams and predicted scores.' },
-        { status: 400 }
-      );
-    }
-
-    // Create the post (now persists hashtags + location)
-    const post = await db.post.create({
-      data: {
-        userId,
-        content: String(content || '').trim(),
-        postType,
-        mediaUrls: JSON.stringify(mediaUrls),
-        teamTag: teamTag || null,
-        playerTag: playerTag || null,
-        hashtags: JSON.stringify(Array.isArray(hashtags) ? hashtags : []),
-        location: location || null,
-        isBreaking: Boolean(isBreaking),
-      },
-      select: {
-        id: true, userId: true, content: true, postType: true, mediaUrls: true,
-        teamTag: true, playerTag: true, hashtags: true, location: true, isBreaking: true,
-        likeCount: true, commentCount: true, shareCount: true, viewCount: true,
-        createdAt: true, updatedAt: true,
-        user: { select: USER_SELECT },
-        poll: true,
-        prediction: true,
-        comments: {
-          select: { id: true, content: true, createdAt: true, userId: true, user: { select: USER_SELECT } },
-          orderBy: { createdAt: 'desc' },
-          take: 3,
-        },
-      },
-    });
-
-    // Create poll if provided — now saves duration (endsAt)
-    if (postType === 'poll' && poll && poll.question && poll.options.length >= 2) {
-      const durationHours = typeof poll.durationHours === 'number' && poll.durationHours > 0
-        ? poll.durationHours
-        : 24; // default 24h
-      await db.poll.create({
-        data: {
-          postId: post.id,
-          question: poll.question,
-          options: JSON.stringify(poll.options),
-          endsAt: new Date(Date.now() + durationHours * 60 * 60 * 1000),
-        },
-      });
-    }
-
-    // Create prediction if provided — now linked to the post via postId
-    if (postType === 'prediction' && prediction) {
-      await db.prediction.create({
-        data: {
-          userId,
-          postId: post.id,
-          homeTeam: prediction.homeTeam,
-          awayTeam: prediction.awayTeam,
-          predictedHome: prediction.predictedHome,
-          predictedAway: prediction.predictedAway,
-          confidence: prediction.confidence || null,
-        },
-      });
-    }
-
-    // Increment user's postCount
-    await db.user.update({
-      where: { id: userId },
-      data: { postCount: { increment: 1 } },
-    });
-
-    // Re-fetch with poll + prediction included
-    const fullPost = await db.post.findUnique({
-      where: { id: post.id },
-      select: {
-        id: true, userId: true, content: true, postType: true, mediaUrls: true,
-        teamTag: true, playerTag: true, hashtags: true, location: true,
-        isBreaking: true, likeCount: true,
-        commentCount: true, shareCount: true, viewCount: true, createdAt: true,
-        updatedAt: true,
-        user: { select: USER_SELECT },
-        poll: true,
-        prediction: true,
-        comments: {
-          select: { id: true, content: true, createdAt: true, userId: true, user: { select: USER_SELECT } },
-          orderBy: { createdAt: 'desc' },
-          take: 3,
-        },
-      },
-    });
-
-    const parsed = {
-      ...fullPost,
-      mediaUrls: safeJsonParse(fullPost?.mediaUrls, []),
-      hashtags: safeJsonParse(fullPost?.hashtags, []),
-      ...(fullPost?.poll && {
-        poll: {
-          ...fullPost.poll,
-          options: safeJsonParse(fullPost.poll.options, []),
-          // Newly-created poll — zero votes everywhere, viewer hasn't voted.
-          optionCounts: safeJsonParse<string[]>(fullPost.poll.options, []).map(() => 0),
-          userVotedOption: null,
-        },
-      }),
-      user: fullPost?.user ? {
-        ...fullPost.user,
-        roleData: safeJsonParse(fullPost.user.roleData, {}),
-        sportsFollowing: safeJsonParse(fullPost.user.sportsFollowing, []),
-      } : null,
+    const id = crypto.randomUUID();
+    const row = {
+      id,
+      user_id: userId,
+      content: String(content || '').trim(),
+      post_type: postType,
+      media_urls: JSON.stringify(Array.isArray(mediaUrls) ? mediaUrls : []),
+      team_tag: teamTag || null,
+      player_tag: playerTag || null,
+      hashtags: JSON.stringify(Array.isArray(hashtags) ? hashtags : []),
+      location: location || null,
+      is_breaking: Boolean(isBreaking),
+      like_count: 0,
+      comment_count: 0,
     };
 
-        try { realtime.postCreated(parsed); } catch { /* ignore */ }
-    return NextResponse.json(parsed, { status: 201 });
-  } catch (error) {
-    console.error('Create post error:', error);
-    return NextResponse.json({ error: 'Failed to create post' }, { status: 500 });
+    const { data, error } = await supabaseAdmin.from('ss_post').insert(row).select('*').maybeSingle();
+    if (error) {
+      console.error('posts insert', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      id: data?.id || id,
+      userId,
+      content: row.content,
+      postType,
+      mediaUrls,
+      createdAt: data?.created_at || new Date().toISOString(),
+    }, { status: 201 });
+  } catch (e) {
+    console.error('posts POST', e);
+    return NextResponse.json({ error: 'Failed to create post.' }, { status: 500 });
   }
 }
