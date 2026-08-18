@@ -79,7 +79,12 @@ function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isA
   const [joined, setJoined] = useState(!!item.joined);
   const [color, setColor] = useState('Red');
   const [size, setSize] = useState('M');
-  const price = item.id === 'seed-simba-jersey' ? 45000 : item.id === 'seed-justfit' ? 200000 : item.id === 'seed-tff-match' ? 5000 : 0;
+  const isTicket = type === 'ticket' || item.id === 'seed-tff-match' || /ticket|match/i.test(item.content || '');
+  const price =
+    item.id === 'seed-simba-jersey' ? 45000 :
+    item.id === 'seed-justfit' ? 200000 :
+    item.id === 'seed-tff-match' ? 15000 :
+    isTicket ? 15000 : 45000;
 
   async function act(action: string) {
     if (!isAuthenticated) { onRequireAuth(); return; }
@@ -105,18 +110,16 @@ function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isA
       const data = await res.json();
       if (data.url && navigator.clipboard) {
         await navigator.clipboard.writeText(data.url);
-        alert('Referral link copied. Send it to a friend to fan or buy.');
-      } else if (data.url) {
-        alert(data.url);
-      }
+        alert('Referral link copied.');
+      } else if (data.url) alert(data.url);
       return;
     }
-    if (action === 'buy') {
+    if (action === 'buy' || action === 'ticket') {
       useCartStore.getState().add({
-        id: `${item.id}-${color}-${size}`,
-        title: `${item.content || 'Item'} (${color}/${size})`,
+        id: action === 'ticket' ? `${item.id}-ticket` : `${item.id}-${color}-${size}`,
+        title: action === 'ticket' ? `Ticket · ${item.content || 'Match'}` : `${item.content || 'Item'} (${color}/${size})`,
         image: item.mediaUrls?.[0] || null,
-        price: price || 45000,
+        price,
         sellerId: item.userId,
         sellerName: item.user?.name || 'Shop',
       });
@@ -127,41 +130,52 @@ function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isA
     return (
       <div className="mb-3 space-y-3 rounded-xl border border-surface-border p-3">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold text-muted-foreground">Buy gear</p>
-          <p className="text-sm font-black text-gold">TZS {(price || 45000).toLocaleString()}</p>
+          <p className="text-xs font-semibold text-muted-foreground">{isTicket ? 'Tickets' : 'Buy now'}</p>
+          <p className="text-sm font-black text-gold">TZS {price.toLocaleString()}</p>
         </div>
-        <div>
-          <p className="mb-1 text-[11px] text-muted-foreground">Color</p>
-          <div className="flex gap-2">
-            {['Red', 'White', 'Blue'].map((c) => (
-              <button key={c} type="button" onClick={() => setColor(c)}
-                className={`h-7 w-7 rounded-full border ${color === c ? 'border-gold ring-2 ring-gold' : 'border-white/20'}`}
-                style={{ background: c === 'Red' ? '#c81e1e' : c === 'White' ? '#fff' : '#1d4ed8' }} />
-            ))}
-          </div>
-        </div>
-        <div>
-          <p className="mb-1 text-[11px] text-muted-foreground">Size</p>
-          <select value={size} onChange={(e) => setSize(e.target.value)} className="rounded-lg border border-surface-border bg-surface px-2 py-1 text-sm text-white">
-            {['S','M','L','XL'].map((s) => <option key={s}>{s}</option>)}
-          </select>
-        </div>
-        <button type="button" onClick={() => act('buy')} className="w-full rounded-xl bg-red-600 py-2.5 text-sm font-bold text-white">
-          Add to cart · TZS {(price || 45000).toLocaleString()}
+        {!isTicket && (
+          <>
+            <div>
+              <p className="mb-1 text-[11px] text-muted-foreground">Color</p>
+              <div className="flex gap-2">
+                {['Red', 'White', 'Blue'].map((c) => (
+                  <button key={c} type="button" onClick={() => setColor(c)}
+                    className={`h-7 w-7 rounded-full border ${color === c ? 'border-gold ring-2 ring-gold' : 'border-white/20'}`}
+                    style={{ background: c === 'Red' ? '#c81e1e' : c === 'White' ? '#fff' : '#1d4ed8' }} />
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-1 text-[11px] text-muted-foreground">Size</p>
+              <select value={size} onChange={(e) => setSize(e.target.value)} className="rounded-lg border border-surface-border bg-surface px-2 py-1 text-sm text-white">
+                {['S','M','L','XL'].map((s) => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+          </>
+        )}
+        <button type="button" onClick={() => act(isTicket ? 'ticket' : 'buy')} className="w-full rounded-xl bg-red-600 py-2.5 text-sm font-bold text-white">
+          {isTicket ? 'Buy ticket' : 'Buy Now'} · TZS {price.toLocaleString()}
         </button>
       </div>
     );
   }
-  if (type === 'media' || role === 'media' || role === 'business') {
+  if (type === 'media' || role === 'media') {
     return (
       <div className="mb-3 space-y-2">
         <div className="flex gap-2">
           <button type="button" onClick={() => act('follow')} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white">{follow ? 'You are following' : 'Follow'}</button>
-          <button type="button" onClick={() => act('join')} className="flex-1 rounded-xl bg-gold py-2.5 text-sm font-bold text-black">{joined ? 'You joined' : (role === 'media' ? 'Join Media' : 'Join Business')}</button>
+          <button type="button" onClick={() => act('join')} className="flex-1 rounded-xl bg-gold py-2.5 text-sm font-bold text-black">{joined ? 'You joined' : 'Join Media'}</button>
         </div>
-        {type === 'media' && (
-          <button type="button" onClick={() => act('buy')} className="w-full rounded-xl border border-surface-border py-2 text-sm font-bold text-white">Watch / Subscribe</button>
-        )}
+        <button type="button" onClick={() => act('buy')} className="w-full rounded-xl bg-red-600 py-2.5 text-sm font-bold text-white">Buy Now</button>
+      </div>
+    );
+  }
+  if (isTicket || type === 'official' && /vs|ticket/i.test(item.content || '')) {
+    return (
+      <div className="mb-3 space-y-2">
+        <button type="button" onClick={() => act('ticket')} className="w-full rounded-xl bg-red-600 py-2.5 text-sm font-bold text-white">
+          Buy ticket · TZS {price.toLocaleString()}
+        </button>
       </div>
     );
   }

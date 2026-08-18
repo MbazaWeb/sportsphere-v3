@@ -1690,14 +1690,29 @@ class _RoleCtas extends ConsumerWidget {
       );
     }
 
-    if (_type == 'shop') {
-      return Row(children: [btn('Add to cart', () {}, gold: true)]);
+    if (_type == 'shop' || _role == 'business' || _type == 'ticket') {
+      final ticket = _type == 'ticket' || post.id.contains('tff');
+      return Column(children: [
+        Row(children: [btn(ticket ? 'Buy ticket' : 'Buy Now', () {}, gold: true)]),
+        if (_role == 'business') ...[
+          const SizedBox(height: 8),
+          Row(children: [
+            btn(follow ? 'You are following' : 'Follow', () => _act(ref, context, 'follow')),
+            const SizedBox(width: 8),
+            btn(joined ? 'You joined' : 'Join Business', () => _act(ref, context, 'join')),
+          ]),
+        ],
+      ]);
     }
-    if (_role == 'media' || _role == 'business') {
-      return Row(children: [
-        btn(follow ? 'You are following' : 'Follow', () => _act(ref, context, 'follow')),
-        const SizedBox(width: 8),
-        btn(joined ? 'You joined' : (_role == 'media' ? 'Join Media' : 'Join Business'), () => _act(ref, context, 'join'), gold: true),
+    if (_role == 'media' || _type == 'media') {
+      return Column(children: [
+        Row(children: [
+          btn(follow ? 'You are following' : 'Follow', () => _act(ref, context, 'follow')),
+          const SizedBox(width: 8),
+          btn(joined ? 'You joined' : 'Join Media', () => _act(ref, context, 'join'), gold: true),
+        ]),
+        const SizedBox(height: 8),
+        Row(children: [btn('Buy Now', () {}, gold: false)]),
       ]);
     }
     if (['official', 'team', 'player', 'coach'].contains(_role) || _type == 'official') {
