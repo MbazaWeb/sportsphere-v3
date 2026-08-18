@@ -1,47 +1,23 @@
-// GET /api/leagues — Return Tanzania competitions from LOCAL DB
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { supabaseAdmin } from '@/lib/supabase';
+import { isMissingTable } from '@/lib/supabase-safe';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const leagues = await db.league.findMany({
-      where: { isActive: true },
-      orderBy: [{ type: 'asc' }, { name: 'asc' }],
-      include: {
-        Sport: {
-          select: { name: true, slug: true, icon: true },
-        },
-      },
-    });
-
-    // Return available league names for the dropdown + full data
-    const available = leagues.map((l) => l.name);
-    const full = leagues.map((l) => ({
-      id: l.id,
-      name: l.name,
-      slug: l.slug,
-      type: l.type,
-      country: l.country,
-      countryCode: l.countryCode,
-      season: l.season,
-      description: l.description,
-      sport: l.Sport, // Prisma relation name is capitalized
-      verified: l.verified,
-    }));
-
+    const { data, error } = await supabaseAdmin
+      .from('ss_league')
+      .select('id,name,slug,type,country,season,is_active')
+      .eq('is_active', true)
+      .order('name');
+    if (error && isMissingTable(error)) return NextResponse.json({ leagues: [], available: [] });
+    const leagues = data || [];
     return NextResponse.json({
-      available,
-      leagues: full,
-      total: full.length,
-      source: 'database',
+      leagues,
+      available: leagues.map((l) => l.name),
     });
-  } catch (error) {
-    console.error('Leagues API error:', error);
-    return NextResponse.json(
-      { available: [], leagues: [], error: 'Failed to fetch leagues.' },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ leagues: [], available: [] });
   }
 }
