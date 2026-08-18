@@ -22,14 +22,15 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
 
   // Progress runs once — do NOT depend on onDone (parent often recreates it)
   useEffect(() => {
-    const duration = 3200;
-    const interval = 30;
+    // Full splash: 9 words × ~700ms = 6.3s progress, ~7.5s total (match Flutter)
+    const duration = 6300;
+    const interval = 50;
     const steps = duration / interval;
     let current = 0;
 
     const timer = setInterval(() => {
       current += 1;
-      const pct = Math.round(100 * (1 - Math.pow(1 - current / steps, 3)));
+      const pct = Math.round((current / steps) * 100);
       setProgress(Math.min(pct, 100));
       if (current >= steps) {
         clearInterval(timer);
@@ -42,10 +43,10 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
         splashRef.current.style.transform = 'scale(1.05)';
         splashRef.current.style.pointerEvents = 'none';
       }
-    }, 3600);
+    }, 6800);
     const t2 = setTimeout(() => {
       onDoneRef.current();
-    }, 4200);
+    }, 7500);
 
     return () => {
       clearInterval(timer);
