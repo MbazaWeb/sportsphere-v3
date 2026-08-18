@@ -116,7 +116,7 @@ export default function AIChatPage() {
         <p className="text-sm text-slate-400 mt-1">Interact with any AI agent directly</p>
       </div>
 
-      {/* Agent Selector */
+      {/* Agent Selector */}
       <div className="relative mb-4 shrink-0" ref={dropdownRef}>
         <button
           onClick={() => setShowDropdown(!showDropdown)}

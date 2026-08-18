@@ -2,6 +2,8 @@
 // SQLite returns strings, PostgreSQL Json returns objects directly
 export function safeJsonParse<T>(value: unknown, fallback: T): T {
   if (value === null || value === undefined) return fallback;
+  // Supabase JSONB returns already-parsed objects
+  if (typeof value === 'object') return value as T;
   if (typeof value === 'string') {
     try { return JSON.parse(value) as T; } catch { return fallback; }
   }
