@@ -563,7 +563,11 @@ class _RoleTabBody extends StatelessWidget {
       case 'achievements':
         return _OverviewBody(user: user, roleCfg: roleCfg, onEdit: onEdit, onSignOut: onSignOut);
       case 'shop':
+        return _ShopTicketsBody(user: user, kind: 'shop');
       case 'tickets':
+        return _ShopTicketsBody(user: user, kind: 'ticket');
+      case 'matches':
+        return RoleTabContent(tabId: 'fixtures', role: role);
       case 'communities':
         return _CommunityBody(user: user, role: role);
       case 'results':
@@ -1243,6 +1247,95 @@ class _BiometricTileState extends State<_BiometricTile> {
               if (!mounted) return;
               setState(() => _enabled = v);
             },
+    );
+  }
+}
+
+class _ShopTicketsBody extends ConsumerStatefulWidget {
+  const _ShopTicketsBody({required this.user, required this.kind});
+  final UserProfile user;
+  final String kind;
+  @override
+  ConsumerState<_ShopTicketsBody> createState() => _ShopTicketsBodyState();
+}
+
+class _ShopTicketsBodyState extends ConsumerState<_ShopTicketsBody> {
+  List<Post> _items = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final all = await ref.read(feedApiProvider).getFeed(userId: widget.user.id, limit: 50);
+      if (!mounted) return;
+      setState(() {
+        _items = all.where((p) {
+          final t = p.postType.toLowerCase();
+          if (widget.kind == 'ticket') return t == 'ticket' || p.id.contains('tff');
+          return t == 'shop' || t == 'business' || p.mediaUrls.isNotEmpty;
+        }).toList();
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _buy(Post p) async {
+    try {
+      await ref.read(apiClientProvider).postJson('/checkout', body: {
+        'items': [
+          {
+            'id': p.id,
+            'title': p.content,
+            'price': widget.kind == 'ticket' ? 15000 : 45000,
+            'qty': 1,
+          }
+        ],
+        'method': 'mock',
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(widget.kind == 'ticket' ? 'Ticket reserved (mock pay)' : 'Added — checkout complete (mock)')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) return const Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2));
+    if (_items.isEmpty) {
+      return Center(child: Text(widget.kind == 'ticket' ? 'No tickets yet' : 'No shop items yet', style: GoogleFonts.inter(color: AppColors.mutedForeground)));
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+      itemCount: _items.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (ctx, i) {
+        final p = _items[i];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            LiveFeedCard(post: p, index: i),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: ElevatedButton(
+                onPressed: () => _buy(p),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2626), foregroundColor: Colors.white),
+                child: Text(widget.kind == 'ticket' ? 'Buy ticket' : 'Buy Now'),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
