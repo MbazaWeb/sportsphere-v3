@@ -560,7 +560,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                   {item.rank}
                 </span>
                 <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gold/10 text-xs font-bold text-gold flex-shrink-0">
-                  {item.avatarUrl ? (
+                  {item?.avatarUrl ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={item.avatarUrl} alt={item.name} className="h-full w-full object-cover" />
                   ) : (
@@ -612,7 +612,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                 className="flex-shrink-0 flex items-center gap-2 rounded-xl bg-surface border border-surface-border px-3 py-2 hover:border-gold/30 hover:bg-surface-elevated transition-colors"
               >
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gold/10 text-[10px] font-bold text-gold flex-shrink-0">
-                  {team.avatarUrl ? (
+                  {team?.avatarUrl ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={team.avatarUrl} alt={team.name} className="h-full w-full object-cover rounded-full" />
                   ) : (
@@ -654,7 +654,7 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
                   }}
                   className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gold/10 text-xs font-bold text-gold"
                 >
-                  {account.avatarUrl ? (
+                  {account?.avatarUrl ? (
                     <img src={account.avatarUrl} alt={account.name} className="h-full w-full object-cover rounded-full" />
                   ) : (
                     account.avatarInitials || account.name.slice(0, 2).toUpperCase()

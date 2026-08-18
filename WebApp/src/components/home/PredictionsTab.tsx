@@ -197,10 +197,10 @@ export function PredictionsTab({ onShare, onComment }: PredictionsTabProps) {
           <button onClick={() => handleUserClick(post)} className="mb-3 flex items-center gap-3 text-left w-full">
             <div className={cn(
               'flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-xs font-bold flex-shrink-0',
-              post.user.avatarUrl ? '' : (post.user.isVerified ? 'bg-gold text-black' : 'bg-surface text-white')
+              post.user?.avatarUrl ? '' : (post.user.isVerified ? 'bg-gold text-black' : 'bg-surface text-white')
             )}>
-              {post.user.avatarUrl ? (
-                <img src={post.user.avatarUrl} alt={post.user.name} className="h-full w-full object-cover" />
+              {post.user?.avatarUrl ? (
+                <img src={post.user?.avatarUrl} alt={post.user.name} className="h-full w-full object-cover" />
               ) : (
                 post.user.avatarInitials || post.user.name.slice(0, 2).toUpperCase()
               )}

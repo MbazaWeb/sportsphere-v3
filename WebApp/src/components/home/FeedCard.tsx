@@ -337,8 +337,8 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
             'flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold ring-2 ring-transparent transition-all',
             isOfficialPost ? 'bg-gradient-to-br from-gold to-amber-500 text-black ring-gold/30' : user.isVerified ? 'bg-gold text-black ring-gold/20' : 'bg-surface-elevated text-white'
           )}>
-            {user.avatarUrl ? (
-              <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt={user.name || ''} className="h-full w-full object-cover" />
             ) : (
               user.avatarInitials
             )}
