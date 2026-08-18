@@ -128,6 +128,8 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
               backgroundColor: Colors.transparent,
               builder: (_) => const EditProfileSheet(),
             );
+            // Refresh profile after edit closes
+            ref.invalidate(authProvider);
           },
           onSignOut: widget.onSignOut,
         ),

@@ -88,6 +88,8 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
         location: _location.text.trim(),
         website: _website.text.trim(),
         aboutMe: _aboutMe.text.trim(),
+        avatarUrl: _avatarUrl,
+        coverUrl: _coverUrl,
       );
       await ref.read(authProvider.notifier).applyUser(updated);
       if (!mounted) return;

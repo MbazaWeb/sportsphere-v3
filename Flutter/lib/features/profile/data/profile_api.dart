@@ -13,6 +13,8 @@ class ProfileApi {
     String? location,
     String? website,
     String? aboutMe,
+    String? avatarUrl,
+    String? coverUrl,
     List<String>? sportsFollowing,
     List<String>? interests,
     Map<String, bool>? notifPrefs,
@@ -29,6 +31,8 @@ class ProfileApi {
     if (location != null) body['location'] = location;
     if (website != null) body['website'] = website;
     if (aboutMe != null) body['aboutMe'] = aboutMe;
+    if (avatarUrl != null) body['avatarUrl'] = avatarUrl;
+    if (coverUrl != null) body['coverUrl'] = coverUrl;
     if (sportsFollowing != null) body['sportsFollowing'] = sportsFollowing;
     if (interests != null) body['interests'] = interests;
     if (notifPrefs != null) body['notifPrefs'] = notifPrefs;
