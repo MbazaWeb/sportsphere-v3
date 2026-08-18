@@ -48,30 +48,52 @@ WS_AUTH_SECRET=$(sudo cat "$WS_SECRET_FILE")
 # ─── Supabase credentials (read from existing .env if present) ──
 # Supply via env vars on first deploy; thereafter the script preserves
 # the values already on disk so you don't have to re-supply them.
-#   SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=... bash deploy-production.sh
+# Both naming conventions are accepted (legacy JWT-format and the new
+# sb_publishable_* / sb_secret_* format that Supabase rolled out in 2025):
+#
+#   SUPABASE_URL=https://xxxx.supabase.co \
+#   SUPABASE_ANON_KEY=eyJ...          OR  SUPABASE_PUBLISHABLE_KEY=sb_publishable_... \
+#   SUPABASE_SERVICE_ROLE_KEY=eyJ...  OR  SUPABASE_SECRET_KEY=sb_secret_... \
+#   SUPABASE_JWKS_URL=https://xxxx.supabase.co/auth/v1/.well-known/jwks.json  (optional) \
+#   bash scripts/deploy-production.sh
 EXISTING_ROOT_ENV="$APP_DIR/.env"
 read_env_value() {
   # $1 = file, $2 = key. Prints value (unquoted) or empty.
   [ -f "$1" ] || return 0
   sudo grep -E "^${2}=" "$1" 2>/dev/null | head -1 | sed -E "s/^${2}=//; s/^\"([^\"]*)\"$/\1/; s/^'([^']*)'$/\1/"
 }
+
+# URL (no alias)
 SUPABASE_URL="${SUPABASE_URL:-$(read_env_value "$EXISTING_ROOT_ENV" NEXT_PUBLIC_SUPABASE_URL)}"
-SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-$(read_env_value "$EXISTING_ROOT_ENV" NEXT_PUBLIC_SUPABASE_ANON_KEY)}"
-SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-$(read_env_value "$EXISTING_ROOT_ENV" SUPABASE_SERVICE_ROLE_KEY)}"
+
+# Anon / publishable key — accept either name as input, prefer ANON_KEY.
+SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-${SUPABASE_PUBLISHABLE_KEY:-$(read_env_value "$EXISTING_ROOT_ENV" NEXT_PUBLIC_SUPABASE_ANON_KEY)}}"
+SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-$(read_env_value "$EXISTING_ROOT_ENV" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)}"
+
+# Service role / secret key — accept either name as input, prefer SERVICE_ROLE_KEY.
+SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-${SUPABASE_SECRET_KEY:-$(read_env_value "$EXISTING_ROOT_ENV" SUPABASE_SERVICE_ROLE_KEY)}}"
+SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-$(read_env_value "$EXISTING_ROOT_ENV" SUPABASE_SECRET_KEY)}"
+
+# JWKS URL (optional — used for server-side JWT verification)
+SUPABASE_JWKS_URL="${SUPABASE_JWKS_URL:-$(read_env_value "$EXISTING_ROOT_ENV" SUPABASE_JWKS_URL)}"
+[ -z "$SUPABASE_JWKS_URL" ] && [ -n "$SUPABASE_URL" ] && SUPABASE_JWKS_URL="${SUPABASE_URL}/auth/v1/.well-known/jwks.json"
 
 if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
   echo "================================================================"
-  echo "  ⚠  Supabase credentials NOT found."
-  echo "  ⚠  The WebApp's Prisma-shaped Supabase adapter will fall back to"
-  echo "  ⚠  'https://invalid.supabase.co' and ALL DB queries will fail."
-  echo "  ⚠  Supply via env vars on first deploy:"
-  echo "  ⚠    SUPABASE_URL=https://xxxx.supabase.co \\\
-  ⚠    SUPABASE_ANON_KEY=eyJ... \\\
-  ⚠    SUPABASE_SERVICE_ROLE_KEY=eyJ... \\\
-  ⚠    bash scripts/deploy-production.sh"
+  echo "  [!]  Supabase credentials NOT found."
+  echo "  [!]  The WebApp's Prisma-shaped Supabase adapter will fall back to"
+  echo "  [!]  'https://invalid.supabase.co' and ALL DB queries will fail."
+  echo "  [!]  Supply via env vars on first deploy (either naming works):"
+  echo "  [!]    SUPABASE_URL=https://xxxx.supabase.co \\"
+  echo "  [!]    SUPABASE_ANON_KEY=eyJ...          (or SUPABASE_PUBLISHABLE_KEY=sb_publishable_...) \\"
+  echo "  [!]    SUPABASE_SERVICE_ROLE_KEY=eyJ...  (or SUPABASE_SECRET_KEY=sb_secret_...) \\"
+  echo "  [!]    bash scripts/deploy-production.sh"
   echo "================================================================"
 else
-  echo "[pre] Supabase URL: ${SUPABASE_URL}"
+  echo "[pre] Supabase URL        : ${SUPABASE_URL}"
+  echo "[pre] Supabase anon key    : ${SUPABASE_ANON_KEY:0:18}... (${#SUPABASE_ANON_KEY} chars)"
+  echo "[pre] Supabase service key : ${SUPABASE_SERVICE_ROLE_KEY:0:18}... (${#SUPABASE_SERVICE_ROLE_KEY} chars)"
+  echo "[pre] Supabase JWKS URL    : ${SUPABASE_JWKS_URL}"
 fi
 
 echo "======================================"
@@ -114,11 +136,20 @@ DATABASE_URL="postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}"
 # Build optional Supabase block. If creds are missing, write empty
 # strings — the WebApp's supabase.ts will fall back gracefully and
 # print a warning, instead of crashing the build.
+#
+# We write BOTH naming conventions into .env so the codebase works
+# regardless of which name it reads:
+#   - Legacy: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+#   - New    : NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, SUPABASE_SECRET_KEY
+# Also write SUPABASE_JWKS_URL for future server-side JWT verification.
 SUPABASE_BLOCK=""
 if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_ANON_KEY" ] && [ -n "$SUPABASE_SERVICE_ROLE_KEY" ]; then
   SUPABASE_BLOCK="NEXT_PUBLIC_SUPABASE_URL=\"${SUPABASE_URL}\"
 NEXT_PUBLIC_SUPABASE_ANON_KEY=\"${SUPABASE_ANON_KEY}\"
-SUPABASE_SERVICE_ROLE_KEY=\"${SUPABASE_SERVICE_ROLE_KEY}\""
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=\"${SUPABASE_ANON_KEY}\"
+SUPABASE_SERVICE_ROLE_KEY=\"${SUPABASE_SERVICE_ROLE_KEY}\"
+SUPABASE_SECRET_KEY=\"${SUPABASE_SERVICE_ROLE_KEY}\"
+SUPABASE_JWKS_URL=\"${SUPABASE_JWKS_URL}\""
 fi
 
 # Root .env (used by Prisma / shared tools / sportsphere-ws PM2 process).
