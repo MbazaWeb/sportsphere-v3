@@ -68,3 +68,7 @@ tool-results/
 .session-secret
 backup_*.sql
 secrets/
+
+# Supabase secrets — never commit
+.env.supabase
+**/.env.supabase
