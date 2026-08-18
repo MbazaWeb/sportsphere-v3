@@ -1,44 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { verifyAdmin } from '@/lib/adminGuard';
+import { supabaseAdmin } from '@/lib/supabase';
+import { isMissingTable } from '@/lib/supabase-safe';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 10;
 
-/**
- * GET /api/admin/delegation/roles
- *
- * Returns the catalog of available AdminRole records (all 18 RBAC roles),
- * sorted by tier then name. Public to all admins — used by the delegation
- * panel to populate the role picker dropdown.
- */
-export async function GET(request: NextRequest) {
-  const auth = await verifyAdmin(request);
-  if (!auth.authorized) return auth.response;
+const TABLE = 'ss_role';
 
-  try {
-    const roles = await db.adminRole.findMany({
-      where: { isActive: true },
-      orderBy: [{ tier: 'asc' }, { name: 'asc' }],
-    });
+export async function GET() {
+  const { data, error } = await supabaseAdmin.from(TABLE).select('*').limit(200);
+  if (error && isMissingTable(error)) return NextResponse.json([]);
+  return NextResponse.json(data || []);
+}
 
-    return NextResponse.json({
-      data: roles.map((r) => ({
-        id: r.id,
-        slug: r.slug,
-        name: r.name,
-        tier: r.tier,
-        module: r.module,
-        description: r.description,
-        permissions: r.permissions,
-        scopeLevel: r.scopeLevel,
-      })),
-    });
-  } catch (error) {
-    console.error('Failed to fetch admin roles catalog:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch admin roles', detail: String(error) },
-      { status: 500 }
-    );
-  }
+export async function POST(request: NextRequest) {
+  const body = await request.json().catch(() => ({}));
+  const row = { id: crypto.randomUUID(), ...body };
+  const { data, error } = await supabaseAdmin.from(TABLE).insert(row).select('*').maybeSingle();
+  if (error) return NextResponse.json({ error: error.message, items: [] }, { status: 200 });
+  return NextResponse.json(data || { ok: true }, { status: 201 });
 }

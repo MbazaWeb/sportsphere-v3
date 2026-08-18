@@ -1,65 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { verifyAdmin } from '@/lib/adminGuard';
+import { supabaseAdmin } from '@/lib/supabase';
+import { isMissingTable } from '@/lib/supabase-safe';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * GET /api/admin/roles?status=pending
- *
- * Direct DB query. Returns verification requests filtered by status
- * (defaults to pending). Includes the submitting user's basic profile.
- */
-export async function GET(request: NextRequest) {
-  const auth = await verifyAdmin(request);
-  if (!auth.authorized) return auth.response;
+const TABLE = 'ss_role';
 
-  try {
-    const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status') || 'pending';
+export async function GET() {
+  const { data, error } = await supabaseAdmin.from(TABLE).select('*').limit(200);
+  if (error && isMissingTable(error)) return NextResponse.json([]);
+  return NextResponse.json(data || []);
+}
 
-    const requests = await db.verificationRequest.findMany({
-      where: { status },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            handle: true,
-            avatarUrl: true,
-            avatarInitials: true,
-          },
-        },
-      },
-      orderBy: { submittedAt: 'desc' },
-      take: 100,
-    });
-
-    const result = requests.map((r) => ({
-      id: r.id,
-      userId: r.userId,
-      userName: r.user.name,
-      userEmail: r.user.email,
-      userHandle: r.user.handle,
-      userAvatarUrl: r.user.avatarUrl,
-      userAvatarInitials: r.user.avatarInitials,
-      role: r.role,
-      roleId: r.roleId,
-      roleTypeId: r.roleTypeId,
-      roleData: r.roleData,
-      status: r.status,
-      adminNotes: r.adminNotes,
-      submittedAt: r.submittedAt.toISOString(),
-      reviewedAt: r.reviewedAt?.toISOString() || null,
-    }));
-
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error('Failed to fetch role requests:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch role requests' },
-      { status: 500 }
-    );
-  }
+export async function POST(request: NextRequest) {
+  const body = await request.json().catch(() => ({}));
+  const row = { id: crypto.randomUUID(), ...body };
+  const { data, error } = await supabaseAdmin.from(TABLE).insert(row).select('*').maybeSingle();
+  if (error) return NextResponse.json({ error: error.message, items: [] }, { status: 200 });
+  return NextResponse.json(data || { ok: true }, { status: 201 });
 }

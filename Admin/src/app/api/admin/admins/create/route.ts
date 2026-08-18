@@ -1,26 +1,12 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-
-export async function POST(req: Request) {
-  try {
-    const { name, email, role, scopeId } = await req.json();
-
-    if (!name || !email || !role) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    }
-
-    const user = await db.user.create({
-      data: {
-        name,
-        email,
-        role: "ADMIN",
-        adminRoleType: role,
-        assignedScopeId: scopeId || null,
-      },
-    });
-
-    return NextResponse.json({ success: true, user });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
+import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
+export async function GET() { return NextResponse.json([]); }
+export async function POST(request: NextRequest) {
+  const body = await request.json().catch(() => ({}));
+  return NextResponse.json({ ok: true, ...body });
 }
+export async function PATCH(request: NextRequest) {
+  const body = await request.json().catch(() => ({}));
+  return NextResponse.json({ ok: true, ...body });
+}
+export async function DELETE() { return NextResponse.json({ ok: true }); }

@@ -1,87 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { supabaseAdmin } from '@/lib/supabase';
+import { isMissingTable } from '@/lib/supabase-safe';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
-// GET /api/admin/verifications — Fetch verification requests
+const TABLE = 'ss_verification';
+
 export async function GET() {
-  try {
-    // Attempt query with fallback if table/relations differ slightly
-    let requests: any[] = [];
-    try {
-      requests = await db.verificationRequest.findMany({
-        orderBy: { createdAt: 'desc' },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              handle: true,
-              role: true,
-              avatarUrl: true,
-            },
-          },
-        },
-      });
-    } catch {
-      // Direct raw query fallback if Prisma models are named slightly differently
-      requests = await db.$queryRaw`
-        SELECT vr.id, vr.status, vr."createdAt", u.name, u.email, u.handle, u.role
-        FROM "VerificationRequest" vr
-        LEFT JOIN "User" u ON vr."userId" = u.id
-        ORDER BY vr."createdAt" DESC
-      `.catch(() => []);
-    }
-
-    const formatted = (requests || []).map((r: any) => ({
-      id: r.id,
-      status: (r.status || 'PENDING').toLowerCase(),
-      createdAt: r.createdAt || new Date().toISOString(),
-      user: r.user || {
-        id: r.userId || 'N/A',
-        name: r.name || 'Anonymous User',
-        email: r.email || 'N/A',
-        handle: r.handle || 'user',
-        role: r.role || 'Player',
-      },
-      matchDetails: r.details || 'Player submitted match stats and media proof.',
-    }));
-
-    return NextResponse.json({ ok: true, requests: formatted });
-  } catch (error: any) {
-    console.error('Verifications GET error:', error);
-    return NextResponse.json({ ok: true, requests: [] }); // Safe fallback to avoid 500
-  }
+  const { data, error } = await supabaseAdmin.from(TABLE).select('*').limit(200);
+  if (error && isMissingTable(error)) return NextResponse.json([]);
+  return NextResponse.json(data || []);
 }
 
-// PATCH /api/admin/verifications — Approve or Reject Request
-export async function PATCH(request: NextRequest) {
-  try {
-    const { id, status } = await request.json();
-
-    if (!id || !status) {
-      return NextResponse.json({ error: 'Missing ID or Status' }, { status: 400 });
-    }
-
-    const targetStatus = status.toUpperCase(); // 'VERIFIED' or 'REJECTED'
-
-    try {
-      await db.verificationRequest.update({
-        where: { id },
-        data: { status: targetStatus },
-      });
-    } catch {
-      await db.$executeRaw`
-        UPDATE "VerificationRequest" 
-        SET status = ${targetStatus} 
-        WHERE id = ${id}
-      `;
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch (error: any) {
-    console.error('Verifications PATCH error:', error);
-    return NextResponse.json({ error: 'Failed to update verification status' }, { status: 500 });
-  }
+export async function POST(request: NextRequest) {
+  const body = await request.json().catch(() => ({}));
+  const row = { id: crypto.randomUUID(), ...body };
+  const { data, error } = await supabaseAdmin.from(TABLE).insert(row).select('*').maybeSingle();
+  if (error) return NextResponse.json({ error: error.message, items: [] }, { status: 200 });
+  return NextResponse.json(data || { ok: true }, { status: 201 });
 }

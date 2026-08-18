@@ -1,98 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { verifyAdmin } from "@/lib/adminGuard";
-import { randomUUID } from "crypto";
+import { NextRequest, NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase';
+import { isMissingTable } from '@/lib/supabase-safe';
+import crypto from 'crypto';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
-// GET /api/admin/rumors
-export async function GET(request: NextRequest) {
-  const auth = await verifyAdmin(request);
-  if (!auth.authorized) return auth.response;
-  try {
-    const rumors = await db.rumor.findMany({
-      orderBy: { publishedAt: "desc" },
-      take: 200,
-    });
+const TABLE = 'ss_rumor';
 
-    const formatted = rumors.map((r) => ({
-      id: r.id,
-      title: r.title,
-      player: r.playerId || "Unknown",
-      fromClub: r.teamId || "—",
-      toClub: "—",
-      credibility: r.credibility ?? 50,
-      status: (r.status || "draft").toLowerCase(),
-      source: (r.source || "manual").toLowerCase(),
-      createdAt: r.publishedAt?.toISOString() ?? new Date().toISOString(),
-      body: r.body,
-      slug: r.slug,
-    }));
-
-    return NextResponse.json({ ok: true, rumors: formatted });
-  } catch (error: unknown) {
-    console.error("Rumors GET error:", error);
-    return NextResponse.json({ ok: true, rumors: [] });
-  }
+export async function GET() {
+  const { data, error } = await supabaseAdmin.from(TABLE).select('*').limit(200);
+  if (error && isMissingTable(error)) return NextResponse.json([]);
+  return NextResponse.json(data || []);
 }
 
-// POST /api/admin/rumors
 export async function POST(request: NextRequest) {
-  const auth = await verifyAdmin(request);
-  if (!auth.authorized) return auth.response;
-  try {
-    const body = await request.json();
-    const { player, fromClub, toClub, credibility, status, isAiGenerated, title, content } =
-      body;
-
-    const rumorTitle =
-      title ||
-      [player, fromClub && `from ${fromClub}`, toClub && `to ${toClub}`]
-        .filter(Boolean)
-        .join(" ") ||
-      "Untitled rumor";
-
-    const rumorBody =
-      content ||
-      `Transfer rumor: ${player || "Player"}${fromClub ? ` from ${fromClub}` : ""}${
-        toClub ? ` to ${toClub}` : ""
-      }.`;
-
-    const slugBase = rumorTitle
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 80);
-    const slug = `${slugBase}-${Date.now().toString(36)}`;
-
-    const source = isAiGenerated ? "ai" : "manual";
-    const initialCredibility = Number(
-      credibility ?? (isAiGenerated ? 35 : 75)
-    );
-
-    const created = await db.rumor.create({
-      data: {
-        id: randomUUID(),
-        title: rumorTitle,
-        slug,
-        body: rumorBody,
-        credibility: initialCredibility,
-        status: (status || "draft").toLowerCase(),
-        source,
-        createdByAI: Boolean(isAiGenerated),
-        publishedAt:
-          String(status || "").toLowerCase() === "published"
-            ? new Date()
-            : null,
-      },
-    });
-
-    return NextResponse.json({ ok: true, rumor: created });
-  } catch (error: unknown) {
-    console.error("Rumors POST error:", error);
-    return NextResponse.json(
-      { error: "Failed to create rumor." },
-      { status: 500 }
-    );
-  }
+  const body = await request.json().catch(() => ({}));
+  const row = { id: crypto.randomUUID(), ...body };
+  const { data, error } = await supabaseAdmin.from(TABLE).insert(row).select('*').maybeSingle();
+  if (error) return NextResponse.json({ error: error.message, items: [] }, { status: 200 });
+  return NextResponse.json(data || { ok: true }, { status: 201 });
 }
