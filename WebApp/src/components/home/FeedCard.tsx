@@ -99,6 +99,17 @@ function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isA
       }
       return;
     }
+    if (action === 'refer') {
+      const res = await apiFetch(`/api/referrals?action=fan&target=${encodeURIComponent(item.userId)}`);
+      const data = await res.json();
+      if (data.url && navigator.clipboard) {
+        await navigator.clipboard.writeText(data.url);
+        alert('Referral link copied. Send it to a friend to fan or buy.');
+      } else if (data.url) {
+        alert(data.url);
+      }
+      return;
+    }
     if (action === 'buy') {
       useCartStore.getState().add({
         id: `${item.id}-${color}-${size}`,
@@ -159,6 +170,8 @@ function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isA
         <button type="button" onClick={() => act('fan')} className="flex-1 rounded-xl border border-surface-border py-2.5 text-sm font-bold text-white">{fan ? 'You are a fan' : 'Become Fan'}</button>
         <button type="button" onClick={() => act('follow')} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white">{follow ? 'You are following' : 'Follow'}</button>
       </div>
+      <button type="button" onClick={() => act('refer')} className="w-full rounded-xl border border-gold/40 py-2 text-xs font-bold text-gold">Refer a friend</button>
+    </div>
     );
   }
   if (role === 'analyst' || type === 'prediction') {
