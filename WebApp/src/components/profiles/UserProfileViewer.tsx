@@ -78,7 +78,7 @@ export default function UserProfileViewer() {
         />
       );
     }
-    if (activeTab === 'shop') return <ShopTab />;
+    if (activeTab === 'shop') return <ShopTab userId={viewingUser.id} name={viewingUser.name} />;
     if (activeTab === 'about') return <AboutTab apiUser={apiUser} user={viewingUser} role={role} />;
     return (
       <RoleTabRenderer

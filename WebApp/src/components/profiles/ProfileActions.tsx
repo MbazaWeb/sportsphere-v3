@@ -6,6 +6,7 @@ import { UserPlus, UserMinus, MessageCircle, ShoppingBag } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { useState } from 'react';
+import { useCartStore } from '@/store/cartStore';
 import { ClaimButton } from './ClaimButton';
 
 interface ProfileActionsProps {
@@ -66,7 +67,6 @@ export function ProfileActions({ role, following, setFollowing, targetUserId }: 
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ targetUserId, action: 'follow' }),
             });
-            if (res.ok) { /* follow independent of fan */ }
           } catch {}
           setBusy(false);
         }}
@@ -81,6 +81,27 @@ export function ProfileActions({ role, following, setFollowing, targetUserId }: 
         </button>
       )}
     </div>
+    {following && (role === 'team' || role === 'official') && (
+      <div className="px-3 sm:px-4 mt-2">
+        <button
+          type="button"
+          className="w-full rounded-xl bg-gold py-2.5 text-sm font-bold text-black"
+          onClick={() => {
+            if (!isAuthenticated) { setLoginModalOpen(true); return; }
+            useCartStore.getState().add({
+              id: `membership-${targetUserId}`,
+              title: 'Club membership',
+              image: null,
+              price: 20000,
+              sellerId: targetUserId || '',
+              sellerName: 'Club',
+            });
+          }}
+        >
+          Pay club membership · TZS 20,000
+        </button>
+      </div>
+    )}
     <ClaimButton targetUserId={targetUserId} role={role} />
     </>
   );
