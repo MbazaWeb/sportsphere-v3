@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     let query = supabaseAdmin
       .from('ss_user')
       .select('id,name,handle,role,avatar_url,avatar_initials,is_verified,bio')
-      .limit(40);
+      .limit(Math.min(50, Math.max(1, parseInt(request.nextUrl.searchParams.get('limit') || '40', 10) || 40)));
     if (role) query = query.ilike('role', role);
     if (handle) {
       const h = handle.startsWith('@') ? handle : `@${handle}`;

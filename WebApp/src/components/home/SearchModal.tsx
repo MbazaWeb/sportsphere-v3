@@ -95,15 +95,12 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
     if (!q.trim()) { setResults({ users: [], posts: [], entities: [] }); setLoading(false); return; }
     setLoading(true);
     try {
-      const [usersRes, postsRes, entitiesRes] = await Promise.all([
-        apiFetch(`/api/users?q=${encodeURIComponent(q)}&limit=6`),
-        apiFetch(`/api/feed?q=${encodeURIComponent(q)}&limit=5`),
-        apiFetch(`/api/teams/search?q=${encodeURIComponent(q)}&limit=10`),
-      ]);
+      const res = await apiFetch(`/api/search?q=${encodeURIComponent(q)}`);
+      const data = res.ok ? await res.json() : {};
       setResults({
-        users: usersRes.ok ? await usersRes.json() : [],
-        posts: postsRes.ok ? await postsRes.json() : [],
-        entities: entitiesRes.ok ? (await entitiesRes.json()).results || [] : [],
+        users: Array.isArray(data.users) ? data.users : [],
+        posts: Array.isArray(data.posts) ? data.posts : [],
+        entities: Array.isArray(data.entities) ? data.entities : [],
       });
     } catch { setResults({ users: [], posts: [], entities: [] }); }
     setLoading(false);
@@ -144,7 +141,24 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
   };
 
   const handleEntityClick = (entity: SearchEntity) => {
-    setViewingEntity(entity);
+    const role = entity.type === 'PLAYER' ? 'player' : entity.type === 'COACH' ? 'coach' : 'team';
+    setViewingUser({
+      id: entity.id,
+      name: entity.name,
+      handle: '@' + entity.name.toLowerCase().replace(/\s+/g, ''),
+      avatar: entity.name.slice(0, 2).toUpperCase(),
+      avatarUrl: entity.logoUrl || null,
+      verified: true,
+      coverGradient: 'from-emerald-600 to-emerald-900',
+      bio: entity.extra || '',
+      role,
+      location: entity.extra || '',
+      joined: '',
+      followers: 0,
+      following: 0,
+      posts: 0,
+      isFollowing: false,
+    });
     onClose();
   };
 
