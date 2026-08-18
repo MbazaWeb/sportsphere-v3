@@ -474,7 +474,7 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
                 <img
                   src={resolveMediaUrl(item.mediaUrls[0])}
                   alt={item.content || 'Post image'}
-                  className="w-full max-h-80 object-cover"
+                  className="w-full max-h-[28rem] object-contain bg-black/40"
                   loading="lazy"
                   onError={(e) => {
                     const img = e.target as HTMLImageElement;
