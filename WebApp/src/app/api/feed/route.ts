@@ -113,6 +113,12 @@ export async function GET(request: NextRequest) {
         createdAt:    post.created_at,
         updatedAt:    post.updated_at,
 
+        // Match badges (for match-type posts)
+        homeBadge:    post.home_badge || null,
+        awayBadge:    post.away_badge || null,
+        homeLogo:     post.home_badge || null,
+        awayLogo:     post.away_badge || null,
+
         // Nested user object — matches Flutter PostUser
         user: {
           id:         u.id || post.user_id,

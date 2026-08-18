@@ -7,6 +7,7 @@ class PostUser {
     required this.handle,
     this.avatarUrl,
     this.isVerified = false,
+    this.isPro = false,
     this.role = 'fan',
   });
 
@@ -15,6 +16,7 @@ class PostUser {
   final String handle;
   final String? avatarUrl;
   final bool isVerified;
+  final bool isPro;
   final String role;
 
   factory PostUser.fromJson(Map<String, dynamic> j) => PostUser(
@@ -23,6 +25,7 @@ class PostUser {
         handle: j['handle']?.toString() ?? '',
         avatarUrl: j['avatarUrl']?.toString() ?? j['avatar']?.toString(),
         isVerified: j['isVerified'] == true,
+        isPro: j['isPro'] == true,
         role: j['role']?.toString() ?? 'fan',
       );
 }
