@@ -102,6 +102,8 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
       });
     }
 
+    final isOwnFan = (profile.role ?? 'fan').toLowerCase() == 'fan';
+
     return SafeArea(
       child: NestedScrollView(
         headerSliverBuilder: (context, inner) => [
@@ -109,16 +111,17 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
               child: _ProfileHeader(user: profile, roleCfg: roleCfg)),
           if (profile.verificationStatus == 'pending')
             const VerificationBanner(),
-          SliverToBoxAdapter(
-            child: _RoleTabBar(
-              tabs: roleCfg.tabs,
-              activeId: _activeTab,
-              onChanged: (id) => setState(() => _activeTab = id),
+          if (!isOwnFan)
+            SliverToBoxAdapter(
+              child: _RoleTabBar(
+                tabs: roleCfg.tabs,
+                activeId: _activeTab,
+                onChanged: (id) => setState(() => _activeTab = id),
+              ),
             ),
-          ),
         ],
         body: _RoleTabBody(
-          tabId: _activeTab,
+          tabId: isOwnFan ? 'overview' : _activeTab,
           user: profile,
           roleCfg: roleCfg,
           onEdit: () {
