@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { safeJsonParse } from '@/lib/json';
+import { publicUserView } from '@/lib/official-account';
 
 export const dynamic = 'force-dynamic';
 

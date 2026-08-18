@@ -207,10 +207,11 @@ export function SportlightsTab({ onShare, onComment }: SportlightsTabProps) {
       if (matchesRes.ok) setLiveMatches(await matchesRes.json());
       if (feedRes.ok) setPosts(await feedRes.json());
       if (usersRes.ok) {
-        const allUsers = await usersRes.json();
+        const rawUsers = await usersRes.json();
+        const allUsers = Array.isArray(rawUsers) ? rawUsers.filter(Boolean) : [];
         // Extract team accounts for Choose Your Teams
         const teamAccounts = allUsers
-          .filter((u: { role: string }) => u.role === 'team')
+          .filter((u: { role: string }) => u && u.role === 'team')
           .map((u: any) => ({
             id: u.id,
             name: u.name,

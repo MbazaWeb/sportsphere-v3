@@ -76,8 +76,24 @@ export function FeedCard({ item, onShare, onComment, formatTime }: FeedCardProps
   const [saved, setSaved] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [expanded, setExpanded] = useState(true);
-  const user = item.user;
-  const isOfficialPost = user.handle === 'sportsphere';
+  const user = item.user || {
+    id: item.userId,
+    name: 'SportSphere',
+    handle: '@sportsphere',
+    avatarUrl: null,
+    avatarInitials: 'SS',
+    isVerified: true,
+    coverGradient: '',
+    bio: '',
+    role: 'official',
+    location: '',
+    followerCount: 0,
+    followingCount: 0,
+    postCount: 0,
+    registeredAt: '',
+    verificationStatus: '',
+  };
+  const isOfficialPost = ['sportsphere', '@sportsphere'].includes(String(user.handle || '').toLowerCase());
 
   const handleViewUser = useCallback(() => {
     setViewingUser({
