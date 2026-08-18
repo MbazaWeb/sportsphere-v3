@@ -121,7 +121,6 @@ function applyWhere(query: any, where?: WhereClause): any {
   return query;
 }
 
-
 function transformRow(row: any): any {
   if (!row || typeof row !== 'object') return row;
   if (Array.isArray(row)) return row.map(transformRow);
@@ -136,7 +135,7 @@ function transformRow(row: any): any {
 function transformResult(data: any): any {
   if (Array.isArray(data)) return data.map(transformRow);
   if (data && typeof data === 'object') return transformRow(data);
-  return transformResult(data);
+  return data;
 }
 
 function makeModel(table: string) {
@@ -196,10 +195,17 @@ function makeModel(table: string) {
 
     async createMany({ data, skipDuplicates }: any) {
       const rows = Array.isArray(data) ? data.map(keysToSnake) : [keysToSnake(data)];
-      const { error } = await supabaseAdmin
-        .from(table)
-        .insert(rows, { ignoreDuplicates: skipDuplicates });
-      if (error) throw new Error(`[${table}.createMany] ${error.message}`);
+      if (skipDuplicates) {
+        const { error } = await supabaseAdmin
+          .from(table)
+          .upsert(rows, { onConflict: 'id' } as any);
+        if (error) throw new Error(`[${table}.createMany] ${error.message}`);
+      } else {
+        const { error } = await supabaseAdmin
+          .from(table)
+          .insert(rows);
+        if (error) throw new Error(`[${table}.createMany] ${error.message}`);
+      }
       return { count: rows.length };
     },
 
@@ -253,6 +259,41 @@ function makeModel(table: string) {
       if (error) throw new Error(`[${table}.count] ${error.message}`);
       return count ?? 0;
     },
+
+    async aggregate({ where, _count, _sum, _avg, _min, _max }: any) {
+      const parts: string[] = [];
+      if (_count) {
+        for (const key of Object.keys(_count)) {
+          parts.push(`${toSnake(key)}.count()`);
+        }
+      }
+      if (_sum) {
+        for (const [key, val] of Object.entries(_sum)) {
+          if (val) parts.push(`${toSnake(key)}.sum()`);
+        }
+      }
+      if (_avg) {
+        for (const [key, val] of Object.entries(_avg)) {
+          if (val) parts.push(`${toSnake(key)}.avg()`);
+        }
+      }
+      if (_min) {
+        for (const [key, val] of Object.entries(_min)) {
+          if (val) parts.push(`${toSnake(key)}.min()`);
+        }
+      }
+      if (_max) {
+        for (const [key, val] of Object.entries(_max)) {
+          if (val) parts.push(`${toSnake(key)}.max()`);
+        }
+      }
+      const selectStr = parts.length ? parts.join(',') : '*';
+      let q = (supabaseAdmin as any).from(table).select(selectStr);
+      q = applyWhere(q, where);
+      const { data, error } = await q.limit(1);
+      if (error) throw new Error(error.message);
+      return transformResult(data?.[0] ?? null) as any;
+    },
   };
 }
 
@@ -299,17 +340,30 @@ export const db = {
   business: makeModel('ss_business'),
   commercialPartner: makeModel('ss_commercial_partner'),
   coach: makeModel('ss_coach'),
+  commentatorProfile: makeModel('ss_player_profile'),
+  agentProfile: makeModel('ss_player_profile'),
+  competitionProfile: makeModel('ss_competition_profile'),
+  leagueProfile: makeModel('ss_league_profile'),
+  academyProfile: makeModel('ss_academy_profile'),
+  venueProfile: makeModel('ss_venue_profile'),
+  commercialPartnerProfile: makeModel('ss_commercial_partner'),
+  auditLog: makeModel('ss_audit_log'),
+  performancePointTransaction: makeModel('ss_performance_point_transaction'),
+  performanceSnapshot: makeModel('ss_performance_snapshot'),
+  kPIConfiguration: makeModel('ss_kpi_configuration'),
 
   $queryRaw: async (strings?: TemplateStringsArray | string, ..._args: any[]) => {
-    // Health check / simple connectivity — service role select
-    const { error } = await supabaseAdmin.from('ss_sport').select('id').limit(1);
+    const { data, error } = await supabaseAdmin.from('ss_sport').select('id').limit(1);
     if (error) throw new Error(error.message);
-    return transformResult(data);
+    return data ?? [];
   },
 
-  $transaction: async (fns: any[]) => {
+  $transaction: async (input: any[] | ((db: any) => Promise<any>)) => {
+    if (typeof input === 'function') {
+      return input(db);
+    }
     const results = [];
-    for (const fn of fns) {
+    for (const fn of input) {
       results.push(await (typeof fn === 'function' ? fn() : fn));
     }
     return results;

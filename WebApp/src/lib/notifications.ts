@@ -72,13 +72,13 @@ export async function sendNotification(
     });
 
     const all = tokens
-      .map((t) => t.token)
-      .filter((token): token is string => typeof token === 'string' && token.trim().length > 0);
+      .map((t: any) => t.token)
+      .filter((token: any): token is string => typeof token === 'string' && token.trim().length > 0);
 
     if (all.length === 0) return;
 
     const expoTokens = all.filter(isExpoToken);
-    const fcmTokens = all.filter((t) => !isExpoToken(t));
+    const fcmTokens = all.filter((t: any) => !isExpoToken(t));
 
     // Flutter / native FCM
     if (fcmTokens.length > 0) {
@@ -91,7 +91,7 @@ export async function sendNotification(
     if (expoTokens.length > 0) {
       const expo = await getExpoClient();
       if (expo) {
-        const messages = expoTokens.map((to) => ({
+        const messages = expoTokens.map((to: any) => ({
           to,
           sound: 'default' as const,
           title: notifTitle,

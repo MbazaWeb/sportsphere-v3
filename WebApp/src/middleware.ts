@@ -1,5 +1,5 @@
 /**
- * proxy.ts — Next.js 16 proxy for SportSphere
+ * middleware.ts — Next.js 16 middleware for SportSphere
  *
  * Responsibilities:
  *  1. Strip any client-provided identity headers (x-user-id, x-user-role, etc.)
@@ -11,7 +11,28 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySession, SESSION_COOKIE } from '@/lib/session';
-import { getClientIp, apiLimiter, authLimiter, postLimiter, rateLimitResponse } from '@/lib/rate-limit';
+
+// ── Inline Edge-compatible rate limiter (simple Map, no Node.js APIs) ──
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const WINDOW_MS = 60_000;
+
+function checkRateLimit(ip: string, limit: number): { limited: boolean; remaining: number } {
+  const now = Date.now();
+  let entry = rateLimitMap.get(ip);
+  if (!entry || now >= entry.resetAt) {
+    entry = { count: 0, resetAt: now + WINDOW_MS };
+    rateLimitMap.set(ip, entry);
+  }
+  entry.count++;
+  const remaining = Math.max(0, limit - entry.count);
+  return { limited: entry.count > limit, remaining };
+}
+
+function getClientIp(request: NextRequest): string {
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip') ||
+    '127.0.0.1';
+}
 
 // Headers that clients must never be able to spoof
 const STRIP_HEADERS = ['x-user-id', 'x-user-role', 'x-admin', 'x-forwarded-user'];
@@ -33,26 +54,41 @@ const PROTECTED_PREFIXES = [
   '/api/admin',
 ];
 
-export async function proxy(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const ip = getClientIp(request);
 
   // ── 0. Global API Rate Limiting ────────────────────────────
-  if (pathname.startsWith('/api/')) {
-    // Auth routes (stricter: 5 attempts per 5 mins)
-    if (pathname.startsWith('/api/auth/login') || pathname.startsWith('/api/auth/register')) {
-      const usage = authLimiter.check(5, ip);
-      if (usage.isRateLimited) return rateLimitResponse(usage);
+  if (pathname.includes('/api/')) {
+    // Auth routes (stricter: 5 attempts per minute)
+    if (pathname.includes('/api/auth/login') || pathname.includes('/api/auth/register')) {
+      const usage = checkRateLimit(ip, 5);
+      if (usage.limited) {
+        return NextResponse.json({ error: 'Too many requests. Try again later.', retryAfter: 60 }, {
+          status: 429,
+          headers: { 'Retry-After': '60' },
+        });
+      }
     }
     // Content creation routes (10 posts per minute)
-    else if (pathname === '/api/posts' && request.method === 'POST') {
-      const usage = postLimiter.check(10, ip);
-      if (usage.isRateLimited) return rateLimitResponse(usage);
+    else if (pathname.includes('/api/posts') && request.method === 'POST') {
+      const usage = checkRateLimit(ip, 10);
+      if (usage.limited) {
+        return NextResponse.json({ error: 'Too many requests. Try again later.', retryAfter: 60 }, {
+          status: 429,
+          headers: { 'Retry-After': '60' },
+        });
+      }
     }
     // General API routes (100 requests per minute)
     else {
-      const usage = apiLimiter.check(100, ip);
-      if (usage.isRateLimited) return rateLimitResponse(usage);
+      const usage = checkRateLimit(ip, 100);
+      if (usage.limited) {
+        return NextResponse.json({ error: 'Too many requests. Try again later.', retryAfter: 60 }, {
+          status: 429,
+          headers: { 'Retry-After': '60' },
+        });
+      }
     }
   }
 
@@ -65,8 +101,8 @@ export async function proxy(request: NextRequest) {
   }
 
   // ── 2. Admin panel guard ────────────────────────────────────
-  if (pathname.startsWith('/admin')) {
-    const isLoginPage = pathname === '/admin/login' || pathname.startsWith('/admin/login/');
+  if (pathname.includes('/admin')) {
+    const isLoginPage = pathname.endsWith('/admin/login') || pathname.includes('/admin/login/');
     if (isLoginPage) {
       return NextResponse.next({ request: { headers: requestHeaders } });
     }
@@ -97,7 +133,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // ── 3. Auth enforcement on protected API routes ─────────────
-  const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.includes(prefix));
 
   if (isProtected) {
     let token = request.cookies.get(SESSION_COOKIE)?.value;
@@ -109,7 +145,7 @@ export async function proxy(request: NextRequest) {
 
     if (!payload) {
       // Return 401 for API routes
-      if (pathname.startsWith('/api/')) {
+      if (pathname.includes('/api/')) {
         const cronHeader = request.headers.get("x-cron-secret");
         if (cronHeader && cronHeader === (process.env.CRON_SECRET || "sportsphere-sync-key-2026")) {
           return NextResponse.next();

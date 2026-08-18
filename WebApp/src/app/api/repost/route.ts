@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   const { postId } = await request.json().catch(() => ({}));
   if (!postId) return NextResponse.json({ error: 'postId required.' }, { status: 400 });
   const { data: src } = await supabaseAdmin.from('ss_post').select('content,media_urls,post_type').eq('id', postId).limit(1);
-  const orig = src?.[0] || {};
+  const orig = (src?.[0] || {}) as Record<string, any>;
   const id = crypto.randomUUID();
   const { error } = await supabaseAdmin.from('ss_post').insert({
     id, user_id: userId, content: orig.content || '', post_type: orig.post_type || 'post',

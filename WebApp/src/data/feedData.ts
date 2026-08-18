@@ -9,7 +9,8 @@ export { apiUserToViewing as mapApiUserToFeedUser } from '@/types';
 // Helper to fetch a user by handle from the API
 export async function fetchUserByHandle(handle: string) {
   try {
-    const res = await fetch(`/api/users?handle=${encodeURIComponent(handle)}`);
+    const { apiFetch } = await import('@/lib/api');
+    const res = await apiFetch(`/api/users?handle=${encodeURIComponent(handle)}`);
     if (!res.ok) return null;
     const user = await res.json();
     const { apiUserToViewing } = await import('@/types');

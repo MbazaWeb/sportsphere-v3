@@ -48,6 +48,7 @@ interface ApiPost {
   poll?: ApiPoll | null;
   prediction?: ApiPrediction | null;
   following?: boolean;
+  joined?: boolean;
   isFan?: boolean;
   user: ApiUser;
 }

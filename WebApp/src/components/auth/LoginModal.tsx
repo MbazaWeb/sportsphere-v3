@@ -96,7 +96,7 @@ export default function LoginModal() {
       // Admins go straight to admin panel
       const role = (u.role || '').toLowerCase();
       if (role.includes('admin')) {
-        window.location.href = '/admin';
+        window.location.href = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/admin`;
       } else {
         setActiveTab('profile');
       }

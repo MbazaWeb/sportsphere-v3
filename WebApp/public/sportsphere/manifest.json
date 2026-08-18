@@ -1,1 +1,15 @@
-/var/www/sportsphere-nextjs/public/manifest.json
+{
+  "name": "SportSphere",
+  "short_name": "SportSphere",
+  "start_url": "/sportsphere",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#F5C518",
+  "icons": [
+    {
+      "src": "/sportsphere/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

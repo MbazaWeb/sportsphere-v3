@@ -1,7 +1,7 @@
 {
   "name": "SportSphere",
   "short_name": "SportSphere",
-  "start_url": "/",
+  "start_url": "/sportsphere",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",

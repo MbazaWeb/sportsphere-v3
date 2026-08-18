@@ -32,7 +32,7 @@ async function upsertUser(a: typeof ACCOUNTS[0]) {
     { id: a.id, name: a.name, handle: a.handle, role: a.role },
   ];
   for (const row of attempts) {
-    const { error } = await supabaseAdmin.from('ss_user').upsert(row, { onConflict: 'id' });
+    const { error } = await supabaseAdmin.from('ss_user').upsert(row as any, { onConflict: 'id' });
     if (!error) return null;
     if (!String(error.message).includes('schema cache') && !String(error.code).includes('PGRST204')) return error.message;
   }

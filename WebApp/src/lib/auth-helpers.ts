@@ -13,7 +13,7 @@
  *     + 'ss_session' cookie via @/lib/session).
  */
 
-import { createHash, randomBytes } from 'crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Reset Token Helpers  (Fix #4 — hash before storing)
@@ -62,5 +62,5 @@ export function safeCompare(a: string, b: string): boolean {
   const bufA = Buffer.from(a);
   const bufB = Buffer.from(b);
   // crypto.timingSafeEqual requires same-length buffers
-  return require('crypto').timingSafeEqual(bufA, bufB);
+  return timingSafeEqual(bufA, bufB);
 }

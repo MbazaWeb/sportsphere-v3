@@ -112,6 +112,7 @@ export interface ViewingUser {
   isPro?: boolean;      // Pro status (any verified non-fan role)
   proSince?: string | null;
   coverGradient: string;
+  coverUrl?: string | null;
   bio: string;
   role: string;
   location: string;

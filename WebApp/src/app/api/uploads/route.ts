@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import fsSync from 'fs';
-import { Readable } from 'stream';
 import path from 'path';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { uploadPublic } from '@/lib/supabase-storage';
@@ -59,49 +58,6 @@ async function uploadToGCS(fileName: string, buffer: Buffer, contentType: string
 function resolveUploadDir(): string {
   if (process.env.UPLOAD_DIR) return process.env.UPLOAD_DIR;
   return path.join(process.cwd(), 'public', 'uploads');
-}
-
-/** Stream file to disk using Node.js write stream (avoids OOM on large videos) */
-function streamFileToDisk(file: File, filePath: string): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const dir = path.dirname(filePath);
-    fsSync.mkdirSync(dir, { recursive: true });
-
-    const writeStream = fsSync.createWriteStream(filePath);
-    const webStream = file.stream();
-    // Convert Web ReadableStream to Node.js Readable for piping to disk
-    const reader = webStream.getReader();
-    const nodeStream = new Readable({
-      read() {
-        reader.read().then(({ done, value }) => {
-          if (done) { this.push(null); return; }
-          this.push(Buffer.from(value));
-        }).catch((err: Error) => this.destroy(err));
-      },
-    });
-
-    let totalBytes = 0;
-
-    nodeStream.on('data', (chunk: Buffer) => {
-      totalBytes += chunk.length;
-      if (totalBytes > MAX_BYTES) {
-        nodeStream.destroy();
-        writeStream.destroy();
-        fsSync.unlinkSync(filePath);
-        reject(new Error(`File exceeds ${MAX_BYTES / 1024 / 1024} MB limit`));
-      }
-    });
-
-    nodeStream.pipe(writeStream);
-
-    writeStream.on('finish', () => resolve(totalBytes));
-    writeStream.on('error', reject);
-    nodeStream.on('error', (err: Error) => {
-      writeStream.destroy();
-      try { fsSync.unlinkSync(filePath); } catch {}
-      reject(err);
-    });
-  });
 }
 
 async function uploadToR2(fileName: string, buffer: Buffer, contentType: string) {
@@ -190,18 +146,19 @@ export async function POST(request: NextRequest) {
 
     if (process.env.GCS_BUCKET) {
       try {
-        const arrayBuffer = await file.arrayBuffer();
-        const url = await uploadToGCS(fileName, Buffer.from(arrayBuffer), finalContentType);
+        const url = await uploadToGCS(fileName, buffer, finalContentType);
         return NextResponse.json({ url });
       } catch (err) {
         console.error('GCS upload failed, falling back to local', err);
       }
     }
 
-    // ── Local filesystem: stream to disk ──
+    // ── Local filesystem fallback ──
     const filePath = path.join(process.cwd(), 'public', 'uploads', fileName);
-    const bytesWritten = await streamFileToDisk(file, filePath);
-    console.log(`[upload] Written ${bytesWritten} bytes to ${filePath} (type: ${finalContentType})`);
+    const dir = path.dirname(filePath);
+    fsSync.mkdirSync(dir, { recursive: true });
+    fsSync.writeFileSync(filePath, buffer);
+    console.log(`[upload] Written ${buffer.length} bytes to ${filePath} (type: ${finalContentType})`);
 
     // Also copy to standalone public/uploads
     const standaloneDir = path.join(
