@@ -1,56 +1,86 @@
--- SportSphere Row Level Security Policies
--- Run this AFTER schema.sql in Supabase SQL Editor
+-- SportSphere RLS Policies
+-- Run AFTER schema.sql
 
--- Enable RLS on all tables
-ALTER TABLE "user" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE post ENABLE ROW LEVEL SECURITY;
-ALTER TABLE follow ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "comment" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE message ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notification ENABLE ROW LEVEL SECURITY;
-ALTER TABLE community ENABLE ROW LEVEL SECURITY;
-ALTER TABLE community_member ENABLE ROW LEVEL SECURITY;
-ALTER TABLE post_like ENABLE ROW LEVEL SECURITY;
-ALTER TABLE poll_vote ENABLE ROW LEVEL SECURITY;
+-- Enable RLS
+ALTER TABLE ss_user ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ss_post ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ss_follow ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ss_comment ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ss_comment_like ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ss_post_like ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ss_poll_vote ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ss_message ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ss_notification ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ss_community ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ss_community_member ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ss_user_favorite ENABLE ROW LEVEL SECURITY;
 
--- Users: public read, own write
-CREATE POLICY "users_public_read" ON "user" FOR SELECT USING (true);
-CREATE POLICY "users_own_update" ON "user" FOR UPDATE USING (auth.uid()::text = id);
+-- ss_user: anyone can read, only own row update
+CREATE POLICY "user_public_read"  ON ss_user FOR SELECT USING (true);
+CREATE POLICY "user_own_update"   ON ss_user FOR UPDATE USING (auth.uid()::text = id);
+CREATE POLICY "user_own_delete"   ON ss_user FOR DELETE USING (auth.uid()::text = id);
 
--- Posts: public read, authenticated create, own update/delete
-CREATE POLICY "posts_public_read" ON post FOR SELECT USING (true);
-CREATE POLICY "posts_auth_create" ON post FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
-CREATE POLICY "posts_own_update" ON post FOR UPDATE USING (auth.uid()::text = "userId");
-CREATE POLICY "posts_own_delete" ON post FOR DELETE USING (auth.uid()::text = "userId");
+-- ss_post: public read, auth create, own update/delete
+CREATE POLICY "post_public_read"  ON ss_post FOR SELECT USING (true);
+CREATE POLICY "post_auth_create"  ON ss_post FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "post_own_update"   ON ss_post FOR UPDATE USING (auth.uid()::text = user_id);
+CREATE POLICY "post_own_delete"   ON ss_post FOR DELETE USING (auth.uid()::text = user_id);
 
--- Comments: public read, auth create, own delete
-CREATE POLICY "comments_public_read" ON "comment" FOR SELECT USING (true);
-CREATE POLICY "comments_auth_create" ON "comment" FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
-CREATE POLICY "comments_own_delete" ON "comment" FOR DELETE USING (auth.uid()::text = "userId");
+-- ss_follow: public read, auth create, own delete
+CREATE POLICY "follow_public_read" ON ss_follow FOR SELECT USING (true);
+CREATE POLICY "follow_auth_create" ON ss_follow FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "follow_own_delete"  ON ss_follow FOR DELETE USING (auth.uid()::text = follower_id);
 
--- Messages: only sender/receiver can read
-CREATE POLICY "messages_own_read" ON message FOR SELECT 
-  USING (auth.uid()::text = "senderId" OR auth.uid()::text = "receiverId");
-CREATE POLICY "messages_auth_create" ON message FOR INSERT 
-  WITH CHECK (auth.uid()::text = "senderId");
+-- ss_comment: public read, auth create, own delete
+CREATE POLICY "comment_public_read" ON ss_comment FOR SELECT USING (true);
+CREATE POLICY "comment_auth_create" ON ss_comment FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "comment_own_delete"  ON ss_comment FOR DELETE USING (auth.uid()::text = user_id);
 
--- Notifications: only own
-CREATE POLICY "notifications_own" ON notification FOR SELECT 
-  USING (auth.uid()::text = "userId");
+-- ss_post_like: public read, auth create, own delete
+CREATE POLICY "post_like_public_read" ON ss_post_like FOR SELECT USING (true);
+CREATE POLICY "post_like_auth_create" ON ss_post_like FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "post_like_own_delete"  ON ss_post_like FOR DELETE USING (auth.uid()::text = user_id);
 
--- Follows: public read, auth create, own delete
-CREATE POLICY "follows_public_read" ON follow FOR SELECT USING (true);
-CREATE POLICY "follows_auth_create" ON follow FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
-CREATE POLICY "follows_own_delete" ON follow FOR DELETE USING (auth.uid()::text = "followerId");
+-- ss_poll_vote: public read, auth create
+CREATE POLICY "poll_vote_public_read" ON ss_poll_vote FOR SELECT USING (true);
+CREATE POLICY "poll_vote_auth_create" ON ss_poll_vote FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 
--- Communities: public read
-CREATE POLICY "communities_public_read" ON community FOR SELECT USING (true);
-CREATE POLICY "community_members_public_read" ON community_member FOR SELECT USING (true);
-CREATE POLICY "community_members_auth_join" ON community_member FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
-CREATE POLICY "community_members_own_leave" ON community_member FOR DELETE USING (auth.uid()::text = "userId");
+-- ss_message: only sender/receiver
+CREATE POLICY "message_own_read"   ON ss_message FOR SELECT USING (auth.uid()::text = sender_id OR auth.uid()::text = receiver_id);
+CREATE POLICY "message_auth_send"  ON ss_message FOR INSERT WITH CHECK (auth.uid()::text = sender_id);
+CREATE POLICY "message_own_delete" ON ss_message FOR DELETE USING (auth.uid()::text = sender_id);
 
--- Teams, leagues, players, matches: public read only
-CREATE POLICY "teams_public" ON team FOR SELECT USING (true);
-CREATE POLICY "leagues_public" ON league FOR SELECT USING (true);
-CREATE POLICY "players_public" ON player FOR SELECT USING (true);
-CREATE POLICY "match_public" ON "match" FOR SELECT USING (true);
+-- ss_notification: only owner
+CREATE POLICY "notif_own_read"   ON ss_notification FOR SELECT USING (auth.uid()::text = user_id);
+CREATE POLICY "notif_own_update" ON ss_notification FOR UPDATE USING (auth.uid()::text = user_id);
+
+-- ss_community: public read
+CREATE POLICY "community_public_read"  ON ss_community FOR SELECT USING (true);
+CREATE POLICY "community_auth_create"  ON ss_community FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+-- ss_community_member: public read, auth join, own leave
+CREATE POLICY "cm_public_read"  ON ss_community_member FOR SELECT USING (true);
+CREATE POLICY "cm_auth_join"    ON ss_community_member FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "cm_own_leave"    ON ss_community_member FOR DELETE USING (auth.uid()::text = user_id);
+
+-- ss_user_favorite: only owner
+CREATE POLICY "fav_own_read"   ON ss_user_favorite FOR SELECT USING (auth.uid()::text = user_id);
+CREATE POLICY "fav_auth_create" ON ss_user_favorite FOR INSERT WITH CHECK (auth.uid()::text = user_id);
+CREATE POLICY "fav_own_delete" ON ss_user_favorite FOR DELETE USING (auth.uid()::text = user_id);
+
+-- Public read-only tables (no auth needed)
+ALTER TABLE ss_match ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ss_team ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ss_league ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ss_player ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ss_coach ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ss_news_item ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ss_sport ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "match_public"    ON ss_match     FOR SELECT USING (true);
+CREATE POLICY "team_public"     ON ss_team      FOR SELECT USING (true);
+CREATE POLICY "league_public"   ON ss_league    FOR SELECT USING (true);
+CREATE POLICY "player_public"   ON ss_player    FOR SELECT USING (true);
+CREATE POLICY "coach_public"    ON ss_coach     FOR SELECT USING (true);
+CREATE POLICY "news_public"     ON ss_news_item FOR SELECT USING (true);
+CREATE POLICY "sport_public"    ON ss_sport     FOR SELECT USING (true);
