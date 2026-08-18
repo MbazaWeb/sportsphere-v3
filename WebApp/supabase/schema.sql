@@ -715,3 +715,23 @@ CREATE TABLE IF NOT EXISTS partner_sponsorship (
   createdAt TIMESTAMPTZ DEFAULT NOW(),
   updatedAt TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- ─── Storage Buckets ──────────────────────────────────────────────────────────
+-- Run in Supabase SQL Editor or via Dashboard > Storage
+
+INSERT INTO storage.buckets (id, name, public) VALUES
+  ('avatars', 'avatars', true),
+  ('covers',  'covers',  true),
+  ('posts',   'posts',   true),
+  ('media',   'media',   true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage RLS policies
+CREATE POLICY "avatars_public_read" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
+CREATE POLICY "avatars_auth_upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.uid() IS NOT NULL);
+CREATE POLICY "posts_public_read"   ON storage.objects FOR SELECT USING (bucket_id = 'posts');
+CREATE POLICY "posts_auth_upload"   ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'posts' AND auth.uid() IS NOT NULL);
+CREATE POLICY "covers_public_read"  ON storage.objects FOR SELECT USING (bucket_id = 'covers');
+CREATE POLICY "covers_auth_upload"  ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'covers' AND auth.uid() IS NOT NULL);
+CREATE POLICY "media_public_read"   ON storage.objects FOR SELECT USING (bucket_id = 'media');
+CREATE POLICY "media_auth_upload"   ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'media' AND auth.uid() IS NOT NULL);
