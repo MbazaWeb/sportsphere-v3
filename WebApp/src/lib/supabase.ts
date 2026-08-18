@@ -12,9 +12,12 @@ function make(url: string, key: string, extra?: object): SupabaseClient {
 }
 
 export const supabaseAdmin = make(supabaseUrl, supabaseServiceKey || supabaseAnonKey, {
-  auth: { autoRefreshToken: false, persistSession: false },
+  auth: { autoRefreshToken: false, persistSession: false, storageKey: 'ss-admin-auth' },
 });
 
-export const supabase = make(supabaseUrl, supabaseAnonKey);
+export const supabase = make(supabaseUrl, supabaseAnonKey, {
+  auth: { persistSession: true, storageKey: 'ss-web-auth' },
+});
+
 
 export default supabaseAdmin;
