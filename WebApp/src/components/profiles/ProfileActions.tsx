@@ -6,6 +6,7 @@ import { UserPlus, UserMinus, MessageCircle, ShoppingBag } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { useState } from 'react';
+import { ClaimButton } from './ClaimButton';
 
 interface ProfileActionsProps {
   role: string;
@@ -18,9 +19,6 @@ export function ProfileActions({ role, following, setFollowing, targetUserId }: 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const setLoginModalOpen = useUIStore((s) => s.setLoginModalOpen);
   const [busy, setBusy] = useState(false);
-  const [claimBusy, setClaimBusy] = useState(false);
-  const [claimed, setClaimed] = useState(false);
-  const claimable = ['team', 'player', 'coach', 'official'].includes(String(role || '').toLowerCase());
 
   const handleFollow = async () => {
     if (!isAuthenticated) { setLoginModalOpen(true); return; }
@@ -83,38 +81,7 @@ export function ProfileActions({ role, following, setFollowing, targetUserId }: 
         </button>
       )}
     </div>
-    {claimable && targetUserId && !claimed && (
-      <div className="px-3 sm:px-4 mt-2">
-        <button
-          disabled={claimBusy}
-          onClick={async () => {
-            if (!isAuthenticated) { setLoginModalOpen(true); return; }
-            setClaimBusy(true);
-            try {
-              const res = await apiFetch('/api/claims', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ targetId: targetUserId }),
-              });
-              const data = await res.json();
-              if (res.ok) {
-                setClaimed(true);
-                alert('Claim submitted. Admin will review it.');
-              } else {
-                alert(data.error || 'Could not submit claim');
-              }
-            } catch {
-              alert('Network error');
-            }
-            setClaimBusy(false);
-          }}
-          className="w-full rounded-xl border border-gold/40 bg-gold/10 py-2 text-xs font-bold text-gold"
-        >
-          {claimBusy ? 'Submitting…' : 'Claim this profile'}
-        </button>
-        <p className="mt-1 text-[10px] text-muted-foreground">Official team, player, or coach — request to manage this page.</p>
-      </div>
-    )}
+    <ClaimButton targetUserId={targetUserId} role={role} />
     </>
   );
 }
