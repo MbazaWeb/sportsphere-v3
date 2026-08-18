@@ -112,7 +112,16 @@ class _SportlightsTabState extends ConsumerState<SportlightsTab> {
     }
     if (_error != null) return FeedErrorView(message: _error!, onRetry: _loadFirst);
     if (_posts.isEmpty) {
-      return SsRefreshScroll(onRefresh: _refresh, child: Center(child: Text('No posts yet — pull to refresh', style: GoogleFonts.inter(color: AppColors.mutedForeground))));
+      return SsRefreshScroll(
+        onRefresh: _refresh,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            const SizedBox(height: 120),
+            Center(child: Text('No posts yet — pull to refresh', style: GoogleFonts.inter(color: AppColors.mutedForeground))),
+          ],
+        ),
+      );
     }
 
     final items = _buildItems();
@@ -1699,7 +1708,7 @@ class _RoleCtas extends ConsumerWidget {
       ]);
     }
     if (_role == 'analyst' || _type == 'prediction') {
-      return btn(follow ? 'You are following' : 'Follow', () => _act(ref, context, 'follow'));
+      return Row(children: [btn(follow ? 'You are following' : 'Follow', () => _act(ref, context, 'follow'))]);
     }
     return const SizedBox.shrink();
   }
