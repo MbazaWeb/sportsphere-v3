@@ -47,6 +47,8 @@ interface ApiPost {
   shareCount: number; viewCount: number; createdAt: string;
   poll?: ApiPoll | null;
   prediction?: ApiPrediction | null;
+  following?: boolean;
+  isFan?: boolean;
   user: ApiUser;
 }
 
@@ -71,8 +73,8 @@ function resolveMediaUrl(url: string): string {
 function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isAuthenticated: boolean; onRequireAuth: () => void }) {
   const role = String(item.user?.role || '').toLowerCase();
   const type = String(item.postType || '').toLowerCase();
-  const [fan, setFan] = useState(false);
-  const [follow, setFollow] = useState(false);
+  const [fan, setFan] = useState(!!item.isFan);
+  const [follow, setFollow] = useState(!!item.following);
   const [color, setColor] = useState('Red');
   const [size, setSize] = useState('M');
   const price = item.id === 'seed-simba-jersey' ? 45000 : item.id === 'seed-justfit' ? 200000 : item.id === 'seed-tff-match' ? 5000 : 0;
@@ -146,15 +148,15 @@ function PostCtas({ item, isAuthenticated, onRequireAuth }: { item: ApiPost; isA
   if (['official','team','player','coach'].includes(role) || type === 'official') {
     return (
       <div className="mb-3 flex gap-2">
-        <button type="button" onClick={() => act('fan')} className="flex-1 rounded-xl border border-surface-border py-2.5 text-sm font-bold text-white">{fan ? 'Fan' : 'Become Fan'}</button>
-        <button type="button" onClick={() => act('follow')} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white">{follow ? 'Following' : 'Follow'}</button>
+        <button type="button" onClick={() => act('fan')} className="flex-1 rounded-xl border border-surface-border py-2.5 text-sm font-bold text-white">{fan ? 'You are a fan' : 'Become Fan'}</button>
+        <button type="button" onClick={() => act('follow')} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white">{follow ? 'You are following' : 'Follow'}</button>
       </div>
     );
   }
   if (role === 'analyst' || type === 'prediction') {
     return (
       <div className="mb-3">
-        <button type="button" onClick={() => act('follow')} className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-bold text-white">{follow ? 'Following' : 'Follow'}</button>
+        <button type="button" onClick={() => act('follow')} className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-bold text-white">{follow ? 'You are following' : 'Follow'}</button>
       </div>
     );
   }

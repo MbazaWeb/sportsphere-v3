@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { safeJsonParse } from '@/lib/json';
 import { publicUserView } from '@/lib/official-account';
+import { getUserIdFromRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,19 @@ export async function GET(request: NextRequest) {
       for (const u of users ?? []) usersById[u.id] = u;
     }
 
+    const me = await getUserIdFromRequest(request);
+    const followSet = new Set<string>();
+    const fanSet = new Set<string>();
+    if (me && ids.length) {
+      const { data: rel } = await supabaseAdmin.from('ss_follow').select('following_id,kind').eq('follower_id', me).in('following_id', ids);
+      for (const r of rel || []) {
+        if (r.kind === 'fan') fanSet.add(r.following_id);
+        else followSet.add(r.following_id);
+      }
+      const { data: fans } = await supabaseAdmin.from('ss_fan').select('following_id').eq('follower_id', me).in('following_id', ids);
+      for (const r of fans || []) fanSet.add(r.following_id);
+    }
+
     const parsed = rows.map((post) => {
       const u = usersById[post.user_id] || {};
       return {
@@ -57,6 +71,8 @@ export async function GET(request: NextRequest) {
         createdAt: post.created_at,
         updatedAt: post.updated_at,
         comments: [],
+        following: followSet.has(post.user_id),
+        isFan: fanSet.has(post.user_id),
         user: publicUserView({
           id: u.id || post.user_id,
           name: u.name || 'User',
